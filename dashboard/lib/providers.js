@@ -93,6 +93,22 @@ function selectedModel(adapter, requestedModel) {
    TTS LAYER
    ========================================================================== */
 
+function normalizeSpokenText(raw) {
+  if (!raw) return '';
+  let s = String(raw).trim();
+  const toneMatch = s.match(/^(\[[a-z]+\])\s*/i);
+  const tonePrefix = toneMatch ? toneMatch[1] + ' ' : '';
+  s = s.replace(/^\[[a-z]+\]\s*/i, '');
+  s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
+  s = s.replace(/\s*&\s*/g, ' and ');
+  s = s.replace(/\s*@\s*/g, ' at ');
+  s = s.replace(/\s*%\s*/g, ' percent ');
+  s = s.replace(/([a-zA-Z0-9_-]+)\.(in|com|ai|io|org)\b/gi, '$1 dot $2');
+  s = s.replace(/[*_~`#|]/g, ' ');
+  s = s.replace(/\s+/g, ' ').trim();
+  return tonePrefix + s;
+}
+
 const ttsRumik = {
   id: 'rumik',
   label: 'Rumik Silk',
@@ -111,16 +127,25 @@ const ttsRumik = {
     if (!key) throw notConfigured(this.label, this.needs);
 
     const model = selectedModel(this, opts.model);
-    const text = String(opts.text || '').slice(0, MAX_TEXT);
+    const cleanText = normalizeSpokenText(opts.text);
+    const text = cleanText.slice(0, MAX_TEXT);
     if (!text.trim()) throw new ProviderError('text is required', 422, 'no_text');
 
     const payload = { model, text };
-    if (model === 'mulberry') {
-      if (opts.description) payload.description = String(opts.description).slice(0, 500);
-      if (opts.speaker && TTS_SPEAKERS.has(opts.speaker)) payload.speaker = opts.speaker;
-      if (Number.isFinite(opts.f0_up_key)) {
-        payload.f0_up_key = Math.max(-12, Math.min(12, opts.f0_up_key | 0));
-      }
+    // Both mulberry and muga support description (voice direction) and speaker.
+    // muga is the expressive model and especially needs a description to produce
+    // natural Indian-English / Hinglish output. Without one it defaults to an
+    // accent that sounds "ajeeb" (off). Fall back to RUMIK_VOICE_DESCRIPTION or
+    // a sensible built-in default so the voice is always pleasant.
+    const defaultDescription = process.env.RUMIK_VOICE_DESCRIPTION
+      || 'a warm, clear Indian female voice, fluent in both English and Hindi, with natural Hinglish conversational pacing, friendly and professional';
+    const description = opts.description
+      ? String(opts.description).slice(0, 500)
+      : defaultDescription;
+    payload.description = description;
+    if (opts.speaker && TTS_SPEAKERS.has(opts.speaker)) payload.speaker = opts.speaker;
+    if (Number.isFinite(opts.f0_up_key)) {
+      payload.f0_up_key = Math.max(-12, Math.min(12, opts.f0_up_key | 0));
     }
     for (const k of ['temperature', 'top_p', 'top_k', 'repetition_penalty', 'max_new_tokens']) {
       if (Number.isFinite(opts[k])) payload[k] = opts[k];
@@ -150,9 +175,10 @@ const ttsRumik = {
     const key = process.env.RUMIK_API_KEY;
     if (!key) throw notConfigured(this.label, this.needs);
     const model = selectedModel(this, opts.model);
+    const cleanText = normalizeSpokenText(opts.text);
     const buf = Buffer.from(JSON.stringify({
       model,
-      text: String(opts.text || '').slice(0, MAX_TEXT),
+      text: cleanText.slice(0, MAX_TEXT),
     }));
     const up = await httpsPost(RUMIK_HOST, '/v1/tts/ws-connect', {
       'Authorization': `Bearer ${key}`,
@@ -174,7 +200,13 @@ const ttsRumik = {
    LLM LAYER. Speech recognition intentionally remains Deepgram only.
    ========================================================================== */
 
-const DEFAULT_SYSTEM = 'You are RapidX, a warm, concise voice assistant. Reply in 1 to 3 short spoken sentences. No markdown, no lists, no emojis. This will be read aloud.';
+const DEFAULT_SYSTEM = 'You are Ria, the warm AI receptionist for Seevora. Reply in 1 or 2 short spoken sentences. No markdown, no lists, no emojis. This will be read aloud.';
+
+// Always appended to every system prompt so the voice loop sounds natural in any language.
+const VOICE_LANG_RULE = ' LANGUAGE & SPEECH RULES (mandatory):' +
+  ' 1. Always reply in the same language the caller spoke in. If Hindi or Hinglish, reply in natural conversational Hinglish using Roman script (e.g., "Haan ji, bilkul! Main aapki madad kar sakti hoon"). Never use Devanagari script.' +
+  ' 2. This is spoken aloud by a voice model: NEVER write mathematical symbols, slashes, or asterisks like "24/7" or "24*7". Always write "twenty-four seven" or "chaubees ghante". Always write "and" instead of "&".' +
+  ' 3. Keep replies strictly to 1 or 2 concise, spoken sentences. No markdown, no bullet points, no asterisks, no emojis.';
 
 const sttDeepgram = {
   id: 'deepgram',
@@ -244,7 +276,7 @@ const llmGroq = {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw notConfigured(this.label, this.needs);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const messages = [{ role: 'system', content: String(opts.system || DEFAULT_SYSTEM).slice(0, 3000) }]
+    const messages = [{ role: 'system', content: (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 3000) }]
       .concat(history.filter((m) => m && m.text).map((m) => ({
         role: (m.role === 'assistant' || m.role === 'model') ? 'assistant' : 'user',
         content: String(m.text).slice(0, 4000),
@@ -299,7 +331,7 @@ const llmGemini = {
 
     const model = selectedModel(this, opts.model);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const system = String(opts.system || DEFAULT_SYSTEM).slice(0, 2000);
+    const system = (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 2000);
     const contents = history
       .filter((m) => m && m.text)
       .map((m) => ({

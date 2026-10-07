@@ -469,13 +469,14 @@ async function apiAgentsCreate(req, res, ctx) {
   const model = ttsIn.model === 'muga' ? 'muga' : providers.tts.model;
   const speaker = providers.TTS_SPEAKERS.has(ttsIn.speaker) ? ttsIn.speaker : 'speaker_1';
   const f0 = Number.isFinite(ttsIn.f0_up_key) ? Math.max(-12, Math.min(12, ttsIn.f0_up_key | 0)) : 0;
+  const description = ttsIn.description ? String(ttsIn.description).slice(0, 500) : '';
 
   const agent = {
     id: core.genId('ag_'),
     tenantId: ctx.tenant.id,
     name: String(b.name || (preset && preset.name) || 'Untitled Agent').slice(0, 60),
     persona: String(b.persona || (preset ? `${preset.name}. Collect: ${preset.fields.join(', ')}. Guardrails: ${preset.guardrails.join('; ')}.` : '')).slice(0, 1500),
-    tts: { provider: providers.tts.id, model, speaker, f0_up_key: f0 },
+    tts: { provider: providers.tts.id, model, speaker, f0_up_key: f0, description },
     greeting: String(b.greeting || (preset && preset.greeting) || '').slice(0, 300),
     presetId: preset ? preset.id : null,
     telephony: { did: String(b.did || providers.telephony.did).replace(/[^0-9]/g, '') || providers.telephony.did },
@@ -509,6 +510,7 @@ async function apiAgentsUpdate(req, res, ctx) {
       if (b.tts.model != null) t.model = b.tts.model === 'muga' ? 'muga' : providers.tts.model;
       if (providers.TTS_SPEAKERS.has(b.tts.speaker)) t.speaker = b.tts.speaker;
       if (Number.isFinite(b.tts.f0_up_key)) t.f0_up_key = Math.max(-12, Math.min(12, b.tts.f0_up_key | 0));
+      if (b.tts.description != null) t.description = String(b.tts.description).slice(0, 500);
       t.provider = providers.tts.id;
       a.tts = t;
     }

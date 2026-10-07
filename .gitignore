@@ -12,3 +12,8 @@ node_modules/
 # overlay source in rumik-overlay-local/ remains intentionally trackable.
 dograh-official/
 local-dograh/
+
+# Temporary audio artifacts and reports
+*.wav
+*.csv
+*-report.json

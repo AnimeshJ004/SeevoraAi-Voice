@@ -335,6 +335,7 @@ const ROUTES = [
   { id: 'demos', label: 'Demo links', icon: 'link', ownerOnly: true },
   { id: 'talk', label: 'Talk to it', icon: 'mic' },
   { id: 'telephony', label: 'Telephony', icon: 'phone' },
+  { id: 'campaigns', label: 'Outbound Leads', icon: 'send' },
   { id: 'invoices', label: 'Invoices', icon: 'invoice', ownerOnly: true },
   { id: 'integrations', label: 'Integrations', icon: 'plug', ownerOnly: true },
   { id: 'agency-prompt', label: 'Agency prompt', icon: 'prompt', ownerOnly: true },
@@ -351,6 +352,7 @@ function navIcon(name) {
     wave: '<path d="M2 12h2l2-6 3 14 3-18 3 14 2-6h2"/>',
     mic: '<rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/>',
     phone: '<path d="M5 3.5h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5z"/>',
+    send: '<path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>',
     gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/>',
     template: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
     wallet: '<path d="M4 6.5h14a2 2 0 0 1 2 2v9H4a2 2 0 0 1-2-2v-11a2 2 0 0 0 2 2z"/><path d="M15 11h7v4h-7a2 2 0 0 1 0-4z"/>',
@@ -504,7 +506,7 @@ function onRoute() {
   view.appendChild(wrap);
   ({
     overview: viewOverview, agents: viewAgents, presets: viewPresets, studio: viewStudio, demos: viewDemoLinks,
-    talk: viewTalk, telephony: viewTelephony, invoices: viewInvoices, integrations: viewIntegrations,
+    talk: viewTalkLegacy, telephony: viewTelephony, campaigns: viewCampaigns, invoices: viewInvoices, integrations: viewIntegrations,
     'agency-prompt': viewAgencyPrompt, billing: viewBilling,
     support: viewSupport, admin: viewAdmin, settings: viewSettings
   }[id] || viewOverview)(wrap);
@@ -786,7 +788,8 @@ function buildAgentForm(existing) {
   const tts = e.tts || {};
   const card = el('div', { class: 'card builder' });
   const state = {
-    model: tts.model || 'mulberry',
+    model: tts.model || 'muga',
+    tone: tts.tone || 'neutral',
     speaker: tts.speaker || 'speaker_2',
     f0: tts.f0_up_key != null ? tts.f0_up_key : 0
   };
@@ -799,6 +802,12 @@ function buildAgentForm(existing) {
   const modelSeg = el('div', { class: 'seg', id: 'f_model_seg' }, VOICE_MODELS.map((m) =>
     el('button', { type: 'button', class: m === state.model ? 'on' : '', 'data-m': m, onclick: () => { state.model = m; syncVoice(); } }, m)
   ));
+  const toneSeg = el('div', { class: 'seg', id: 'f_tone_seg' }, MUGA_TONES.map((tn) =>
+    el('button', { type: 'button', class: tn === state.tone ? 'on' : '', 'data-t': tn, onclick: () => {
+      state.tone = tn;
+      $$('#f_tone_seg button').forEach((b) => b.classList.toggle('on', b.getAttribute('data-t') === tn));
+    } }, tn)
+  ));
   const speakerSel = el('select', { class: 'select', id: 'f_speaker' }, SPEAKERS.map((s) =>
     el('option', { value: s, selected: s === state.speaker ? 'selected' : false }, s)
   ));
@@ -809,13 +818,17 @@ function buildAgentForm(existing) {
   const didSel = el('select', { class: 'select', id: 'f_did' }, [el('option', { value: '' }, 'No number assigned')]);
   if (e.telephony && e.telephony.did) { /* set after dids load */ setTimeout(() => { try { didSel.value = e.telephony.did; } catch (x) {} }, 0); }
 
-  const speakerField = field('Speaker', speakerSel);
+  const toneField = field('Emotional tone (muga)', toneSeg);
+  const speakerField = field('Speaker (mulberry)', speakerSel);
   const descField = field('Voice direction (mulberry)', descI);
+  const pitchField = field('Pitch, f0_up_key', el('div', { class: 'range-row' }, [f0Range, f0Val]));
   function syncVoice() {
     $$('#f_model_seg button').forEach((b) => b.classList.toggle('on', b.getAttribute('data-m') === state.model));
     const isMul = state.model === 'mulberry';
+    toneField.style.display = isMul ? 'none' : '';
     speakerField.style.display = isMul ? '' : 'none';
     descField.style.display = isMul ? '' : 'none';
+    pitchField.style.display = isMul ? '' : 'none';
   }
 
   const submitBtn = el('button', { class: 'btn btn-primary' }, existing ? 'Save changes' : 'Create agent');
@@ -826,7 +839,8 @@ function buildAgentForm(existing) {
       (function () { const f = field('Persona', personaI); f.classList.add('full'); return f; })(),
       (function () { const f = field('Greeting', greetI); f.classList.add('full'); return f; })(),
       field('Voice model', modelSeg),
-      field('Pitch, f0_up_key', el('div', { class: 'range-row' }, [f0Range, f0Val])),
+      toneField,
+      pitchField,
       speakerField,
       descField
     ]),
@@ -854,7 +868,13 @@ function buildAgentForm(existing) {
       persona: persona,
       greeting: greetI.value.trim(),
       did: didSel.value || '',
-      tts: { model: state.model, speaker: state.speaker, f0_up_key: state.f0, description: descI.value.trim() }
+      tts: {
+        model: state.model,
+        tone: state.model === 'muga' ? (state.tone || 'excited') : undefined,
+        speaker: state.model === 'mulberry' ? state.speaker : undefined,
+        f0_up_key: state.model === 'mulberry' ? state.f0 : 0,
+        description: descI.value.trim() || undefined
+      }
     };
     try {
       if (existing) {
@@ -898,7 +918,10 @@ function paintAgents() {
 
 function agentCard(a) {
   const tts = a.tts || {};
-  const voiceLine = (tts.model || 'mulberry') + ' / ' + (tts.speaker || 'speaker') + (tts.f0_up_key ? ' / pitch ' + (tts.f0_up_key > 0 ? '+' : '') + tts.f0_up_key : '');
+  const isMuga = (tts.model || 'muga') === 'muga';
+  const voiceLine = isMuga
+    ? `muga / tone: ${tts.tone || 'excited'}`
+    : `mulberry / ${tts.speaker || 'speaker_2'}${tts.f0_up_key ? ' / pitch ' + (tts.f0_up_key > 0 ? '+' : '') + tts.f0_up_key : ''}`;
   const did = a.telephony && a.telephony.did ? a.telephony.did : null;
 
   const previewBtn = el('button', { class: 'btn btn-ghost btn-sm' }, 'Preview voice');
@@ -916,7 +939,7 @@ function agentCard(a) {
     el('div', { class: 'ac-persona' }, a.persona || 'No persona set.'),
     el('div', { class: 'ac-meta' }, [
       did ? el('span', { class: 'tag' }, did) : el('span', { class: 'tag' }, 'no number'),
-      el('span', { class: 'tag' }, (tts.model || 'mulberry'))
+      el('span', { class: 'tag' }, (tts.model || 'muga') + (isMuga ? ` (${tts.tone || 'excited'})` : ''))
     ]),
     el('div', { class: 'ac-actions' }, [
       previewBtn,
@@ -928,19 +951,26 @@ function agentCard(a) {
 
 async function previewAgentVoice(a, btn) {
   const tts = a.tts || {};
-  const text = (a.greeting && a.greeting.trim()) || ('Hi, this is ' + (a.name || 'your agent') + '. How can I help today.');
+  const model = tts.model || 'muga';
+  const tone = tts.tone || 'neutral';
+  let text = (a.greeting && a.greeting.trim()) || ('Hi, this is ' + (a.name || 'your agent') + '. How can I help today.');
+  if (model === 'muga') {
+    text = text.replace(/^\[[a-z]+\]\s*/i, '');
+    if (tone && tone !== 'neutral') text = `[${tone}] ` + text;
+  }
   const old = btn.textContent;
   btn.disabled = true; btn.textContent = 'Synthesizing...';
   try {
-    const body = { text: text, model: tts.model || 'mulberry', speaker: tts.speaker, f0_up_key: tts.f0_up_key, description: tts.description };
+    const body = { text: text, model: model, speaker: tts.speaker, f0_up_key: tts.f0_up_key, description: tts.description };
     const res = await api('/api/tts', { method: 'POST', body: body });
     const buf = await res.arrayBuffer();
     const url = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
     const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
-    await audio.play();
     btn.textContent = 'Playing...';
-    audio.onended = () => { btn.textContent = old; btn.disabled = false; URL.revokeObjectURL(url); };
+    const done = () => { btn.textContent = old; btn.disabled = false; URL.revokeObjectURL(url); };
+    audio.onended = done;
+    audio.onerror = done;
+    await audio.play();
   } catch (ex) {
     toast(ex.message || 'Voice preview failed.', 'err');
     btn.textContent = old; btn.disabled = false;
@@ -1555,20 +1585,28 @@ async function viewTalk(root) {
 }
 
 async function viewTalkLegacy(root) {
-  root.appendChild(viewHead('Talk to it', 'A live loop. Speak or type, the agent thinks with the brain, then answers in its own voice.'));
+  root.appendChild(viewHead('Talk to your agent', 'Live interactive voice conversation powered by Rumik Muga. Speak or type, and hear the happy & excited voice in real time.'));
 
   await ensureAgents().catch(() => {});
   if (!State.activeAgentId && State.agents.length) State.activeAgentId = State.agents[0].id;
 
   const convo = []; // { role:'user'|'bot', text }
   const transcript = el('div', { class: 'transcript', id: 't_transcript', 'aria-live': 'polite' }, [
-    el('div', { class: 'bubble sys' }, State.agents.length ? 'Start a conversation. The agent will greet you, listen automatically and keep the call going.' : 'Create an agent first, then come back to talk to it.')
+    el('div', { class: 'bubble sys' }, State.agents.length ? 'Start a conversation. The agent will greet you with Rumik Muga, listen automatically and keep the call going.' : 'Create an agent first, then come back to talk to it.')
   ]);
 
   const agentSel = el('select', { class: 'select' }, State.agents.length
     ? State.agents.map((a) => el('option', { value: a.id, selected: a.id === State.activeAgentId ? 'selected' : false }, a.name))
     : [el('option', { value: '' }, 'No agents yet')]);
-  agentSel.addEventListener('change', () => { State.activeAgentId = agentSel.value; });
+
+  let activeTone = ((getActiveAgent() || {}).tts || {}).tone || 'neutral';
+  const toneSel = el('select', { class: 'select' }, MUGA_TONES.map((tn) =>
+    el('option', { value: tn, selected: tn === activeTone ? 'selected' : false }, tn.charAt(0).toUpperCase() + tn.slice(1))
+  ));
+  toneSel.addEventListener('change', () => {
+    activeTone = toneSel.value;
+    updatePipelinePill();
+  });
 
   const textIn = el('input', { class: 'input', placeholder: State.agents.length ? 'Type a message...' : 'Create an agent to begin', disabled: State.agents.length ? false : 'disabled' });
   const sendBtn = el('button', { class: 'btn btn-primary' }, 'Send');
@@ -1579,10 +1617,27 @@ async function viewTalkLegacy(root) {
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
   const statusText = el('span', {}, 'Ready');
   const statusPill = el('div', { class: 'conversation-status idle', role: 'status' }, [statusDot, statusText]);
-  const pipelinePill = el('div', { class: 'conversation-pipeline' }, 'Deepgram Nova-3 → Groq Llama 3.3 70B → Rumik Mulberry');
+  const pipelinePill = el('div', { class: 'conversation-pipeline' }, '');
   const timingText = el('div', { class: 'conversation-timing', 'aria-live': 'polite' }, 'Latency appears after the first turn');
 
   function getActiveAgent() { return State.agents.find((a) => a.id === State.activeAgentId) || State.agents[0]; }
+
+  function updatePipelinePill() {
+    const a = getActiveAgent();
+    const t = (a && a.tts) || {};
+    const m = t.model || 'muga';
+    const tn = activeTone || t.tone || 'neutral';
+    const voiceStr = m === 'muga' ? `Rumik Muga (${tn.charAt(0).toUpperCase() + tn.slice(1)})` : 'Rumik Mulberry';
+    pipelinePill.textContent = `Deepgram Nova-3 → Groq Llama 3.3 70B → ${voiceStr}`;
+  }
+  updatePipelinePill();
+  agentSel.addEventListener('change', () => {
+    State.activeAgentId = agentSel.value;
+    const a = getActiveAgent();
+    activeTone = (a && a.tts && a.tts.tone) || 'neutral';
+    toneSel.value = activeTone;
+    updatePipelinePill();
+  });
 
   function addBubble(role, text) {
     if ($('.bubble.sys', transcript)) { const s = $('.bubble.sys', transcript); if (convo.length === 0) s.remove(); }
@@ -1779,8 +1834,9 @@ async function viewTalkLegacy(root) {
       if (myTurn !== turnId) { typing.remove(); return; }
       const reply = (chat.text || '').trim() || 'Sorry, I did not catch that.';
       typing.remove();
-      addBubble('bot', reply);
-      convo.push({ role: 'bot', text: reply });
+      const cleanReply = reply.replace(/^\[[a-z]+\]\s*/i, '');
+      addBubble('bot', cleanReply);
+      convo.push({ role: 'bot', text: cleanReply });
       setPhase('speaking');
       await speakReply(reply, agent);
     } catch (ex) {
@@ -1795,13 +1851,37 @@ async function viewTalkLegacy(root) {
     }
   }
 
+  function cleanSpokenText(text) {
+    if (!text) return '';
+    let s = String(text).trim();
+    s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
+    s = s.replace(/\s*&\s*/g, ' and ');
+    s = s.replace(/\s*@\s*/g, ' at ');
+    s = s.replace(/\s*%\s*/g, ' percent ');
+    s = s.replace(/([a-zA-Z0-9_-]+)\.(in|com|ai|io|org)\b/gi, '$1 dot $2');
+    s = s.replace(/^\[[a-z]+\]\s*/i, '');
+    s = s.replace(/[*_~`#|]/g, ' ');
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  }
+
   async function speakReply(text, agent) {
-    const tts = agent.tts || {};
+    const tts = (agent && agent.tts) || {};
+    const model = tts.model || 'muga';
+    const tone = tts.tone || 'neutral';
+    let spokenText = cleanSpokenText(text);
+    if (model === 'muga') {
+      if (tone && tone !== 'neutral') {
+        spokenText = `[${tone}] ` + spokenText;
+      }
+    }
+    const defaultVoiceDesc = 'a warm, clear Indian female voice, fluent in Hindi and English, natural Hinglish conversational pacing, friendly and professional';
+    const voiceDesc = tts.description || defaultVoiceDesc;
     const ttsStarted = performance.now();
     try {
       const mint = await api('/api/ws-connect', {
         method: 'POST', timeoutMs: 12000,
-        body: { text: text.slice(0, 2000), model: tts.model || 'mulberry' }
+        body: { text: spokenText.slice(0, 2000), model: model }
       });
       if (!mint.ws_url) throw new Error('Rumik stream URL was not returned.');
       const url = mint.ws_url + (mint.token && mint.ws_url.indexOf('token=') === -1
@@ -1828,10 +1908,9 @@ async function viewTalkLegacy(root) {
         }
 
         socket.onopen = () => {
-          const frame = { text: text.slice(0, 2000), model: tts.model || 'mulberry' };
+          const frame = { text: spokenText.slice(0, 2000), model: model, description: voiceDesc };
           if (frame.model === 'mulberry') {
-            if (tts.description) frame.description = tts.description;
-            else frame.speaker = tts.speaker || 'speaker_1';
+            if (!tts.description) frame.speaker = tts.speaker || 'speaker_1';
             frame.f0_up_key = Number.isFinite(tts.f0_up_key) ? tts.f0_up_key : 0;
           }
           socket.send(JSON.stringify(frame));
@@ -1871,7 +1950,17 @@ async function viewTalkLegacy(root) {
       // Keep a reliable batch fallback, but the normal path above starts audio
       // on Rumik's first PCM chunk and is the path reflected in the latency UI.
       try {
-        const res = await api('/api/tts', { method: 'POST', timeoutMs: 60000, body: { text: text.slice(0, 2000), model: tts.model || 'mulberry', speaker: tts.speaker, f0_up_key: tts.f0_up_key, description: tts.description } });
+        const res = await api('/api/tts', {
+          method: 'POST',
+          timeoutMs: 60000,
+          body: {
+            text: spokenText.slice(0, 2000),
+            model: model,
+            speaker: tts.speaker,
+            f0_up_key: tts.f0_up_key,
+            description: voiceDesc
+          }
+        });
         const buf = await res.arrayBuffer();
         turnTiming.tts = Math.round(performance.now() - ttsStarted);
         updateTiming();
@@ -2021,9 +2110,10 @@ async function viewTalkLegacy(root) {
       sessionActive = true;
       agentSel.disabled = true;
       setSessionButton(true);
-      const greeting = String(agent.greeting || 'Hello, how can I help you today?').trim();
-      addBubble('bot', greeting);
-      convo.push({ role: 'bot', text: greeting });
+      const greeting = String(agent.greeting || "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?").trim();
+      const cleanGreeting = greeting.replace(/^\[[a-z]+\]\s*/i, '');
+      addBubble('bot', cleanGreeting);
+      convo.push({ role: 'bot', text: cleanGreeting });
       setPhase('speaking');
       await speakReply(greeting, agent);
       if (sessionActive) listenForTurn();
@@ -2063,12 +2153,15 @@ async function viewTalkLegacy(root) {
   const panel = el('div', { class: 'card talk-panel' }, [
     el('div', { class: 'talk-head' }, [
       el('div', { class: 'talk-identity' }, [
-        el('div', { class: 'who' }, [document.createTextNode('Live conversation '), el('span', {}, '(automatic turn-taking)')]),
+        el('div', { class: 'who' }, [document.createTextNode('Rumik Muga Voice '), el('span', {}, '(live microphone + turn-taking)')]),
         statusPill,
         pipelinePill,
         timingText
       ]),
-      el('div', { class: 'talk-agent-select' }, [el('span', {}, 'Agent'), agentSel])
+      el('div', { class: 'talk-agent-select', style: 'display:flex;gap:10px;align-items:center' }, [
+        el('span', {}, 'Agent'), agentSel,
+        el('span', {}, 'Tone'), toneSel
+      ])
     ]),
     transcript,
     el('div', { class: 'talk-input' }, [sessionBtn, textIn, sendBtn])
@@ -2076,12 +2169,12 @@ async function viewTalkLegacy(root) {
 
   const side = el('div', { class: 'talk-side' }, [
     el('div', { class: 'card card-pad' }, [
-      el('h3', { class: 't-h3' }, 'How it works'),
-      el('p', { class: 'soft', style: 'font-size:.88rem' }, 'Start once. Rumik greets you, then Deepgram streams every word into the transcript while you speak. Groq answers, Rumik speaks, and listening resumes automatically.'),
+      el('h3', { class: 't-h3' }, 'Rumik Muga Studio Voice'),
+      el('p', { class: 'soft', style: 'font-size:.88rem' }, 'Start conversation. The agent speaks in Rumik Muga with natural, clean speech. Deepgram streams your speech, Groq reasons, and Rumik Muga speaks back with sub-second latency.'),
       el('div', { class: 'divider', style: 'margin:6px 0' }),
       el('div', { class: 'soft', style: 'font-size:.84rem' },
-        'The status and measured Deepgram, Groq and Rumik latency make every stage of the turn explicit.'),
-      el('div', { class: 'soft', style: 'font-size:.84rem;margin-top:10px' }, 'Use End conversation to release the microphone. Typed messages remain available at any time.')
+        'Set to Muga Neutral tone for crisp, balanced, and professional conversation.'),
+      el('div', { class: 'soft', style: 'font-size:.84rem;margin-top:10px' }, 'You can speak through your microphone or type messages in the text box below.')
     ])
   ]);
 
@@ -2210,6 +2303,514 @@ function onDial(numI, btn) {
       }
     }
   });
+}
+
+/* ===========================================================================
+   5b. OUTBOUND LEADS & CAMPAIGNS
+   =========================================================================== */
+let campaignState = {
+  leads: (function() {
+    try { return JSON.parse(localStorage.getItem('seevora_campaign_leads') || '[]'); }
+    catch(_) { return []; }
+  })(),
+  running: false,
+  abort: false,
+  currentIndex: -1,
+  countdown: 0,
+  delaySeconds: 45,
+  isDryRun: false
+};
+
+function saveCampaignLeads() {
+  try { localStorage.setItem('seevora_campaign_leads', JSON.stringify(campaignState.leads)); } catch(_) {}
+}
+
+function normalizeLeadNumber(raw) {
+  if (!raw) return null;
+  const digits = String(raw).replace(/\D/g, '');
+  if (digits.length === 10) return { formatted: '+91 ' + digits, raw: digits };
+  if (digits.length === 12 && digits.startsWith('91')) return { formatted: '+91 ' + digits.slice(2), raw: digits.slice(2) };
+  if (digits.length > 10 && digits.startsWith('0')) return { formatted: '+91 ' + digits.slice(1), raw: digits.slice(1) };
+  return null;
+}
+
+function parseImportText(text) {
+  const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const leads = [];
+  if (!lines.length) return leads;
+
+  // Check if first line is a CSV header
+  const firstLower = lines[0].toLowerCase();
+  let startIdx = 0;
+  let phoneCol = 0;
+  let nameCol = 1;
+
+  if (firstLower.includes('phone') || firstLower.includes('mobile') || firstLower.includes('number') || firstLower.includes('contact')) {
+    startIdx = 1;
+    const headerCols = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+    phoneCol = headerCols.findIndex((h) => h.includes('phone') || h.includes('mobile') || h.includes('number') || h.includes('contact'));
+    if (phoneCol === -1) phoneCol = 0;
+    nameCol = headerCols.findIndex((h) => h.includes('name'));
+    if (nameCol === -1) nameCol = phoneCol === 0 ? 1 : 0;
+  }
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const parts = rawLine.includes(',') ? rawLine.split(',').map((p) => p.trim().replace(/^["']|["']$/g, '')) : [rawLine];
+    let candidateNum = parts[phoneCol] || parts[0];
+    let candidateName = (nameCol !== -1 && parts[nameCol]) || '';
+
+    // If candidateName looks like the number and candidateNum looks like the name, swap
+    if (candidateName && candidateName.replace(/\D/g, '').length >= 10 && candidateNum.replace(/\D/g, '').length < 10) {
+      const tmp = candidateNum; candidateNum = candidateName; candidateName = tmp;
+    }
+
+    const norm = normalizeLeadNumber(candidateNum);
+    if (norm) {
+      leads.push({
+        id: 'ld_' + Math.random().toString(36).slice(2, 9),
+        name: candidateName || 'Contact #' + (campaignState.leads.length + leads.length + 1),
+        phone: norm.formatted,
+        rawNumber: norm.raw,
+        status: 'pending', // pending | dialing | initiated | failed | dry_run
+        error: null,
+        timestamp: null
+      });
+    }
+  }
+  return leads;
+}
+
+async function viewCampaigns(root) {
+  root.appendChild(viewHead('Outbound Leads & Campaigns', 'Import contact lists, upload CSVs, and launch automated sequential calling powered by Seevora AI Voice on VoBiz.'));
+
+  await ensureTelephony().catch(() => null);
+  await ensureAgents().catch(() => null);
+
+  const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+918071582519';
+
+  // Stats bar
+  const statsHost = el('div', { class: 'campaign-stats-grid' });
+  root.appendChild(statsHost);
+
+  // Live banner (when campaign is running)
+  const bannerHost = el('div', { id: 'campaignBannerHost' });
+  root.appendChild(bannerHost);
+
+  // Main grid: Import box (left) + Settings box (right)
+  const grid = el('div', { class: 'campaign-grid' });
+  root.appendChild(grid);
+
+  // Table card (bottom)
+  const tableCard = el('div', { class: 'card card-pad', id: 'campaignTableCard' });
+  root.appendChild(tableCard);
+
+  function renderStats() {
+    statsHost.innerHTML = '';
+    const total = campaignState.leads.length;
+    const completed = campaignState.leads.filter((l) => l.status === 'initiated' || l.status === 'dry_run').length;
+    const pending = campaignState.leads.filter((l) => l.status === 'pending').length;
+    const failed = campaignState.leads.filter((l) => l.status === 'failed').length;
+
+    const stats = [
+      { lbl: 'Total Leads', val: total },
+      { lbl: 'Completed Calls', val: completed },
+      { lbl: 'Pending Calls', val: pending },
+      { lbl: 'Failed Attempts', val: failed },
+      { lbl: 'Caller ID (VoBiz)', val: typeof activeDid === 'string' ? activeDid : (activeDid.number || '+918071582519') }
+    ];
+
+    stats.forEach((s) => {
+      statsHost.appendChild(el('div', { class: 'campaign-stat-box' }, [
+        el('div', { class: 'lbl' }, s.lbl),
+        el('div', { class: 'val', style: typeof s.val === 'string' && s.val.startsWith('+') ? 'font-size:1.1rem;color:var(--accent)' : '' }, String(s.val))
+      ]));
+    });
+  }
+
+  function renderBanner() {
+    bannerHost.innerHTML = '';
+    if (!campaignState.running) return;
+
+    const total = campaignState.leads.length;
+    const current = campaignState.currentIndex >= 0 && campaignState.currentIndex < total ? campaignState.leads[campaignState.currentIndex] : null;
+    const processed = campaignState.leads.filter((l) => l.status !== 'pending').length;
+    const pct = total ? Math.round((processed / total) * 100) : 0;
+
+    const stopBtn = el('button', { class: 'btn btn-danger', onclick: stopCampaign }, '⏹ Stop Campaign');
+
+    const banner = el('div', { class: 'live-progress-banner' }, [
+      el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:12px' }, [
+        el('div', { class: 'flex items-center gap-2' }, [
+          el('div', { class: 'pulse-badge' }, [el('div', { class: 'pulse-badge-dot' }), 'LIVE CAMPAIGN IN PROGRESS']),
+          current ? el('span', { style: 'font-weight:600;font-size:.9rem;margin-left:6px' }, ['Calling ', esc(current.name), ' (', esc(current.phone), ')']) : null
+        ]),
+        el('div', { class: 'flex items-center gap-3' }, [
+          campaignState.countdown > 0 ? el('span', { style: 'font-size:.85rem;color:#e2e8f0;font-family:var(--mono)' }, 'Next call in ' + campaignState.countdown + 's') : null,
+          stopBtn
+        ])
+      ]),
+      el('div', { class: 'progress-bar-track' }, [
+        el('div', { class: 'progress-bar-fill', style: 'width:' + pct + '%' })
+      ]),
+      el('div', { class: 'flex justify-between', style: 'font-size:.78rem;color:#94a3b8;font-family:var(--mono)' }, [
+        el('span', {}, 'Progress: ' + processed + ' of ' + total + ' leads (' + pct + '%)'),
+        el('span', {}, campaignState.isDryRun ? 'DRY-RUN SIMULATION' : 'VOPIZ REAL CALLING')
+      ])
+    ]);
+    bannerHost.appendChild(banner);
+  }
+
+  // --- Left: Import Card ---
+  const importCard = el('div', { class: 'card card-pad' });
+  grid.appendChild(importCard);
+
+  importCard.appendChild(el('h3', { class: 't-h3' }, 'Import Leads'));
+  importCard.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Upload a CSV spreadsheet or paste phone numbers to queue automated calls.'));
+
+  const tabUploadBtn = el('button', { class: 'btn btn-ghost on', type: 'button' }, 'Upload CSV / TXT');
+  const tabPasteBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Paste Numbers');
+  const tabRow = el('div', { class: 'flex gap-2', style: 'margin-bottom:14px' }, [tabUploadBtn, tabPasteBtn]);
+  importCard.appendChild(tabRow);
+
+  const uploadContainer = el('div', {});
+  const pasteContainer = el('div', { style: 'display:none' });
+  importCard.appendChild(uploadContainer);
+  importCard.appendChild(pasteContainer);
+
+  tabUploadBtn.addEventListener('click', () => {
+    tabUploadBtn.classList.add('on'); tabPasteBtn.classList.remove('on');
+    uploadContainer.style.display = ''; pasteContainer.style.display = 'none';
+  });
+  tabPasteBtn.addEventListener('click', () => {
+    tabPasteBtn.classList.add('on'); tabUploadBtn.classList.remove('on');
+    uploadContainer.style.display = 'none'; pasteContainer.style.display = '';
+  });
+
+  // Dropzone
+  const fileInput = el('input', { type: 'file', accept: '.csv,.txt', style: 'display:none' });
+  const dropzone = el('div', { class: 'dropzone-box' }, [
+    el('div', { class: 'dropzone-icon', html: navIcon('invoice') }),
+    el('div', { style: 'font-weight:600;font-size:.92rem;margin-bottom:4px' }, 'Drop your CSV or TXT file here'),
+    el('div', { class: 'muted', style: 'font-size:.8rem;margin-bottom:14px' }, 'Supports columns: Name, Phone Number (e.g. 9876543210)'),
+    el('button', { type: 'button', class: 'btn btn-primary', onclick: () => fileInput.click() }, 'Browse Files'),
+    fileInput
+  ]);
+
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const parsed = parseImportText(ev.target.result);
+      if (!parsed.length) { toast('No valid 10-digit Indian phone numbers found in file.', 'err'); return; }
+      campaignState.leads = campaignState.leads.concat(parsed);
+      saveCampaignLeads();
+      renderAll();
+      toast('Imported ' + parsed.length + ' leads from ' + file.name, 'ok');
+    };
+    reader.readAsText(file);
+  }
+
+  const sampleBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, '➕ Load Sample Leads');
+  sampleBtn.addEventListener('click', () => {
+    const samples = [
+      { id: 'ld_1', name: 'Bhavu (Owner Test)', phone: '+91 8120590466', rawNumber: '8120590466', status: 'pending', error: null, timestamp: null },
+      { id: 'ld_2', name: 'Dr. Sharma (Clinic Lead)', phone: '+91 9876543210', rawNumber: '9876543210', status: 'pending', error: null, timestamp: null },
+      { id: 'ld_3', name: 'Ananya Verma (Inquiry)', phone: '+91 8765432109', rawNumber: '8765432109', status: 'pending', error: null, timestamp: null }
+    ];
+    campaignState.leads = campaignState.leads.concat(samples);
+    saveCampaignLeads();
+    renderAll();
+    toast('Added 3 sample leads for testing.', 'ok');
+  });
+
+  uploadContainer.appendChild(dropzone);
+  uploadContainer.appendChild(sampleBtn);
+
+  // Paste container
+  const pasteArea = el('textarea', { class: 'textarea', rows: 6, placeholder: 'Enter numbers or CSV format, one per line:\n9876543210, Ramesh Sharma\n8765432109, Priya Patel\n+919988776655' });
+  const parseBtn = el('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:10px' }, 'Add Pasted Leads');
+  parseBtn.addEventListener('click', () => {
+    const parsed = parseImportText(pasteArea.value);
+    if (!parsed.length) { toast('No valid 10-digit Indian numbers found in text.', 'err'); return; }
+    campaignState.leads = campaignState.leads.concat(parsed);
+    saveCampaignLeads();
+    pasteArea.value = '';
+    renderAll();
+    toast('Added ' + parsed.length + ' leads.', 'ok');
+  });
+  pasteContainer.appendChild(pasteArea);
+  pasteContainer.appendChild(parseBtn);
+
+  // --- Right: Settings Card ---
+  const settingsCard = el('div', { class: 'card card-pad' });
+  grid.appendChild(settingsCard);
+
+  settingsCard.appendChild(el('h3', { class: 't-h3' }, 'Campaign Settings'));
+  settingsCard.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Configure calling cadence, caller ID, and voice persona.'));
+
+  // Delay select
+  const delaySel = el('select', { class: 'select' }, [
+    el('option', { value: '30' }, '30 seconds between calls'),
+    el('option', { value: '45', selected: 'selected' }, '45 seconds between calls (Recommended)'),
+    el('option', { value: '60' }, '60 seconds between calls'),
+    el('option', { value: '90' }, '90 seconds between calls')
+  ]);
+  delaySel.value = String(campaignState.delaySeconds || 45);
+  delaySel.addEventListener('change', () => { campaignState.delaySeconds = parseInt(delaySel.value, 10); });
+
+  // Dry run checkbox
+  const dryRunCheck = el('input', { type: 'checkbox', id: 'dryRunToggle', checked: campaignState.isDryRun ? 'checked' : false });
+  dryRunCheck.addEventListener('change', () => { campaignState.isDryRun = dryRunCheck.checked; renderAll(); });
+  const dryRunLabel = el('label', { for: 'dryRunToggle', style: 'cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:8px' }, [
+    dryRunCheck,
+    el('span', {}, 'Dry-run Mode (simulate calls without charging VoBiz balance)')
+  ]);
+
+  settingsCard.appendChild(el('div', { class: 'form-grid' }, [
+    field('Caller ID (VoBiz)', el('input', { class: 'input', readonly: 'readonly', value: typeof activeDid === 'string' ? activeDid : (activeDid.number || '+918071582519') })),
+    field('Interval delay', delaySel),
+    (function() {
+      const f = field('', dryRunLabel);
+      f.style.marginTop = '4px';
+      return f;
+    })()
+  ]));
+
+  settingsCard.appendChild(el('div', { class: 'inbound-note', style: 'margin-top:16px' }, [
+    el('b', {}, 'How it works: '),
+    document.createTextNode('Seevora AI dials each contact in sequence through your VoBiz number. When answered, the AI speaks first, answers inquiries, and qualifies the lead. Call logs and audio recordings save automatically.')
+  ]));
+
+  // --- Bottom: Table Card ---
+  function renderTable() {
+    tableCard.innerHTML = '';
+
+    const startBtn = el('button', { class: 'btn btn-primary', disabled: campaignState.running || !campaignState.leads.length, onclick: startCampaign }, [
+      el('span', { html: navIcon('phone') }),
+      document.createTextNode(' Start Outbound Campaign')
+    ]);
+    const clearBtn = el('button', { class: 'btn btn-ghost', disabled: campaignState.running || !campaignState.leads.length, onclick: clearLeads }, 'Clear List');
+    const exportBtn = el('button', { class: 'btn btn-ghost', disabled: !campaignState.leads.length, onclick: exportReport }, '⬇ Export CSV Report');
+
+    tableCard.appendChild(el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:12px;margin-bottom:14px' }, [
+      el('div', {}, [
+        el('h3', { class: 't-h3' }, ['Queue Contacts ', el('span', { class: 'pill', style: 'margin-left:8px;font-size:.7rem' }, String(campaignState.leads.length))]),
+        el('p', { class: 'muted', style: 'font-size:.82rem' }, 'Leads are dialed sequentially. You can stop or pause at any time.')
+      ]),
+      el('div', { class: 'flex items-center gap-2' }, [clearBtn, exportBtn, startBtn])
+    ]));
+
+    if (!campaignState.leads.length) {
+      tableCard.appendChild(el('div', { class: 'empty muted', style: 'padding:40px 20px;text-align:center' }, 'No leads in queue. Upload a CSV or click "Load Sample Leads" above.'));
+      return;
+    }
+
+    const tbody = el('tbody', {});
+    campaignState.leads.forEach((l, idx) => {
+      let statusBadge;
+      if (l.status === 'dialing') statusBadge = el('span', { class: 'status-badge status-setup' }, 'Dialing...');
+      else if (l.status === 'initiated') statusBadge = el('span', { class: 'status-badge status-active' }, '✔ Connected');
+      else if (l.status === 'dry_run') statusBadge = el('span', { class: 'status-badge status-issued' }, 'Simulated (OK)');
+      else if (l.status === 'failed') statusBadge = el('span', { class: 'status-badge status-overdue', title: l.error || '' }, '✖ Failed');
+      else statusBadge = el('span', { class: 'status-badge status-draft' }, 'Pending');
+
+      const dialSingleBtn = el('button', { class: 'btn btn-ghost', style: 'padding:4px 8px;font-size:.72rem', disabled: campaignState.running, onclick: () => dialSingle(idx) }, 'Call Now');
+      const delBtn = el('button', { class: 'btn btn-ghost', style: 'padding:4px 8px;font-size:.72rem;color:var(--bad)', disabled: campaignState.running, onclick: () => removeLead(idx) }, '✕');
+
+      const tr = el('tr', { style: idx === campaignState.currentIndex ? 'background:#fbf3e0;' : '' }, [
+        el('td', { style: 'width:40px;color:var(--ink-dim);font-family:var(--mono)' }, String(idx + 1)),
+        el('td', { style: 'font-weight:600' }, esc(l.name)),
+        el('td', { class: 'mono-cell' }, esc(l.phone)),
+        el('td', {}, statusBadge),
+        el('td', { style: 'text-align:right' }, [dialSingleBtn, delBtn])
+      ]);
+      tbody.appendChild(tr);
+    });
+
+    const table = el('table', { class: 'data-table' }, [
+      el('thead', {}, el('tr', {}, [
+        el('th', { style: 'width:40px' }, '#'),
+        el('th', {}, 'Name'),
+        el('th', {}, 'Phone Number'),
+        el('th', {}, 'Status'),
+        el('th', { style: 'text-align:right' }, 'Action')
+      ])),
+      tbody
+    ]);
+
+    tableCard.appendChild(el('div', { class: 'leads-table-container' }, table));
+  }
+
+  function renderAll() {
+    renderStats();
+    renderBanner();
+    renderTable();
+  }
+
+  function clearLeads() {
+    if (campaignState.running) return;
+    campaignState.leads = [];
+    saveCampaignLeads();
+    renderAll();
+    toast('Queue cleared.', 'ok');
+  }
+
+  function removeLead(idx) {
+    if (campaignState.running) return;
+    campaignState.leads.splice(idx, 1);
+    saveCampaignLeads();
+    renderAll();
+  }
+
+  function exportReport() {
+    if (!campaignState.leads.length) return;
+    let csv = 'Name,Phone,Status,Timestamp,Error\n';
+    campaignState.leads.forEach((l) => {
+      csv += '"' + (l.name || '').replace(/"/g, '""') + '","' + l.phone + '","' + l.status + '","' + (l.timestamp || '') + '","' + (l.error || '').replace(/"/g, '""') + '"\n';
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'seevora_campaign_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Report downloaded.', 'ok');
+  }
+
+  async function dialSingle(idx) {
+    const lead = campaignState.leads[idx];
+    if (!lead || campaignState.running) return;
+    modal({
+      title: 'Call single lead',
+      body: el('div', {}, [
+        el('p', {}, ['Place a live call to ', el('b', {}, esc(lead.name) + ' (' + esc(lead.phone) + ')'), '?']),
+        el('div', { class: 'danger-note' }, 'This will initiate a real paid phone call through your VoBiz number.')
+      ]),
+      confirmText: 'Yes, Call Now', confirmKind: 'primary',
+      onConfirm: async () => {
+        lead.status = 'dialing';
+        renderAll();
+        try {
+          if (campaignState.isDryRun) {
+            await new Promise((r) => setTimeout(r, 1000));
+            lead.status = 'dry_run';
+          } else {
+            await api('/api/telephony/dial', { method: 'POST', body: { number: lead.rawNumber, confirm: true } });
+            lead.status = 'initiated';
+          }
+          lead.timestamp = new Date().toISOString();
+          toast('Call initiated to ' + lead.phone, 'ok');
+        } catch (ex) {
+          lead.status = 'failed';
+          lead.error = ex.message || 'Call failed';
+          toast(ex.message || 'Dial failed', 'err');
+        }
+        saveCampaignLeads();
+        renderAll();
+      }
+    });
+  }
+
+  function stopCampaign() {
+    campaignState.abort = true;
+    campaignState.running = false;
+    campaignState.countdown = 0;
+    campaignState.currentIndex = -1;
+    renderAll();
+    toast('Campaign stopped by user.', 'warn');
+  }
+
+  async function startCampaign() {
+    if (campaignState.running) return;
+    const pendingLeads = campaignState.leads.filter((l) => l.status === 'pending');
+    if (!pendingLeads.length) {
+      toast('No pending leads left to call. Add more leads or reset status.', 'warn');
+      return;
+    }
+
+    modal({
+      title: campaignState.isDryRun ? 'Start Dry-run Campaign' : 'Confirm Outbound Campaign',
+      body: el('div', {}, [
+        el('p', {}, [
+          'You are about to dial ',
+          el('b', {}, String(pendingLeads.length) + ' pending leads'),
+          ' sequentially with a ',
+          el('b', {}, String(campaignState.delaySeconds) + 's delay'),
+          ' between calls.'
+        ]),
+        campaignState.isDryRun
+          ? el('div', { class: 'inbound-note' }, 'DRY-RUN MODE: Calls will be simulated. VoBiz will not be charged.')
+          : el('div', { class: 'danger-note' }, [
+              el('b', {}, 'Live Paid Calls: '),
+              document.createTextNode('Dograh will place real calls through VoBiz number ' + (activeDid.number || activeDid || '+918071582519') + ' and charges will apply per answered minute.')
+            ])
+      ]),
+      confirmText: campaignState.isDryRun ? 'Start Simulation' : 'Start Calling Campaign',
+      confirmKind: campaignState.isDryRun ? 'primary' : 'danger',
+      onConfirm: async () => {
+        campaignState.running = true;
+        campaignState.abort = false;
+        renderAll();
+
+        for (let i = 0; i < campaignState.leads.length; i++) {
+          if (campaignState.abort) break;
+          const lead = campaignState.leads[i];
+          if (lead.status !== 'pending') continue;
+
+          campaignState.currentIndex = i;
+          lead.status = 'dialing';
+          renderAll();
+
+          try {
+            if (campaignState.isDryRun) {
+              await new Promise((r) => setTimeout(r, 1200));
+              lead.status = 'dry_run';
+            } else {
+              await api('/api/telephony/dial', { method: 'POST', body: { number: lead.rawNumber, confirm: true } });
+              lead.status = 'initiated';
+            }
+            lead.timestamp = new Date().toISOString();
+          } catch (err) {
+            lead.status = 'failed';
+            lead.error = err.message || 'Call failed';
+          }
+
+          saveCampaignLeads();
+          renderAll();
+
+          // If more pending leads exist, countdown
+          const hasMore = campaignState.leads.slice(i + 1).some((x) => x.status === 'pending');
+          if (hasMore && !campaignState.abort) {
+            campaignState.countdown = campaignState.delaySeconds;
+            while (campaignState.countdown > 0 && !campaignState.abort) {
+              renderBanner();
+              await new Promise((r) => setTimeout(r, 1000));
+              campaignState.countdown -= 1;
+            }
+          }
+        }
+
+        campaignState.running = false;
+        campaignState.currentIndex = -1;
+        campaignState.countdown = 0;
+        renderAll();
+        toast('Campaign finished!', 'ok');
+      }
+    });
+  }
+
+  renderAll();
 }
 
 /* ===========================================================================
