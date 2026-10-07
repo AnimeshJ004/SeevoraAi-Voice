@@ -7,6 +7,7 @@
    ========================================================================== */
 
 :root {
+  color-scheme: light;
   /* ---- Canvas & surfaces, warm architectural whites ---- */
   --bg:        #F7F5EF;
   --bg-2:      #F1EEE5;

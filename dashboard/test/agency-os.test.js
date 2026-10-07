@@ -451,5 +451,7 @@ test('agency OS APIs complete the lifecycle and preserve tenant isolation', { ti
   assert.ok(persisted.clientActivities.some((row) => row.id === approached.json.activity.id));
   assert.equal(persisted.integrationRequests.length, 2);
   assert.equal(persisted.agencyPrompts.length, 2);
-  assert.equal((await stat(dbFile)).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    assert.equal((await stat(dbFile)).mode & 0o777, 0o600);
+  }
 });

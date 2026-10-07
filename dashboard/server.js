@@ -639,7 +639,7 @@ async function mintDograhVoiceSession(req, context) {
   return {
     sessionToken: data.session_token, workflowRunId: data.workflow_run_id,
     workflowId: data.config && data.config.workflow_id,
-    signalingUrl: base.replace(/^http/, 'ws') + '/api/v1/ws/public/signaling/' + encodeURIComponent(data.session_token),
+    signalingUrl: 'wss://api.dograh.com/api/v1/ws/public/signaling/' + encodeURIComponent(data.session_token),
     turnCredentials,
     runtime: 'Dograh SmallWebRTC',
   };
