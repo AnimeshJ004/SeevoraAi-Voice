@@ -1482,13 +1482,97 @@ function handleProviderError(res, e) {
    Call Recordings (fetched from Dograh, synced into local db for speed)
    ========================================================================== */
 
+// Helper to check if a phone number matches any purchased/company DID number.
+function isPurchasedNumber(num) {
+  if (!num) return false;
+  const digits = String(num).replace(/\D/g, '');
+  if (!digits || digits.length < 5) return false;
+
+  const purchasedList = [];
+  if (process.env.VOBIZ_NUMBER) purchasedList.push(process.env.VOBIZ_NUMBER);
+  purchasedList.push('8071582519', '+918071582519', '918071582519');
+
+  try {
+    const db = core.db();
+    if (db && Array.isArray(db.agents)) {
+      for (const a of db.agents) {
+        if (a && a.telephony && a.telephony.did) purchasedList.push(a.telephony.did);
+      }
+    }
+  } catch (_) {}
+
+  for (const p of purchasedList) {
+    const pDigits = String(p).replace(/\D/g, '');
+    if (!pDigits) continue;
+    if (digits === pDigits || digits.endsWith(pDigits) || pDigits.endsWith(digits)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Normalize a Dograh workflow run into our callRecording shape.
 function normalizeRun(run, tenantId) {
   const id = String(run.id || run.run_id || '');
-  const phone = String(
-    (run.initial_context && (run.initial_context.phone_number || run.initial_context.called_number || run.initial_context.caller_number)) ||
-    run.phone_number || run.caller_number || run.to_number || run.from_number || ''
-  );
+  const init = run.initial_context || {};
+
+  // 1. Determine direction:
+  // Check initial_context.direction, call_type, direction property, or run naming convention (e.g. WR-TEL-IN-*, WR-TEL-OUT-*)
+  let direction = String(init.direction || run.call_type || run.direction || '').toLowerCase().trim();
+  if (!direction) {
+    if (typeof run.name === 'string' && /-IN-/i.test(run.name)) direction = 'inbound';
+    else if (typeof run.name === 'string' && /-OUT-/i.test(run.name)) direction = 'outbound';
+  }
+
+  // 2. Extract number candidates from both initial_context and root run object:
+  const caller = String(
+    init.caller_number || run.caller_number || run.from_number || run.from || ''
+  ).trim();
+  const called = String(
+    init.called_number || run.called_number || run.to_number || run.to || ''
+  ).trim();
+  const explicitPhone = String(
+    init.phone_number || run.phone_number || ''
+  ).trim();
+
+  // 3. Infer direction from caller/called if still ambiguous:
+  if (!direction || !['inbound', 'outbound'].includes(direction)) {
+    if (isPurchasedNumber(called) && !isPurchasedNumber(caller)) {
+      direction = 'inbound';
+    } else if (isPurchasedNumber(caller) && !isPurchasedNumber(called)) {
+      direction = 'outbound';
+    } else {
+      direction = 'outbound';
+    }
+  }
+
+  // 4. Resolve the counterparty customer's phone number:
+  // - Inbound: Call from customer (caller) to our purchased DID (called). Customer is caller.
+  // - Outbound: Call from our purchased DID (caller) to customer (called). Customer is called.
+  let customerPhone = '';
+  if (direction === 'inbound') {
+    if (caller && !isPurchasedNumber(caller)) {
+      customerPhone = caller;
+    } else if (explicitPhone && !isPurchasedNumber(explicitPhone)) {
+      customerPhone = explicitPhone;
+    } else if (called && !isPurchasedNumber(called)) {
+      customerPhone = called;
+    } else {
+      customerPhone = caller || explicitPhone || called || '';
+    }
+  } else {
+    // Outbound
+    if (called && !isPurchasedNumber(called)) {
+      customerPhone = called;
+    } else if (explicitPhone && !isPurchasedNumber(explicitPhone)) {
+      customerPhone = explicitPhone;
+    } else if (caller && !isPurchasedNumber(caller)) {
+      customerPhone = caller;
+    } else {
+      customerPhone = called || explicitPhone || caller || '';
+    }
+  }
+
   const status = String(
     (run.gathered_context && run.gathered_context.call_status) ||
     (run.is_completed ? 'completed' : run.status) || 'completed'
@@ -1499,10 +1583,6 @@ function normalizeRun(run, tenantId) {
   );
   const startedAt = run.created_at || run.started_at || null;
   const endedAt = run.ended_at || run.completed_at || null;
-  const direction = String(
-    (run.initial_context && run.initial_context.direction) ||
-    run.call_type || run.direction || 'outbound'
-  ).toLowerCase();
   const agentName = String(
     (run.gathered_context && run.gathered_context.agent_visits && run.gathered_context.agent_visits[0] && run.gathered_context.agent_visits[0].workflow_name) ||
     run.workflow_name || run.agent_name || 'Seevora AI Voice Receptionist'
@@ -1535,12 +1615,17 @@ function normalizeRun(run, tenantId) {
     summary = `Visited nodes: ${run.gathered_context.nodes_visited.join(' -> ')}${run.gathered_context.call_disposition ? ` (${run.gathered_context.call_disposition})` : ''}`;
   }
 
+  const purchasedDefault = process.env.VOBIZ_NUMBER || '+918071582519';
+
   return {
     id: `rec_${id}`,
     tenantId,
     dograhRunId: id,
-    phoneNumber: phone,
+    phoneNumber: customerPhone,
+    callerNumber: caller || (direction === 'outbound' ? purchasedDefault : customerPhone),
+    calledNumber: called || (direction === 'inbound' ? purchasedDefault : customerPhone),
     direction: ['inbound', 'outbound'].includes(direction) ? direction : 'outbound',
+    mode: run.mode || (run.name && run.name.startsWith('WR-TEL-') ? 'telephony' : (customerPhone ? 'telephony' : 'web')),
     status: ['completed', 'failed', 'in_progress', 'cancelled', 'user_hangup'].includes(status)
       ? (status === 'user_hangup' ? 'completed' : status)
       : 'completed',

@@ -2546,12 +2546,24 @@ async function viewRecordings(root) {
       ]),
       el('div', { class: 'rec-meta-item' }, [
         el('div', { class: 'rec-meta-label' }, 'Carrier Route'),
-        el('div', { class: 'rec-meta-val' }, 'VoBiz / Dograh')
+        el('div', { class: 'rec-meta-val' }, (rec.mode === 'web' || rec.mode === 'embed') ? 'WebRTC / Browser' : 'VoBiz / Dograh')
       ]),
       el('div', { class: 'rec-meta-item' }, [
         el('div', { class: 'rec-meta-label' }, 'Direction'),
-        el('div', { class: 'rec-meta-val' }, rec.direction || 'outbound')
+        el('div', { class: 'rec-meta-val' }, (rec.direction === 'inbound') ? '↓ Inbound (Incoming)' : '↑ Outbound (Dialed)')
       ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, (rec.direction === 'inbound') ? 'Customer (Caller)' : 'Customer (Dialed)'),
+        el('div', { class: 'rec-meta-val', style: 'font-weight:600;color:var(--accent)' }, rec.phoneNumber || (rec.mode === 'web' ? 'Web Visitor' : '--'))
+      ]),
+      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Caller (From)'),
+        el('div', { class: 'rec-meta-val' }, rec.callerNumber || ((rec.direction === 'inbound') ? rec.phoneNumber : '+918071582519') || '--')
+      ]) : null,
+      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Called (To)'),
+        el('div', { class: 'rec-meta-val' }, rec.calledNumber || ((rec.direction === 'outbound') ? rec.phoneNumber : '+918071582519') || '--')
+      ]) : null,
       el('div', { class: 'rec-meta-item' }, [
         el('div', { class: 'rec-meta-label' }, 'Duration'),
         el('div', { class: 'rec-meta-val' }, fmtDuration(rec.durationSeconds))
@@ -2564,7 +2576,7 @@ async function viewRecordings(root) {
         el('div', { class: 'rec-meta-label' }, 'Timestamp'),
         el('div', { class: 'rec-meta-val' }, rec.startedAt ? new Date(rec.startedAt).toLocaleString('en-IN') : '--')
       ]),
-    ]);
+    ].filter(Boolean));
     audioPanel.appendChild(metaList);
 
     return el('div', { class: 'rec-drawer-wrap' }, [
