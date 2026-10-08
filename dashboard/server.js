@@ -1479,6 +1479,226 @@ function handleProviderError(res, e) {
 }
 
 /* ==========================================================================
+   Call Recordings (fetched from Dograh, synced into local db for speed)
+   ========================================================================== */
+
+// Normalize a Dograh workflow run into our callRecording shape.
+function normalizeRun(run, tenantId) {
+  const id = String(run.id || run.run_id || '');
+  const phone = String(
+    (run.initial_context && (run.initial_context.phone_number || run.initial_context.called_number || run.initial_context.caller_number)) ||
+    run.phone_number || run.caller_number || run.to_number || run.from_number || ''
+  );
+  const status = String(
+    (run.gathered_context && run.gathered_context.call_status) ||
+    (run.is_completed ? 'completed' : run.status) || 'completed'
+  ).toLowerCase();
+  const duration = Number(
+    (run.cost_info && run.cost_info.call_duration_seconds) ||
+    run.duration_seconds || run.duration || 0
+  );
+  const startedAt = run.created_at || run.started_at || null;
+  const endedAt = run.ended_at || run.completed_at || null;
+  const direction = String(
+    (run.initial_context && run.initial_context.direction) ||
+    run.call_type || run.direction || 'outbound'
+  ).toLowerCase();
+  const agentName = String(
+    (run.gathered_context && run.gathered_context.agent_visits && run.gathered_context.agent_visits[0] && run.gathered_context.agent_visits[0].workflow_name) ||
+    run.workflow_name || run.agent_name || 'Seevora AI Voice Receptionist'
+  ).slice(0, 80);
+
+  // Build a flat transcript string from various Dograh response shapes.
+  let transcript = '';
+  if (typeof run.transcript === 'string' && run.transcript.trim()) {
+    transcript = run.transcript;
+  } else if (run.logs && Array.isArray(run.logs.realtime_feedback_events)) {
+    const turns = [];
+    for (const ev of run.logs.realtime_feedback_events) {
+      if (ev.type === 'rtf-bot-text' && ev.payload && ev.payload.text) {
+        turns.push(`Agent: ${ev.payload.text.trim()}`);
+      } else if (ev.type === 'rtf-user-transcription' && ev.payload && ev.payload.text) {
+        turns.push(`User: ${ev.payload.text.trim()}`);
+      }
+    }
+    transcript = turns.join('\n');
+  } else if (Array.isArray(run.transcript)) {
+    transcript = run.transcript.map((t) => `${t.role || t.speaker || 'speaker'}: ${t.text || t.content || ''}`).join('\n');
+  } else if (Array.isArray(run.messages)) {
+    transcript = run.messages.map((t) => `${t.role || t.speaker || 'speaker'}: ${t.content || t.text || ''}`).join('\n');
+  } else if (Array.isArray(run.conversation)) {
+    transcript = run.conversation.map((t) => `${t.role || t.speaker || 'speaker'}: ${t.text || t.content || ''}`).join('\n');
+  }
+
+  let summary = String(run.summary || run.call_summary || '');
+  if (!summary && run.gathered_context && Array.isArray(run.gathered_context.nodes_visited)) {
+    summary = `Visited nodes: ${run.gathered_context.nodes_visited.join(' -> ')}${run.gathered_context.call_disposition ? ` (${run.gathered_context.call_disposition})` : ''}`;
+  }
+
+  return {
+    id: `rec_${id}`,
+    tenantId,
+    dograhRunId: id,
+    phoneNumber: phone,
+    direction: ['inbound', 'outbound'].includes(direction) ? direction : 'outbound',
+    status: ['completed', 'failed', 'in_progress', 'cancelled', 'user_hangup'].includes(status)
+      ? (status === 'user_hangup' ? 'completed' : status)
+      : 'completed',
+    durationSeconds: Math.round(duration),
+    transcript,
+    recordingAvailable: !!(run.recording_url || run.recording_public_url || run.has_recording),
+    summary: summary.slice(0, 1000),
+    agentName,
+    startedAt,
+    endedAt,
+    syncedAt: new Date().toISOString(),
+  };
+}
+
+// GET /api/recordings - list recordings, sync from Dograh first.
+async function apiRecordingsList(req, res, ctx) {
+  if (ctx.tenant.privacyMode === 'no_recording') {
+    return core.sendJson(res, 403, { error: 'Recording access is disabled by your privacy policy', code: 'privacy_blocked' });
+  }
+  try {
+    const q = new URL(req.url, 'http://local').searchParams;
+    const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
+    const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
+    // Fetch fresh data from Dograh and upsert into our db.
+    let freshRuns = [];
+    try {
+      const result = await providers.telephony.fetchRecordings({ limit, offset });
+      freshRuns = result.runs || [];
+    } catch (_) { /* use cached data if Dograh is unreachable */ }
+
+    if (freshRuns.length > 0) {
+      await core.mutate((d) => {
+        if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+        for (const run of freshRuns) {
+          const normalized = normalizeRun(run, ctx.tenant.id);
+          if (!normalized.dograhRunId) continue;
+          const existing = d.callRecordings.findIndex((r) => r.dograhRunId === normalized.dograhRunId && r.tenantId === ctx.tenant.id);
+          if (existing >= 0) {
+            if (!normalized.transcript && d.callRecordings[existing].transcript) {
+              normalized.transcript = d.callRecordings[existing].transcript;
+            }
+            d.callRecordings[existing] = { ...d.callRecordings[existing], ...normalized };
+          } else {
+            d.callRecordings.push(normalized);
+          }
+        }
+      });
+    }
+
+    const all = (core.db().callRecordings || [])
+      .filter((r) => r.tenantId === ctx.tenant.id)
+      .sort((a, b) => (b.startedAt || b.syncedAt || '').localeCompare(a.startedAt || a.syncedAt || ''));
+    const total = all.length;
+    const page = all.slice(offset, offset + limit);
+    core.sendJson(res, 200, { recordings: page, total, limit, offset });
+  } catch (e) {
+    handleProviderError(res, e);
+  }
+}
+
+// GET /api/recordings/:id - get a single recording with full transcript.
+async function apiRecordingDetail(req, res, ctx) {
+  if (ctx.tenant.privacyMode === 'no_recording') {
+    return core.sendJson(res, 403, { error: 'Recording access is disabled by your privacy policy', code: 'privacy_blocked' });
+  }
+  const url = new URL(req.url, 'http://local');
+  const recId = url.pathname.split('/').filter(Boolean).pop();
+  const cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
+  if (!cached) return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
+  // Fetch fresh detail (logs & transcript may be richer than list response).
+  try {
+    const detail = await providers.telephony.fetchRunDetail(cached.dograhRunId);
+    const updated = normalizeRun({ ...detail }, ctx.tenant.id);
+    await core.mutate((d) => {
+      if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+      const idx = d.callRecordings.findIndex((r) => r.dograhRunId === cached.dograhRunId && r.tenantId === ctx.tenant.id);
+      if (idx >= 0) d.callRecordings[idx] = { ...d.callRecordings[idx], ...updated };
+    });
+    return core.sendJson(res, 200, { recording: { ...cached, ...updated } });
+  } catch (_) {
+    return core.sendJson(res, 200, { recording: cached });
+  }
+}
+
+// POST /api/recordings/:id/transcribe - generate transcript using Dograh run events or Deepgram STT
+async function apiRecordingTranscribe(req, res, ctx) {
+  if (ctx.tenant.privacyMode === 'no_recording') {
+    return core.sendJson(res, 403, { error: 'Recording access is disabled by your privacy policy', code: 'privacy_blocked' });
+  }
+  const parts = (new URL(req.url, 'http://local')).pathname.split('/').filter(Boolean);
+  const recId = parts[2];
+  const cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
+  if (!cached) return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
+
+  // 1. Check if Dograh run detail has conversation turns
+  try {
+    const detail = await providers.telephony.fetchRunDetail(cached.dograhRunId);
+    const updated = normalizeRun({ ...detail }, ctx.tenant.id);
+    if (updated.transcript && updated.transcript.trim()) {
+      await core.mutate((d) => {
+        if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+        const idx = d.callRecordings.findIndex((r) => r.dograhRunId === cached.dograhRunId && r.tenantId === ctx.tenant.id);
+        if (idx >= 0) d.callRecordings[idx] = { ...d.callRecordings[idx], ...updated };
+      });
+      return core.sendJson(res, 200, { ok: true, transcript: updated.transcript, source: 'dograh_events' });
+    }
+  } catch (_) {}
+
+  // 2. Transcribe via Deepgram STT
+  try {
+    const { buffer, contentType } = await providers.telephony.fetchRecordingAudio(cached.dograhRunId);
+    const stt = providers.getProvider('stt');
+    const result = await stt.transcribe({
+      audio: buffer.toString('base64'),
+      mime: contentType || 'audio/wav',
+    });
+    const text = (result && result.text) ? result.text.trim() : '';
+    if (!text) {
+      return core.sendJson(res, 422, { error: 'Empty transcript returned by STT provider', code: 'empty_transcript' });
+    }
+    await core.mutate((d) => {
+      if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+      const idx = d.callRecordings.findIndex((r) => r.dograhRunId === cached.dograhRunId && r.tenantId === ctx.tenant.id);
+      if (idx >= 0) {
+        d.callRecordings[idx].transcript = text;
+        d.callRecordings[idx].transcriptGeneratedBy = 'deepgram';
+      }
+    });
+    return core.sendJson(res, 200, { ok: true, transcript: text, source: 'deepgram' });
+  } catch (e) {
+    handleProviderError(res, e);
+  }
+}
+
+// GET /api/recordings/:id/audio - proxy the audio file server-side (API key never leaves server).
+async function apiRecordingAudio(req, res, ctx) {
+  if (ctx.tenant.privacyMode === 'no_recording') {
+    return core.sendJson(res, 403, { error: 'Recording audio is disabled by your privacy policy', code: 'privacy_blocked' });
+  }
+  const parts = (new URL(req.url, 'http://local')).pathname.split('/').filter(Boolean);
+  // parts: ['api','recordings',':id','audio']
+  const recId = parts[2];
+  const cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
+  if (!cached) return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
+  try {
+    const { buffer, contentType } = await providers.telephony.fetchRecordingAudio(cached.dograhRunId);
+    core.send(res, 200, buffer, {
+      'Content-Type': contentType,
+      'Content-Length': String(buffer.length),
+      'Cache-Control': 'private, max-age=3600',
+      'Content-Disposition': `inline; filename="call-${cached.dograhRunId}.mp3"`,
+    });
+  } catch (e) {
+    handleProviderError(res, e);
+  }
+}
+
+/* ==========================================================================
    Router
    ========================================================================== */
 
@@ -1544,6 +1764,9 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/hvac/desk') return core.requireAuth(req, res, apiHvacDesk);
         if (route === '/api/hvac/event-types') return core.requireAuth(req, res, apiHvacEventTypes);
         if (route === '/api/hvac/slots') return core.requireAuth(req, res, apiHvacSlots);
+        if (route === '/api/recordings') return core.requireAuth(req, res, apiRecordingsList);
+        if (route.startsWith('/api/recordings/') && route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingAudio);
+        if (route.startsWith('/api/recordings/') && !route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingDetail);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -1607,12 +1830,17 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/admin/impersonations') return core.requireRole(req, res, 'super_admin', apiAdminImpersonate, body);
       if (route === '/api/hvac/jobs') return core.requireAuth(req, res, apiHvacJobSave, body);
       if (route === '/api/hvac/book') return core.requireAuth(req, res, apiHvacBook, body);
+      if (route.startsWith('/api/recordings/') && route.endsWith('/transcribe')) return core.requireAuth(req, res, apiRecordingTranscribe, body);
 
       return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
     }
 
     if (req.method === 'GET' && route.startsWith('/demo/')) {
       req.url = '/demo.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/recordings' || route === '/recordings/' || route === '/recordings.html')) {
+      res.writeHead(302, { Location: '/app.html#/recordings', 'Cache-Control': 'no-store' });
+      return res.end();
     }
     if (['GET', 'HEAD'].includes(req.method || '') && route === '/console.html') {
       res.writeHead(302, { Location: '/app.html', 'Cache-Control': 'no-store' });
@@ -1736,11 +1964,12 @@ boot().then(() => {
   server.listen(PORT, () => {
     const live = providers.describeProviders();
     const flag = (layer, id) => (live[layer].find((p) => p.id === id) || {}).live ? 'ok' : 'MISSING';
-    console.log('\n  RapidX Voice  ready');
-    console.log(`  Marketing : http://localhost:${PORT}/`);
-    console.log(`  Console   : http://localhost:${PORT}/app.html`);
-    if (DEMO_EMAIL) console.log(`  Test login: ${DEMO_EMAIL}`);
-    console.log(`  Providers : deepgram ${flag('stt', 'deepgram')}  groq ${flag('llm', 'groq')}  rumik ${flag('tts', 'rumik')}  vobiz ${flag('telephony', 'vobiz')}\n`);
+    console.log('\n  Seevora AI Voice Receptionist  ready');
+    console.log(`  Portal & Login: http://localhost:${PORT}/`);
+    console.log(`  Console       : http://localhost:${PORT}/app.html`);
+    console.log(`  Recordings    : http://localhost:${PORT}/app.html#/recordings`);
+    if (DEMO_EMAIL) console.log(`  Test login    : ${DEMO_EMAIL}`);
+    console.log(`  Providers     : deepgram ${flag('stt', 'deepgram')}  groq ${flag('llm', 'groq')}  rumik ${flag('tts', 'rumik')}  vobiz ${flag('telephony', 'vobiz')}\n`);
   });
 }).catch((e) => {
   console.error('  boot failed:', e.message);

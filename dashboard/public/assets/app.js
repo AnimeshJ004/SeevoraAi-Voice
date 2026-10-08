@@ -157,15 +157,20 @@ function isPlatformUserClient(user) {
   return !!user && (user.role === 'super_admin' || user.role === 'admin');
 }
 function brandSVG(size) {
-  // Inline operating-system mark. Returns an <svg> node so auth remains resilient.
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 40 40');
-  svg.setAttribute('width', size || 30); svg.setAttribute('height', size || 30);
-  svg.innerHTML =
-    '<rect x="4" y="4" width="32" height="32" rx="10" fill="#171713"/>' +
-    '<path d="M12 27V13h7.4c4.1 0 6.6 2.1 6.6 5.5 0 2.4-1.2 4.1-3.4 5l4.1 3.5h-4.3l-3.6-3.1h-3.2V27H12Zm3.6-6.3h3.5c2.1 0 3.2-.7 3.2-2.2s-1.1-2.2-3.2-2.2h-3.5v4.4Z" fill="#D8B35A"/>';
-  return svg;
+  const sz = size || 30;
+  const img = document.createElement('img');
+  img.src = '/assets/seevora-logo.png';
+  img.alt = 'Seevora Logo';
+  img.width = sz;
+  img.height = sz;
+  img.style.width = sz + 'px';
+  img.style.height = sz + 'px';
+  img.style.objectFit = 'contain';
+  img.style.borderRadius = '8px';
+  img.style.background = '#FFFFFF';
+  img.style.padding = '2px';
+  img.style.boxShadow = '0 2px 8px rgba(0, 149, 255, 0.25)';
+  return img;
 }
 function fmtInr(n) {
   const v = Number(n || 0);
@@ -208,112 +213,7 @@ async function boot() {
    AUTH GATE
    =========================================================================== */
 function renderAuth() {
-  let mode = 'login'; // or 'signup'
-  const root = $('#app');
-  root.removeAttribute('aria-busy');
-
-  function draw() {
-    const errBox = el('div', { class: 'auth-err', id: 'authErr' });
-    const fields = [];
-    if (mode === 'signup') {
-      fields.push(field('Your name', el('input', { class: 'input', id: 'f_name', type: 'text', placeholder: 'Your full name', autocomplete: 'name' })));
-      fields.push(field('Company', el('input', { class: 'input', id: 'f_company', type: 'text', placeholder: 'Your agency or company', autocomplete: 'organization' })));
-    }
-    const emailInput = el('input', { class: 'input', id: 'f_email', type: 'email', placeholder: 'you@company.com', autocomplete: 'email' });
-    const passwordInput = el('input', { class: 'input', id: 'f_pass', type: 'password', placeholder: 'Enter your password', autocomplete: mode === 'signup' ? 'new-password' : 'current-password' });
-    const showPassword = el('button', { class: 'auth-show-password', type: 'button', 'aria-label': 'Show password', onclick: () => {
-      const visible = passwordInput.type === 'text';
-      passwordInput.type = visible ? 'password' : 'text';
-      showPassword.textContent = visible ? 'Show' : 'Hide';
-      showPassword.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
-    } }, 'Show');
-    fields.push(field('Work email', emailInput));
-    fields.push(el('div', { class: 'field' }, [el('label', { for: 'f_pass' }, 'Password'), el('div', { class: 'auth-password' }, [passwordInput, showPassword])]));
-
-    const submit = el('button', { class: 'btn btn-primary btn-lg auth-submit', type: 'submit' }, mode === 'login' ? 'Enter Agency OS' : 'Create workspace');
-
-    const form = el('form', { class: 'auth-form', onsubmit: onSubmit }, fields.concat([errBox, submit]));
-
-    const formPanel = el('section', { class: 'auth-form-panel' }, [
-      el('div', { class: 'auth-brand' }, [
-        (function () { const s = brandSVG(34); s.classList.add('lm'); return s; })(),
-        el('span', { class: 'nm' }, [document.createTextNode('RapidX '), el('em', {}, 'Agency OS')])
-      ]),
-      el('div', { class: 'auth-heading' }, [
-        el('span', { class: 'section-kicker' }, mode === 'login' ? 'Secure operator access' : 'New workspace'),
-        el('h1', {}, mode === 'login' ? 'Welcome back.' : 'Run the whole agency.'),
-        el('p', { class: 'sub' }, mode === 'login' ? 'Clients, money, voice agents, invoices, and operations in one place.' : 'Create an isolated workspace for AI voice operations. Telephony and carrier charges remain separate.')
-      ]),
-      form,
-      el('div', { class: 'auth-toggle' }, [
-        document.createTextNode(mode === 'login' ? 'Need a new workspace? ' : 'Already have a workspace? '),
-        el('button', { type: 'button', onclick: () => { mode = mode === 'login' ? 'signup' : 'login'; draw(); } }, mode === 'login' ? 'Create account' : 'Sign in')
-      ]),
-      mode === 'login' ? el('div', { class: 'auth-demo' }, [el('span', { class: 'auth-demo-dot' }), el('span', {}, 'Use your workspace credentials. Admin access is role-gated and audited.')]) : null
-    ]);
-
-    const proofPanel = el('aside', { class: 'auth-proof-panel' }, [
-      el('div', { class: 'auth-grid-pattern', 'aria-hidden': 'true' }),
-      el('div', { class: 'auth-proof-top' }, [
-        el('span', { class: 'auth-proof-label' }, 'Agency command centre'),
-        el('span', { class: 'auth-live-pill' }, [el('span', {}), 'Voice stack online'])
-      ]),
-      el('div', { class: 'auth-proof-copy' }, [
-        el('h2', {}, 'One operating system. Every client signal.'),
-        el('p', {}, 'Know what is live, what is owed, which clients need attention, and what the team should do next.')
-      ]),
-      el('div', { class: 'auth-proof-metrics' }, [
-        el('div', {}, [el('strong', {}, '₹'), el('span', {}, 'Invoice and wallet clarity')]),
-        el('div', {}, [el('strong', {}, '24/7'), el('span', {}, 'Voice agent operations')]),
-        el('div', {}, [el('strong', {}, '100%'), el('span', {}, 'Audited admin actions')])
-      ]),
-      el('div', { class: 'auth-capabilities' }, ['Client lifecycle', 'Invoices', 'AI voice agents', 'WhatsApp ready', 'Ad research ready'].map((label) => el('span', {}, label)))
-    ]);
-
-    root.innerHTML = '';
-    root.appendChild(el('div', { class: 'auth-wrap' }, [formPanel, proofPanel]));
-    const first = $('#' + (mode === 'signup' ? 'f_name' : 'f_email'));
-    if (first) first.focus();
-  }
-
-  function field(label, input) {
-    return el('div', { class: 'field' }, [el('label', {}, label), input]);
-  }
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    const err = $('#authErr');
-    err.classList.remove('show');
-    const email = ($('#f_email').value || '').trim();
-    const password = $('#f_pass').value || '';
-    if (!email || !password) { showErr('Email and password are required.'); return; }
-    if (mode === 'signup' && password.length < 12) { showErr('Use at least 12 characters for your password.'); return; }
-    const btn = e.target.querySelector('button[type=submit]');
-    btn.disabled = true; btn.textContent = mode === 'login' ? 'Opening Agency OS...' : 'Creating workspace...';
-    try {
-      let body, route;
-      if (mode === 'signup') {
-        body = { email: email, password: password, name: ($('#f_name').value || '').trim(), company: ($('#f_company').value || '').trim() };
-        route = '/api/auth/signup';
-      } else {
-        body = { email: email, password: password };
-        route = '/api/auth/login';
-      }
-      const res = await api(route, { method: 'POST', body: body, allow401: true });
-      State.me = { user: res.user, tenant: res.tenant };
-      resetData();
-      toast(mode === 'login' ? 'Signed in.' : 'Account created.', 'ok');
-      renderShell();
-    } catch (ex) {
-      btn.disabled = false; btn.textContent = mode === 'login' ? 'Enter Agency OS' : 'Create workspace';
-      if (ex.status === 409) showErr('That email is already registered. Try signing in.');
-      else if (ex.status === 401) showErr('Wrong email or password.');
-      else showErr(ex.message || 'Something went wrong.');
-    }
-  }
-  function showErr(m) { const err = $('#authErr'); err.textContent = m; err.classList.add('show'); }
-
-  draw();
+  window.location.replace('/');
 }
 function resetData() {
   State.agents = []; State.providers = null; State.usage = null; State.telephony = null;
@@ -335,6 +235,7 @@ const ROUTES = [
   { id: 'demos', label: 'Demo links', icon: 'link', ownerOnly: true },
   { id: 'talk', label: 'Talk to it', icon: 'mic' },
   { id: 'telephony', label: 'Telephony', icon: 'phone' },
+  { id: 'recordings', label: 'Call Recordings', icon: 'record' },
   { id: 'campaigns', label: 'Outbound Leads', icon: 'send' },
   { id: 'invoices', label: 'Invoices', icon: 'invoice', ownerOnly: true },
   { id: 'integrations', label: 'Integrations', icon: 'plug', ownerOnly: true },
@@ -352,6 +253,7 @@ function navIcon(name) {
     wave: '<path d="M2 12h2l2-6 3 14 3-18 3 14 2-6h2"/>',
     mic: '<rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/>',
     phone: '<path d="M5 3.5h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5z"/>',
+    record: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
     send: '<path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>',
     gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/>',
     template: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
@@ -378,13 +280,13 @@ function renderShell() {
     return true;
   });
   const nav = el('nav', { class: 'nav' }, visibleRoutes.map((r) =>
-    el('a', { href: '#/' + r.id, 'data-route': r.id, html: navIcon(r.icon) + '<span>' + esc(r.label) + '</span>' })
+    el('a', { href: r.href || ('#/' + r.id), 'data-route': r.id, html: navIcon(r.icon) + '<span>' + esc(r.label) + '</span>' })
   ));
 
   const side = el('aside', { class: 'side' }, [
     el('div', { class: 'side-brand' }, [
       (function () { const s = brandSVG(30); s.classList.add('lm'); return s; })(),
-      el('span', { class: 'nm' }, [document.createTextNode('RapidX '), el('em', {}, 'Agency OS')])
+      el('span', { class: 'nm' }, [document.createTextNode('Seevora '), el('em', {}, 'Voice AI')])
     ]),
     nav,
     el('div', { class: 'side-foot' }, [
@@ -403,7 +305,7 @@ function renderShell() {
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
       el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
       el('div', { class: 'top-route' }, [
-        el('span', { class: 'crumb' }, isPlatformUserClient(u) ? 'Agency command centre' : 'RapidX Voice'),
+        el('span', { class: 'crumb' }, 'Seevora AI Voice Receptionist'),
         el('span', { class: 'ttl', id: 'routeTitle' }, 'Overview')
       ])
     ]),
@@ -506,7 +408,7 @@ function onRoute() {
   view.appendChild(wrap);
   ({
     overview: viewOverview, agents: viewAgents, presets: viewPresets, studio: viewStudio, demos: viewDemoLinks,
-    talk: viewTalkLegacy, telephony: viewTelephony, campaigns: viewCampaigns, invoices: viewInvoices, integrations: viewIntegrations,
+    talk: viewTalkLegacy, telephony: viewTelephony, recordings: viewRecordings, campaigns: viewCampaigns, invoices: viewInvoices, integrations: viewIntegrations,
     'agency-prompt': viewAgencyPrompt, billing: viewBilling,
     support: viewSupport, admin: viewAdmin, settings: viewSettings
   }[id] || viewOverview)(wrap);
@@ -2195,6 +2097,14 @@ function blobToBase64(blob) {
 async function viewTelephony(root) {
   root.appendChild(viewHead('Telephony', 'Your VoBiz numbers and call routing, connected through Dograh. Outbound calls require an explicit confirmation.'));
 
+  root.appendChild(el('div', { class: 'card card-pad flex items-center justify-between', style: 'margin-bottom:16px' }, [
+    el('div', {}, [
+      el('h4', { class: 't-h4', style: 'margin-bottom:4px' }, 'Call Recordings & Transcripts'),
+      el('p', { class: 'muted text-xs' }, 'Review audio playback, caller details, and full conversational transcripts for all calls.')
+    ]),
+    el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('recordings') }, 'Open Call Recordings →')
+  ]));
+
   const statusHost = el('div', { class: 'card card-pad', id: 'telStatus' }, skeleton('sk-line', 5));
   const dialHost = el('div', { class: 'card card-pad' }, dialForm());
   root.appendChild(el('div', { class: 'tel-grid' }, [statusHost, dialHost]));
@@ -2303,10 +2213,392 @@ function onDial(numI, btn) {
       }
     }
   });
+  return el('div', { class: 'dial-form' }, [row, btn]);
 }
 
 /* ===========================================================================
-   5b. OUTBOUND LEADS & CAMPAIGNS
+   5b. CALL RECORDINGS & TRANSCRIPTS
+   =========================================================================== */
+let _recState = {
+  recordings: [],
+  filtered: [],
+  expandedId: null,
+  query: '',
+  statusFilter: '',
+  dirFilter: '',
+};
+
+function fmtDuration(seconds) {
+  if (!seconds || seconds <= 0) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return m + ':' + s.toString().padStart(2, '0');
+}
+
+function parseTurnsFromTranscript(transcript) {
+  if (!transcript || !transcript.trim()) return [];
+  const lines = transcript.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const turns = [];
+  for (const line of lines) {
+    const m = line.match(/^(agent|ai|bot|user|caller|human|speaker[\s_]?\d*):\s*(.*)/i);
+    if (m) {
+      const isAgent = /agent|ai|bot/i.test(m[1]);
+      turns.push({ role: isAgent ? 'Agent' : 'User', text: m[2], isAgent });
+    } else {
+      turns.push({ role: turns.length % 2 === 0 ? 'Agent' : 'User', text: line, isAgent: turns.length % 2 === 0 });
+    }
+  }
+  return turns;
+}
+
+async function viewRecordings(root) {
+  const head = viewHead('Call Recordings', 'Review every inbound and outbound voice call, complete with conversational transcripts and audio replay.');
+  const syncBtn = el('button', { class: 'btn btn-ghost btn-sm flex items-center gap-2' }, [
+    el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
+    el('span', {}, 'Sync calls')
+  ]);
+  const liveBadge = el('span', { class: 'badge-live', style: 'margin-right:8px' }, [el('span', { class: 'd' }), 'Live sync']);
+  head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [liveBadge, syncBtn]));
+  root.appendChild(head);
+
+  // Summary Stats (horizontal 4-card grid matching dashboard layout)
+  const statsRow = el('div', { class: 'grid grid-4' }, skeleton('sk-stat', 4));
+  root.appendChild(statsRow);
+
+  // Filter & Search Toolbar
+  const searchInput = el('input', { class: 'input', placeholder: 'Filter by phone, agent name, transcript words...' });
+  const statusSelect = el('select', { class: 'rec-filter-select' }, [
+    el('option', { value: '' }, 'All Statuses'),
+    el('option', { value: 'completed' }, 'Completed'),
+    el('option', { value: 'in_progress' }, 'In Progress'),
+    el('option', { value: 'failed' }, 'Failed'),
+  ]);
+  const dirSelect = el('select', { class: 'rec-filter-select' }, [
+    el('option', { value: '' }, 'All Directions'),
+    el('option', { value: 'outbound' }, 'Outbound'),
+    el('option', { value: 'inbound' }, 'Inbound'),
+  ]);
+  const toolbar = el('div', { class: 'rec-toolbar' }, [searchInput, statusSelect, dirSelect]);
+  root.appendChild(toolbar);
+
+  // Table Card
+  const tableHost = el('div', { class: 'rec-card-table' }, skeleton('sk-card', 1));
+  root.appendChild(tableHost);
+
+  function applyFiltersAndRender() {
+    const q = (_recState.query || '').toLowerCase().trim();
+    const st = _recState.statusFilter;
+    const dir = _recState.dirFilter;
+
+    _recState.filtered = _recState.recordings.filter((r) => {
+      if (st && r.status !== st) return false;
+      if (dir && r.direction !== dir) return false;
+      if (q) {
+        const hay = [r.phoneNumber || '', r.agentName || '', r.transcript || '', r.summary || ''].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    renderStats();
+    renderTable();
+  }
+
+  function renderStats() {
+    const all = _recState.recordings;
+    const completed = all.filter((r) => r.status === 'completed');
+    const withT = all.filter((r) => r.transcript && r.transcript.trim());
+    const totalDur = all.reduce((sum, r) => sum + (r.durationSeconds || 0), 0);
+    const avg = all.length ? Math.round(totalDur / all.length) : 0;
+
+    statsRow.innerHTML = '';
+    statsRow.appendChild(statCard('Total calls', String(all.length), 'All time'));
+    statsRow.appendChild(statCard('Completed', String(completed.length), 'Successful'));
+    statsRow.appendChild(statCard('Avg duration', avg + 's', 'Per call'));
+    statsRow.appendChild(statCard('With transcript', String(withT.length), 'Full dialogues', true));
+  }
+
+  function renderTable() {
+    tableHost.innerHTML = '';
+    if (_recState.filtered.length === 0) {
+      tableHost.appendChild(el('div', { class: 'rec-empty-state' }, [
+        el('div', { class: 'rec-empty-icon' }, '📞'),
+        el('h4', { class: 't-h4', style: 'margin-bottom:6px' }, _recState.recordings.length === 0 ? 'No call recordings yet' : 'No calls match your filters'),
+        el('p', { class: 'muted text-xs' }, _recState.recordings.length === 0 ? 'Make a call from the Telephony tab or receive an inbound call. Calls will appear here automatically.' : 'Try clearing your search query or resetting filters.')
+      ]));
+      return;
+    }
+
+    const table = el('table', { class: 'rec-table' });
+    const thead = el('thead', {}, [
+      el('tr', {}, [
+        el('th', { style: 'width:40px' }, ''),
+        el('th', {}, 'Phone Number'),
+        el('th', {}, 'Agent / Workflow'),
+        el('th', {}, 'Direction'),
+        el('th', {}, 'Duration'),
+        el('th', {}, 'Status'),
+        el('th', {}, 'Date & Time'),
+        el('th', { style: 'text-align:right' }, 'Action')
+      ])
+    ]);
+    table.appendChild(thead);
+
+    const tbody = el('tbody');
+    _recState.filtered.forEach((rec) => {
+      const isExpanded = _recState.expandedId === rec.id;
+      const dt = rec.startedAt ? new Date(rec.startedAt) : null;
+      const dateStr = dt ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
+      const timeStr = dt ? dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+      const isOutbound = rec.direction === 'outbound';
+
+      const chevron = el('span', {
+        style: 'display:inline-block;transition:transform .2s;color:var(--ink-dim);transform:' + (isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'),
+        html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>'
+      });
+
+      const tr = el('tr', {
+        class: 'rec-row-head' + (isExpanded ? ' expanded' : ''),
+        onclick: async () => {
+          if (_recState.expandedId === rec.id) {
+            _recState.expandedId = null;
+          } else {
+            _recState.expandedId = rec.id;
+            if (!rec.transcript) {
+              try {
+                const res = await api('/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id));
+                if (res && res.recording && res.recording.transcript) {
+                  rec.transcript = res.recording.transcript;
+                  rec.summary = res.recording.summary || rec.summary;
+                  applyFiltersAndRender();
+                  return;
+                }
+              } catch (_) {}
+            }
+          }
+          renderTable();
+        }
+      }, [
+        el('td', {}, chevron),
+        el('td', {}, [
+          el('div', { class: 'rec-phone' }, rec.phoneNumber || '(unknown)'),
+          el('div', { class: 'rec-time' }, timeStr)
+        ]),
+        el('td', {}, el('div', { class: 'rec-agent', title: rec.agentName || 'AI Receptionist' }, rec.agentName || 'AI Receptionist')),
+        el('td', {}, el('span', { class: 'rec-dir ' + (isOutbound ? 'outbound' : 'inbound') }, [
+          isOutbound ? '↑ Outbound' : '↓ Inbound'
+        ])),
+        el('td', {}, el('span', { class: 'rec-dur' }, fmtDuration(rec.durationSeconds))),
+        el('td', {}, el('span', { class: 'pill ' + (rec.status === 'completed' ? 'pill-ok' : rec.status === 'failed' ? 'pill-bad' : '') }, rec.status || 'completed')),
+        el('td', {}, el('span', { style: 'color:var(--ink-dim);font-size:.82rem' }, dateStr)),
+        el('td', { style: 'text-align:right' }, el('button', {
+          class: 'btn btn-ghost btn-sm',
+          onclick: (e) => { e.stopPropagation(); tr.click(); }
+        }, isExpanded ? 'Close' : 'View'))
+      ]);
+      tbody.appendChild(tr);
+
+      if (isExpanded) {
+        const drawerTr = el('tr', {}, [
+          el('td', { colspan: '8', style: 'padding:0' }, [
+            renderDrawer(rec, () => {
+              applyFiltersAndRender();
+            })
+          ])
+        ]);
+        tbody.appendChild(drawerTr);
+      }
+    });
+
+    table.appendChild(tbody);
+    tableHost.appendChild(table);
+  }
+
+  function renderDrawer(rec, onUpdate) {
+    const turns = parseTurnsFromTranscript(rec.transcript);
+
+    // Left Panel: Transcript
+    const transcriptPanel = el('div', { class: 'rec-panel' }, [
+      el('div', { class: 'rec-panel-title' }, [
+        el('span', {}, 'Conversational Transcript'),
+        turns.length ? el('span', { class: 'pill', style: 'font-size:.7rem' }, turns.length + ' speech turns') : null
+      ])
+    ]);
+
+    if (rec.summary) {
+      transcriptPanel.appendChild(el('div', { class: 'rec-summary-box' }, [
+        el('b', {}, 'Call Trace & Intent'),
+        document.createTextNode(rec.summary)
+      ]));
+    }
+
+    if (turns.length) {
+      const scroll = el('div', { class: 'rec-transcript-scroll' });
+      turns.forEach((t) => {
+        scroll.appendChild(el('div', { class: 'rec-turn ' + (t.isAgent ? 'agent' : 'user') }, [
+          el('div', { class: 'rec-turn-role' }, t.role),
+          el('div', { class: 'rec-turn-text' }, t.text)
+        ]));
+      });
+      transcriptPanel.appendChild(scroll);
+    } else {
+      const emptyTranscript = el('div', { style: 'text-align:center;padding:24px 12px;color:var(--ink-dim)' }, [
+        el('div', { style: 'font-size:1.8rem;margin-bottom:8px;opacity:.5' }, '📄'),
+        el('p', { class: 'muted text-xs', style: 'margin-bottom:12px' }, 'No transcript cached yet for this call.'),
+        el('button', {
+          class: 'btn btn-primary btn-sm',
+          onclick: async (e) => {
+            const btn = e.target;
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            try {
+              const res = await api('/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/transcribe', { method: 'POST', body: {} });
+              if (res && res.transcript) {
+                rec.transcript = res.transcript;
+                toast('Transcript generated successfully!', 'ok');
+                onUpdate();
+              }
+            } catch (err) {
+              toast('Transcription failed: ' + err.message, 'err');
+              btn.disabled = false;
+              btn.textContent = '⚡ Retry Generation';
+            }
+          }
+        }, '⚡ Generate Transcript (AI)')
+      ]);
+      transcriptPanel.appendChild(emptyTranscript);
+    }
+
+    // Right Panel: Audio Replay & Details
+    const audioPanel = el('div', { class: 'rec-panel' }, [
+      el('div', { class: 'rec-panel-title' }, [
+        el('span', {}, 'Audio & Telephony Details')
+      ])
+    ]);
+
+    // Audio Player
+    const playerBox = el('div', { class: 'rec-player-box' });
+    const audioSrc = '/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/audio';
+    const audioEl = el('audio', {
+      src: audioSrc,
+      controls: 'controls',
+      preload: 'none',
+      style: 'width:100%;height:38px;border-radius:var(--r-sm)'
+    });
+    playerBox.appendChild(audioEl);
+
+    // Voice Replay helper (reads dialogue with speech synthesis if audio binary is absent)
+    if (turns.length) {
+      const replayBtn = el('button', { class: 'btn btn-ghost btn-sm flex items-center justify-center gap-2', style: 'width:100%' }, [
+        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
+        el('span', {}, 'Voice AI Replay (Read dialogue)')
+      ]);
+      replayBtn.onclick = () => {
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+          replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+          return;
+        }
+        if (!window.speechSynthesis) {
+          toast('Speech synthesis is not supported in this browser.', 'err');
+          return;
+        }
+        replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Replay';
+        let idx = 0;
+        function speakNext() {
+          if (idx >= turns.length) {
+            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+            return;
+          }
+          const turn = turns[idx++];
+          const utt = new SpeechSynthesisUtterance(turn.text);
+          utt.rate = 1.0;
+          utt.pitch = turn.isAgent ? 1.05 : 0.95;
+          utt.onend = () => speakNext();
+          utt.onerror = () => {
+            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+          };
+          window.speechSynthesis.speak(utt);
+        }
+        speakNext();
+      };
+      playerBox.appendChild(replayBtn);
+    }
+
+    // Direct download link
+    const dlLink = el('a', {
+      class: 'muted text-xs flex items-center justify-center gap-1',
+      href: audioSrc,
+      download: 'call-' + (rec.dograhRunId || rec.id) + '.mp3',
+      style: 'margin-top:2px'
+    }, [
+      el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>' }),
+      el('span', {}, 'Download call audio')
+    ]);
+    playerBox.appendChild(dlLink);
+    audioPanel.appendChild(playerBox);
+
+    // Call Metadata Details
+    const metaList = el('div', { class: 'rec-meta-list' }, [
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Call ID'),
+        el('div', { class: 'rec-meta-val' }, rec.dograhRunId || rec.id)
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Carrier Route'),
+        el('div', { class: 'rec-meta-val' }, 'VoBiz / Dograh')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Direction'),
+        el('div', { class: 'rec-meta-val' }, rec.direction || 'outbound')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Duration'),
+        el('div', { class: 'rec-meta-val' }, fmtDuration(rec.durationSeconds))
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Privacy Policy'),
+        el('div', { class: 'rec-meta-val' }, 'Tenant Isolated')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Timestamp'),
+        el('div', { class: 'rec-meta-val' }, rec.startedAt ? new Date(rec.startedAt).toLocaleString('en-IN') : '--')
+      ]),
+    ]);
+    audioPanel.appendChild(metaList);
+
+    return el('div', { class: 'rec-drawer-wrap' }, [
+      el('div', { class: 'rec-drawer-grid' }, [transcriptPanel, audioPanel])
+    ]);
+  }
+
+  // Event handlers
+  searchInput.oninput = (e) => { _recState.query = e.target.value; applyFiltersAndRender(); };
+  statusSelect.onchange = (e) => { _recState.statusFilter = e.target.value; applyFiltersAndRender(); };
+  dirSelect.onchange = (e) => { _recState.dirFilter = e.target.value; applyFiltersAndRender(); };
+
+  async function loadData(showToast) {
+    try {
+      syncBtn.disabled = true;
+      syncBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
+      const out = await api('/api/recordings?limit=100&offset=0');
+      _recState.recordings = out.recordings || [];
+      applyFiltersAndRender();
+      if (showToast) toast('Synced ' + _recState.recordings.length + ' call recordings from Dograh.', 'ok');
+    } catch (e) {
+      toast('Could not sync recordings: ' + e.message, 'err');
+    } finally {
+      syncBtn.disabled = false;
+      syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Sync calls</span>';
+    }
+  }
+
+  syncBtn.onclick = () => loadData(true);
+  await loadData(false);
+}
+
+/* ===========================================================================
+   5c. OUTBOUND LEADS & CAMPAIGNS
    =========================================================================== */
 let campaignState = {
   leads: (function() {

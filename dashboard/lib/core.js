@@ -174,7 +174,7 @@ function defaultDb() {
     supportMessages: [], auditEvents: [], presets: [], byonConnections: [],
     hvacJobs: [], hvacSettings: [], paymentEvents: [], demoLinks: [],
     invoices: [], invoiceEvents: [], integrationRequests: [], agencyPrompts: [],
-    clientActivities: [], tenantStatusEvents: [],
+    clientActivities: [], tenantStatusEvents: [], callRecordings: [],
   };
 }
 
@@ -183,7 +183,7 @@ const COLLECTIONS = [
   'paymentIntents', 'supportTickets', 'supportMessages', 'auditEvents',
   'presets', 'byonConnections', 'hvacJobs', 'hvacSettings', 'paymentEvents', 'demoLinks',
   'invoices', 'invoiceEvents', 'integrationRequests', 'agencyPrompts',
-  'clientActivities', 'tenantStatusEvents',
+  'clientActivities', 'tenantStatusEvents', 'callRecordings',
 ];
 
 function migrateDb(parsed) {

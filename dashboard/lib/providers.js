@@ -21,6 +21,8 @@
  */
 'use strict';
 
+const http = require('http');
+const https = require('https');
 const { httpsPost, httpsGet } = require('./core');
 
 // Rumik sits behind Cloudflare, which 403s non-browser user-agents. NEVER remove.
@@ -530,6 +532,8 @@ const telVobiz = {
       telephony_configuration_id: positiveIntEnv('DOGRAH_TELEPHONY_CONFIG_ID'),
       from_phone_number_id: positiveIntEnv('DOGRAH_PHONE_NUMBER_ID'),
       phone_number: '+91' + num,
+      record: true,
+      record_call: true,
     });
     if (result.up.status < 200 || result.up.status >= 300) {
       throw new ProviderError('Dograh could not initiate the VoBiz call', upstreamStatus(result.up.status),
@@ -537,7 +541,92 @@ const telVobiz = {
     }
     return { status: result.up.status, data: result.data };
   },
+
+  // Fetch call/workflow run list from Dograh. Returns raw array of run objects.
+  // Each run includes id, status, phone_number, duration_seconds, created_at, recording_url.
+  async fetchRecordings(options = {}) {
+    if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
+    const workflowId = positiveIntEnv('DOGRAH_WORKFLOW_ID');
+    const limit = Number(options.limit) > 0 ? Math.min(Number(options.limit), 100) : 50;
+    const page = Math.max(1, Math.floor((Number(options.offset) || 0) / limit) + 1);
+    const path = `/api/v1/workflow/${workflowId}/runs?limit=${limit}&page=${page}`;
+    const result = await this.request('GET', path);
+    if (result.up.status < 200 || result.up.status >= 300) {
+      throw new ProviderError('Could not fetch call recordings from Dograh', upstreamStatus(result.up.status),
+        'upstream', upstreamMessage(result.data, 'Dograh workflow runs request failed.'));
+    }
+    const runs = (result.data && Array.isArray(result.data.runs)) ? result.data.runs
+      : Array.isArray(result.data) ? result.data
+      : (result.data && Array.isArray(result.data.results)) ? result.data.results
+      : [];
+    const total = (result.data && (result.data.total_count || result.data.total)) || runs.length;
+    return { runs, total };
+  },
+
+  // Fetch the detail (including transcript) for a single workflow run.
+  async fetchRunDetail(dograhRunId) {
+    if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
+    const workflowId = positiveIntEnv('DOGRAH_WORKFLOW_ID');
+    const result = await this.request('GET', `/api/v1/workflow/${workflowId}/runs/${encodeURIComponent(dograhRunId)}`);
+    if (result.up.status === 404) {
+      throw new ProviderError('Call recording not found in Dograh', 404, 'not_found');
+    }
+    if (result.up.status < 200 || result.up.status >= 300) {
+      throw new ProviderError('Could not fetch call detail from Dograh', upstreamStatus(result.up.status),
+        'upstream', upstreamMessage(result.data, 'Dograh run detail failed.'));
+    }
+    return result.data;
+  },
+
+  // Stream the audio recording buffer for a run. Returns { buffer, contentType }.
+  // Resolves signed recording URL from Dograh and follows S3 redirects.
+  async fetchRecordingAudio(dograhRunId) {
+    if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
+    const detail = await this.fetchRunDetail(dograhRunId);
+    let targetUrl = detail.recording_public_url;
+    if (!targetUrl && detail.public_access_token) {
+      targetUrl = `https://api.dograh.com/api/v1/public/download/workflow/${encodeURIComponent(detail.public_access_token)}/recording`;
+    }
+    if (!targetUrl && detail.recording_url) {
+      targetUrl = `https://app.dograh.com/${detail.recording_url.replace(/^\/+/, '')}`;
+    }
+    if (!targetUrl) {
+      throw new ProviderError('Recording audio not available', 404, 'recording_not_found');
+    }
+
+    const res = await downloadWithRedirects(targetUrl);
+    if (res.status === 200 && res.buffer && res.buffer.length > 0) {
+      const ct = String(res.headers['content-type'] || 'audio/wav');
+      return { buffer: res.buffer, contentType: ct.includes('octet') ? 'audio/wav' : ct };
+    }
+    throw new ProviderError('Could not download recording audio from storage', 404, 'recording_not_found');
+  },
 };
+
+// Generic stream downloader that transparently follows HTTP/HTTPS 301/302 redirects (e.g. S3 pre-signed URLs).
+function downloadWithRedirects(targetUrl, maxRedirects = 5) {
+  return new Promise((resolve, reject) => {
+    if (maxRedirects <= 0) return reject(new Error('too many redirects'));
+    let parsed;
+    try { parsed = new URL(targetUrl); } catch (e) { return reject(e); }
+    const mod = parsed.protocol === 'http:' ? http : https;
+    const req = mod.get(targetUrl, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        const nextUrl = new URL(res.headers.location, targetUrl).href;
+        return resolve(downloadWithRedirects(nextUrl, maxRedirects - 1));
+      }
+      const parts = [];
+      res.on('data', (d) => parts.push(d));
+      res.on('end', () => resolve({
+        status: res.statusCode,
+        headers: res.headers,
+        buffer: Buffer.concat(parts),
+      }));
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => req.destroy(new Error('download timeout')));
+  });
+}
 
 /* ==========================================================================
    Registries + lookups + describeProviders for GET /api/providers
