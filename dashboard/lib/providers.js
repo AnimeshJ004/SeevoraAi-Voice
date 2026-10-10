@@ -278,18 +278,22 @@ const llmGroq = {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw notConfigured(this.label, this.needs);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const messages = [{ role: 'system', content: (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 3000) }]
+    const systemText = opts.skipVoiceRule
+      ? String(opts.system || DEFAULT_SYSTEM).slice(0, 8000)
+      : (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 3000);
+    const messages = [{ role: 'system', content: systemText }]
       .concat(history.filter((m) => m && m.text).map((m) => ({
         role: (m.role === 'assistant' || m.role === 'model') ? 'assistant' : 'user',
-        content: String(m.text).slice(0, 4000),
+        content: String(m.text).slice(0, 8000),
       })));
     if (messages.length < 2) throw new ProviderError('no messages', 422, 'no_messages');
     const model = selectedModel(this, opts.model);
+    const maxTokens = Number.isInteger(opts.maxTokens) ? opts.maxTokens : (Number.isInteger(opts.max_completion_tokens) ? opts.max_completion_tokens : 400);
     const payload = Buffer.from(JSON.stringify({
       model,
       messages,
-      temperature: 0.7,
-      max_completion_tokens: 400,
+      temperature: opts.temperature !== undefined ? opts.temperature : 0.7,
+      max_completion_tokens: maxTokens,
       stream: false,
     }));
     const started = Date.now();
@@ -333,21 +337,24 @@ const llmGemini = {
 
     const model = selectedModel(this, opts.model);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const system = (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 2000);
+    const system = opts.skipVoiceRule
+      ? String(opts.system || DEFAULT_SYSTEM).slice(0, 8000)
+      : (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 2000);
     const contents = history
       .filter((m) => m && m.text)
       .map((m) => ({
         role: (m.role === 'assistant' || m.role === 'model') ? 'model' : 'user',
-        parts: [{ text: String(m.text).slice(0, 4000) }],
+        parts: [{ text: String(m.text).slice(0, 8000) }],
       }));
     if (!contents.length) throw new ProviderError('no messages', 422, 'no_messages');
 
+    const maxTokens = Number.isInteger(opts.maxTokens) ? opts.maxTokens : (Number.isInteger(opts.max_completion_tokens) ? opts.max_completion_tokens : 400);
     const payload = {
       systemInstruction: { parts: [{ text: system }] },
       contents,
       generationConfig: {
-        maxOutputTokens: 400,
-        temperature: 0.8,
+        maxOutputTokens: maxTokens,
+        temperature: opts.temperature !== undefined ? opts.temperature : 0.8,
         thinkingConfig: { thinkingBudget: 0 },
       },
     };

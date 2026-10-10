@@ -195,7 +195,7 @@ function migrateDb(parsed) {
     if (!tenant.privacyMode) tenant.privacyMode = 'standard';
   }
   for (const user of out.users) {
-    if (!['super_admin', 'admin', 'owner', 'member'].includes(user.role)) user.role = 'member';
+    if (!['super_admin', 'admin', 'owner', 'member', 'client'].includes(user.role)) user.role = 'member';
     if (!user.status) user.status = 'active';
   }
   return out;
@@ -379,7 +379,7 @@ async function destroySession(req) {
   await mutate((d) => { d.sessions = d.sessions.filter((s) => s.token !== token && s.tokenHash !== tokenHash); });
 }
 
-const ROLE_LEVEL = { member: 1, owner: 2, admin: 3, super_admin: 4 };
+const ROLE_LEVEL = { client: 1, member: 1, owner: 2, admin: 3, super_admin: 4 };
 function hasRole(user, minimum) {
   return (ROLE_LEVEL[user && user.role] || 0) >= (ROLE_LEVEL[minimum] || 99);
 }

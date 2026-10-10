@@ -333,33 +333,97 @@
       text-transform: uppercase;
     }
 
-    /* Quick Demo Button */
-    .btn-demo-single {
-      height: 44px;
+    /* Dual Access-Based Demo Buttons */
+    .demo-role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .btn-demo-role {
+      min-height: 54px;
+      height: auto;
       width: 100%;
-      background: #F8FAFC;
-      color: var(--ink);
-      border: 1px solid #E2E8F0;
       border-radius: 12px;
       font-family: inherit;
-      font-size: 13.5px;
-      font-weight: 600;
+      padding: 8px 10px;
       cursor: pointer;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 3px;
+      text-align: center;
       transition: all 0.18s ease;
+      box-sizing: border-box;
     }
 
-    .btn-demo-single:hover {
-      background: #F1F5F9;
-      border-color: #CBD5E1;
+    .demo-role-title {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.25;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .demo-role-sub {
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-demo-client,
+    .btn-demo-admin,
+    .btn-demo-signup {
+      background: #EFF6FF;
+      color: #0284C7;
+      border: 1.5px solid rgba(2, 132, 199, 0.28);
+    }
+    .btn-demo-client:hover,
+    .btn-demo-admin:hover,
+    .btn-demo-signup:hover {
+      background: #DBEAFE;
+      border-color: #0284C7;
       transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18);
+    }
+    .btn-demo-client .demo-role-sub,
+    .btn-demo-admin .demo-role-sub,
+    .btn-demo-signup .demo-role-sub {
+      color: #0369A1;
+      opacity: 0.88;
     }
 
-    .btn-demo-single svg {
-      color: #EAB308;
+    .demo-signup-wrap {
+      width: 100%;
+      margin-bottom: 6px;
+    }
+
+    .btn-autofill-link {
+      background: #EFF6FF;
+      border: 1px solid rgba(2, 132, 199, 0.25);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #0284C7;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn-autofill-link:hover {
+      background: #DBEAFE;
+      border-color: #0284C7;
+      color: #0369A1;
     }
 
     /* Switch Mode Footer */
@@ -501,6 +565,13 @@
       <!-- Form -->
       <form class="auth-form" id="authForm" novalidate>
         <div id="signupFields" style="display: none; flex-direction: column; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: -6px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em;">Workspace Details</span>
+            <button type="button" class="btn-autofill-link" id="btnAutofillLink" title="Fill sample dental clinic details into form">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Autofill demo info
+            </button>
+          </div>
           <div class="field-group">
             <label class="field-label" for="name">Full name</label>
             <div class="input-box">
@@ -543,15 +614,37 @@
         </button>
       </form>
 
-      <!-- Single Quick Demo Button -->
+      <!-- Dual Role-Based Demo Buttons (Login Mode) & Onboarding Demo (Signup Mode) -->
       <div class="demo-divider" id="demoDivider">
-        <span>⚡ Quick Demo Access</span>
+        <span id="demoDividerText">Instant Role-Based Demos</span>
       </div>
 
-      <button type="button" class="btn-demo-single" id="btnQuickDemo">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        <span>Instant Demo Access</span>
-      </button>
+      <div class="demo-role-grid" id="demoRoleGrid">
+        <button type="button" class="btn-demo-role btn-demo-client" id="btnClientDemo" title="Login as Client (client@demo.com / client123)">
+          <span class="demo-role-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Client Demo
+          </span>
+          <span class="demo-role-sub">client@demo.com</span>
+        </button>
+        <button type="button" class="btn-demo-role btn-demo-admin" id="btnAdminDemo" title="Login as Agency Admin (admin@demo.com / admin123)">
+          <span class="demo-role-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Admin Demo
+          </span>
+          <span class="demo-role-sub">admin@demo.com</span>
+        </button>
+      </div>
+
+      <div class="demo-signup-wrap" id="demoSignupWrap" style="display: none;">
+        <button type="button" class="btn-demo-role btn-demo-signup" id="btnDemoSignup" title="Auto-fill clinic demo details & launch AI Onboarding">
+          <span class="demo-role-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            1-Click Demo Sign Up
+          </span>
+          <span class="demo-role-sub">Auto-fills demo clinic &amp; launches AI Onboarding</span>
+        </button>
+      </div>
 
       <!-- Toggle Mode -->
       <div class="switch-mode-row">
@@ -588,7 +681,11 @@
       const footerText = document.getElementById('footerText');
       const auxRow = document.getElementById('auxRow');
       const demoDivider = document.getElementById('demoDivider');
-      const btnQuickDemo = document.getElementById('btnQuickDemo');
+      const demoDividerText = document.getElementById('demoDividerText');
+      const demoRoleGrid = document.getElementById('demoRoleGrid');
+      const demoSignupWrap = document.getElementById('demoSignupWrap');
+      const btnDemoSignup = document.getElementById('btnDemoSignup');
+      const btnAutofillLink = document.getElementById('btnAutofillLink');
       const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 
       // Check existing session
@@ -618,8 +715,10 @@
           footerText.textContent = 'Already have an account?';
           switchModeBtn.textContent = 'Log In';
           auxRow.style.display = 'none';
-          demoDivider.style.display = 'none';
-          btnQuickDemo.style.display = 'none';
+          demoDivider.style.display = 'block';
+          if (demoDividerText) demoDividerText.textContent = 'Instant Onboarding Demo';
+          if (demoRoleGrid) demoRoleGrid.style.display = 'none';
+          if (demoSignupWrap) demoSignupWrap.style.display = 'block';
         } else {
           signupFields.style.display = 'none';
           headingTitle.textContent = 'AI Voice Receptionist';
@@ -629,9 +728,61 @@
           switchModeBtn.textContent = 'Sign up';
           auxRow.style.display = 'flex';
           demoDivider.style.display = 'block';
-          btnQuickDemo.style.display = 'flex';
+          if (demoDividerText) demoDividerText.textContent = 'Instant Role-Based Demos';
+          if (demoRoleGrid) demoRoleGrid.style.display = 'grid';
+          if (demoSignupWrap) demoSignupWrap.style.display = 'none';
         }
       });
+
+      // Helper to generate fresh clinic demo credentials
+      function fillDemoSignupFields() {
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        nameInput.value = 'Dr. Sarah Jenkins';
+        companyInput.value = 'Metro Dental & Wellness';
+        emailInput.value = `demo.sarah${randomNum}@seevora.ai`;
+        passwordInput.value = 'SeevoraVoice2026!';
+      }
+
+      // Quick Autofill link (fills inputs without auto-submitting)
+      if (btnAutofillLink) {
+        btnAutofillLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          fillDemoSignupFields();
+          showAlert('Sample clinic details populated. Click "Create Workspace" to start onboarding.', 'success');
+        });
+      }
+
+      // 1-Click Demo Signup button (fills inputs & launches AI Onboarding immediately)
+      if (btnDemoSignup) {
+        btnDemoSignup.addEventListener('click', async (e) => {
+          e.preventDefault();
+          clearAlert();
+          fillDemoSignupFields();
+          setLoading(true, 'Creating demo workspace & launching AI Onboarding...');
+
+          try {
+            const res = await fetch('/api/auth/signup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: nameInput.value,
+                company: companyInput.value,
+                email: emailInput.value,
+                password: passwordInput.value,
+              })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Demo signup failed');
+            showAlert('Workspace created! Launching AI Onboarding Wizard...', 'success');
+            setTimeout(() => {
+              window.location.href = '/app.html#/onboarding';
+            }, 300);
+          } catch (err) {
+            setLoading(false);
+            showAlert(err.message || 'Demo signup failed. Please try again.');
+          }
+        });
+      }
 
       // Forgot password prompt
       document.getElementById('forgotLink').addEventListener('click', (e) => {
@@ -696,7 +847,7 @@
 
           showAlert('Welcome to Seevora! Opening console...', 'success');
           setTimeout(() => {
-            window.location.href = '/app.html';
+            window.location.href = isSignup ? '/app.html#/onboarding' : '/app.html';
           }, 350);
         } catch (err) {
           setLoading(false);
@@ -704,27 +855,56 @@
         }
       });
 
-      // Single Quick Demo Access (Instant 1-Click)
-      btnQuickDemo.addEventListener('click', async () => {
-        clearAlert();
-        emailInput.value = 'demo@rapidx.ai';
-        passwordInput.value = 'RapidXDemo1234!';
-        setLoading(true, 'Accessing Demo...');
-        try {
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'demo@rapidx.ai', password: 'RapidXDemo1234!' })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Demo access failed');
-          showAlert('Demo authenticated! Opening console...', 'success');
-          setTimeout(() => { window.location.href = '/app.html'; }, 250);
-        } catch (err) {
-          setLoading(false);
-          showAlert(err.message || 'Demo credentials could not be verified.');
-        }
-      });
+      const btnClientDemo = document.getElementById('btnClientDemo');
+      const btnAdminDemo = document.getElementById('btnAdminDemo');
+
+      // Client Demo Access (1-Click) -> Pure Client Panel
+      if (btnClientDemo) {
+        btnClientDemo.addEventListener('click', async () => {
+          clearAlert();
+          emailInput.value = 'client@demo.com';
+          passwordInput.value = 'client123';
+          setLoading(true, 'Logging in as Client...');
+          try {
+            const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'client@demo.com', password: 'client123' })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Client demo access failed');
+            showAlert('Client verified! Opening Client Panel...', 'success');
+            setTimeout(() => { window.location.href = '/app.html'; }, 200);
+          } catch (err) {
+            setLoading(false);
+            showAlert(err.message || 'Client demo credentials could not be verified.');
+          }
+        });
+      }
+
+      // Admin Demo Access (1-Click) -> Agency Operations Panel
+      if (btnAdminDemo) {
+        btnAdminDemo.addEventListener('click', async () => {
+          clearAlert();
+          emailInput.value = 'admin@demo.com';
+          passwordInput.value = 'admin123';
+          setLoading(true, 'Logging in as Admin...');
+          try {
+            const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'admin@demo.com', password: 'admin123' })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Admin demo access failed');
+            showAlert('Admin verified! Opening Agency Admin Panel...', 'success');
+            setTimeout(() => { window.location.href = '/app.html'; }, 200);
+          } catch (err) {
+            setLoading(false);
+            showAlert(err.message || 'Admin demo credentials could not be verified.');
+          }
+        });
+      }
     })();
   </script>
 </body>

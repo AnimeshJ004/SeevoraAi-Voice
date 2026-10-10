@@ -17,3 +17,6 @@ local-dograh/
 *.wav
 *.csv
 *-report.json
+scratch/
+dashboard/scratch/
+
