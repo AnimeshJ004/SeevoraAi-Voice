@@ -483,7 +483,15 @@
             },
           });
 
-          if (isLoggedOut && typeof window.Clerk.signOut === 'function') {
+          // The starting URL must always show the login page. If a previous Clerk
+          // session is still active, Clerk's SignIn component would auto-redirect to
+          // /app.html (and then onboarding). End that stale session on a fresh visit.
+          // Skip this while a sign-in / sign-up / OAuth callback flow is in progress.
+          const h = window.location.hash || '';
+          const flowInProgress = /sso-callback|verify|factor|continue|tasks|reset-password/i.test(h) ||
+            /__clerk_ticket|__clerk_status|__clerk_created_session/.test(window.location.search);
+          if ((isLoggedOut || (window.Clerk.user && !flowInProgress)) && typeof window.Clerk.signOut === 'function') {
+            document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
             await window.Clerk.signOut().catch(() => {});
           }
 
