@@ -398,6 +398,7 @@ async function getSession(req) {
             slug: `tenant-${tenantId.slice(2)}`,
             plan,
             status: 'active',
+            onboardingCompleted: false,
             createdAt: new Date().toISOString(),
           };
 
@@ -409,6 +410,7 @@ async function getSession(req) {
             name,
             role,
             status: 'active',
+            onboardingCompleted: false,
             createdAt: new Date().toISOString(),
           };
 
@@ -427,6 +429,7 @@ async function getSession(req) {
             slug: `tenant-${tenantId.slice(2)}`,
             plan: 'starter',
             status: 'active',
+            onboardingCompleted: false,
             createdAt: new Date().toISOString(),
           };
           await mutate((mutDb) => {

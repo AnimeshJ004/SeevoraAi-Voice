@@ -486,16 +486,23 @@
           if (isLoggedOut && typeof window.Clerk.signOut === 'function') {
             await window.Clerk.signOut().catch(() => {});
           } else if (window.Clerk.user) {
+            let targetUrl = '/app.html';
             try {
               const tok = await window.Clerk.session?.getToken();
               if (tok) {
-                await fetch('/api/me', {
+                const meRes = await fetch('/api/me', {
                   headers: { Authorization: 'Bearer ' + tok },
                   credentials: 'include',
                 });
+                if (meRes.ok) {
+                  const meData = await meRes.json();
+                  if (meData && meData.user && !meData.user.onboardingCompleted && (!meData.tenant || !meData.tenant.onboardingCompleted)) {
+                    targetUrl = '/app.html#/onboarding';
+                  }
+                }
               }
             } catch (_) {}
-            window.location.replace('/app.html');
+            window.location.replace(targetUrl);
             return;
           }
 
@@ -510,12 +517,12 @@
             forceRedirectUrl: '/app.html',
           });
 
-          // Mount SignUp into dedicated signUpSlot
+          // Mount SignUp into dedicated signUpSlot (routes new accounts to onboarding wizard)
           window.Clerk.mountSignUp(signUpSlot, {
             routing: 'hash',
             signInUrl: '#/sign-in',
-            fallbackRedirectUrl: '/app.html',
-            forceRedirectUrl: '/app.html',
+            fallbackRedirectUrl: '/app.html#/onboarding',
+            forceRedirectUrl: '/app.html#/onboarding',
           });
 
           // Show the correct one based on current hash

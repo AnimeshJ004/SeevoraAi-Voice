@@ -370,6 +370,13 @@ async function boot() {
     await ensureClerkReady();
     const me = await api('/api/me', { allow401: true });
     State.me = me;
+
+    const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
+    const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+    if (needsOnboarding && (!hash || hash === 'overview')) {
+      location.hash = '#/onboarding';
+    }
+
     renderShell();
   } catch (e) {
     console.warn('Initial /api/me failed, checking Clerk session...', e);
@@ -379,6 +386,11 @@ async function boot() {
         if (tok) {
           const me = await api('/api/me', { allow401: true });
           State.me = me;
+          const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
+          const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+          if (needsOnboarding && (!hash || hash === 'overview')) {
+            location.hash = '#/onboarding';
+          }
           renderShell();
           return;
         }
@@ -413,7 +425,7 @@ function getVisibleRoutes() {
   const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
 
   if (!isPlatformAdmin) {
-    return [
+    const routes = [
       { id: 'overview', label: 'Dashboard', icon: 'grid' },
       { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
       { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
@@ -426,6 +438,10 @@ function getVisibleRoutes() {
       { id: 'billing', label: 'Billing & Wallet', icon: 'wallet' },
       { id: 'support', label: 'Support', icon: 'support' }
     ];
+    if (u && !u.onboardingCompleted) {
+      routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
+    }
+    return routes;
   }
 
   return [
@@ -686,7 +702,13 @@ function paintHealth() {
    =========================================================================== */
 function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-  if (hash === 'ai-creator') return 'onboarding';
+  if (hash === 'ai-creator' || hash === 'onboarding') return 'onboarding';
+
+  const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
+  if (needsOnboarding && (!hash || hash === 'overview')) {
+    return 'onboarding';
+  }
+
   const visible = getVisibleRoutes();
   const found = visible.find((r) => r.id === hash);
   if (found) return found.id;
@@ -700,7 +722,7 @@ function onRoute() {
   $$('.nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('data-route') === id));
   const visible = getVisibleRoutes();
   const r = visible.find((x) => x.id === id);
-  const tt = $('#routeTitle'); if (tt) tt.textContent = r ? r.label : 'Dashboard';
+  const tt = $('#routeTitle'); if (tt) tt.textContent = r ? r.label : (id === 'onboarding' ? 'AI Voice Agent Onboarding' : 'Dashboard');
   $('.shell') && $('.shell').classList.remove('nav-open');
   const view = $('#view');
   view.innerHTML = '';
@@ -2160,6 +2182,8 @@ async function viewOnboarding(root) {
     onclick: async () => {
       await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => {});
       if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
+      if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
+      renderShell();
       goto('overview');
     }
   }, 'Skip Setup & Go to Dashboard →');
@@ -2622,11 +2646,13 @@ async function viewOnboarding(root) {
           const res = await api('/api/agents', { method: 'POST', body: payload });
           await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => {});
           if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
+          if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
           if (res.agent) {
             State.agents.push(res.agent);
             State.activeAgentId = res.agent.id;
           }
           toast(`Agent "${payload.name}" saved to your workspace!`, 'ok');
+          renderShell();
           goto('overview');
         } catch (e) {
           toast(e.message || 'Could not save agent.', 'err');
