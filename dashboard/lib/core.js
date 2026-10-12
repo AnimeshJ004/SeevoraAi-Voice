@@ -22,6 +22,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const clerk = require('./clerk');
 
 // Project root is one level up from lib/.
 const ROOT = path.join(__dirname, '..');
@@ -354,6 +355,105 @@ function parseCookieToken(req) {
  * Expired sessions are removed as a side effect.
  */
 async function getSession(req) {
+  // 1. Support Clerk tokens via Bearer Authorization header or __session cookie
+  const clerkToken = clerk.extractToken(req);
+  if (clerkToken && clerkToken.includes('.')) {
+    try {
+      const claims = clerk.decodeJwt(clerkToken);
+      if (claims && claims.sub) {
+        const d = db();
+        let user = d.users.find((u) => u.clerkUserId === claims.sub || (claims.email && u.email === claims.email));
+        let tenant = user ? d.tenants.find((t) => t.id === user.tenantId) : null;
+
+        if (!user) {
+          let email = claims.email;
+          let name = claims.name;
+          let role = (claims.metadata && claims.metadata.role) || 'client';
+          let plan = (claims.metadata && claims.metadata.plan) || 'starter';
+
+          if (!email && process.env.CLERK_SECRET_KEY) {
+            try {
+              const clerkUser = await clerk.getClerkUser(claims.sub);
+              if (clerkUser) {
+                const primaryEmailObj = (clerkUser.email_addresses || []).find((e) => e.id === clerkUser.primary_email_address_id) || (clerkUser.email_addresses || [])[0];
+                email = (primaryEmailObj && primaryEmailObj.email_address) || clerkUser.email;
+                name = clerkUser.first_name ? `${clerkUser.first_name} ${clerkUser.last_name || ''}`.trim() : (clerkUser.username || clerkUser.first_name);
+                if (clerkUser.public_metadata) {
+                  role = clerkUser.public_metadata.role || role;
+                  plan = clerkUser.public_metadata.plan || plan;
+                }
+              }
+            } catch (_) {}
+          }
+
+          email = email || `${claims.sub}@clerk.user`;
+          name = name || claims.sub;
+
+          const tenantId = genId('t_');
+          const userId = genId('u_');
+
+          tenant = {
+            id: tenantId,
+            name: `${name}'s Workspace`,
+            slug: `tenant-${tenantId.slice(2)}`,
+            plan,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+          };
+
+          user = {
+            id: userId,
+            tenantId,
+            clerkUserId: claims.sub,
+            email,
+            name,
+            role,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+          };
+
+          await mutate((mutDb) => {
+            mutDb.tenants.push(tenant);
+            mutDb.users.push(user);
+            if (!mutDb.wallets.some((w) => w.tenantId === tenantId)) {
+              mutDb.wallets.push({ id: genId('wal_'), tenantId, currency: 'INR', balancePaise: 1000, updatedAt: new Date().toISOString() });
+            }
+          });
+        } else if (!tenant) {
+          const tenantId = user.tenantId || genId('t_');
+          tenant = {
+            id: tenantId,
+            name: `${user.name || 'My'}'s Workspace`,
+            slug: `tenant-${tenantId.slice(2)}`,
+            plan: 'starter',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+          };
+          await mutate((mutDb) => {
+            const u = mutDb.users.find((x) => x.id === user.id);
+            if (u) u.tenantId = tenantId;
+            mutDb.tenants.push(tenant);
+            if (!mutDb.wallets.some((w) => w.tenantId === tenantId)) {
+              mutDb.wallets.push({ id: genId('wal_'), tenantId, currency: 'INR', balancePaise: 1000, updatedAt: new Date().toISOString() });
+            }
+          });
+        }
+
+        if (user && tenant && user.status === 'active' && tenant.status === 'active') {
+          return {
+            session: { token: clerkToken, userId: user.id, tenantId: tenant.id, clerkUserId: claims.sub },
+            user,
+            tenant,
+            impersonator: null,
+          };
+        }
+      }
+    } catch (_) {
+      // Fall through to standard cookie session
+    }
+  }
+
+  // 2. Fall back to standard session cookie
   const token = parseCookieToken(req);
   if (!token || token.length < 16) return null;
   const d = db();
@@ -492,4 +592,5 @@ module.exports = {
   rateOk,
   serveStatic, MIME,
   genId,
+  clerk,
 };

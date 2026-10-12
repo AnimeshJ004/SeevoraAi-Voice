@@ -23,6 +23,8 @@ const core = require('./lib/core');
 core.loadEnv();
 const providers = require('./lib/providers');
 const payu = require('./lib/payu');
+const razorpay = require('./lib/razorpay');
+const clerk = require('./lib/clerk');
 const demoLinks = require('./lib/demo-links');
 const wacrm = require('./lib/wacrm');
 
@@ -48,9 +50,64 @@ const CREDIT_PACKS = Object.freeze({
   scale: Object.freeze({ amount: '1000.00', currency: 'INR', credits: 100000, productinfo: 'RapidX Voice Scale Credits' }),
 });
 
+const SEEVORA_PLANS = Object.freeze({
+  starter: Object.freeze({
+    id: 'starter',
+    name: 'Starter Plan',
+    amount: '5199.00',
+    amountPaise: 519900,
+    voiceMinutes: 500,
+    activeWorkflows: 3,
+    currency: 'INR',
+    productinfo: 'Seevora Starter Plan - Monthly (500 mins, 3 workflows)',
+  }),
+  growth: Object.freeze({
+    id: 'growth',
+    name: 'Growth Plan (Most Popular)',
+    amount: '10999.00',
+    amountPaise: 1099900,
+    voiceMinutes: 1000,
+    activeWorkflows: 10,
+    currency: 'INR',
+    productinfo: 'Seevora Growth Plan - Monthly (1,000 mins, 10 workflows)',
+  }),
+  business: Object.freeze({
+    id: 'business',
+    name: 'Business Plan',
+    amount: '25999.00',
+    amountPaise: 2599900,
+    voiceMinutes: 2500,
+    activeWorkflows: 30,
+    currency: 'INR',
+    productinfo: 'Seevora Business Plan - Monthly (2,500 mins, 30 workflows)',
+  }),
+});
+
 function payuConfig() {
   if (!process.env.PAYU_KEY || !process.env.PAYU_SALT) return null;
   return { key: process.env.PAYU_KEY, salt: process.env.PAYU_SALT, env: process.env.PAYU_ENV === 'production' ? 'production' : 'test' };
+}
+
+function razorpayConfig() {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return null;
+  return {
+    keyId: process.env.RAZORPAY_KEY_ID,
+    keySecret: process.env.RAZORPAY_KEY_SECRET,
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || null,
+  };
+}
+
+function readRawBody(req, cap = 64 * 1024) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > cap) { reject(new Error('payload too large')); req.destroy(); }
+      else chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
 }
 
 function readForm(req, cap = 64 * 1024) {
@@ -500,18 +557,37 @@ async function apiLogin(req, res, body) {
 
 async function apiLogout(req, res) {
   await core.destroySession(req);
-  core.send(res, 200, JSON.stringify({ ok: true }), {
+  res.writeHead(200, {
     'Content-Type': 'application/json',
-    'Set-Cookie': core.clearCookie(),
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Set-Cookie': [
+      'rxv_sess=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax',
+      '__session=; Path=/; Max-Age=0; SameSite=Lax',
+    ],
   });
+  res.end(JSON.stringify({ ok: true }));
 }
 
 /* ==========================================================================
    Authed routes (ctx = { user, tenant, session, body })
    ========================================================================== */
 
-function apiMe(req, res, ctx) {
-  core.sendJson(res, 200, { user: publicUser(ctx.user), tenant: publicTenant(ctx.tenant), impersonation: ctx.impersonator ? { actor: publicUser(ctx.impersonator), reason: ctx.session.impersonationReason, expiresAt: new Date(ctx.session.exp).toISOString() } : null });
+async function apiMe(req, res, ctx) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache',
+  };
+  const cookieHeader = req.headers && req.headers.cookie;
+  if (!cookieHeader || !cookieHeader.includes('rxv_sess=')) {
+    const token = await core.createSession(ctx.user.id, ctx.tenant.id);
+    headers['Set-Cookie'] = core.sessionCookie(token);
+  }
+  core.send(res, 200, JSON.stringify({
+    user: publicUser(ctx.user),
+    tenant: publicTenant(ctx.tenant),
+    impersonation: ctx.impersonator ? { actor: publicUser(ctx.impersonator), reason: ctx.session.impersonationReason, expiresAt: new Date(ctx.session.exp).toISOString() } : null,
+  }), headers);
 }
 
 const HVAC_TIMEZONE = 'Asia/Kolkata';
@@ -1413,6 +1489,258 @@ async function apiPayuCallback(req, res, payload) {
 function apiPayuReturn(req, res, payload) {
   const result = payu.classifyBrowserReturn(payload);
   core.sendJson(res, 202, { ...result, message: 'Payment is pending server verification. A browser return never credits the wallet.' });
+}
+
+function apiBillingConfig(req, res) {
+  core.sendJson(res, 200, {
+    razorpay: {
+      keyId: process.env.RAZORPAY_KEY_ID || null,
+      enabled: !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+    },
+    clerk: {
+      publishableKey: process.env.CLERK_PUBLISHABLE_KEY || null,
+      enabled: !!(process.env.CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY),
+    },
+    plans: SEEVORA_PLANS,
+    creditPacks: CREDIT_PACKS,
+  });
+}
+
+async function apiRazorpayOrderCreate(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const cfg = razorpayConfig();
+  if (!cfg) return core.sendJson(res, 503, { error: 'Razorpay is not configured', code: 'razorpay_unavailable' });
+
+  const b = ctx.body || {};
+  let amountPaise = 0;
+  let credits = 0;
+  let description = '';
+  let itemType = 'pack';
+  let itemId = '';
+
+  if (b.planId && SEEVORA_PLANS[b.planId]) {
+    const plan = SEEVORA_PLANS[b.planId];
+    amountPaise = plan.amountPaise;
+    credits = plan.amountPaise;
+    description = plan.productinfo;
+    itemType = 'plan';
+    itemId = plan.id;
+  } else {
+    const packId = String(b.packId || 'starter');
+    const pack = CREDIT_PACKS[packId];
+    if (!pack) return core.sendJson(res, 422, { error: `Invalid packId. Must be one of: ${Object.keys(CREDIT_PACKS).join(', ')} or planId: ${Object.keys(SEEVORA_PLANS).join(', ')}`, code: 'bad_pack' });
+    amountPaise = Math.round(Number(pack.amount) * 100);
+    credits = pack.credits;
+    description = pack.productinfo;
+    itemType = 'pack';
+    itemId = packId;
+  }
+
+  const receipt = `rcpt_${ctx.tenant.id.slice(-6)}_${Date.now().toString().slice(-6)}`;
+  const notes = {
+    tenantId: ctx.tenant.id,
+    userId: ctx.user.id,
+    itemType,
+    itemId,
+    clerkUserId: ctx.session.clerkUserId || ctx.user.clerkUserId || '',
+  };
+
+  let order;
+  try {
+    order = await razorpay.createOrder({ amountPaise, currency: 'INR', receipt, notes, config: cfg });
+  } catch (e) {
+    return core.sendJson(res, 502, { error: `Failed to create Razorpay order: ${e.message}`, code: 'razorpay_order_failed' });
+  }
+
+  const intent = {
+    id: core.genId('pay_'),
+    provider: 'razorpay',
+    orderId: order.id,
+    amountPaise,
+    currency: 'INR',
+    credits,
+    itemType,
+    itemId,
+    packId: itemType === 'pack' ? itemId : undefined,
+    planId: itemType === 'plan' ? itemId : undefined,
+    status: 'created',
+    tenantId: ctx.tenant.id,
+    userId: ctx.user.id,
+    customer: {
+      name: String(b.firstname || ctx.user.name || 'Customer').trim().slice(0, 60),
+      email: ctx.user.email,
+      phone: String(b.phone || '').trim().slice(0, 20),
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await core.mutate((d) => {
+    d.paymentIntents.push(intent);
+    addAudit(d, ctx, 'billing.razorpay_order.created', 'payment_intent', intent.id, { orderId: order.id, itemType, itemId, amountPaise });
+  });
+
+  const checkoutOptions = razorpay.buildCheckoutOptions({
+    order,
+    keyId: cfg.keyId,
+    customer: intent.customer,
+    appName: 'Seevora AI Voice',
+    themeColor: '#0095FF',
+  });
+
+  core.sendJson(res, 201, {
+    ok: true,
+    orderId: order.id,
+    amountPaise,
+    checkoutOptions,
+    paymentIntent: intent,
+  });
+}
+
+async function apiRazorpayVerifyPayment(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const cfg = razorpayConfig();
+  if (!cfg) return core.sendJson(res, 503, { error: 'Razorpay is not configured', code: 'razorpay_unavailable' });
+
+  const b = ctx.body || {};
+  const orderId = String(b.orderId || b.razorpay_order_id || '');
+  const paymentId = String(b.paymentId || b.razorpay_payment_id || '');
+  const signature = String(b.signature || b.razorpay_signature || '');
+
+  if (!orderId || !paymentId || !signature) {
+    return core.sendJson(res, 422, { error: 'orderId, paymentId, and signature are required', code: 'missing_fields' });
+  }
+
+  const sigCheck = razorpay.verifyPaymentSignature({
+    orderId,
+    paymentId,
+    signature,
+    secret: cfg.keySecret,
+  });
+
+  if (!sigCheck.valid) {
+    return core.sendJson(res, 400, { error: 'Payment signature verification failed', code: 'invalid_signature' });
+  }
+
+  const d = core.db();
+  const stored = d.paymentIntents.find((x) => x.orderId === orderId);
+  if (!stored) {
+    return core.sendJson(res, 404, { error: 'Payment intent for this order not found', code: 'order_not_found' });
+  }
+
+  let duplicate = false;
+  let entry = null;
+  let newBalance = 0;
+
+  await core.mutate((mutDb) => {
+    const intent = mutDb.paymentIntents.find((x) => x.id === stored.id);
+    if (intent.status === 'credited') {
+      duplicate = true;
+      const w = mutDb.wallets.find((x) => x.tenantId === intent.tenantId);
+      newBalance = w ? w.balancePaise : 0;
+      return;
+    }
+
+    entry = addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
+      paymentIntentId: intent.id,
+      orderId,
+      paymentId,
+      packId: intent.packId,
+    });
+
+    intent.status = 'credited';
+    intent.paymentId = paymentId;
+    intent.signature = signature;
+    intent.updatedAt = new Date().toISOString();
+
+    const w = mutDb.wallets.find((x) => x.tenantId === intent.tenantId);
+    newBalance = w ? w.balancePaise : 0;
+
+    mutDb.auditEvents.push({
+      id: core.genId('aud_'),
+      tenantId: intent.tenantId,
+      actorUserId: intent.userId,
+      action: 'billing.payment.credited',
+      targetType: 'payment_intent',
+      targetId: intent.id,
+      metadata: { ledgerId: entry ? entry.id : null, provider: 'razorpay', paymentId },
+      createdAt: intent.updatedAt,
+    });
+  });
+
+  // Sync to Clerk publicMetadata if user is authenticated with Clerk
+  const clerkUserId = ctx.session.clerkUserId || ctx.user.clerkUserId;
+  if (clerkUserId && process.env.CLERK_SECRET_KEY) {
+    try {
+      await clerk.updateClerkMetadata(clerkUserId, {
+        publicMetadata: {
+          plan: stored.packId || 'growth',
+          credits: newBalance,
+          billingStatus: 'active',
+          lastPaymentAt: new Date().toISOString(),
+        },
+      });
+    } catch (clerkErr) {
+      console.error('Clerk metadata sync error:', clerkErr.message);
+    }
+  }
+
+  core.sendJson(res, 200, {
+    ok: true,
+    credited: !duplicate,
+    duplicate,
+    balancePaise: newBalance,
+    paymentId,
+  });
+}
+
+async function apiRazorpayWebhook(req, res, rawBody) {
+  const cfg = razorpayConfig();
+  if (!cfg || !cfg.webhookSecret) {
+    return core.sendJson(res, 503, { error: 'Razorpay webhook secret not configured', code: 'webhook_unconfigured' });
+  }
+
+  const sig = req.headers['x-razorpay-signature'];
+  const verified = razorpay.verifyWebhookSignature({
+    rawBody,
+    signature: sig,
+    webhookSecret: cfg.webhookSecret,
+  });
+
+  if (!verified.valid) {
+    return core.sendJson(res, 400, { error: 'Invalid webhook signature', code: 'invalid_signature' });
+  }
+
+  let payload;
+  try { payload = JSON.parse(rawBody); } catch (_) {
+    return core.sendJson(res, 400, { error: 'Invalid JSON payload' });
+  }
+
+  const event = payload.event;
+  if (event === 'payment.captured' || event === 'order.paid') {
+    const paymentEntity = (payload.payload && payload.payload.payment && payload.payload.payment.entity) || {};
+    const orderId = paymentEntity.order_id;
+    const paymentId = paymentEntity.id;
+
+    if (orderId) {
+      await core.mutate((mutDb) => {
+        const intent = mutDb.paymentIntents.find((x) => x.orderId === orderId);
+        if (intent && intent.status !== 'credited') {
+          addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
+            paymentIntentId: intent.id,
+            orderId,
+            paymentId,
+            webhook: true,
+          });
+          intent.status = 'credited';
+          intent.paymentId = paymentId;
+          intent.updatedAt = new Date().toISOString();
+        }
+      });
+    }
+  }
+
+  core.sendJson(res, 200, { received: true });
 }
 
 function apiSupportList(req, res, ctx) {
@@ -2663,9 +2991,17 @@ const server = http.createServer(async (req, res) => {
         return (route.endsWith('/callback') || route.endsWith('/webhook')) ? apiPayuCallback(req, res, form) : apiPayuReturn(req, res, form);
       }
 
+      if (route === '/api/billing/razorpay/webhook' && req.method === 'POST') {
+        let rawBody;
+        try { rawBody = await readRawBody(req); }
+        catch (e) { return core.sendJson(res, 400, { error: e.message, code: 'bad_body' }); }
+        return apiRazorpayWebhook(req, res, rawBody);
+      }
+
       // ---- Public GET routes ----
       if (route === '/api/health' && req.method === 'GET') return apiHealth(req, res);
       if (route === '/api/providers' && req.method === 'GET') return apiProviders(req, res);
+      if (route === '/api/billing/config' && req.method === 'GET') return apiBillingConfig(req, res);
       if (route.startsWith('/api/public/demo/') && req.method === 'GET') {
         const token = decodeURIComponent(route.slice('/api/public/demo/'.length));
         if (token.includes('/')) return core.sendJson(res, 404, { error: 'demo link not found', code: 'not_found' });
@@ -2761,6 +3097,8 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/demo-links/revoke') return core.requireRole(req, res, 'owner', apiDemoLinksRevoke, body);
       if (route === '/api/telephony/dial') return core.requireAuth(req, res, apiTelephonyDial, body);
       if (route === '/api/payment-intents') return core.requireAuth(req, res, apiPaymentIntentCreate, body);
+      if (route === '/api/billing/razorpay/order') return core.requireAuth(req, res, apiRazorpayOrderCreate, body);
+      if (route === '/api/billing/razorpay/verify') return core.requireAuth(req, res, apiRazorpayVerifyPayment, body);
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
       if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
@@ -2790,6 +3128,9 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && route.startsWith('/demo/')) {
       req.url = '/demo.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/sign-in' || route === '/sign-up' || route === '/login' || route === '/signup')) {
+      req.url = '/index.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/recordings' || route === '/recordings/' || route === '/recordings.html')) {
       res.writeHead(302, { Location: '/app.html#/recordings', 'Cache-Control': 'no-store' });

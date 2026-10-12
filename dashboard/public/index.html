@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Seevora AI Voice Receptionist - Log In</title>
+  <title>Seevora AI Voice Receptionist - Authentication</title>
   <meta name="description" content="Seevora AI Voice Receptionist. Natural, human-parity conversational voice agents." />
   <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
@@ -11,18 +11,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Clerk Prebuilt UI & JavaScript SDK -->
+  <script defer crossorigin="anonymous" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js" type="text/javascript"></script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_test_Y2xlYW4taW1wYWxhLTczMzEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js" type="text/javascript"></script>
+
   <style>
     :root {
-      --bg: #F5F3EF;
+      --bg: #F8FAFC;
       --card: #FFFFFF;
       --ink: #0F172A;
       --ink-soft: #334155;
       --ink-dim: #64748B;
-      --ink-faint: #94A3B8;
       --line: #E2E8F0;
       --primary: #0095FF;
-      --btn-dark: #0F172A;
-      --btn-dark-hover: #1E293B;
       --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -38,7 +40,7 @@
       margin: 0;
       padding: 0;
       font-family: var(--font);
-      background-color: #FFFFFF;
+      background-color: var(--card);
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
@@ -48,29 +50,21 @@
       display: flex;
       min-height: 100vh;
       width: 100vw;
-      margin: 0;
-      padding: 0;
     }
 
-    /* Main Container: Full Screen Edge-to-Edge */
-    .login-wrapper {
+    /* Split-Screen Edge-to-Edge Container */
+    .auth-wrapper {
       width: 100vw;
       min-height: 100vh;
-      max-width: none;
-      background: var(--card);
-      border-radius: 0;
-      box-shadow: none;
-      border: none;
       display: grid;
-      grid-template-columns: minmax(420px, 480px) 1fr;
+      grid-template-columns: minmax(440px, 520px) 1fr;
+      background: var(--card);
       overflow: hidden;
-      margin: 0;
-      padding: 0;
     }
 
-    /* Left Form Column */
-    .form-column {
-      padding: clamp(36px, 5vw, 64px) clamp(32px, 5vw, 64px);
+    /* Left: Clerk Auth Mount Column (Clean Light Theme) */
+    .auth-column {
+      padding: clamp(32px, 5vw, 56px);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -78,7 +72,9 @@
       min-height: 100vh;
       position: relative;
       z-index: 5;
-      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.04);
+      border-right: 1px solid var(--line);
+      box-shadow: 12px 0 40px rgba(15, 23, 42, 0.04);
+      overflow-y: auto;
     }
 
     /* Brand Header */
@@ -86,21 +82,21 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
     .brand-logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
       background: #FFFFFF;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      padding: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
     }
 
     .brand-logo img {
@@ -111,344 +107,104 @@
     }
 
     .brand-name {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--ink);
     }
 
-    /* Headings */
-    .headings {
-      margin-bottom: 28px;
-    }
-
-    .headings h1 {
-      font-size: clamp(26px, 3vw, 32px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      line-height: 1.15;
-    }
-
-    .headings p {
-      font-size: 14.5px;
-      color: var(--ink-dim);
-      margin-top: 8px;
-      line-height: 1.45;
-    }
-
-    /* Alert Message Box */
-    .auth-alert {
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      margin-bottom: 18px;
-      display: none;
-      line-height: 1.4;
-      font-weight: 500;
-    }
-
-    .auth-alert.error {
-      display: block;
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      color: #B91C1C;
-    }
-
-    .auth-alert.success {
-      display: block;
-      background: #ECFDF5;
-      border: 1px solid #A7F3D0;
-      color: #047857;
-    }
-
-    /* Form Fields */
-    .auth-form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--ink-soft);
-    }
-
-    .input-box {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .input-box input {
-      width: 100%;
-      height: 48px;
-      padding: 0 46px 0 16px;
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      font-family: inherit;
-      font-size: 14px;
-      color: var(--ink);
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .input-box input::placeholder {
-      color: #94A3B8;
-    }
-
-    .input-box input:focus {
-      background: #FFFFFF;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3.5px rgba(0, 149, 255, 0.15);
-    }
-
-    .toggle-pass {
-      position: absolute;
-      right: 14px;
-      background: none;
-      border: none;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--ink-dim);
-      cursor: pointer;
-      font-family: inherit;
-      padding: 4px;
-    }
-
-    .toggle-pass:hover {
-      color: var(--ink);
-    }
-
-    /* Aux Options Row */
-    .aux-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-top: -2px;
-    }
-
-    .remember-wrap {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      color: var(--ink-dim);
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .remember-wrap input[type="checkbox"] {
-      accent-color: var(--btn-dark);
-      width: 15px;
-      height: 15px;
-      cursor: pointer;
-    }
-
-    .forgot-btn {
-      background: none;
-      border: none;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--ink-dim);
-      cursor: pointer;
-    }
-
-    .forgot-btn:hover {
-      color: var(--primary);
-      text-decoration: underline;
-    }
-
-    /* Submit Button (Clean Dark style from your screenshot) */
-    .btn-login {
-      height: 48px;
-      width: 100%;
-      margin-top: 4px;
-      background: var(--btn-dark);
-      color: #FFFFFF;
-      border: none;
-      border-radius: 12px;
-      font-family: inherit;
-      font-size: 14.5px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.18s ease;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
-    }
-
-    .btn-login:hover {
-      background: var(--btn-dark-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
-    }
-
-    .btn-login:active {
-      transform: translateY(0);
-    }
-
-    .btn-login:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Divider */
-    .demo-divider {
-      position: relative;
-      text-align: center;
-      margin: 22px 0 16px;
-    }
-
-    .demo-divider::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: #E2E8F0;
-    }
-
-    .demo-divider span {
-      position: relative;
-      background: #FFFFFF;
-      padding: 0 12px;
+    .brand-badge {
       font-size: 11px;
       font-weight: 700;
-      color: var(--ink-faint);
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-    }
-
-    /* Dual Access-Based Demo Buttons */
-    .demo-role-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-
-    .btn-demo-role {
-      min-height: 54px;
-      height: auto;
-      width: 100%;
-      border-radius: 12px;
-      font-family: inherit;
-      padding: 8px 10px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      text-align: center;
-      transition: all 0.18s ease;
-      box-sizing: border-box;
-    }
-
-    .demo-role-title {
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.25;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      white-space: nowrap;
-    }
-
-    .demo-role-sub {
-      font-size: 11px;
-      font-weight: 500;
-      line-height: 1.2;
-      white-space: nowrap;
-      letter-spacing: 0.01em;
-    }
-
-    .btn-demo-client,
-    .btn-demo-admin,
-    .btn-demo-signup {
+      padding: 3px 9px;
+      border-radius: 20px;
       background: #EFF6FF;
       color: #0284C7;
-      border: 1.5px solid rgba(2, 132, 199, 0.28);
-    }
-    .btn-demo-client:hover,
-    .btn-demo-admin:hover,
-    .btn-demo-signup:hover {
-      background: #DBEAFE;
-      border-color: #0284C7;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18);
-    }
-    .btn-demo-client .demo-role-sub,
-    .btn-demo-admin .demo-role-sub,
-    .btn-demo-signup .demo-role-sub {
-      color: #0369A1;
-      opacity: 0.88;
-    }
-
-    .demo-signup-wrap {
-      width: 100%;
-      margin-bottom: 6px;
-    }
-
-    .btn-autofill-link {
-      background: #EFF6FF;
       border: 1px solid rgba(2, 132, 199, 0.25);
-      border-radius: 6px;
-      padding: 3px 8px;
-      font-family: inherit;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #0284C7;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s ease;
-    }
-    .btn-autofill-link:hover {
-      background: #DBEAFE;
-      border-color: #0284C7;
-      color: #0369A1;
-    }
-
-    /* Switch Mode Footer */
-    .switch-mode-row {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 13.5px;
-      color: var(--ink-dim);
-    }
-
-    .switch-mode-row button {
-      background: none;
-      border: none;
-      color: var(--primary);
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
       margin-left: 4px;
     }
 
-    .switch-mode-row button:hover {
-      text-decoration: underline;
+    /* Tab Switcher */
+    .auth-tabs-wrap {
+      display: flex;
+      background: #F1F5F9;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+      max-width: 380px;
+      width: 100%;
+      align-self: center;
     }
 
-    /* Right Showcase Column (Natural Photography) */
+    .auth-tab-btn {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--ink-dim);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .auth-tab-btn:hover {
+      color: var(--ink);
+    }
+
+    .auth-tab-btn.active {
+      background: #FFFFFF;
+      color: var(--ink);
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Mount Containers */
+    #clerk-mount-zone {
+      width: 100%;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clerk-slot {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Clerk Loading Spinner */
+    .clerk-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--ink-dim);
+      padding: 60px 0;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(0, 149, 255, 0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Right: Visual Showcase Column */
     .showcase-column {
       position: relative;
       background-image: url('/assets/receptionist.jpg');
@@ -458,452 +214,330 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: clamp(32px, 5vw, 64px);
+      padding: clamp(36px, 5vw, 64px);
       min-height: 100vh;
     }
 
-    /* Soft ambient vignette overlay */
     .showcase-column::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 40%, rgba(15, 23, 42, 0.65) 100%);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.05) 20%, rgba(15, 23, 42, 0.65) 100%);
       pointer-events: none;
     }
 
-    /* Floating Card on Photograph */
-    .showcase-overlay-card {
+    .showcase-card {
       position: relative;
       z-index: 2;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.95);
       border-radius: 20px;
-      padding: 24px 28px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      padding: 28px 32px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+      max-width: 600px;
     }
 
-    .showcase-badge {
-      display: inline-block;
-      font-size: 11px;
+    .showcase-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 6px;
+      color: #0284C7;
+      margin-bottom: 10px;
     }
 
-    .showcase-overlay-card h2 {
-      font-size: 20px;
+    .showcase-card h2 {
+      font-size: 24px;
       font-weight: 800;
-      color: var(--ink);
+      color: #0F172A;
       letter-spacing: -0.02em;
       line-height: 1.25;
     }
 
-    .showcase-overlay-card p {
-      font-size: 13.5px;
-      color: var(--ink-soft);
-      margin-top: 6px;
-      line-height: 1.45;
+    .showcase-card p {
+      font-size: 14.5px;
+      color: #475569;
+      margin-top: 8px;
+      line-height: 1.5;
     }
 
-    /* Spinner */
-    .spinner {
-      width: 17px;
-      height: 17px;
-      border: 2px solid rgba(255, 255, 255, 0.4);
-      border-top-color: #fff;
+    .feature-pills {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: #1E293B;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      background: #16A34A;
     }
 
     /* Responsive */
-    @media (max-width: 900px) {
-      .login-wrapper {
+    @media (max-width: 960px) {
+      .auth-wrapper {
         grid-template-columns: 1fr;
-        width: 100vw;
       }
       .showcase-column {
         display: none;
       }
-      .form-column {
-        max-width: 460px;
+      .auth-column {
+        max-width: 520px;
         margin: 0 auto;
-        padding: 36px 24px;
+        padding: 40px 24px;
+        border-right: none;
         box-shadow: none;
       }
     }
   </style>
 </head>
 <body>
-  <main class="login-wrapper">
-    <!-- Left: Form -->
-    <section class="form-column">
-      <!-- Seevora Logo & Brand -->
+  <main class="auth-wrapper">
+    <!-- Left Column: Pure Clerk Auth (Light Theme) -->
+    <section class="auth-column" aria-label="Authentication">
+      <!-- Seevora Brand Row -->
       <div class="brand-row">
         <div class="brand-logo">
           <img src="/assets/seevora-logo.png" alt="Seevora Logo" width="34" height="34" />
         </div>
         <span class="brand-name">Seevora</span>
+        <span class="brand-badge">Voice AI</span>
       </div>
 
-      <!-- Headings -->
-      <div class="headings">
-        <h1 id="headingTitle">AI Voice Receptionist</h1>
-        <p id="headingSubtitle">Your voice. Our AI. Infinite possibilities.</p>
+      <!-- Quick Switch Tabs -->
+      <div class="auth-tabs-wrap" role="tablist">
+        <button id="tabBtnSignIn" class="auth-tab-btn active" type="button" role="tab" aria-selected="true">Sign In</button>
+        <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create Account</button>
       </div>
 
-      <!-- Alert Box -->
-      <div id="authAlert" class="auth-alert"></div>
-
-      <!-- Form -->
-      <form class="auth-form" id="authForm" novalidate>
-        <div id="signupFields" style="display: none; flex-direction: column; gap: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: -6px;">
-            <span style="font-size: 11px; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em;">Workspace Details</span>
-            <button type="button" class="btn-autofill-link" id="btnAutofillLink" title="Fill sample dental clinic details into form">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              Autofill demo info
-            </button>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="name">Full name</label>
-            <div class="input-box">
-              <input type="text" id="name" placeholder="Full name" autocomplete="name" />
-            </div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="company">Company</label>
-            <div class="input-box">
-              <input type="text" id="company" placeholder="Your company or clinic" autocomplete="organization" />
-            </div>
-          </div>
+      <!-- Mount Zone -->
+      <div id="clerk-mount-zone">
+        <div id="clerk-loader-init" class="clerk-loader">
+          <div class="spinner"></div>
+          <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.01em;">Loading Clerk authentication...</span>
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="email">Work email</label>
-          <div class="input-box">
-            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required />
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label" for="password">Password</label>
-          <div class="input-box">
-            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required />
-            <button type="button" class="toggle-pass" id="togglePasswordBtn">Show</button>
-          </div>
-        </div>
-
-        <div class="aux-row" id="auxRow">
-          <label class="remember-wrap">
-            <input type="checkbox" id="rememberMe" checked />
-            <span>Remember me</span>
-          </label>
-          <button type="button" class="forgot-btn" id="forgotLink">Forgot password?</button>
-        </div>
-
-        <button type="submit" class="btn-login" id="submitBtn">
-          <span id="btnText">Log In</span>
-        </button>
-      </form>
-
-      <!-- Dual Role-Based Demo Buttons (Login Mode) & Onboarding Demo (Signup Mode) -->
-      <div class="demo-divider" id="demoDivider">
-        <span id="demoDividerText">Instant Role-Based Demos</span>
-      </div>
-
-      <div class="demo-role-grid" id="demoRoleGrid">
-        <button type="button" class="btn-demo-role btn-demo-client" id="btnClientDemo" title="Login as Client (client@demo.com / client123)">
-          <span class="demo-role-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Client Demo
-          </span>
-          <span class="demo-role-sub">client@demo.com</span>
-        </button>
-        <button type="button" class="btn-demo-role btn-demo-admin" id="btnAdminDemo" title="Login as Agency Admin (admin@demo.com / admin123)">
-          <span class="demo-role-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Admin Demo
-          </span>
-          <span class="demo-role-sub">admin@demo.com</span>
-        </button>
-      </div>
-
-      <div class="demo-signup-wrap" id="demoSignupWrap" style="display: none;">
-        <button type="button" class="btn-demo-role btn-demo-signup" id="btnDemoSignup" title="Auto-fill clinic demo details & launch AI Onboarding">
-          <span class="demo-role-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            1-Click Demo Sign Up
-          </span>
-          <span class="demo-role-sub">Auto-fills demo clinic &amp; launches AI Onboarding</span>
-        </button>
-      </div>
-
-      <!-- Toggle Mode -->
-      <div class="switch-mode-row">
-        <span id="footerText">Don't have an account?</span>
-        <button type="button" id="switchModeBtn">Sign up</button>
+        <!-- Separate Dedicated Mount Points -->
+        <div id="clerk-sign-in" class="clerk-slot" style="display: none;"></div>
+        <div id="clerk-sign-up" class="clerk-slot" style="display: none;"></div>
       </div>
     </section>
 
-    <!-- Right: Real Studio Microphone Photograph -->
-    <aside class="showcase-column" aria-label="Seevora Studio">
-      <div class="showcase-overlay-card">
-        <span class="showcase-badge">Seevora AI Voice Receptionist</span>
+    <!-- Right Column: Visual Showcase -->
+    <aside class="showcase-column" aria-label="Seevora AI Overview">
+      <div class="showcase-card">
+        <div class="showcase-tag">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0284C7;"></span>
+          Autonomous Voice Agents
+        </div>
         <h2>Automate 100% of Front-Desk Calls</h2>
-        <p>Natural, human-parity conversational voice agents that answer callers 24/7 without hold times.</p>
+        <p>Ultra-realistic conversational voice agents that answer callers 24/7 without hold times, qualify leads, and manage bookings instantly.</p>
+        <div class="feature-pills">
+          <span class="pill"><span class="pill-dot"></span>Sub-second Latency</span>
+          <span class="pill"><span class="pill-dot"></span>24/7 Availability</span>
+          <span class="pill"><span class="pill-dot"></span>Razorpay Powered</span>
+        </div>
       </div>
     </aside>
   </main>
 
   <script>
     (function () {
-      let isSignup = false;
-      const form = document.getElementById('authForm');
-      const emailInput = document.getElementById('email');
-      const passwordInput = document.getElementById('password');
-      const nameInput = document.getElementById('name');
-      const companyInput = document.getElementById('company');
-      const submitBtn = document.getElementById('submitBtn');
-      const btnText = document.getElementById('btnText');
-      const authAlert = document.getElementById('authAlert');
-      const switchModeBtn = document.getElementById('switchModeBtn');
-      const signupFields = document.getElementById('signupFields');
-      const headingTitle = document.getElementById('headingTitle');
-      const headingSubtitle = document.getElementById('headingSubtitle');
-      const footerText = document.getElementById('footerText');
-      const auxRow = document.getElementById('auxRow');
-      const demoDivider = document.getElementById('demoDivider');
-      const demoDividerText = document.getElementById('demoDividerText');
-      const demoRoleGrid = document.getElementById('demoRoleGrid');
-      const demoSignupWrap = document.getElementById('demoSignupWrap');
-      const btnDemoSignup = document.getElementById('btnDemoSignup');
-      const btnAutofillLink = document.getElementById('btnAutofillLink');
-      const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+      const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
+      if (isLoggedOut) {
+        document.cookie = 'rxv_sess=; Path=/; Max-Age=0;';
+        document.cookie = '__session=; Path=/; Max-Age=0;';
+        try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
 
-      // Check existing session
-      fetch('/api/me')
-        .then(r => {
-          if (r.ok) window.location.replace('/app.html');
-        })
-        .catch(() => {});
+      const tabSignIn = document.getElementById('tabBtnSignIn');
+      const tabSignUp = document.getElementById('tabBtnSignUp');
+      const signInSlot = document.getElementById('clerk-sign-in');
+      const signUpSlot = document.getElementById('clerk-sign-up');
+      const loader = document.getElementById('clerk-loader-init');
 
-      // Show / hide password toggle
-      togglePasswordBtn.addEventListener('click', () => {
-        const isPass = passwordInput.type === 'password';
-        passwordInput.type = isPass ? 'text' : 'password';
-        togglePasswordBtn.textContent = isPass ? 'Hide' : 'Show';
-      });
+      function isSignUpRoute() {
+        const h = window.location.hash || '';
+        const p = window.location.pathname || '';
+        return h.startsWith('#/sign-up') || h.startsWith('#/signup') || p === '/sign-up' || p === '/signup';
+      }
 
-      // Switch mode: Login <-> Signup
-      switchModeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        isSignup = !isSignup;
-        clearAlert();
-        if (isSignup) {
-          signupFields.style.display = 'flex';
-          headingTitle.textContent = 'Create Workspace';
-          headingSubtitle.textContent = 'Deploy your Seevora AI Voice Receptionist.';
-          btnText.textContent = 'Create Workspace';
-          footerText.textContent = 'Already have an account?';
-          switchModeBtn.textContent = 'Log In';
-          auxRow.style.display = 'none';
-          demoDivider.style.display = 'block';
-          if (demoDividerText) demoDividerText.textContent = 'Instant Onboarding Demo';
-          if (demoRoleGrid) demoRoleGrid.style.display = 'none';
-          if (demoSignupWrap) demoSignupWrap.style.display = 'block';
+      function updateActiveView() {
+        const signUpMode = isSignUpRoute();
+        if (signUpMode) {
+          if (signInSlot) signInSlot.style.display = 'none';
+          if (signUpSlot) signUpSlot.style.display = 'flex';
+          tabSignIn.classList.remove('active');
+          tabSignIn.setAttribute('aria-selected', 'false');
+          tabSignUp.classList.add('active');
+          tabSignUp.setAttribute('aria-selected', 'true');
         } else {
-          signupFields.style.display = 'none';
-          headingTitle.textContent = 'AI Voice Receptionist';
-          headingSubtitle.textContent = 'Your voice. Our AI. Infinite possibilities.';
-          btnText.textContent = 'Log In';
-          footerText.textContent = "Don't have an account?";
-          switchModeBtn.textContent = 'Sign up';
-          auxRow.style.display = 'flex';
-          demoDivider.style.display = 'block';
-          if (demoDividerText) demoDividerText.textContent = 'Instant Role-Based Demos';
-          if (demoRoleGrid) demoRoleGrid.style.display = 'grid';
-          if (demoSignupWrap) demoSignupWrap.style.display = 'none';
-        }
-      });
-
-      // Helper to generate fresh clinic demo credentials
-      function fillDemoSignupFields() {
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        nameInput.value = 'Dr. Sarah Jenkins';
-        companyInput.value = 'Metro Dental & Wellness';
-        emailInput.value = `demo.sarah${randomNum}@seevora.ai`;
-        passwordInput.value = 'SeevoraVoice2026!';
-      }
-
-      // Quick Autofill link (fills inputs without auto-submitting)
-      if (btnAutofillLink) {
-        btnAutofillLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          fillDemoSignupFields();
-          showAlert('Sample clinic details populated. Click "Create Workspace" to start onboarding.', 'success');
-        });
-      }
-
-      // 1-Click Demo Signup button (fills inputs & launches AI Onboarding immediately)
-      if (btnDemoSignup) {
-        btnDemoSignup.addEventListener('click', async (e) => {
-          e.preventDefault();
-          clearAlert();
-          fillDemoSignupFields();
-          setLoading(true, 'Creating demo workspace & launching AI Onboarding...');
-
-          try {
-            const res = await fetch('/api/auth/signup', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: nameInput.value,
-                company: companyInput.value,
-                email: emailInput.value,
-                password: passwordInput.value,
-              })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Demo signup failed');
-            showAlert('Workspace created! Launching AI Onboarding Wizard...', 'success');
-            setTimeout(() => {
-              window.location.href = '/app.html#/onboarding';
-            }, 300);
-          } catch (err) {
-            setLoading(false);
-            showAlert(err.message || 'Demo signup failed. Please try again.');
-          }
-        });
-      }
-
-      // Forgot password prompt
-      document.getElementById('forgotLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        showAlert('Contact your system administrator or support@seevora.ai to reset credentials.', 'success');
-      });
-
-      function showAlert(msg, type) {
-        authAlert.textContent = msg;
-        authAlert.className = 'auth-alert ' + (type || 'error');
-      }
-
-      function clearAlert() {
-        authAlert.className = 'auth-alert';
-        authAlert.textContent = '';
-      }
-
-      function setLoading(loading, text) {
-        submitBtn.disabled = loading;
-        if (loading) {
-          submitBtn.innerHTML = '<span class="spinner"></span> ' + (text || 'Signing in...');
-        } else {
-          submitBtn.innerHTML = '<span id="btnText">' + (isSignup ? 'Create Workspace' : 'Log In') + '</span>';
+          if (signInSlot) signInSlot.style.display = 'flex';
+          if (signUpSlot) signUpSlot.style.display = 'none';
+          tabSignIn.classList.add('active');
+          tabSignIn.setAttribute('aria-selected', 'true');
+          tabSignUp.classList.remove('active');
+          tabSignUp.setAttribute('aria-selected', 'false');
         }
       }
 
-      // Submit Login / Signup
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearAlert();
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+      tabSignIn.addEventListener('click', function () {
+        if (window.location.hash !== '#/sign-in') {
+          window.location.hash = '#/sign-in';
+        } else {
+          updateActiveView();
+        }
+      });
 
-        if (!email || !password) {
-          showAlert('Please provide both email and password.');
+      tabSignUp.addEventListener('click', function () {
+        if (window.location.hash !== '#/sign-up') {
+          window.location.hash = '#/sign-up';
+        } else {
+          updateActiveView();
+        }
+      });
+
+      window.addEventListener('hashchange', updateActiveView);
+
+      async function initClerk() {
+        if (!window.Clerk) {
+          setTimeout(initClerk, 150);
           return;
         }
-
-        if (isSignup && password.length < 12) {
-          showAlert('Password must be at least 12 characters.');
-          return;
-        }
-
-        setLoading(true, isSignup ? 'Creating workspace...' : 'Signing in...');
 
         try {
-          const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
-          const payload = isSignup
-            ? { email, password, name: nameInput.value.trim(), company: companyInput.value.trim() }
-            : { email, password };
-
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+          await window.Clerk.load({
+            ui: {
+              ClerkUI: window.__internal_ClerkUICtor,
+            },
+            appearance: {
+              layout: {
+                socialButtonsVariant: 'iconButton',
+                logoPlacement: 'inside',
+              },
+              variables: {
+                colorPrimary: '#0095FF',
+                colorBackground: '#FFFFFF',
+                colorText: '#0F172A',
+                colorTextSecondary: '#475569',
+                colorInputBackground: '#F8FAFC',
+                colorInputText: '#0F172A',
+                colorNeutral: '#0F172A',
+                borderRadius: '12px',
+              },
+              elements: {
+                card: {
+                  boxShadow: 'none',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                },
+                socialButtonsBlockButton: {
+                  borderColor: '#E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  color: '#0F172A',
+                  '&:hover': {
+                    backgroundColor: '#F8FAFC',
+                  },
+                },
+                formButtonPrimary: {
+                  backgroundColor: '#0095FF',
+                  '&:hover': {
+                    backgroundColor: '#0080DB',
+                  },
+                },
+                formFieldInput: {
+                  borderColor: '#E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  color: '#0F172A',
+                  '&:focus': {
+                    borderColor: '#0095FF',
+                    backgroundColor: '#FFFFFF',
+                  },
+                },
+                footerActionLink: {
+                  color: '#0095FF',
+                },
+              },
+            },
           });
 
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.error || 'Authentication failed');
+          if (isLoggedOut && typeof window.Clerk.signOut === 'function') {
+            await window.Clerk.signOut().catch(() => {});
+          } else if (window.Clerk.user) {
+            try {
+              const tok = await window.Clerk.session?.getToken();
+              if (tok) {
+                await fetch('/api/me', {
+                  headers: { Authorization: 'Bearer ' + tok },
+                  credentials: 'include',
+                });
+              }
+            } catch (_) {}
+            window.location.replace('/app.html');
+            return;
           }
 
-          showAlert('Welcome to Seevora! Opening console...', 'success');
-          setTimeout(() => {
-            window.location.href = isSignup ? '/app.html#/onboarding' : '/app.html';
-          }, 350);
+          // Hide initial loader
+          if (loader) loader.style.display = 'none';
+
+          // Mount SignIn into dedicated signInSlot
+          window.Clerk.mountSignIn(signInSlot, {
+            routing: 'hash',
+            signUpUrl: '#/sign-up',
+            fallbackRedirectUrl: '/app.html',
+            forceRedirectUrl: '/app.html',
+          });
+
+          // Mount SignUp into dedicated signUpSlot
+          window.Clerk.mountSignUp(signUpSlot, {
+            routing: 'hash',
+            signInUrl: '#/sign-in',
+            fallbackRedirectUrl: '/app.html',
+            forceRedirectUrl: '/app.html',
+          });
+
+          // Show the correct one based on current hash
+          updateActiveView();
+
         } catch (err) {
-          setLoading(false);
-          showAlert(err.message || 'Invalid credentials. Please try again.');
-        }
-      });
-
-      const btnClientDemo = document.getElementById('btnClientDemo');
-      const btnAdminDemo = document.getElementById('btnAdminDemo');
-
-      // Client Demo Access (1-Click) -> Pure Client Panel
-      if (btnClientDemo) {
-        btnClientDemo.addEventListener('click', async () => {
-          clearAlert();
-          emailInput.value = 'client@demo.com';
-          passwordInput.value = 'client123';
-          setLoading(true, 'Logging in as Client...');
-          try {
-            const res = await fetch('/api/auth/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: 'client@demo.com', password: 'client123' })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Client demo access failed');
-            showAlert('Client verified! Opening Client Panel...', 'success');
-            setTimeout(() => { window.location.href = '/app.html'; }, 200);
-          } catch (err) {
-            setLoading(false);
-            showAlert(err.message || 'Client demo credentials could not be verified.');
+          console.error('Error initializing Clerk:', err);
+          if (loader) {
+            loader.innerHTML = `
+              <div style="text-align:center;padding:30px;color:#DC2626;background:#FEF2F2;border-radius:12px;border:1px solid #FECACA;">
+                <p style="font-weight:600;margin-bottom:8px;">Clerk authentication could not load</p>
+                <p style="font-size:13px;color:#64748B;">${err.message || 'Please check your connection and refresh.'}</p>
+              </div>
+            `;
           }
-        });
+        }
       }
 
-      // Admin Demo Access (1-Click) -> Agency Operations Panel
-      if (btnAdminDemo) {
-        btnAdminDemo.addEventListener('click', async () => {
-          clearAlert();
-          emailInput.value = 'admin@demo.com';
-          passwordInput.value = 'admin123';
-          setLoading(true, 'Logging in as Admin...');
-          try {
-            const res = await fetch('/api/auth/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: 'admin@demo.com', password: 'admin123' })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Admin demo access failed');
-            showAlert('Admin verified! Opening Agency Admin Panel...', 'success');
-            setTimeout(() => { window.location.href = '/app.html'; }, 200);
-          } catch (err) {
-            setLoading(false);
-            showAlert(err.message || 'Admin demo credentials could not be verified.');
-          }
-        });
+      if (document.readyState === 'complete') {
+        initClerk();
+      } else {
+        window.addEventListener('load', initClerk);
       }
     })();
   </script>

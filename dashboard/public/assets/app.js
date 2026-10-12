@@ -71,6 +71,12 @@ const RATE = { mulberry: 0.50, muga: 0.99 };
 async function api(path, opts) {
   opts = opts || {};
   const init = { method: opts.method || 'GET', credentials: 'include', headers: {} };
+  if (window.Clerk && window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
+    try {
+      const tok = await window.Clerk.session.getToken();
+      if (tok) init.headers['Authorization'] = 'Bearer ' + tok;
+    } catch (_) {}
+  }
   const controller = new AbortController();
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 35000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -333,25 +339,54 @@ function ensureCharts() {
 /* ===========================================================================
    BOOT
    =========================================================================== */
+async function ensureClerkReady() {
+  let waited = 0;
+  while (!window.Clerk && waited < 4000) {
+    await new Promise((r) => setTimeout(r, 100));
+    waited += 100;
+  }
+  if (window.Clerk && !window.Clerk.loaded) {
+    try {
+      await window.Clerk.load({
+        ui: { ClerkUI: window.__internal_ClerkUICtor },
+        appearance: {
+          variables: {
+            colorPrimary: '#0095FF',
+            colorBackground: '#FFFFFF',
+            colorText: '#0F172A',
+            colorNeutral: '#0F172A',
+            borderRadius: '10px',
+          },
+        },
+      });
+    } catch (e) {
+      console.warn('Clerk.load in app.js:', e);
+    }
+  }
+}
+
 async function boot() {
   try {
+    await ensureClerkReady();
     const me = await api('/api/me', { allow401: true });
     State.me = me;
     renderShell();
-
-    // Trigger AI Onboarding Wizard automatically for new clients on first sign-in
-    const u = (me && me.user) || {};
-    const t = (me && me.tenant) || {};
-    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
-    if (!isPlatformAdmin && !t.onboardingCompleted && !u.onboardingCompleted) {
-      await ensureAgents().catch(() => {});
-      if (!State.agents || State.agents.length === 0) {
-        goto('onboarding');
+  } catch (e) {
+    console.warn('Initial /api/me failed, checking Clerk session...', e);
+    if (window.Clerk && window.Clerk.user) {
+      try {
+        const tok = await window.Clerk.session?.getToken();
+        if (tok) {
+          const me = await api('/api/me', { allow401: true });
+          State.me = me;
+          renderShell();
+          return;
+        }
+      } catch (retryErr) {
+        console.error('Clerk retry failed:', retryErr);
       }
     }
-  } catch (e) {
-    if (e.status === 401) renderAuth();
-    else { renderAuth(); }
+    renderAuth();
   }
 }
 
@@ -359,7 +394,7 @@ async function boot() {
    AUTH GATE
    =========================================================================== */
 function renderAuth() {
-  window.location.replace('/');
+  window.location.replace('/?logout=1');
 }
 function resetData() {
   State.agents = []; State.providers = null; State.usage = null; State.telephony = null;
@@ -524,7 +559,10 @@ function renderShell() {
         el('span', { class: 'ttl', id: 'routeTitle' }, 'Overview')
       ])
     ]),
-    el('div', { class: 'health-row', id: 'healthRow' }, healthChips())
+    el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
+      el('div', { class: 'health-row', id: 'healthRow' }, healthChips()),
+      el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
+    ])
   ]);
 
   const impersonationBanner = State.me.impersonation ? el('div', { class: 'impersonation-banner' }, [
@@ -544,7 +582,44 @@ function renderShell() {
   window.removeEventListener('hashchange', onRoute);
   window.addEventListener('hashchange', onRoute);
   loadHealth();
+  mountClerkUserButton();
   onRoute();
+}
+
+async function mountClerkUserButton() {
+  const mount = $('#clerkUserButtonMount');
+  if (!mount) return;
+  try {
+    const attach = async () => {
+      if (window.Clerk) {
+        await window.Clerk.load({
+          ui: {
+            ClerkUI: window.__internal_ClerkUICtor,
+          },
+          appearance: {
+            variables: {
+              colorPrimary: '#0095FF',
+              colorBackground: '#FFFFFF',
+              colorText: '#0F172A',
+              colorNeutral: '#0F172A',
+              borderRadius: '10px',
+            },
+          },
+        });
+        if (window.Clerk.user) {
+          mount.innerHTML = '';
+          window.Clerk.mountUserButton(mount, {
+            afterSignOutUrl: '/?logout=1',
+          });
+        }
+      }
+    };
+    if (window.Clerk) {
+      await attach();
+    } else {
+      window.addEventListener('load', attach);
+    }
+  } catch (_) {}
 }
 
 async function exitImpersonation() {
@@ -556,8 +631,14 @@ async function exitImpersonation() {
 
 async function doLogout() {
   try { await api('/api/auth/logout', { method: 'POST', allow401: true }); } catch (e) {}
-  State.me = null; resetData();
-  toast('Signed out.', 'info');
+  if (window.Clerk && typeof window.Clerk.signOut === 'function') {
+    try { await window.Clerk.signOut(); } catch (_) {}
+  }
+  document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
+  document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
+  try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+  State.me = null;
+  resetData();
   renderAuth();
 }
 
@@ -5049,8 +5130,61 @@ async function viewBilling(root) {
   } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad muted' }, e.message)); }
 }
 
+let rzpScriptPromise = null;
+function ensureRazorpayScript() {
+  if (window.Razorpay) return Promise.resolve(window.Razorpay);
+  if (rzpScriptPromise) return rzpScriptPromise;
+  rzpScriptPromise = new Promise((resolve, reject) => {
+    const s = el('script', { src: 'https://checkout.razorpay.com/v1/checkout.js' });
+    s.onload = () => window.Razorpay ? resolve(window.Razorpay) : reject(new Error('Razorpay SDK failed to load'));
+    s.onerror = () => reject(new Error('Failed to load Razorpay checkout script'));
+    document.head.appendChild(s);
+  });
+  return rzpScriptPromise;
+}
+
 async function startRecharge(packId) {
   try {
+    // 1. Check if Razorpay is configured
+    const billingCfg = await api('/api/billing/config').catch(() => null);
+    if (billingCfg && billingCfg.razorpay && billingCfg.razorpay.enabled) {
+      toast('Opening Razorpay checkout...', 'info');
+      const orderRes = await api('/api/billing/razorpay/order', { method: 'POST', body: { packId: packId } });
+      const RazorpaySDK = await ensureRazorpayScript();
+      const options = {
+        ...orderRes.checkoutOptions,
+        handler: async (resp) => {
+          try {
+            toast('Verifying payment...', 'info');
+            const verifyRes = await api('/api/billing/razorpay/verify', {
+              method: 'POST',
+              body: {
+                orderId: resp.razorpay_order_id,
+                paymentId: resp.razorpay_payment_id,
+                signature: resp.razorpay_signature,
+              },
+            });
+            if (verifyRes.ok) {
+              toast('Payment verified! ₹' + fmtInr((verifyRes.balancePaise || 0) / 100) + ' balance available.', 'ok');
+              const v = $('#view');
+              if (v) viewBilling(v);
+            }
+          } catch (verErr) {
+            toast('Payment verification error: ' + verErr.message, 'err');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast('Payment cancelled.', 'info');
+          },
+        },
+      };
+      const rzpInstance = new RazorpaySDK(options);
+      rzpInstance.open();
+      return;
+    }
+
+    // 2. Fall back to PayU checkout
     const out = await api('/api/payment-intents', { method: 'POST', body: { packId: packId } });
     const checkoutUrl = out.checkout && (out.checkout.action || out.checkout.url);
     if (checkoutUrl && out.checkout.fields) {
@@ -5058,7 +5192,7 @@ async function startRecharge(packId) {
       Object.keys(out.checkout.fields).forEach((k) => form.appendChild(el('input', { type: 'hidden', name: k, value: out.checkout.fields[k] })));
       document.body.appendChild(form); form.submit(); return;
     }
-    toast(out.message || 'PayU checkout is not enabled yet. Your wallet was not charged.', 'info');
+    toast(out.message || 'Payment gateway is not enabled yet. Your wallet was not charged.', 'info');
   } catch (e) { toast(e.message, 'err'); }
 }
 
