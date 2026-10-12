@@ -377,9 +377,7 @@ async function boot() {
     const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
                         (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    if (!isCompleted && (!hash || hash === 'overview')) {
-      location.hash = '#/onboarding';
-    } else if (isCompleted && hash === 'onboarding') {
+    if (isCompleted && (hash === 'onboarding' || hash === 'ai-creator')) {
       location.hash = '#/overview';
     }
 
@@ -395,9 +393,7 @@ async function boot() {
           const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
                               (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
           const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-          if (!isCompleted && (!hash || hash === 'overview')) {
-            location.hash = '#/onboarding';
-          } else if (isCompleted && hash === 'onboarding') {
+          if (isCompleted && (hash === 'onboarding' || hash === 'ai-creator')) {
             location.hash = '#/overview';
           }
           renderShell();
@@ -717,10 +713,8 @@ function currentRoute() {
   const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
                       (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
 
-  if (hash === 'ai-creator' || hash === 'onboarding') return 'onboarding';
-
-  if (!isCompleted && (!hash || hash === 'overview')) {
-    return 'onboarding';
+  if (hash === 'ai-creator' || hash === 'onboarding') {
+    return isCompleted ? 'overview' : 'onboarding';
   }
 
   const visible = getVisibleRoutes();

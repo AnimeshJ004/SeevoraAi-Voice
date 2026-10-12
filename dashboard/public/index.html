@@ -485,29 +485,6 @@
 
           if (isLoggedOut && typeof window.Clerk.signOut === 'function') {
             await window.Clerk.signOut().catch(() => {});
-          } else if (window.Clerk.user) {
-            let targetUrl = '/app.html#/overview';
-            try {
-              const tok = await window.Clerk.session?.getToken();
-              if (tok) {
-                const meRes = await fetch('/api/me', {
-                  headers: { Authorization: 'Bearer ' + tok },
-                  credentials: 'include',
-                });
-                if (meRes.ok) {
-                  const meData = await meRes.json();
-                  const isCompleted = (meData && meData.user && meData.user.onboardingCompleted) ||
-                                      (meData && meData.tenant && meData.tenant.onboardingCompleted);
-                  if (!isCompleted) {
-                    targetUrl = '/app.html#/onboarding';
-                  } else {
-                    targetUrl = '/app.html#/overview';
-                  }
-                }
-              }
-            } catch (_) {}
-            window.location.replace(targetUrl);
-            return;
           }
 
           // Hide initial loader
