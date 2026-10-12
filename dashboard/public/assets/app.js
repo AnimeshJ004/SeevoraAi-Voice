@@ -436,10 +436,11 @@ function getVisibleRoutes() {
       { id: 'agents', label: 'My AI Agent', icon: 'users' },
       { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
       { id: 'billing', label: 'Billing & Wallet', icon: 'wallet' },
-      { id: 'support', label: 'Support', icon: 'support' }
+      { id: 'support', label: 'Support', icon: 'support' },
+      { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
     if (u && !u.onboardingCompleted) {
-      routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
+      routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (8-Step)', icon: 'sparkle' });
     }
     return routes;
   }
@@ -556,13 +557,17 @@ function renderShell() {
     ]),
     nav,
     el('div', { class: 'side-foot' }, [
-      el('div', { class: 'tenant-chip' }, [
-        el('div', { class: 'av' }, initials(t.name)),
-        el('div', { class: 'meta' }, [
-          el('div', { class: 'tn', title: t.name }, t.name),
-          el('div', { class: 'tp' }, (t.plan ? t.plan.replace(/_/g, ' ') : 'studio') + ' plan')
-        ])
-      ]),
+      (function() {
+        const cleanName = (u.name && !u.name.startsWith('user_')) ? u.name : ((u.email && !u.email.includes('@clerk.user')) ? u.email : ((t.name && !t.name.startsWith('user_')) ? t.name : 'Workspace'));
+        const cleanTenant = (t.name && !t.name.startsWith('user_')) ? t.name : (cleanName + "'s Workspace");
+        return el('div', { class: 'tenant-chip', style: 'cursor:pointer', title: 'Open Settings', onclick: () => goto('settings') }, [
+          el('div', { class: 'av' }, initials(cleanName)),
+          el('div', { class: 'meta' }, [
+            el('div', { class: 'tn', title: cleanName }, cleanName),
+            el('div', { class: 'tp' }, (t.plan ? t.plan.replace(/_/g, ' ') : 'starter') + ' plan')
+          ])
+        ]);
+      })(),
       el('button', { class: 'side-logout', onclick: doLogout, html: navIcon('logout') + '<span>Sign out</span>' })
     ])
   ]);
@@ -576,7 +581,6 @@ function renderShell() {
       ])
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
-      el('div', { class: 'health-row', id: 'healthRow' }, healthChips()),
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
     ])
   ]);
@@ -597,7 +601,6 @@ function renderShell() {
 
   window.removeEventListener('hashchange', onRoute);
   window.addEventListener('hashchange', onRoute);
-  loadHealth();
   mountClerkUserButton();
   onRoute();
 }
@@ -2103,17 +2106,17 @@ const ONBOARD_PRESETS = [
 const ONBOARD_STEPS = [
   {
     num: 1,
-    badge: 'Step 1 of 7 • Business Identity',
+    badge: 'Step 1 of 8 • Business Identity',
     title: 'What is your business or company name?',
     sub: 'Your AI agent will introduce itself as the voice representative for this business.',
     type: 'text',
     key: 'businessName',
-    placeholder: 'e.g. Indiranagar Dental Care, Skyline Realty, Apex HVAC...',
-    default: 'Indiranagar Dental Care'
+    placeholder: 'e.g. Apex Health, Skyline Realty, Nexa Solutions...',
+    default: ''
   },
   {
     num: 2,
-    badge: 'Step 2 of 7 • Industry Sector',
+    badge: 'Step 2 of 8 • Industry Sector',
     title: 'What industry does your company operate in?',
     sub: 'Select the primary sector to tailor conversation vocabulary and customer behavior.',
     type: 'pills',
@@ -2123,27 +2126,27 @@ const ONBOARD_STEPS = [
   },
   {
     num: 3,
-    badge: 'Step 3 of 7 • Company Services & Offerings',
+    badge: 'Step 3 of 8 • Company Services & Offerings',
     title: 'What does your company do and what are your main offerings?',
     sub: 'Explain what your business does and typical pricing so the agent can quote and assist callers accurately.',
     type: 'textarea',
     key: 'offerings',
-    placeholder: 'e.g. Dental consultations: ₹600. Routine teeth cleaning: ₹1,500. Root canal treatment: ₹4,500. Emergency toothache visits accommodated same-day.',
-    default: 'Dental consultations: ₹600. Routine teeth cleaning & scaling: ₹1,500. Root canal treatment: ₹4,500. Dental implants from ₹25,000. Emergency toothache visits accommodated same-day.'
+    placeholder: 'e.g. Consultation fees, primary services, packages, pricing, emergency appointments...',
+    default: ''
   },
   {
     num: 4,
-    badge: 'Step 4 of 7 • Primary AI Receptionist Goal',
-    title: 'What is the primary objective of this voice agent?',
-    sub: 'What is the most important outcome the agent should drive on each call?',
-    type: 'pills',
+    badge: 'Step 4 of 8 • Primary AI Receptionist Goals & Capabilities',
+    title: 'What should this voice agent handle?',
+    sub: 'Select one or more outcomes and capabilities for your AI voice agent.',
+    type: 'multipills',
     key: 'goal',
     options: ['Book Appointments & Consultations', 'Qualify Inbound Leads', 'Answer Service FAQs & Inquiries', 'Emergency Triage & Routing'],
-    default: 'Book Appointments & Consultations'
+    default: ['Book Appointments & Consultations']
   },
   {
     num: 5,
-    badge: 'Step 5 of 7 • Spoken Language & Accent',
+    badge: 'Step 5 of 8 • Spoken Language & Accent',
     title: 'Which language style should your agent speak?',
     sub: 'Select the conversational dialect matching your caller demographic.',
     type: 'pills',
@@ -2153,7 +2156,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 6,
-    badge: 'Step 6 of 7 • Voice Tone & Persona',
+    badge: 'Step 6 of 8 • Voice Tone & Persona',
     title: 'What personality and tone should the agent possess?',
     sub: 'The agent will adapt its pacing, greeting, and emotional demeanor accordingly.',
     type: 'pills',
@@ -2163,18 +2166,27 @@ const ONBOARD_STEPS = [
   },
   {
     num: 7,
-    badge: 'Step 7 of 7 • Business Hours & Escalation',
+    badge: 'Step 7 of 8 • Business Hours & Escalation',
     title: 'What are your operating hours and emergency contact?',
     sub: 'The agent will inform callers of your availability and knows when to escalate.',
     type: 'text',
     key: 'workingHours',
     placeholder: 'e.g. Mon-Sat 9 AM to 8:30 PM, Emergency Contact: +91 98765 43210',
-    default: 'Mon-Sat 9 AM to 8:30 PM, Emergency Contact: +91 98765 43210'
+    default: ''
+  },
+  {
+    num: 8,
+    badge: 'Step 8 of 8 • WhatsApp & Meta Credentials',
+    title: 'Connect your WhatsApp Business account',
+    sub: 'Enter your own Meta Cloud API credentials so call follow-ups and WhatsApp chats are sent from your number. Optional, you can add or change these later.',
+    type: 'whatsapp_setup',
+    key: 'whatsapp',
+    default: { metaAppId: '', metaAppSecret: '', metaWabaId: '', metaPhoneId: '', metaToken: '', autoFollowupEnabled: true }
   }
 ];
 
 async function viewOnboarding(root) {
-  const head = viewHead('AI Voice Agent Onboarding', 'Answer 7 quick questions about your company. The AI designs your conversational persona, understands customer objections, generates 3 script variants, and lets you test your agent instantly.');
+  const head = viewHead('AI Voice Agent Onboarding', 'Answer 8 quick steps about your company. The AI designs your conversational persona, understands customer objections, generates 3 script variants, and lets you test your agent instantly.');
   const skipBtn = el('button', {
     type: 'button',
     class: 'btn btn-ghost btn-sm',
@@ -2190,47 +2202,18 @@ async function viewOnboarding(root) {
   head.appendChild(skipBtn);
   root.appendChild(head);
 
-  // Active form state prefilled with dental preset default
+  // Active form state
   const answers = {};
   ONBOARD_STEPS.forEach((st) => {
-    answers[st.key] = Array.isArray(st.default) ? [...st.default] : st.default;
+    answers[st.key] = Array.isArray(st.default) ? [...st.default] : (st.default && typeof st.default === 'object' ? { ...st.default } : st.default);
   });
   let activeStep = 0;
-  let customTranscript = ONBOARD_PRESETS[0].transcript || '';
+  let customTranscript = '';
   let generatedResult = null;
   let activeVariant = 'friendly';
 
-  // Preset selector chips
-  const presetsRow = el('div', { class: 'preset-chips-scroll', style: 'margin-bottom:18px' });
-  ONBOARD_PRESETS.forEach((preset, idx) => {
-    const chip = el('button', {
-      type: 'button',
-      class: 'preset-chip' + (idx === 0 ? ' active' : ''),
-      onclick: () => {
-        $$('.preset-chip', presetsRow).forEach((c) => c.classList.remove('active'));
-        chip.classList.add('active');
-        applyPreset(preset);
-      }
-    }, preset.label);
-    presetsRow.appendChild(chip);
-  });
-  root.appendChild(presetsRow);
-
   const container = el('div', { class: 'onboard-wizard' });
   root.appendChild(container);
-
-  function applyPreset(p) {
-    answers.businessName = p.businessName;
-    answers.industry = p.industry;
-    answers.offerings = p.offerings;
-    answers.goal = p.goal;
-    answers.language = p.language;
-    answers.tone = p.tone;
-    answers.workingHours = p.workingHours;
-    customTranscript = p.transcript || '';
-    renderCurrentStep();
-    toast(`Loaded ${p.label} business template.`, 'ok');
-  }
 
   function renderCurrentStep() {
     container.innerHTML = '';
@@ -2309,43 +2292,53 @@ async function viewOnboarding(root) {
     } else if (step.type === 'multipills') {
       const group = el('div', { class: 'onboard-pill-group' });
       step.options.forEach((opt) => {
-        const curArr = answers[step.key] || [];
+        let curArr = answers[step.key];
+        if (!Array.isArray(curArr)) {
+          curArr = curArr ? [curArr] : [];
+          answers[step.key] = curArr;
+        }
         const isSel = curArr.includes(opt);
         const btn = el('button', {
           type: 'button',
           class: 'onboard-pill-btn' + (isSel ? ' selected' : ''),
           onclick: () => {
-            const arr = answers[step.key] || [];
+            let arr = answers[step.key];
+            if (!Array.isArray(arr)) arr = arr ? [arr] : [];
             if (arr.includes(opt)) {
-              answers[step.key] = arr.filter((x) => x !== opt);
+              arr = arr.filter((x) => x !== opt);
               btn.classList.remove('selected');
             } else {
-              arr.push(opt);
-              answers[step.key] = arr;
+              arr = [...arr, opt];
               btn.classList.add('selected');
             }
+            answers[step.key] = arr;
           }
         }, opt);
         group.appendChild(btn);
       });
       inputControl = group;
+    } else if (step.type === 'whatsapp_setup') {
+      const wa = answers[step.key];
+      const mk = (key, label, ph, type) => {
+        const inp = el('input', { class: 'input', type: type || 'text', placeholder: ph, value: wa[key] || '', autocomplete: 'off' });
+        inp.addEventListener('input', () => { wa[key] = inp.value; });
+        return field(label, inp);
+      };
+      const chk = el('input', { type: 'checkbox' });
+      chk.checked = !!wa.autoFollowupEnabled;
+      chk.addEventListener('change', () => { wa.autoFollowupEnabled = chk.checked; });
+      inputControl = el('div', { class: 'settings-form' }, [
+        mk('metaAppId', 'Meta App ID', 'From developers.facebook.com > Your App > Settings > Basic'),
+        mk('metaAppSecret', 'Meta App Secret', 'App secret (stored securely, never shown again)', 'password'),
+        mk('metaWabaId', 'WhatsApp Business Account ID (WABA ID)', 'e.g. 109876543210987'),
+        mk('metaPhoneId', 'Phone Number ID', 'WhatsApp > API Setup > Phone number ID'),
+        mk('metaToken', 'Permanent Access Token', 'System user access token with whatsapp_business_messaging', 'password'),
+        el('label', { style: 'display:flex;gap:8px;align-items:center;margin-top:6px;font-size:.9rem' }, [chk, 'Automatically send a WhatsApp follow-up after every voice call']),
+        el('p', { class: 'soft', style: 'font-size:.8rem;margin-top:6px' }, 'Your credentials are saved only for your workspace. Leave blank to skip and configure later.')
+      ]);
     }
 
     if (inputControl) card.appendChild(inputControl);
-
-    // Call Recording / Transcript reverse engineering drawer on step 3 or 7
-    if (activeStep === 2 || activeStep === 6) {
-      const transcriptDrawer = el('details', { style: 'margin-top:20px;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 14px;background:var(--bg-2)' }, [
-        el('summary', { style: 'cursor:pointer;font-weight:600;font-size:.84rem;color:var(--accent)' }, 'Paste Past Call Recording Transcript (Optional)'),
-        el('p', { class: 'soft', style: 'font-size:.76rem;margin:6px 0 10px 0' }, 'The AI will reverse-engineer caller questions, friction points, and real customer vocabulary.'),
-        (function () {
-          const tArea = el('textarea', { class: 'textarea', rows: 4, placeholder: 'Caller: Hi, how much for a consultation?\nAgent: Consultations are ₹600...' }, customTranscript);
-          tArea.addEventListener('input', () => { customTranscript = tArea.value; });
-          return tArea;
-        })()
-      ]);
-      card.appendChild(transcriptDrawer);
-    }
 
     // Navigation row
     const prevBtn = el('button', {
@@ -2361,7 +2354,7 @@ async function viewOnboarding(root) {
       class: 'btn btn-primary',
       style: isLast ? 'padding:12px 28px;font-weight:700;box-shadow:0 6px 20px rgba(0,149,255,0.35)' : '',
       onclick: () => goNext()
-    }, isLast ? 'Generate Voice Agent' : 'Next Step →');
+    }, isLast ? 'Save & Generate Voice Agent' : 'Next Step →');
 
     const navRow = el('div', { class: 'onboard-nav-row' }, [
       prevBtn,
@@ -2374,11 +2367,26 @@ async function viewOnboarding(root) {
     container.appendChild(card);
   }
 
-  function goNext() {
+  async function goNext() {
     if (activeStep < ONBOARD_STEPS.length - 1) {
       activeStep++;
       renderCurrentStep();
     } else {
+      const wa = answers.whatsapp || {};
+      const hasAny = ['metaAppId', 'metaAppSecret', 'metaWabaId', 'metaPhoneId', 'metaToken'].some((k) => String(wa[k] || '').trim());
+      if (hasAny) {
+        try {
+          await api('/api/whatsapp/config', { method: 'POST', body: {
+            mode: 'meta_cloud',
+            metaAppId: wa.metaAppId, metaAppSecret: wa.metaAppSecret,
+            metaWabaId: wa.metaWabaId, metaPhoneId: wa.metaPhoneId,
+            metaToken: wa.metaToken, autoFollowupEnabled: !!wa.autoFollowupEnabled
+          } });
+          toast('WhatsApp credentials saved.', 'ok');
+        } catch (err) {
+          toast('Could not save WhatsApp credentials: ' + (err.message || 'error'), 'err');
+        }
+      }
       triggerAgentGeneration();
     }
   }
@@ -2425,16 +2433,20 @@ async function viewOnboarding(root) {
     ]);
     container.appendChild(loadingCard);
 
+    const goalText = Array.isArray(answers.goal)
+      ? (answers.goal.length ? answers.goal.join(', ') : 'Book Appointments & Consultations')
+      : (answers.goal || 'Book Appointments & Consultations');
+
     const compiledNeeds = `
 - Company Services & What We Do: ${answers.offerings || 'N/A'}
-- Primary Receptionist Goal: ${answers.goal || 'Book Appointments & Consultations'}
+- Primary Receptionist Goals & Roles: ${goalText}
 - Business Hours & Emergency Contact: ${answers.workingHours || 'N/A'}
     `.trim();
 
     const payload = {
       businessName: answers.businessName,
       industry: answers.industry,
-      objective: answers.goal,
+      objective: goalText,
       tone: answers.tone,
       language: answers.language,
       needs: compiledNeeds,
@@ -2467,32 +2479,13 @@ async function viewOnboarding(root) {
     };
 
     // Header Celebration Banner
+    const businessLabel = answers.businessName ? ` for ${answers.businessName}` : '';
     const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(0,149,255,0.4);background:radial-gradient(ellipse at top, rgba(0,149,255,0.06), #FFFFFF)' }, [
       el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#EFF6FF;color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
       el('h2', { class: 't-h2', style: 'color:var(--ink);margin-bottom:6px' }, `Your Voice Agent is Ready!`),
-      el('p', { class: 'soft', style: 'max-width:540px;margin:0 auto;line-height:1.5' }, `Designed specifically for ${answers.businessName}. Script variants generated, customer objections understood, and voice persona calibrated.`)
+      el('p', { class: 'soft', style: 'max-width:540px;margin:0 auto;line-height:1.5' }, `Designed specifically${businessLabel}. Script variants generated, customer objections understood, and voice persona calibrated.`)
     ]);
     container.appendChild(celebrationHeader);
-
-    // Projected ROI & Impact Cards
-    const roiGrid = el('div', { class: 'roi-grid' }, [
-      el('div', { class: 'roi-card' }, [
-        el('div', { class: 'roi-val' }, '78%'),
-        el('div', { class: 'roi-lbl' }, 'Staff Cost Reduction'),
-        el('div', { class: 'roi-sub' }, 'vs full-time human receptionist')
-      ]),
-      el('div', { class: 'roi-card' }, [
-        el('div', { class: 'roi-val' }, '100%'),
-        el('div', { class: 'roi-lbl' }, '24/7 Answer Rate'),
-        el('div', { class: 'roi-sub' }, 'Zero missed customer calls')
-      ]),
-      el('div', { class: 'roi-card' }, [
-        el('div', { class: 'roi-val' }, 'Zero Wait'),
-        el('div', { class: 'roi-lbl' }, 'Instant Response'),
-        el('div', { class: 'roi-sub' }, 'Natural turn-taking conversation')
-      ])
-    ]);
-    container.appendChild(roiGrid);
 
     // Script Variant Tabs
     const tabsRow = el('div', { class: 'script-variant-tabs' });
@@ -5384,46 +5377,234 @@ function adjustWallet(t) {
    7. SETTINGS
    =========================================================================== */
 async function viewSettings(root) {
-  root.appendChild(viewHead('Settings', 'Implemented providers, selected server defaults, and your tenant identity. Live call workflows are configured separately.'));
+  root.appendChild(viewHead('Settings', 'Manage your user profile, WhatsApp & Meta Cloud credentials, workspace identity, and telephony.'));
 
-  const provHost = el('div', { id: 'provHost' }, skeleton('sk-card', 3));
-  root.appendChild(provHost);
+  const t = (State.me && State.me.tenant) || {};
+  const u = (State.me && State.me.user) || {};
 
-  const t = State.me.tenant;
-  const nameI = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
+  // 1. TOP ROW: USER PROFILE & WORKSPACE IDENTITY
+  const topGrid = el('div', { class: 'grid grid-12', style: 'margin-bottom:16px' });
+
+  // --- CARD 1: USER PROFILE ---
+  const userNameInput = el('input', { class: 'input', id: 'prof_name', type: 'text', value: u.name || '', placeholder: 'Your Full Name' });
+  const userEmailInput = el('input', { class: 'input', id: 'prof_email', type: 'email', value: u.email || '', placeholder: 'name@company.com' });
+  const saveProfileBtn = el('button', { class: 'btn btn-primary' }, 'Save Profile');
+
+  saveProfileBtn.addEventListener('click', async () => {
+    const newName = userNameInput.value.trim();
+    const newEmail = userEmailInput.value.trim().toLowerCase();
+    if (!newName && !newEmail) {
+      toast('Name or email is required.', 'err');
+      return;
+    }
+    saveProfileBtn.disabled = true;
+    saveProfileBtn.textContent = 'Saving...';
+    try {
+      const res = await api('/api/user/profile', { method: 'POST', body: { name: newName, email: newEmail } });
+      if (res && res.user) {
+        Object.assign(State.me.user, res.user);
+        toast('Profile updated successfully.', 'ok');
+        const tn = $('.tenant-chip .tn');
+        if (tn) tn.textContent = res.user.name || res.user.email;
+        const av = $('.tenant-chip .av');
+        if (av) av.textContent = initials(res.user.name || res.user.email);
+      }
+    } catch (err) {
+      toast(err.message || 'Failed to update profile.', 'err');
+    } finally {
+      saveProfileBtn.disabled = false;
+      saveProfileBtn.textContent = 'Save Profile';
+    }
+  });
+
+  const profileCard = el('section', { class: 'card card-pad' }, [
+    el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px' }, [
+      el('h3', { class: 't-h3' }, 'User Profile & Account'),
+      el('span', { class: 'pill', style: 'background:var(--ok);color:#fff;text-transform:capitalize' }, u.role || 'Member')
+    ]),
+    el('div', { class: 'flex items-center gap-3', style: 'margin-bottom:16px;padding:12px;background:var(--bg-2);border-radius:10px' }, [
+      el('div', { class: 'av', style: 'width:42px;height:42px;font-size:1rem' }, initials(u.name || u.email || 'User')),
+      el('div', {}, [
+        el('div', { style: 'font-weight:700;font-size:0.95rem' }, u.name || 'User Account'),
+        el('div', { class: 'muted', style: 'font-size:0.8rem' }, u.email || 'No email attached')
+      ])
+    ]),
+    el('div', { class: 'settings-form' }, [
+      field('Full Name', userNameInput),
+      field('Email Address', userEmailInput),
+      el('div', { class: 'flex gap-2', style: 'margin-top:4px' }, [
+        saveProfileBtn,
+        el('button', { class: 'btn btn-ghost', onclick: doLogout }, 'Sign out')
+      ])
+    ])
+  ]);
+
+  // --- CARD 2: WORKSPACE IDENTITY ---
+  const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
   const colorVal = (t.branding && t.branding.color) || '#6E7BFF';
   const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal });
   const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:130px;font-family:var(--mono)' });
   colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
   colorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorI.value = colorHex.value; });
 
-  const saveBtn = el('button', { class: 'btn btn-primary' }, 'Save tenant settings');
-  saveBtn.addEventListener('click', async () => {
-    saveBtn.disabled = true; saveBtn.textContent = 'Saving...';
+  const saveTenantBtn = el('button', { class: 'btn btn-primary' }, 'Save Workspace');
+  saveTenantBtn.addEventListener('click', async () => {
+    saveTenantBtn.disabled = true;
+    saveTenantBtn.textContent = 'Saving...';
     try {
-      // tenant settings update is best effort. If the route is absent, surface a soft note.
-      await api('/api/tenant/update', { method: 'POST', body: { name: nameI.value.trim(), color: colorI.value } });
-      State.me.tenant.name = nameI.value.trim();
+      await api('/api/tenant/update', { method: 'POST', body: { name: tenantNameInput.value.trim(), color: colorI.value } });
+      State.me.tenant.name = tenantNameInput.value.trim();
       State.me.tenant.branding = Object.assign({}, State.me.tenant.branding, { color: colorI.value });
       const tn = $('.tenant-chip .tn'); if (tn) { tn.textContent = State.me.tenant.name; tn.title = State.me.tenant.name; }
       const av = $('.tenant-chip .av'); if (av) av.textContent = initials(State.me.tenant.name);
-      toast('Tenant settings saved.', 'ok');
+      toast('Workspace settings saved.', 'ok');
     } catch (ex) {
-      toast(ex.status === 404 ? 'Tenant settings endpoint not available in this build.' : (ex.message || 'Save failed.'), 'err');
+      toast(ex.status === 404 ? 'Tenant settings endpoint not available.' : (ex.message || 'Save failed.'), 'err');
     } finally {
-      saveBtn.disabled = false; saveBtn.textContent = 'Save tenant settings';
+      saveTenantBtn.disabled = false;
+      saveTenantBtn.textContent = 'Save Workspace';
     }
   });
 
-  root.appendChild(el('div', { class: 'card card-pad', style: 'margin-top:8px' }, [
-    el('h3', { class: 't-h3', style: 'margin-bottom:16px' }, 'Tenant'),
+  const tenantCard = el('section', { class: 'card card-pad' }, [
+    el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px' }, [
+      el('h3', { class: 't-h3' }, 'Workspace & Tenant'),
+      el('span', { class: 'pill', style: 'background:rgba(0,149,255,0.12);color:var(--accent);font-weight:600' }, (t.plan || 'starter').replace(/_/g, ' ') + ' plan')
+    ]),
+    el('p', { class: 'muted', style: 'font-size:0.85rem;margin-bottom:16px' }, 'Customize your business workspace name and brand accent color.'),
     el('div', { class: 'settings-form' }, [
-      field('Tenant name', nameI),
-      el('div', { class: 'field' }, [el('label', {}, 'Brand color'), el('div', { class: 'color-row' }, [colorI, colorHex])]),
-      el('div', { class: 'flex gap-2', style: 'margin-top:6px' }, [saveBtn, el('button', { class: 'btn btn-ghost', onclick: doLogout }, 'Sign out')])
+      field('Workspace / Business Name', tenantNameInput),
+      el('div', { class: 'field' }, [
+        el('label', {}, 'Brand Accent Color'),
+        el('div', { class: 'color-row' }, [colorI, colorHex])
+      ]),
+      el('div', { class: 'flex gap-2', style: 'margin-top:4px' }, [saveTenantBtn])
     ])
-  ]));
+  ]);
 
+  topGrid.appendChild(profileCard);
+  topGrid.appendChild(tenantCard);
+  root.appendChild(topGrid);
+
+  // --- CARD 3: WHATSAPP BUSINESS & META CLOUD API CREDENTIALS (SAAS TENANT) ---
+  const waCard = el('section', { class: 'card card-pad', style: 'margin-bottom:16px' });
+  const waStatusPill = el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.15);color:#b45309;font-weight:600' }, 'Loading...');
+
+  const waHeader = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:8px' }, [
+    el('div', {}, [
+      el('h3', { class: 't-h3' }, 'WhatsApp Business & Meta Cloud API Credentials'),
+      el('p', { class: 'muted', style: 'font-size:0.85rem;margin-top:2px' }, 'Each tenant client can enter their own Meta Developer and WhatsApp Cloud API credentials. No server .env modification required.')
+    ]),
+    waStatusPill
+  ]);
+  waCard.appendChild(waHeader);
+
+  // Inputs for WhatsApp Meta Cloud
+  const waAppId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 123456789012345' });
+  const waAppSecret = el('input', { class: 'input', type: 'password', placeholder: 'App secret (hidden)' });
+  const waWabaId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 109876543210987' });
+  const waPhoneId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 102938475610293' });
+  const waToken = el('input', { class: 'input', type: 'password', placeholder: 'System user permanent access token' });
+  const waAutoFollowupChk = el('input', { type: 'checkbox' });
+  const waFollowupMsg = el('textarea', { class: 'textarea', rows: 3, placeholder: 'Hi {{name}}, thank you for speaking with our AI Receptionist...' });
+
+  const saveWaBtn = el('button', { class: 'btn btn-primary' }, 'Save WhatsApp Credentials');
+  saveWaBtn.addEventListener('click', async () => {
+    saveWaBtn.disabled = true;
+    saveWaBtn.textContent = 'Saving...';
+    try {
+      const payload = {
+        mode: 'meta_cloud',
+        metaAppId: waAppId.value.trim(),
+        metaAppSecret: waAppSecret.value.trim(),
+        metaWabaId: waWabaId.value.trim(),
+        metaPhoneId: waPhoneId.value.trim(),
+        metaToken: waToken.value.trim(),
+        autoFollowupEnabled: waAutoFollowupChk.checked,
+        autoFollowupMessage: waFollowupMsg.value.trim()
+      };
+      await api('/api/whatsapp/config', { method: 'POST', body: payload });
+      toast('WhatsApp credentials saved successfully.', 'ok');
+      await loadWhatsAppConfig();
+    } catch (err) {
+      toast(err.message || 'Failed to save WhatsApp config.', 'err');
+    } finally {
+      saveWaBtn.disabled = false;
+      saveWaBtn.textContent = 'Save WhatsApp Credentials';
+    }
+  });
+
+  const webhookCallbackUrl = `${window.location.origin}/api/whatsapp/webhook`;
+  const copyWebhookBtn = el('button', {
+    type: 'button',
+    class: 'btn btn-ghost btn-sm',
+    onclick: () => {
+      navigator.clipboard.writeText(webhookCallbackUrl);
+      toast('Webhook URL copied to clipboard!', 'ok');
+    }
+  }, 'Copy URL');
+
+  const waForm = el('div', { class: 'grid grid-12', style: 'gap:16px;margin-top:14px' }, [
+    el('div', { class: 'col-6 settings-form', style: 'max-width:none' }, [
+      field('Meta App ID', waAppId),
+      field('Meta App Secret', waAppSecret),
+      field('WhatsApp Business Account ID (WABA ID)', waWabaId),
+      field('WhatsApp Phone Number ID', waPhoneId),
+      field('Permanent Access Token', waToken)
+    ]),
+    el('div', { class: 'col-6 settings-form', style: 'max-width:none' }, [
+      el('div', { class: 'field' }, [
+        el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer' }, [
+          waAutoFollowupChk,
+          el('b', {}, 'Call-to-WhatsApp Automated Follow-up')
+        ]),
+        el('p', { class: 'muted', style: 'font-size:0.78rem;margin:4px 0 8px' }, 'Automatically dispatch a WhatsApp confirmation message to callers after each voice call finishes.')
+      ]),
+      field('Follow-up Message Template', waFollowupMsg),
+      el('div', { style: 'padding:12px;background:var(--bg-2);border-radius:10px;border:1px solid var(--line);margin-top:8px' }, [
+        el('b', { style: 'font-size:0.85rem;display:block;margin-bottom:4px' }, 'Meta Developer Webhook Setup:'),
+        el('p', { class: 'muted', style: 'font-size:0.78rem;line-height:1.4;margin-bottom:8px' }, 'In Meta Developer Portal > WhatsApp > Configuration, set Callback URL to:'),
+        el('div', { class: 'flex items-center gap-2' }, [
+          el('code', { style: 'font-size:0.75rem;padding:4px 8px;background:var(--card);border-radius:6px;flex:1;overflow:hidden;text-overflow:ellipsis' }, webhookCallbackUrl),
+          copyWebhookBtn
+        ])
+      ]),
+      el('div', { style: 'margin-top:12px' }, [saveWaBtn])
+    ])
+  ]);
+  waCard.appendChild(waForm);
+  root.appendChild(waCard);
+
+  async function loadWhatsAppConfig() {
+    try {
+      const res = await api('/api/whatsapp/config');
+      const cfg = (res && res.config) || {};
+      if (cfg.metaAppId) waAppId.value = cfg.metaAppId;
+      if (cfg.hasMetaAppSecret) waAppSecret.placeholder = '●●●●●●●● (App Secret Configured)';
+      if (cfg.metaWabaId) waWabaId.value = cfg.metaWabaId;
+      if (cfg.metaPhoneId) waPhoneId.value = cfg.metaPhoneId;
+      if (cfg.hasMetaToken) waToken.placeholder = '●●●●●●●● (Token Configured)';
+      waAutoFollowupChk.checked = cfg.autoFollowupEnabled !== false;
+      if (cfg.autoFollowupMessage) waFollowupMsg.value = cfg.autoFollowupMessage;
+
+      if ((cfg.hasMetaToken || cfg.metaToken) && cfg.metaPhoneId) {
+        waStatusPill.className = 'pill';
+        waStatusPill.style.background = 'rgba(34,197,94,0.15)';
+        waStatusPill.style.color = '#15803d';
+        waStatusPill.textContent = '● Connected & Active';
+      } else {
+        waStatusPill.className = 'pill';
+        waStatusPill.style.background = 'rgba(234,179,8,0.15)';
+        waStatusPill.style.color = '#b45309';
+        waStatusPill.textContent = '○ Credentials Required';
+      }
+    } catch (_) {
+      waStatusPill.textContent = 'Config Load Error';
+    }
+  }
+  loadWhatsAppConfig();
+
+  // --- CARD 4 & 5: PRIVACY & BYON SPLIT ---
   const privacySelect = el('select', { class: 'select', id: 'privacy_mode' }, [
     el('option', { value: 'standard' }, 'Standard retention'),
     el('option', { value: 'metadata_only' }, 'Privacy mode, metadata only'),
@@ -5445,7 +5626,7 @@ async function viewSettings(root) {
     try { await api('/api/byon', { method: 'POST', body: { provider: provider.value, address: address.value.trim(), label: label.value.trim() } }); toast('Number connection saved for verification.', 'ok'); await loadByon(byonList); }
     catch (e) { toast(e.message, 'err'); } finally { byonSave.disabled = false; }
   };
-  root.appendChild(el('div', { class: 'settings-split' }, [
+  root.appendChild(el('div', { class: 'settings-split', style: 'margin-bottom:16px' }, [
     el('section', { class: 'card card-pad' }, [
       el('h3', { class: 't-h3' }, 'Privacy and HIPAA mode'),
       el('p', { class: 'muted privacy-copy' }, 'HIPAA mode disables recording and transcript retention in RapidX Voice. It does not by itself make your organization HIPAA compliant. You still need appropriate provider BAAs, policies, access controls, consent, and legal review.'),
@@ -5461,6 +5642,10 @@ async function viewSettings(root) {
     api('/api/privacy').then((x) => { privacySelect.value = x.mode || 'standard'; }),
     loadByon(byonList)
   ]).catch(() => {});
+
+  // --- CARD 6: INFRASTRUCTURE PROVIDERS ---
+  const provHost = el('div', { id: 'provHost' }, skeleton('sk-card', 3));
+  root.appendChild(provHost);
 
   try {
     const reg = await ensureProviders();

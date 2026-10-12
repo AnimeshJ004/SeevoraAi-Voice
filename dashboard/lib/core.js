@@ -371,23 +371,26 @@ async function getSession(req) {
           let role = (claims.metadata && claims.metadata.role) || 'client';
           let plan = (claims.metadata && claims.metadata.plan) || 'starter';
 
-          if (!email && process.env.CLERK_SECRET_KEY) {
+          if (process.env.CLERK_SECRET_KEY) {
             try {
               const clerkUser = await clerk.getClerkUser(claims.sub);
               if (clerkUser) {
-                const primaryEmailObj = (clerkUser.email_addresses || []).find((e) => e.id === clerkUser.primary_email_address_id) || (clerkUser.email_addresses || [])[0];
-                email = (primaryEmailObj && primaryEmailObj.email_address) || clerkUser.email;
-                name = clerkUser.first_name ? `${clerkUser.first_name} ${clerkUser.last_name || ''}`.trim() : (clerkUser.username || clerkUser.first_name);
-                if (clerkUser.public_metadata) {
-                  role = clerkUser.public_metadata.role || role;
-                  plan = clerkUser.public_metadata.plan || plan;
+                if (clerkUser.email) email = clerkUser.email;
+                if (clerkUser.name && !clerkUser.name.startsWith('user_')) name = clerkUser.name;
+                if (clerkUser.publicMetadata) {
+                  role = clerkUser.publicMetadata.role || role;
+                  plan = clerkUser.publicMetadata.plan || plan;
                 }
               }
             } catch (_) {}
           }
 
+          if (!name || name.startsWith('user_')) {
+            const handle = email && !email.includes('@clerk.user') ? email.split('@')[0] : '';
+            name = handle ? (handle.charAt(0).toUpperCase() + handle.slice(1)) : (claims.sub ? `User ${claims.sub.slice(-4)}` : 'User');
+          }
+
           email = email || `${claims.sub}@clerk.user`;
-          name = name || claims.sub;
 
           const tenantId = genId('t_');
           const userId = genId('u_');
@@ -440,6 +443,46 @@ async function getSession(req) {
               mutDb.wallets.push({ id: genId('wal_'), tenantId, currency: 'INR', balancePaise: 1000, updatedAt: new Date().toISOString() });
             }
           });
+        }
+
+        if (user && tenant) {
+          // Self-heal: If user has a dummy "user_..." name or email, fetch the real Clerk name/email
+          const hasDummyName = !user.name || user.name.startsWith('user_');
+          const hasDummyTenant = !tenant.name || tenant.name.startsWith('user_');
+          const hasDummyEmail = !user.email || user.email.includes('@clerk.user');
+
+          if (hasDummyName || hasDummyTenant || hasDummyEmail) {
+            let realEmail = user.email;
+            let realName = user.name;
+            if (process.env.CLERK_SECRET_KEY) {
+              try {
+                const clerkUser = await clerk.getClerkUser(claims.sub);
+                if (clerkUser) {
+                  if (clerkUser.email) realEmail = clerkUser.email;
+                  if (clerkUser.name && !clerkUser.name.startsWith('user_')) realName = clerkUser.name;
+                }
+              } catch (_) {}
+            }
+            if (!realName || realName.startsWith('user_')) {
+              const handle = realEmail && !realEmail.includes('@clerk.user') ? realEmail.split('@')[0] : '';
+              realName = handle ? (handle.charAt(0).toUpperCase() + handle.slice(1)) : 'User';
+            }
+            const tenantTitle = `${realName}'s Workspace`;
+            await mutate((mutDb) => {
+              const u = mutDb.users.find((x) => x.id === user.id);
+              if (u) {
+                u.name = realName;
+                if (realEmail && !realEmail.includes('@clerk.user')) u.email = realEmail;
+              }
+              const t = mutDb.tenants.find((x) => x.id === tenant.id);
+              if (t && (!t.name || t.name.startsWith('user_'))) {
+                t.name = tenantTitle;
+              }
+            });
+            user.name = realName;
+            if (realEmail && !realEmail.includes('@clerk.user')) user.email = realEmail;
+            if (!tenant.name || tenant.name.startsWith('user_')) tenant.name = tenantTitle;
+          }
         }
 
         if (user && tenant && user.status === 'active' && tenant.status === 'active') {

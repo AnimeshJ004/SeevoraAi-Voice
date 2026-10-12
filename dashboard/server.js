@@ -2091,6 +2091,39 @@ async function apiAgencyPromptSave(req, res, ctx) {
   core.sendJson(res, 200, { prompt: row.text, version: row.version, updatedAt: row.updatedAt, updatedBy: ctx.user.name || ctx.user.email });
 }
 
+async function apiUserProfileUpdate(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const b = ctx.body || {};
+  const name = String(b.name || '').trim().slice(0, 80);
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
+
+  if (!name && !email) {
+    return core.sendJson(res, 422, { error: 'Name or email is required', code: 'bad_input' });
+  }
+
+  let updatedUser;
+  await core.mutate((store) => {
+    const user = store.users.find((u) => u.id === ctx.user.id);
+    if (!user) return;
+    if (name) user.name = name;
+    if (email && email.includes('@')) {
+      const exists = store.users.find((u) => u.email === email && u.id !== user.id);
+      if (!exists) {
+        user.email = email;
+      }
+    }
+    user.updatedAt = new Date().toISOString();
+    updatedUser = user;
+    addAudit(store, ctx, 'user.profile.updated', 'user', user.id, { name: user.name, email: user.email });
+  });
+
+  if (!updatedUser) {
+    return core.sendJson(res, 404, { error: 'User not found', code: 'not_found' });
+  }
+
+  core.sendJson(res, 200, { ok: true, user: publicUser(updatedUser) });
+}
+
 async function apiTenantUpdate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
@@ -2819,8 +2852,10 @@ function apiWhatsAppConfigGet(req, res, ctx) {
   const safeCfg = {
     ...cfg,
     metaToken: cfg.metaToken ? '●●●●●●●●' : '',
+    metaAppSecret: cfg.metaAppSecret ? '●●●●●●●●' : '',
     wacrmApiKey: cfg.wacrmApiKey ? '●●●●●●●●' : '',
     hasMetaToken: !!cfg.metaToken,
+    hasMetaAppSecret: !!cfg.metaAppSecret,
     hasWacrmApiKey: !!cfg.wacrmApiKey,
   };
   core.sendJson(res, 200, { config: safeCfg });
@@ -2832,6 +2867,8 @@ async function apiWhatsAppConfigSave(req, res, ctx) {
   await core.mutate((d) => {
     const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
     if (b.mode) cfg.mode = b.mode;
+    if (b.metaAppId !== undefined) cfg.metaAppId = String(b.metaAppId).trim();
+    if (b.metaAppSecret && b.metaAppSecret !== '●●●●●●●●') cfg.metaAppSecret = String(b.metaAppSecret).trim();
     if (b.metaPhoneId !== undefined) cfg.metaPhoneId = String(b.metaPhoneId).trim();
     if (b.metaWabaId !== undefined) cfg.metaWabaId = String(b.metaWabaId).trim();
     if (b.metaToken && b.metaToken !== '●●●●●●●●') cfg.metaToken = String(b.metaToken).trim();
@@ -2842,7 +2879,7 @@ async function apiWhatsAppConfigSave(req, res, ctx) {
     cfg.updatedAt = new Date().toISOString();
     updated = cfg;
   });
-  core.sendJson(res, 200, { ok: true, config: { ...updated, metaToken: '●●●●●●●●', wacrmApiKey: '●●●●●●●●' } });
+  core.sendJson(res, 200, { ok: true, config: { ...updated, metaToken: '●●●●●●●●', metaAppSecret: '●●●●●●●●', wacrmApiKey: '●●●●●●●●' } });
 }
 
 function apiWhatsAppTemplatesList(req, res, ctx) {
@@ -2914,6 +2951,25 @@ async function apiWhatsAppBroadcastCreate(req, res, ctx) {
       }
     }
   });
+
+  const cfg = wacrm.getTenantWacrmConfig(core.db(), ctx.tenant.id);
+  if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
+    for (const r of recipients) {
+      const phone = typeof r === 'string' ? r : r.phone;
+      const contactName = (typeof r === 'object' && r.name) ? r.name : '';
+      if (phone) {
+        const personalized = text.replace(/\{\{name\}\}/gi, contactName || 'there');
+        wacrm.sendMetaWhatsAppMessage({
+          phoneId: cfg.metaPhoneId,
+          token: cfg.metaToken,
+          to: phone,
+          text: personalized
+        }).catch((err) => {
+          console.error('[WhatsApp Broadcast Live Error]', err.message);
+        });
+      }
+    }
+  }
 
   core.sendJson(res, 201, { broadcast });
 }
@@ -3103,6 +3159,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
       if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
+      if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
       if (route === '/api/tenant/update') return core.requireRole(req, res, 'owner', apiTenantUpdate, body);
       if (route === '/api/tenant/onboarding-complete') return core.requireAuth(req, res, apiTenantOnboardingComplete, body);
       if (route === '/api/members/role') return core.requireRole(req, res, 'owner', apiMemberRole, body);
