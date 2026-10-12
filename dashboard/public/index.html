@@ -490,20 +490,18 @@
           // Hide initial loader
           if (loader) loader.style.display = 'none';
 
-          // Mount SignIn into dedicated signInSlot (routes existing accounts to dashboard overview)
+          // Mount SignIn into dedicated signInSlot (routes existing accounts to app)
           window.Clerk.mountSignIn(signInSlot, {
             routing: 'hash',
             signUpUrl: '#/sign-up',
-            fallbackRedirectUrl: '/app.html#/overview',
-            forceRedirectUrl: '/app.html#/overview',
+            fallbackRedirectUrl: '/app.html',
           });
 
-          // Mount SignUp into dedicated signUpSlot (routes new accounts to onboarding wizard)
+          // Mount SignUp into dedicated signUpSlot (routes new accounts to app)
           window.Clerk.mountSignUp(signUpSlot, {
             routing: 'hash',
             signInUrl: '#/sign-in',
-            fallbackRedirectUrl: '/app.html#/onboarding',
-            forceRedirectUrl: '/app.html#/onboarding',
+            fallbackRedirectUrl: '/app.html',
           });
 
           // Show the correct one based on current hash
