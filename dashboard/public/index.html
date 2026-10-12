@@ -486,7 +486,7 @@
           if (isLoggedOut && typeof window.Clerk.signOut === 'function') {
             await window.Clerk.signOut().catch(() => {});
           } else if (window.Clerk.user) {
-            let targetUrl = '/app.html';
+            let targetUrl = '/app.html#/overview';
             try {
               const tok = await window.Clerk.session?.getToken();
               if (tok) {
@@ -496,8 +496,12 @@
                 });
                 if (meRes.ok) {
                   const meData = await meRes.json();
-                  if (meData && meData.user && !meData.user.onboardingCompleted && (!meData.tenant || !meData.tenant.onboardingCompleted)) {
+                  const isCompleted = (meData && meData.user && meData.user.onboardingCompleted) ||
+                                      (meData && meData.tenant && meData.tenant.onboardingCompleted);
+                  if (!isCompleted) {
                     targetUrl = '/app.html#/onboarding';
+                  } else {
+                    targetUrl = '/app.html#/overview';
                   }
                 }
               }
@@ -509,12 +513,12 @@
           // Hide initial loader
           if (loader) loader.style.display = 'none';
 
-          // Mount SignIn into dedicated signInSlot
+          // Mount SignIn into dedicated signInSlot (routes existing accounts to dashboard overview)
           window.Clerk.mountSignIn(signInSlot, {
             routing: 'hash',
             signUpUrl: '#/sign-up',
-            fallbackRedirectUrl: '/app.html',
-            forceRedirectUrl: '/app.html',
+            fallbackRedirectUrl: '/app.html#/overview',
+            forceRedirectUrl: '/app.html#/overview',
           });
 
           // Mount SignUp into dedicated signUpSlot (routes new accounts to onboarding wizard)

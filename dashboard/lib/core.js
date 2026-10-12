@@ -362,29 +362,54 @@ async function getSession(req) {
       const claims = clerk.decodeJwt(clerkToken);
       if (claims && claims.sub) {
         const d = db();
-        let user = d.users.find((u) => u.clerkUserId === claims.sub || (claims.email && u.email === claims.email));
+        let user = d.users.find((u) => u.clerkUserId === claims.sub || (claims.email && u.email && u.email.toLowerCase() === claims.email.toLowerCase()));
+
+        let clerkUser = null;
+        let email = claims.email;
+        let name = claims.name;
+        let role = (claims.metadata && claims.metadata.role) || 'client';
+        let plan = (claims.metadata && claims.metadata.plan) || 'starter';
+
+        if (process.env.CLERK_SECRET_KEY && (!user || !user.email || user.email.includes('@clerk.user') || !user.name || user.name.startsWith('user_'))) {
+          try {
+            clerkUser = await clerk.getClerkUser(claims.sub);
+            if (clerkUser) {
+              if (clerkUser.email) email = clerkUser.email;
+              if (clerkUser.name && !clerkUser.name.startsWith('user_')) name = clerkUser.name;
+              if (clerkUser.publicMetadata) {
+                role = clerkUser.publicMetadata.role || role;
+                plan = clerkUser.publicMetadata.plan || plan;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // If not found by clerkUserId, look for existing account with this verified email
+        if (!user && email && !email.includes('@clerk.user')) {
+          const matchingUsers = d.users.filter((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
+          if (matchingUsers.length > 0) {
+            // Pick the user with onboarding completed or existing agents first
+            user = matchingUsers.find((u) => {
+              const t = d.tenants.find((x) => x.id === u.tenantId);
+              const hasAgents = d.agents.some((a) => a.tenantId === u.tenantId);
+              return u.onboardingCompleted || (t && t.onboardingCompleted) || hasAgents;
+            }) || matchingUsers[0];
+
+            // Re-bind Clerk user ID to this established account
+            user.clerkUserId = claims.sub;
+            await mutate((mutDb) => {
+              const mu = mutDb.users.find((x) => x.id === user.id);
+              if (mu) {
+                mu.clerkUserId = claims.sub;
+                if (name && (!mu.name || mu.name.startsWith('user_'))) mu.name = name;
+              }
+            });
+          }
+        }
+
         let tenant = user ? d.tenants.find((t) => t.id === user.tenantId) : null;
 
         if (!user) {
-          let email = claims.email;
-          let name = claims.name;
-          let role = (claims.metadata && claims.metadata.role) || 'client';
-          let plan = (claims.metadata && claims.metadata.plan) || 'starter';
-
-          if (process.env.CLERK_SECRET_KEY) {
-            try {
-              const clerkUser = await clerk.getClerkUser(claims.sub);
-              if (clerkUser) {
-                if (clerkUser.email) email = clerkUser.email;
-                if (clerkUser.name && !clerkUser.name.startsWith('user_')) name = clerkUser.name;
-                if (clerkUser.publicMetadata) {
-                  role = clerkUser.publicMetadata.role || role;
-                  plan = clerkUser.publicMetadata.plan || plan;
-                }
-              }
-            } catch (_) {}
-          }
-
           if (!name || name.startsWith('user_')) {
             const handle = email && !email.includes('@clerk.user') ? email.split('@')[0] : '';
             name = handle ? (handle.charAt(0).toUpperCase() + handle.slice(1)) : (claims.sub ? `User ${claims.sub.slice(-4)}` : 'User');
@@ -394,6 +419,7 @@ async function getSession(req) {
 
           const tenantId = genId('t_');
           const userId = genId('u_');
+          const clerkOnboarded = !!(clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted);
 
           tenant = {
             id: tenantId,
@@ -401,7 +427,7 @@ async function getSession(req) {
             slug: `tenant-${tenantId.slice(2)}`,
             plan,
             status: 'active',
-            onboardingCompleted: false,
+            onboardingCompleted: clerkOnboarded,
             createdAt: new Date().toISOString(),
           };
 
@@ -413,7 +439,7 @@ async function getSession(req) {
             name,
             role,
             status: 'active',
-            onboardingCompleted: false,
+            onboardingCompleted: clerkOnboarded,
             createdAt: new Date().toISOString(),
           };
 
@@ -432,7 +458,7 @@ async function getSession(req) {
             slug: `tenant-${tenantId.slice(2)}`,
             plan: 'starter',
             status: 'active',
-            onboardingCompleted: false,
+            onboardingCompleted: !!user.onboardingCompleted,
             createdAt: new Date().toISOString(),
           };
           await mutate((mutDb) => {
@@ -454,14 +480,14 @@ async function getSession(req) {
           if (hasDummyName || hasDummyTenant || hasDummyEmail) {
             let realEmail = user.email;
             let realName = user.name;
-            if (process.env.CLERK_SECRET_KEY) {
+            if (process.env.CLERK_SECRET_KEY && !clerkUser) {
               try {
-                const clerkUser = await clerk.getClerkUser(claims.sub);
-                if (clerkUser) {
-                  if (clerkUser.email) realEmail = clerkUser.email;
-                  if (clerkUser.name && !clerkUser.name.startsWith('user_')) realName = clerkUser.name;
-                }
+                clerkUser = await clerk.getClerkUser(claims.sub);
               } catch (_) {}
+            }
+            if (clerkUser) {
+              if (clerkUser.email) realEmail = clerkUser.email;
+              if (clerkUser.name && !clerkUser.name.startsWith('user_')) realName = clerkUser.name;
             }
             if (!realName || realName.startsWith('user_')) {
               const handle = realEmail && !realEmail.includes('@clerk.user') ? realEmail.split('@')[0] : '';
@@ -482,6 +508,29 @@ async function getSession(req) {
             user.name = realName;
             if (realEmail && !realEmail.includes('@clerk.user')) user.email = realEmail;
             if (!tenant.name || tenant.name.startsWith('user_')) tenant.name = tenantTitle;
+          }
+
+          // Auto-heal onboarding status if tenant already has an active agent or Clerk has metadata
+          const hasAgents = d.agents && d.agents.some((a) => a.tenantId === tenant.id);
+          const clerkOnboarded = !!(clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted);
+          const isFinished = !!(user.onboardingCompleted || tenant.onboardingCompleted || hasAgents || clerkOnboarded);
+
+          if (isFinished && (!user.onboardingCompleted || !tenant.onboardingCompleted)) {
+            user.onboardingCompleted = true;
+            tenant.onboardingCompleted = true;
+            await mutate((mutDb) => {
+              const u = mutDb.users.find((x) => x.id === user.id);
+              if (u) u.onboardingCompleted = true;
+              const t = mutDb.tenants.find((x) => x.id === tenant.id);
+              if (t) t.onboardingCompleted = true;
+            });
+          }
+
+          // Sync to Clerk public metadata if not yet stored
+          if (isFinished && user.clerkUserId && process.env.CLERK_SECRET_KEY && (!clerkUser || !clerkUser.publicMetadata || !clerkUser.publicMetadata.onboardingCompleted)) {
+            clerk.updateClerkMetadata(user.clerkUserId, {
+              publicMetadata: { onboardingCompleted: true }
+            }).catch(() => {});
           }
         }
 

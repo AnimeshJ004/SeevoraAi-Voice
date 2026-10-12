@@ -374,10 +374,13 @@ async function boot() {
     const me = await api('/api/me', { allow401: true });
     State.me = me;
 
-    const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
+    const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
+                        (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    if (needsOnboarding && (!hash || hash === 'overview')) {
+    if (!isCompleted && (!hash || hash === 'overview')) {
       location.hash = '#/onboarding';
+    } else if (isCompleted && hash === 'onboarding') {
+      location.hash = '#/overview';
     }
 
     renderShell();
@@ -389,10 +392,13 @@ async function boot() {
         if (tok) {
           const me = await api('/api/me', { allow401: true });
           State.me = me;
-          const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
+          const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
+                              (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
           const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-          if (needsOnboarding && (!hash || hash === 'overview')) {
+          if (!isCompleted && (!hash || hash === 'overview')) {
             location.hash = '#/onboarding';
+          } else if (isCompleted && hash === 'onboarding') {
+            location.hash = '#/overview';
           }
           renderShell();
           return;
@@ -708,10 +714,12 @@ function paintHealth() {
    =========================================================================== */
 function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+  const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
+                      (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
+
   if (hash === 'ai-creator' || hash === 'onboarding') return 'onboarding';
 
-  const needsOnboarding = State.me && State.me.user && !State.me.user.onboardingCompleted && (!State.me.tenant || !State.me.tenant.onboardingCompleted);
-  if (needsOnboarding && (!hash || hash === 'overview')) {
+  if (!isCompleted && (!hash || hash === 'overview')) {
     return 'onboarding';
   }
 
@@ -2641,9 +2649,17 @@ async function viewOnboarding(root) {
           };
           const res = await api('/api/agents', { method: 'POST', body: payload });
           await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => {});
+          if (answers.whatsapp && (answers.whatsapp.metaPhoneId || answers.whatsapp.metaToken || answers.whatsapp.metaAppId)) {
+            await api('/api/whatsapp/config', { method: 'POST', body: answers.whatsapp }).catch(() => {});
+          }
+          if (answers.businessName && answers.businessName.trim()) {
+            await api('/api/tenant/update', { method: 'POST', body: { name: answers.businessName.trim() } }).catch(() => {});
+            if (State.me && State.me.tenant) State.me.tenant.name = answers.businessName.trim();
+          }
           if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
           if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
           if (res.agent) {
+            State.agents = State.agents || [];
             State.agents.push(res.agent);
             State.activeAgentId = res.agent.id;
           }

@@ -405,14 +405,20 @@ async function boot() {
    Public-facing serialization (never leak passHash, scope to tenant).
    ========================================================================== */
 function publicUser(u) {
-  return { id: u.id, tenantId: u.tenantId, email: u.email, name: u.name, role: u.role, status: u.status, createdAt: u.createdAt, onboardingCompleted: !!u.onboardingCompleted };
+  const d = core.db();
+  const hasAgents = d.agents && d.agents.some((a) => a.tenantId === u.tenantId);
+  const isCompleted = !!u.onboardingCompleted || hasAgents;
+  return { id: u.id, tenantId: u.tenantId, email: u.email, name: u.name, role: u.role, status: u.status, createdAt: u.createdAt, onboardingCompleted: isCompleted };
 }
 function publicTenant(t) {
+  const d = core.db();
+  const hasAgents = d.agents && d.agents.some((a) => a.tenantId === t.id);
+  const isCompleted = !!t.onboardingCompleted || hasAgents;
   return {
     id: t.id, name: t.name, slug: t.slug, createdAt: t.createdAt,
     branding: t.branding, providers: t.providers, plan: t.plan,
     status: t.status, privacyMode: t.privacyMode,
-    onboardingCompleted: !!t.onboardingCompleted,
+    onboardingCompleted: isCompleted,
   };
 }
 function publicAgent(a) {
@@ -700,6 +706,11 @@ async function apiAgentsCreate(req, res, ctx) {
     const u = d.users.find((x) => x.id === ctx.user.id);
     if (u) u.onboardingCompleted = true;
   });
+  if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
+    core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
+      publicMetadata: { onboardingCompleted: true }
+    }).catch(() => {});
+  }
   core.sendJson(res, 200, { agent: publicAgent(agent) });
 }
 
@@ -710,6 +721,11 @@ async function apiTenantOnboardingComplete(req, res, ctx) {
     const u = d.users.find((x) => x.id === ctx.user.id);
     if (u) u.onboardingCompleted = true;
   });
+  if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
+    core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
+      publicMetadata: { onboardingCompleted: true }
+    }).catch(() => {});
+  }
   core.sendJson(res, 200, { ok: true, onboardingCompleted: true });
 }
 
