@@ -12,7 +12,10 @@ const el = (tag, attrs, kids) => {
   const n = document.createElement(tag);
   if (attrs) for (const k in attrs) {
     if (k === 'class') n.className = attrs[k];
-    else if (k === 'html') n.innerHTML = attrs[k];
+    else if (k === 'html') {
+      if (attrs[k] instanceof Node) n.appendChild(attrs[k]);
+      else n.innerHTML = attrs[k];
+    }
     else if (k.slice(0, 2) === 'on' && typeof attrs[k] === 'function') n.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
     else if (attrs[k] != null && attrs[k] !== false) n.setAttribute(k, attrs[k]);
   }
@@ -4082,10 +4085,10 @@ async function viewInbound(root) {
   root.appendChild(head);
 
   // Inbound Receptionist Status Card
-  const phoneLineCard = el('div', { class: 'card card-pad', style: 'margin-bottom:18px;background:linear-gradient(135deg, rgba(0,149,255,0.06), rgba(255,255,255,1));border:1px solid rgba(0,149,255,0.2)' }, [
+  const phoneLineCard = el('div', { class: 'card card-pad', style: 'margin-bottom:18px;background:linear-gradient(135deg, rgba(255,216,77,0.28), rgba(255,255,255,0.7));border:1px solid rgba(224,174,0,0.3)' }, [
     el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:14px' }, [
       el('div', { class: 'flex items-center gap-3' }, [
-        el('div', { style: 'width:44px;height:44px;border-radius:12px;background:#0095FF;color:#FFF;display:flex;align-items:center;justify-content:center', html: uiIcon('phone', 22) }),
+        el('div', { style: 'width:44px;height:44px;border-radius:50%;background:#FFD84D;color:#141414;flex:0 0 44px;display:flex;align-items:center;justify-content:center', html: uiIcon('phone', 22) }),
         el('div', {}, [
           el('h3', { class: 't-h3', style: 'margin:0' }, 'Direct Inbound Line: +91 80715 82519'),
           el('p', { class: 'soft', style: 'margin:2px 0 0;font-size:.82rem' }, 'Dedicated 24/7 business telephone line answered by your voice receptionist.')
