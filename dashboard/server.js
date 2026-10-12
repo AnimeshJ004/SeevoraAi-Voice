@@ -24,6 +24,7 @@ core.loadEnv();
 const providers = require('./lib/providers');
 const payu = require('./lib/payu');
 const demoLinks = require('./lib/demo-links');
+const wacrm = require('./lib/wacrm');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const DEFAULT_PROVIDERS = Object.freeze({
@@ -1297,6 +1298,21 @@ async function apiTelephonyDial(req, res, ctx) {
     const r = await providers.telephony.dial(b.number, { workflowId });
     // Count the dial attempt against today's usage.
     bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => {});
+    // Auto-sync into WACRM leads & conversation timeline
+    core.mutate((d) => {
+      wacrm.upsertContact(d, ctx.tenant.id, {
+        phone: b.number,
+        stage: 'Call Completed',
+        tags: ['voice-call', 'outbound-dial']
+      });
+      wacrm.recordMessage(d, ctx.tenant.id, {
+        phone: b.number,
+        direction: 'system',
+        type: 'call_summary',
+        text: `📞 Outbound AI phone call initiated to ${b.number}`,
+        status: 'sent'
+      });
+    }).catch(() => {});
     core.sendJson(res, r.status, r.data);
   } catch (e) {
     handleProviderError(res, e);
@@ -2181,6 +2197,16 @@ async function apiRecordingsList(req, res, ctx) {
           } else {
             d.callRecordings.push(normalized);
           }
+          if (normalized.phoneNumber) {
+            try {
+              wacrm.upsertContact(d, ctx.tenant.id, {
+                phone: normalized.phoneNumber,
+                stage: 'Call Completed',
+                tags: [normalized.direction === 'inbound' ? 'inbound-call' : 'outbound-call'],
+                notes: normalized.summary || (normalized.transcript ? normalized.transcript.slice(0, 300) : '')
+              });
+            } catch (_) {}
+          }
         }
       });
     }
@@ -2294,6 +2320,322 @@ async function apiRecordingAudio(req, res, ctx) {
 }
 
 /* ==========================================================================
+   WACRM & WhatsApp Business Cloud API Handlers
+   ========================================================================== */
+
+function apiCrmContactsList(req, res, ctx) {
+  const d = core.db();
+  const q = new URL(req.url, 'http://local').searchParams;
+  const stage = q.get('stage');
+  const tag = q.get('tag');
+  const search = (q.get('search') || '').trim().toLowerCase();
+
+  let contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
+  if (stage) contacts = contacts.filter((c) => c.stage === stage);
+  if (tag) contacts = contacts.filter((c) => Array.isArray(c.tags) && c.tags.includes(tag));
+  if (search) {
+    contacts = contacts.filter((c) =>
+      (c.name && c.name.toLowerCase().includes(search)) ||
+      (c.phone && c.phone.includes(search)) ||
+      (c.notes && c.notes.toLowerCase().includes(search))
+    );
+  }
+  core.sendJson(res, 200, { contacts, total: contacts.length });
+}
+
+async function apiCrmContactUpsert(req, res, ctx) {
+  const b = ctx.body || {};
+  if (!b.phone) return core.sendJson(res, 400, { error: 'Phone number is required', code: 'bad_phone' });
+  let contact;
+  await core.mutate((d) => {
+    contact = wacrm.upsertContact(d, ctx.tenant.id, b);
+  });
+  core.sendJson(res, 200, { contact });
+}
+
+async function apiCrmImportContacts(req, res, ctx) {
+  const b = ctx.body || {};
+  const list = Array.isArray(b.contacts) ? b.contacts : [];
+  if (!list.length) return core.sendJson(res, 400, { error: 'No contacts provided', code: 'empty_list' });
+
+  const imported = [];
+  await core.mutate((d) => {
+    for (const item of list) {
+      if (item.phone) {
+        imported.push(wacrm.upsertContact(d, ctx.tenant.id, item));
+      }
+    }
+  });
+  core.sendJson(res, 200, { imported: imported.length, contacts: imported });
+}
+
+function apiCrmPipelineGet(req, res, ctx) {
+  const d = core.db();
+  const contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
+  const stages = wacrm.DEFAULT_STAGES;
+  const pipeline = stages.map((stage) => {
+    const deals = contacts.filter((c) => (c.stage || 'New Lead') === stage);
+    const value = deals.reduce((sum, c) => sum + (Number(c.dealValue) || 0), 0);
+    return {
+      stage,
+      count: deals.length,
+      totalValue: value,
+      deals
+    };
+  });
+  core.sendJson(res, 200, { stages, pipeline });
+}
+
+async function apiCrmDealUpdate(req, res, ctx) {
+  const b = ctx.body || {};
+  const contactId = String(b.contactId || '');
+  const stage = String(b.stage || '');
+  if (!contactId || !stage) {
+    return core.sendJson(res, 400, { error: 'contactId and stage are required', code: 'bad_params' });
+  }
+  let updatedContact = null;
+  await core.mutate((d) => {
+    const contact = (d.crmContacts || []).find((c) => c.id === contactId && c.tenantId === ctx.tenant.id);
+    if (contact) {
+      contact.stage = stage;
+      if (b.dealValue !== undefined) contact.dealValue = Number(b.dealValue);
+      contact.updatedAt = new Date().toISOString();
+      updatedContact = contact;
+    }
+  });
+  if (!updatedContact) return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
+  core.sendJson(res, 200, { contact: updatedContact });
+}
+
+function apiWhatsAppConversationsList(req, res, ctx) {
+  const d = core.db();
+  const convs = (d.waConversations || [])
+    .filter((c) => c.tenantId === ctx.tenant.id)
+    .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
+  core.sendJson(res, 200, { conversations: convs });
+}
+
+function apiWhatsAppMessagesList(req, res, ctx) {
+  const d = core.db();
+  const q = new URL(req.url, 'http://local').searchParams;
+  const convId = q.get('conversationId');
+  const phone = q.get('phone');
+
+  let msgs = (d.waMessages || []).filter((m) => m.tenantId === ctx.tenant.id);
+  if (convId) msgs = msgs.filter((m) => m.conversationId === convId);
+  else if (phone) msgs = msgs.filter((m) => m.phone === wacrm.normalizeE164(phone));
+
+  if (convId) {
+    core.mutate((database) => {
+      const conv = (database.waConversations || []).find((c) => c.id === convId && c.tenantId === ctx.tenant.id);
+      if (conv) conv.unreadCount = 0;
+    }).catch(() => {});
+  }
+
+  core.sendJson(res, 200, { messages: msgs });
+}
+
+async function apiWhatsAppSendMessage(req, res, ctx) {
+  const b = ctx.body || {};
+  const to = wacrm.normalizeE164(b.to || b.phone);
+  const text = String(b.text || '').trim();
+  if (!to || !text) {
+    return core.sendJson(res, 400, { error: 'Recipient phone number and message text are required', code: 'bad_params' });
+  }
+
+  const d = core.db();
+  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
+
+  let deliveryStatus = 'sent';
+  let apiResult = null;
+
+  try {
+    if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
+      apiResult = await wacrm.sendMetaWhatsAppMessage({
+        phoneId: cfg.metaPhoneId,
+        token: cfg.metaToken,
+        to,
+        text
+      });
+    } else if (cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
+      apiResult = await wacrm.sendWacrmApiMessage({
+        baseUrl: cfg.wacrmBaseUrl,
+        apiKey: cfg.wacrmApiKey,
+        to,
+        text
+      });
+    }
+  } catch (err) {
+    deliveryStatus = 'failed';
+    console.warn('[WhatsApp Send Warning]:', err.message);
+  }
+
+  let msgRecord;
+  await core.mutate((database) => {
+    msgRecord = wacrm.recordMessage(database, ctx.tenant.id, {
+      phone: to,
+      direction: 'outbound',
+      type: 'text',
+      text,
+      status: deliveryStatus,
+      metadata: apiResult || {}
+    });
+  });
+
+  core.sendJson(res, 200, { message: msgRecord, delivered: deliveryStatus !== 'failed' });
+}
+
+function apiWhatsAppConfigGet(req, res, ctx) {
+  const d = core.db();
+  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
+  const safeCfg = {
+    ...cfg,
+    metaToken: cfg.metaToken ? '●●●●●●●●' : '',
+    wacrmApiKey: cfg.wacrmApiKey ? '●●●●●●●●' : '',
+    hasMetaToken: !!cfg.metaToken,
+    hasWacrmApiKey: !!cfg.wacrmApiKey,
+  };
+  core.sendJson(res, 200, { config: safeCfg });
+}
+
+async function apiWhatsAppConfigSave(req, res, ctx) {
+  const b = ctx.body || {};
+  let updated;
+  await core.mutate((d) => {
+    const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
+    if (b.mode) cfg.mode = b.mode;
+    if (b.metaPhoneId !== undefined) cfg.metaPhoneId = String(b.metaPhoneId).trim();
+    if (b.metaWabaId !== undefined) cfg.metaWabaId = String(b.metaWabaId).trim();
+    if (b.metaToken && b.metaToken !== '●●●●●●●●') cfg.metaToken = String(b.metaToken).trim();
+    if (b.wacrmBaseUrl !== undefined) cfg.wacrmBaseUrl = String(b.wacrmBaseUrl).trim();
+    if (b.wacrmApiKey && b.wacrmApiKey !== '●●●●●●●●') cfg.wacrmApiKey = String(b.wacrmApiKey).trim();
+    if (b.autoFollowupEnabled !== undefined) cfg.autoFollowupEnabled = !!b.autoFollowupEnabled;
+    if (b.autoFollowupMessage !== undefined) cfg.autoFollowupMessage = String(b.autoFollowupMessage).trim();
+    cfg.updatedAt = new Date().toISOString();
+    updated = cfg;
+  });
+  core.sendJson(res, 200, { ok: true, config: { ...updated, metaToken: '●●●●●●●●', wacrmApiKey: '●●●●●●●●' } });
+}
+
+function apiWhatsAppTemplatesList(req, res, ctx) {
+  const d = core.db();
+  const templates = (d.waTemplates && d.waTemplates.length) ? d.waTemplates : [
+    {
+      id: 'tpl_welcome',
+      name: 'voice_receptionist_welcome',
+      category: 'UTILITY',
+      body: 'Hi {{1}}, thank you for contacting Seevora AI Voice Receptionist. How can we help you today?',
+      language: 'en'
+    },
+    {
+      id: 'tpl_appointment_confirm',
+      name: 'appointment_confirmation',
+      category: 'UTILITY',
+      body: 'Hello {{1}}, your appointment with our team has been confirmed for {{2}}. Reply to this message if you need to reschedule.',
+      language: 'en'
+    },
+    {
+      id: 'tpl_brochure',
+      name: 'brochure_and_pricing',
+      category: 'MARKETING',
+      body: 'Hi {{1}}, as requested on your call, here is our complete brochure and service catalog: {{2}}.',
+      language: 'en'
+    }
+  ];
+  core.sendJson(res, 200, { templates });
+}
+
+async function apiWhatsAppBroadcastCreate(req, res, ctx) {
+  const b = ctx.body || {};
+  const name = String(b.name || 'Broadcast ' + new Date().toISOString().slice(0, 10));
+  const text = String(b.text || '');
+  const recipients = Array.isArray(b.recipients) ? b.recipients : [];
+
+  if (!recipients.length || !text) {
+    return core.sendJson(res, 400, { error: 'Recipients list and message text are required', code: 'bad_params' });
+  }
+
+  let broadcast;
+  await core.mutate((d) => {
+    if (!d.waBroadcasts) d.waBroadcasts = [];
+    broadcast = {
+      id: 'bc_' + crypto.randomBytes(8).toString('hex'),
+      tenantId: ctx.tenant.id,
+      name,
+      text,
+      totalRecipients: recipients.length,
+      sentCount: recipients.length,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
+    d.waBroadcasts.unshift(broadcast);
+
+    for (const r of recipients) {
+      const phone = typeof r === 'string' ? r : r.phone;
+      const contactName = (typeof r === 'object' && r.name) ? r.name : '';
+      if (phone) {
+        const personalized = text.replace(/\{\{name\}\}/gi, contactName || 'there');
+        wacrm.recordMessage(d, ctx.tenant.id, {
+          phone,
+          direction: 'outbound',
+          type: 'text',
+          text: personalized,
+          status: 'sent',
+          metadata: { broadcastId: broadcast.id }
+        });
+      }
+    }
+  });
+
+  core.sendJson(res, 201, { broadcast });
+}
+
+function apiWhatsAppWebhookVerify(req, res) {
+  const url = new URL(req.url, 'http://local');
+  const mode = url.searchParams.get('hub.mode');
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge');
+
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || 'seevora_wa_verify_token';
+  if (mode === 'subscribe' && token === expectedToken) {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end(challenge);
+  }
+  core.sendJson(res, 403, { error: 'Verification failed' });
+}
+
+async function apiWhatsAppWebhookReceive(req, res, body) {
+  try {
+    const entry = body && body.entry && body.entry[0];
+    const changes = entry && entry.changes && entry.changes[0];
+    const value = changes && changes.value;
+
+    if (value && value.messages && value.messages[0]) {
+      const msg = value.messages[0];
+      const fromPhone = msg.from;
+      const text = (msg.text && msg.text.body) || '[Media or Interactive Message]';
+
+      const d = core.db();
+      const tenant = d.tenants[0] || { id: 'default' };
+
+      await core.mutate((store) => {
+        wacrm.recordMessage(store, tenant.id, {
+          phone: fromPhone,
+          direction: 'inbound',
+          type: msg.type || 'text',
+          text,
+          status: 'received',
+          metadata: msg
+        });
+      });
+    }
+    core.sendJson(res, 200, { status: 'ok' });
+  } catch (err) {
+    core.sendJson(res, 200, { status: 'handled_with_error', error: err.message });
+  }
+}
+
+/* ==========================================================================
    Router
    ========================================================================== */
 
@@ -2362,6 +2704,13 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/recordings') return core.requireAuth(req, res, apiRecordingsList);
         if (route.startsWith('/api/recordings/') && route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingAudio);
         if (route.startsWith('/api/recordings/') && !route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingDetail);
+        if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactsList);
+        if (route === '/api/crm/pipeline') return core.requireAuth(req, res, apiCrmPipelineGet);
+        if (route === '/api/whatsapp/conversations') return core.requireAuth(req, res, apiWhatsAppConversationsList);
+        if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppMessagesList);
+        if (route === '/api/whatsapp/templates') return core.requireAuth(req, res, apiWhatsAppTemplatesList);
+        if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigGet);
+        if (route === '/api/whatsapp/webhook') return apiWhatsAppWebhookVerify(req, res);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -2380,7 +2729,8 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // Public POST (auth) routes.
+      // Public POST (auth & webhooks) routes.
+      if (route === '/api/whatsapp/webhook') return apiWhatsAppWebhookReceive(req, res, body);
       if (route === '/api/auth/signup') return apiSignup(req, res, body);
       if (route === '/api/auth/login') return apiLogin(req, res, body);
       if (route === '/api/auth/logout') return apiLogout(req, res);
@@ -2392,6 +2742,12 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Authed POST routes (tenant scoped through requireAuth).
+      if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactUpsert, body);
+      if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
+      if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
+      if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppSendMessage, body);
+      if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigSave, body);
+      if (route === '/api/whatsapp/broadcasts') return core.requireAuth(req, res, apiWhatsAppBroadcastCreate, body);
       if (route === '/api/agents') return core.requireAuth(req, res, apiAgentsCreate, body);
       if (route === '/api/agents/generate-from-needs') return core.requireAuth(req, res, apiAgentsGenerateFromNeeds, body);
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);

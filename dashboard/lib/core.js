@@ -175,6 +175,8 @@ function defaultDb() {
     hvacJobs: [], hvacSettings: [], paymentEvents: [], demoLinks: [],
     invoices: [], invoiceEvents: [], integrationRequests: [], agencyPrompts: [],
     clientActivities: [], tenantStatusEvents: [], callRecordings: [],
+    crmContacts: [], crmPipelines: [], waConversations: [], waMessages: [],
+    waTemplates: [], waBroadcasts: [], wacrmConfig: [],
   };
 }
 
@@ -184,6 +186,8 @@ const COLLECTIONS = [
   'presets', 'byonConnections', 'hvacJobs', 'hvacSettings', 'paymentEvents', 'demoLinks',
   'invoices', 'invoiceEvents', 'integrationRequests', 'agencyPrompts',
   'clientActivities', 'tenantStatusEvents', 'callRecordings',
+  'crmContacts', 'crmPipelines', 'waConversations', 'waMessages',
+  'waTemplates', 'waBroadcasts', 'wacrmConfig',
 ];
 
 function migrateDb(parsed) {
