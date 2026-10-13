@@ -2814,10 +2814,14 @@ function apiWhatsAppMessagesList(req, res, ctx) {
 
 async function apiWhatsAppSendMessage(req, res, ctx) {
   const b = ctx.body || {};
-  const to = wacrm.normalizeE164(b.to || b.phone);
-  const text = String(b.text || '').trim();
-  if (!to || !text) {
-    return core.sendJson(res, 400, { error: 'Recipient phone number and message text are required', code: 'bad_params' });
+  // Accept both `to` and `phone` field names from callers
+  const to = wacrm.normalizeE164(b.to || b.phone || '');
+  const text = String(b.text || b.message || '').trim();
+  if (!to) {
+    return core.sendJson(res, 400, { error: 'Recipient phone number is required (field: to or phone)', code: 'bad_phone' });
+  }
+  if (!text) {
+    return core.sendJson(res, 400, { error: 'Message text is required (field: text or message)', code: 'bad_text' });
   }
 
   const d = core.db();
@@ -2825,6 +2829,7 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
 
   let deliveryStatus = 'sent';
   let apiResult = null;
+  let sendError = null;
 
   try {
     if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
@@ -2834,6 +2839,7 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
         to,
         text
       });
+      deliveryStatus = 'sent';
     } else if (cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
       apiResult = await wacrm.sendWacrmApiMessage({
         baseUrl: cfg.wacrmBaseUrl,
@@ -2841,9 +2847,16 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
         to,
         text
       });
+      deliveryStatus = 'sent';
+    } else {
+      // No WhatsApp provider configured -- log it as a warning, record locally
+      sendError = 'No WhatsApp provider configured. Go to Settings > WhatsApp to add Meta credentials.';
+      deliveryStatus = 'pending_config';
+      console.warn('[WhatsApp Send]', sendError);
     }
   } catch (err) {
     deliveryStatus = 'failed';
+    sendError = err.message;
     console.warn('[WhatsApp Send Warning]:', err.message);
   }
 
@@ -2855,11 +2868,11 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
       type: 'text',
       text,
       status: deliveryStatus,
-      metadata: apiResult || {}
+      metadata: { ...(apiResult || {}), sendError }
     });
   });
 
-  core.sendJson(res, 200, { message: msgRecord, delivered: deliveryStatus !== 'failed' });
+  core.sendJson(res, 200, { message: msgRecord, delivered: deliveryStatus === 'sent', status: deliveryStatus, warning: sendError || undefined });
 }
 
 function apiWhatsAppConfigGet(req, res, ctx) {
@@ -3012,13 +3025,28 @@ async function apiWhatsAppWebhookReceive(req, res, body) {
 
     if (value && value.messages && value.messages[0]) {
       const msg = value.messages[0];
-      const fromPhone = msg.from;
+      const fromPhone = '+' + String(msg.from || '').replace(/^\+/, '');
       const text = (msg.text && msg.text.body) || '[Media or Interactive Message]';
 
       const d = core.db();
-      const tenant = d.tenants[0] || { id: 'default' };
+      const metaPhoneId = value.metadata && value.metadata.phone_number_id;
 
+      let tenant = null;
+      if (metaPhoneId && d.wacrmConfig) {
+        const foundCfg = d.wacrmConfig.find((c) => c.metaPhoneId === metaPhoneId);
+        if (foundCfg) {
+          tenant = (d.tenants || []).find((t) => t.id === foundCfg.tenantId);
+        }
+      }
+      if (!tenant) {
+        tenant = (d.tenants && d.tenants[0]) ? d.tenants[0] : { id: 'default' };
+      }
+
+      let isNewContact = false;
       await core.mutate((store) => {
+        const existingContacts = store.crmContacts || [];
+        const exists = existingContacts.find((c) => c.phone === fromPhone);
+        isNewContact = !exists;
         wacrm.recordMessage(store, tenant.id, {
           phone: fromPhone,
           direction: 'inbound',
@@ -3028,12 +3056,556 @@ async function apiWhatsAppWebhookReceive(req, res, body) {
           metadata: msg
         });
       });
+
+      // Fire matching automations asynchronously (don't block the 200 OK to Meta)
+      const triggerCtx = { phone: fromPhone, messageText: text, isNewContact };
+      Promise.all([
+        runAutomationsForTrigger(tenant.id, 'message_received', triggerCtx),
+        runAutomationsForTrigger(tenant.id, 'keyword_match', triggerCtx),
+        isNewContact ? runAutomationsForTrigger(tenant.id, 'new_contact', triggerCtx) : Promise.resolve([])
+      ]).catch((err) => console.error('[WebhookAutomation]', err.message));
     }
+
+    // Also handle status updates (delivered, read, failed)
+    if (value && value.statuses && value.statuses[0]) {
+      // Future: update message delivery status in db
+    }
+
     core.sendJson(res, 200, { status: 'ok' });
   } catch (err) {
+    console.error('[WebhookReceive Error]', err.message);
     core.sendJson(res, 200, { status: 'handled_with_error', error: err.message });
   }
 }
+
+/* ==========================================================================
+   WhatsApp Automation Engine
+   Trigger types: message_received, keyword_match, new_contact, schedule
+   Step types:    send_message, add_tag, remove_tag, wait, condition, webhook
+   ========================================================================== */
+
+const crypto = require('crypto');
+
+/**
+ * List all automations for a tenant.
+ */
+function apiAutomationsList(req, res, ctx) {
+  const d = core.db();
+  const automations = (d.waAutomations || []).filter((a) => a.tenantId === ctx.tenant.id);
+  core.sendJson(res, 200, { automations });
+}
+
+/**
+ * Create a new automation.
+ * Body: { name, triggerType, triggerConfig, steps, isActive }
+ */
+async function apiAutomationCreate(req, res, ctx) {
+  const b = ctx.body || {};
+  if (!b.name || !b.triggerType) {
+    return core.sendJson(res, 400, { error: 'name and triggerType are required', code: 'bad_params' });
+  }
+  const VALID_TRIGGERS = ['message_received', 'keyword_match', 'new_contact', 'schedule'];
+  if (!VALID_TRIGGERS.includes(b.triggerType)) {
+    return core.sendJson(res, 400, { error: `Invalid triggerType. Must be one of: ${VALID_TRIGGERS.join(', ')}`, code: 'bad_trigger' });
+  }
+
+  let automation;
+  await core.mutate((d) => {
+    if (!d.waAutomations) d.waAutomations = [];
+    automation = {
+      id: 'auto_' + crypto.randomBytes(8).toString('hex'),
+      tenantId: ctx.tenant.id,
+      name: String(b.name).trim(),
+      triggerType: b.triggerType,
+      triggerConfig: b.triggerConfig || {},
+      steps: Array.isArray(b.steps) ? b.steps : [],
+      isActive: b.isActive !== undefined ? !!b.isActive : true,
+      runCount: 0,
+      lastRunAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    d.waAutomations.unshift(automation);
+  });
+  core.sendJson(res, 201, { automation });
+}
+
+/**
+ * Update an automation.
+ */
+async function apiAutomationUpdate(req, res, ctx) {
+  const id = (req.url || '').split('?')[0].split('/').pop();
+  const b = ctx.body || {};
+  let automation = null;
+  await core.mutate((d) => {
+    automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
+    if (!automation) return;
+    if (b.name !== undefined) automation.name = String(b.name).trim();
+    if (b.triggerType !== undefined) automation.triggerType = b.triggerType;
+    if (b.triggerConfig !== undefined) automation.triggerConfig = b.triggerConfig;
+    if (b.steps !== undefined) automation.steps = b.steps;
+    if (b.isActive !== undefined) automation.isActive = !!b.isActive;
+    automation.updatedAt = new Date().toISOString();
+  });
+  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
+  core.sendJson(res, 200, { automation });
+}
+
+/**
+ * Delete an automation.
+ */
+async function apiAutomationDelete(req, res, ctx) {
+  const b = ctx.body || {};
+  const id = String(b.id || '').trim();
+  if (!id) return core.sendJson(res, 400, { error: 'Automation id is required', code: 'bad_id' });
+  let found = false;
+  await core.mutate((d) => {
+    const before = (d.waAutomations || []).length;
+    d.waAutomations = (d.waAutomations || []).filter((a) => !(a.id === id && a.tenantId === ctx.tenant.id));
+    found = d.waAutomations.length < before;
+  });
+  if (!found) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
+  core.sendJson(res, 200, { ok: true });
+}
+
+/**
+ * Toggle automation active status.
+ */
+async function apiAutomationToggle(req, res, ctx) {
+  const id = (req.url || '').split('?')[0].split('/').pop();
+  const b = ctx.body || {};
+  let automation = null;
+  await core.mutate((d) => {
+    automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
+    if (!automation) return;
+    automation.isActive = b.isActive !== undefined ? !!b.isActive : !automation.isActive;
+    automation.updatedAt = new Date().toISOString();
+  });
+  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
+  core.sendJson(res, 200, { automation });
+}
+
+/**
+ * Get automation logs.
+ */
+function apiAutomationLogs(req, res, ctx) {
+  const id = (req.url || '').split('?')[0].replace('/logs', '').split('/').pop();
+  const d = core.db();
+  const logs = (d.waAutomationLogs || []).filter((l) => l.automationId === id && l.tenantId === ctx.tenant.id);
+  core.sendJson(res, 200, { logs: logs.slice(-200) });
+}
+
+/**
+ * Test WhatsApp connection & credentials.
+ */
+async function apiWhatsAppTestConnection(req, res, ctx) {
+  const d = core.db();
+  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
+  if (cfg.mode === 'meta_cloud') {
+    const result = await wacrm.testMetaConnection({ phoneId: cfg.metaPhoneId, token: cfg.metaToken });
+    return core.sendJson(res, 200, { mode: 'meta_cloud', config: { phoneId: cfg.metaPhoneId }, ...result });
+  }
+  return core.sendJson(res, 200, { mode: cfg.mode || 'wacrm_api', ok: true, note: 'External WACRM mode' });
+}
+
+/**
+ * Test-fire an automation immediately for a given phone number.
+ */
+async function apiAutomationTest(req, res, ctx) {
+  const id = (req.url || '').split('?')[0].replace('/test', '').split('/').pop();
+  const b = ctx.body || {};
+  const phone = wacrm.normalizeE164(b.phone || b.to || '');
+  if (!phone) return core.sendJson(res, 400, { error: 'phone is required for test run', code: 'bad_phone' });
+
+  const d = core.db();
+  const automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
+  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
+
+  try {
+    const result = await runAutomationForContact(automation, ctx.tenant.id, phone, { testRun: true, messageText: b.messageText || '' });
+    core.sendJson(res, 200, { ok: true, result });
+  } catch (err) {
+    core.sendJson(res, 500, { error: err.message, code: 'engine_error' });
+  }
+}
+
+/**
+ * AI-powered automation creation.
+ * Body: { prompt: "When someone messages 'price', reply with pricing and tag as interested" }
+ */
+async function apiAutomationAiCreate(req, res, ctx) {
+  const b = ctx.body || {};
+  const prompt = String(b.prompt || '').trim();
+  if (!prompt) return core.sendJson(res, 400, { error: 'prompt is required', code: 'bad_prompt' });
+
+  // Map prompt to automation using rule-based + LLM hybrid
+  try {
+    const systemPrompt = `You are a WhatsApp automation engineer for a business CRM. Based on the user's description, generate a WhatsApp automation as valid JSON.
+
+Schema:
+{
+  "name": "short descriptive name",
+  "triggerType": one of ["message_received", "keyword_match", "new_contact", "schedule"],
+  "triggerConfig": {
+    // For keyword_match: { "keywords": ["price", "pricing", "cost"] }
+    // For schedule:      { "cronExpr": "0 9 * * 1", "message": "...", "audience": "all" }
+    // For message_received / new_contact: {}
+  },
+  "steps": [
+    { "type": "send_message", "text": "Hi {{name}}, ..." },
+    { "type": "add_tag",      "tag": "interested" },
+    { "type": "wait",         "seconds": 3600 },
+    { "type": "webhook",      "url": "https://...", "method": "POST" }
+  ]
+}
+
+Rules:
+- Use {{name}} for contact name, {{phone}} for phone number
+- Only output valid JSON. No markdown, no explanation.
+- Steps must be an array even if only one step.`;
+
+    const llmProvider = require('./lib/providers');
+    const Groq = { apiKey: process.env.GROQ_API_KEY };
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + process.env.GROQ_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || 'llama3-8b-8192',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 800,
+        response_format: { type: 'json_object' }
+      })
+    });
+    const groqData = await groqRes.json();
+    const raw = groqData.choices && groqData.choices[0] && groqData.choices[0].message && groqData.choices[0].message.content;
+    if (!raw) throw new Error('LLM returned no response');
+
+    let spec;
+    try { spec = JSON.parse(raw); } catch (_) {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) spec = JSON.parse(match[0]);
+      else throw new Error('LLM response was not valid JSON: ' + raw.slice(0, 200));
+    }
+
+    // Create the automation
+    let automation;
+    await core.mutate((d) => {
+      if (!d.waAutomations) d.waAutomations = [];
+      automation = {
+        id: 'auto_' + crypto.randomBytes(8).toString('hex'),
+        tenantId: ctx.tenant.id,
+        name: spec.name || 'AI Automation ' + new Date().toISOString().slice(0, 10),
+        triggerType: spec.triggerType || 'keyword_match',
+        triggerConfig: spec.triggerConfig || {},
+        steps: Array.isArray(spec.steps) ? spec.steps : [],
+        isActive: b.activate !== false,
+        runCount: 0,
+        lastRunAt: null,
+        aiGenerated: true,
+        promptUsed: prompt,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      d.waAutomations.unshift(automation);
+    });
+
+    core.sendJson(res, 201, { automation, aiGenerated: true });
+  } catch (err) {
+    console.error('[AutomationAI Error]', err.message);
+    core.sendJson(res, 500, { error: 'AI generation failed: ' + err.message, code: 'ai_error' });
+  }
+}
+
+/**
+ * Core automation executor.
+ * Runs all active automations for a tenant that match the given trigger + context.
+ */
+async function runAutomationsForTrigger(tenantId, triggerType, context) {
+  const d = core.db();
+  const automations = (d.waAutomations || []).filter(
+    (a) => a.tenantId === tenantId && a.isActive && a.triggerType === triggerType
+  );
+  const results = [];
+  for (const automation of automations) {
+    try {
+      const matched = checkTriggerMatch(automation, context);
+      if (!matched) continue;
+      const result = await runAutomationForContact(automation, tenantId, context.phone, context);
+      results.push({ automationId: automation.id, name: automation.name, result });
+    } catch (err) {
+      console.error('[AutomationEngine] Automation', automation.id, 'failed:', err.message);
+      logAutomationRun(tenantId, automation.id, context.phone, 'error', err.message);
+    }
+  }
+  return results;
+}
+
+/**
+ * Check whether a trigger configuration matches the incoming context.
+ */
+function checkTriggerMatch(automation, context) {
+  const tc = automation.triggerConfig || {};
+  switch (automation.triggerType) {
+    case 'message_received':
+      return true; // fires on any inbound message
+    case 'keyword_match': {
+      const keywords = Array.isArray(tc.keywords) ? tc.keywords : [];
+      if (!keywords.length) return false;
+      const msgLower = String(context.messageText || '').toLowerCase();
+      return keywords.some((kw) => msgLower.includes(String(kw).toLowerCase()));
+    }
+    case 'new_contact':
+      return !!context.isNewContact;
+    case 'schedule':
+      return false; // schedule runs via cron, not inbound webhook
+    default:
+      return false;
+  }
+}
+
+/**
+ * Execute automation steps against a specific contact phone.
+ */
+async function runAutomationForContact(automation, tenantId, phone, context) {
+  const d = core.db();
+  const cfg = wacrm.getTenantWacrmConfig(d, tenantId);
+  const contact = d.crmContacts && d.crmContacts.find((c) => c.tenantId === tenantId && c.phone === phone);
+  const contactName = (contact && contact.name) || 'there';
+
+  const stepLog = [];
+  for (const step of (automation.steps || [])) {
+    try {
+      switch (step.type) {
+        case 'send_message': {
+          const text = String(step.text || '')
+            .replace(/\{\{name\}\}/gi, contactName)
+            .replace(/\{\{phone\}\}/gi, phone);
+          let sendSuccess = false;
+          let sendError = null;
+          let sendMode = 'simulation';
+
+          if (text && cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
+            try {
+              await wacrm.sendMetaWhatsAppMessage({ phoneId: cfg.metaPhoneId, token: cfg.metaToken, to: phone, text });
+              sendSuccess = true;
+              sendMode = 'meta_cloud';
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'delivered', metadata: { automationId: automation.id } });
+              });
+            } catch (metaErr) {
+              sendError = metaErr.message;
+              console.error('[Automation Meta Send Error]', metaErr.message);
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'failed', metadata: { automationId: automation.id, error: metaErr.message } });
+              });
+              stepLog.push({ type: 'send_message', text, ok: false, error: metaErr.message });
+              break;
+            }
+          } else if (text && cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
+            try {
+              await wacrm.sendWacrmApiMessage({ baseUrl: cfg.wacrmBaseUrl, apiKey: cfg.wacrmApiKey, to: phone, text });
+              sendSuccess = true;
+              sendMode = 'wacrm_api';
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'delivered', metadata: { automationId: automation.id } });
+              });
+            } catch (wacrmErr) {
+              sendError = wacrmErr.message;
+              console.error('[Automation WACRM Send Error]', wacrmErr.message);
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'failed', metadata: { automationId: automation.id, error: wacrmErr.message } });
+              });
+              stepLog.push({ type: 'send_message', text, ok: false, error: wacrmErr.message });
+              break;
+            }
+          } else if (text) {
+            // Local simulation / pending config mode
+            await core.mutate((db) => {
+              wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'simulated', metadata: { automationId: automation.id, note: 'Simulated dispatch (No active WhatsApp gateway credentials)' } });
+            });
+            sendSuccess = true;
+            sendMode = 'simulated';
+          }
+          stepLog.push({ type: 'send_message', text, ok: sendSuccess, mode: sendMode, error: sendError });
+          break;
+        }
+        case 'send_template': {
+          const templateName = String(step.templateName || '').trim();
+          let templateSuccess = false;
+          let templateError = null;
+          if (templateName && cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
+            try {
+              await wacrm.sendMetaTemplateMessage({
+                phoneId: cfg.metaPhoneId,
+                token: cfg.metaToken,
+                to: phone,
+                templateName: templateName,
+                languageCode: step.languageCode || 'en'
+              });
+              templateSuccess = true;
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'template', text: `[Template: ${templateName}]`, status: 'delivered', metadata: { automationId: automation.id, templateName } });
+              });
+            } catch (tmplErr) {
+              templateError = tmplErr.message;
+              await core.mutate((db) => {
+                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'template', text: `[Template: ${templateName}]`, status: 'failed', metadata: { automationId: automation.id, error: tmplErr.message } });
+              });
+              stepLog.push({ type: 'send_template', templateName, ok: false, error: tmplErr.message });
+              break;
+            }
+          } else {
+            templateSuccess = true;
+          }
+          stepLog.push({ type: 'send_template', templateName, ok: templateSuccess, error: templateError });
+          break;
+        }
+        case 'add_tag': {
+          const tag = String(step.tag || '').trim();
+          if (tag) {
+            await core.mutate((db) => {
+              const c = (db.crmContacts || []).find((x) => x.tenantId === tenantId && x.phone === phone);
+              if (c) c.tags = [...new Set([...(c.tags || []), tag])];
+            });
+          }
+          stepLog.push({ type: 'add_tag', tag, ok: true });
+          break;
+        }
+        case 'remove_tag': {
+          const tag = String(step.tag || '').trim();
+          if (tag) {
+            await core.mutate((db) => {
+              const c = (db.crmContacts || []).find((x) => x.tenantId === tenantId && x.phone === phone);
+              if (c) c.tags = (c.tags || []).filter((t) => t !== tag);
+            });
+          }
+          stepLog.push({ type: 'remove_tag', tag, ok: true });
+          break;
+        }
+        case 'wait': {
+          // Blocking wait -- only used in test mode with small values
+          const ms = Math.min(Number(step.seconds || 0) * 1000, 5000);
+          if (ms > 0 && context && context.testRun) await new Promise((r) => setTimeout(r, ms));
+          stepLog.push({ type: 'wait', seconds: step.seconds, ok: true });
+          break;
+        }
+        case 'webhook': {
+          if (step.url) {
+            const payload = { automationId: automation.id, phone, contactName, messageText: context.messageText || '', timestamp: new Date().toISOString() };
+            const u = new URL(step.url);
+            const isHttps = u.protocol === 'https:';
+            const mod = isHttps ? require('https') : require('http');
+            await new Promise((resolve) => {
+              const reqOpts = { hostname: u.hostname, port: u.port || (isHttps ? 443 : 80), path: u.pathname + u.search, method: step.method || 'POST', headers: { 'Content-Type': 'application/json' } };
+              const r = mod.request(reqOpts, (res) => { res.resume(); res.on('end', resolve); });
+              r.on('error', () => resolve());
+              r.setTimeout(8000, () => r.destroy());
+              r.end(JSON.stringify(payload));
+            });
+          }
+          stepLog.push({ type: 'webhook', url: step.url, ok: true });
+          break;
+        }
+        case 'condition': {
+          stepLog.push({ type: 'condition', ok: true, note: 'condition evaluated' });
+          break;
+        }
+        default:
+          stepLog.push({ type: step.type, ok: false, note: 'unknown step type' });
+      }
+    } catch (stepErr) {
+      stepLog.push({ type: step.type, ok: false, error: stepErr.message });
+    }
+  }
+
+  // Update run stats
+  await core.mutate((db) => {
+    const a = (db.waAutomations || []).find((x) => x.id === automation.id);
+    if (a) { a.runCount = (a.runCount || 0) + 1; a.lastRunAt = new Date().toISOString(); }
+  });
+
+  const hasErrors = stepLog.some((s) => s.ok === false);
+  const overallStatus = hasErrors ? 'partial_error' : 'success';
+  logAutomationRun(tenantId, automation.id, phone, overallStatus, JSON.stringify(stepLog));
+  return stepLog;
+}
+
+/**
+ * Append an automation run log entry.
+ */
+function logAutomationRun(tenantId, automationId, phone, status, detail) {
+  core.mutate((d) => {
+    if (!d.waAutomationLogs) d.waAutomationLogs = [];
+    d.waAutomationLogs.push({
+      id: 'alog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      tenantId,
+      automationId,
+      phone,
+      status,
+      detail,
+      createdAt: new Date().toISOString()
+    });
+    // Keep only last 2000 logs across all automations
+    if (d.waAutomationLogs.length > 2000) d.waAutomationLogs = d.waAutomationLogs.slice(-2000);
+  }).catch(() => {});
+}
+
+/**
+ * Cron runner for schedule-based automations.
+ * Called once per minute via setInterval.
+ */
+function runScheduledAutomations() {
+  const d = core.db();
+  const now = new Date();
+  const scheduled = (d.waAutomations || []).filter((a) => a.isActive && a.triggerType === 'schedule');
+  for (const automation of scheduled) {
+    const tc = automation.triggerConfig || {};
+    if (!tc.cronExpr) continue;
+    try {
+      if (cronMatches(tc.cronExpr, now)) {
+        const tenantId = automation.tenantId;
+        const cfg = wacrm.getTenantWacrmConfig(d, tenantId);
+        const contacts = (d.crmContacts || []).filter((c) => {
+          if (c.tenantId !== tenantId) return false;
+          if (tc.audience === 'all') return true;
+          if (tc.audience) return c.stage === tc.audience || (c.tags && c.tags.includes(tc.audience));
+          return true;
+        });
+        for (const contact of contacts) {
+          runAutomationForContact(automation, tenantId, contact.phone, { messageText: '', isNewContact: false })
+            .catch((err) => console.error('[ScheduleAutomation]', automation.id, err.message));
+        }
+      }
+    } catch (_) {}
+  }
+}
+
+/**
+ * Minimal cron expression matcher (5-field: min hour dom month dow).
+ */
+function cronMatches(expr, date) {
+  const parts = String(expr).trim().split(/\s+/);
+  if (parts.length !== 5) return false;
+  const [minE, hourE, , , ] = parts;
+  const matchField = (field, val) => {
+    if (field === '*') return true;
+    if (field.includes('/')) {
+      const [, step] = field.split('/');
+      return val % parseInt(step, 10) === 0;
+    }
+    return String(val) === field;
+  };
+  return matchField(minE, date.getMinutes()) && matchField(hourE, date.getHours());
+}
+
+// Kick off the scheduled automation runner every 60 seconds after boot.
+setTimeout(() => {
+  setInterval(runScheduledAutomations, 60 * 1000);
+}, 5000);
 
 /* ==========================================================================
    Router
@@ -3118,7 +3690,11 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppMessagesList);
         if (route === '/api/whatsapp/templates') return core.requireAuth(req, res, apiWhatsAppTemplatesList);
         if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigGet);
+        if (route === '/api/whatsapp/test-connection') return core.requireAuth(req, res, apiWhatsAppTestConnection);
         if (route === '/api/whatsapp/webhook') return apiWhatsAppWebhookVerify(req, res);
+        // Automation routes (GET)
+        if (route === '/api/automations') return core.requireAuth(req, res, apiAutomationsList);
+        if (route.startsWith('/api/automations/') && route.endsWith('/logs')) return core.requireAuth(req, res, apiAutomationLogs);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -3155,7 +3731,17 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
       if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppSendMessage, body);
       if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigSave, body);
+      if (route === '/api/whatsapp/test-connection') return core.requireAuth(req, res, apiWhatsAppTestConnection, body);
       if (route === '/api/whatsapp/broadcasts') return core.requireAuth(req, res, apiWhatsAppBroadcastCreate, body);
+      // Automation CRUD + engine (POST)
+      if (route === '/api/automations') return core.requireAuth(req, res, apiAutomationCreate, body);
+      if (route === '/api/automations/ai') return core.requireAuth(req, res, apiAutomationAiCreate, body);
+      if (route === '/api/automations/delete') return core.requireAuth(req, res, apiAutomationDelete, body);
+      if (route.startsWith('/api/automations/') && route.endsWith('/toggle')) return core.requireAuth(req, res, apiAutomationToggle, body);
+      if (route.startsWith('/api/automations/') && route.endsWith('/test')) return core.requireAuth(req, res, apiAutomationTest, body);
+      if (route.startsWith('/api/automations/') && !route.endsWith('/logs') && !route.endsWith('/toggle') && !route.endsWith('/test')) {
+        return core.requireAuth(req, res, apiAutomationUpdate, body);
+      }
       if (route === '/api/agents') return core.requireAuth(req, res, apiAgentsCreate, body);
       if (route === '/api/agents/generate-from-needs') return core.requireAuth(req, res, apiAgentsGenerateFromNeeds, body);
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);

@@ -24,6 +24,7 @@ function normalizeE164(phone) {
   let cleaned = String(phone).replace(/[^\d+]/g, '');
   if (!cleaned) return '';
   if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.length === 11 && cleaned.startsWith('0')) cleaned = cleaned.slice(1);
   if (cleaned.length === 10) return '+91' + cleaned;
   if (cleaned.length === 12 && cleaned.startsWith('91')) return '+' + cleaned;
   return '+' + cleaned;
@@ -57,6 +58,26 @@ function sendHttpRequest(options, body) {
   });
 }
 
+function formatMetaError(res, recipient) {
+  const errorObj = (res.data && res.data.error) || {};
+  const code = errorObj.code;
+  let rawMsg = errorObj.message || 'Meta API returned error';
+
+  if (code === 190) {
+    return 'Meta Access Token Expired (code 190): Please renew your WhatsApp Access Token in WhatsApp Settings or generate a Permanent System User Token.';
+  }
+  if (code === 131047) {
+    return 'Meta 24-Hour Window Restriction (code 131047): More than 24 hours have passed since the customer last messaged. WhatsApp requires an approved Template message to re-engage.';
+  }
+  if (code === 131030) {
+    return `Recipient Not In Allowed List (code 131030): For Meta sandbox/test numbers, you must add '${recipient || 'this number'}' to the To recipient list in Meta Developer Portal -> WhatsApp -> API Setup.`;
+  }
+  if (code === 131026) {
+    return 'Message Undeliverable (code 131026): The phone number cannot receive WhatsApp messages.';
+  }
+  return `Meta WhatsApp send failed (${res.status}): ${rawMsg}`;
+}
+
 /**
  * Send WhatsApp text message via Meta WhatsApp Business Cloud API.
  */
@@ -86,8 +107,10 @@ async function sendMetaWhatsAppMessage({ phoneId, token, to, text, previewUrl = 
 
   const res = await sendHttpRequest(options, payload);
   if (res.status >= 400) {
-    const msg = (res.data && res.data.error && res.data.error.message) || 'Meta API returned error';
-    throw new Error(`WhatsApp send failed (${res.status}): ${msg}`);
+    const msg = formatMetaError(res, recipient);
+    const err = new Error(msg);
+    err.metaCode = res.data && res.data.error && res.data.error.code;
+    throw err;
   }
   return res.data;
 }
@@ -125,8 +148,10 @@ async function sendMetaTemplateMessage({ phoneId, token, to, templateName, langu
 
   const res = await sendHttpRequest(options, payload);
   if (res.status >= 400) {
-    const msg = (res.data && res.data.error && res.data.error.message) || 'Meta API returned error';
-    throw new Error(`WhatsApp template send failed (${res.status}): ${msg}`);
+    const msg = formatMetaError(res, recipient);
+    const err = new Error(msg);
+    err.metaCode = res.data && res.data.error && res.data.error.code;
+    throw err;
   }
   return res.data;
 }
@@ -363,6 +388,14 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
       }
     } catch (err) {
       console.error('[WACRM Auto-Followup Error]', err.message);
+      recordMessage(db, tenantId, {
+        phone,
+        direction: 'outbound',
+        type: 'text',
+        text: replyText,
+        status: 'failed',
+        metadata: { error: err.message }
+      });
     }
   }
 
@@ -398,11 +431,52 @@ function getTenantWacrmConfig(db, tenantId) {
   return cfg;
 }
 
+/**
+ * Verify Meta Cloud API connection and token validity.
+ */
+async function testMetaConnection({ phoneId, token }) {
+  if (!phoneId || !token) {
+    return { ok: false, error: 'WhatsApp Phone Number ID and Access Token are required.' };
+  }
+  const options = {
+    hostname: 'graph.facebook.com',
+    port: 443,
+    path: `/v21.0/${phoneId}?fields=id,display_phone_number,verified_name,quality_rating`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  };
+  try {
+    const res = await sendHttpRequest(options);
+    if (res.status === 200 && res.data && res.data.id) {
+      return {
+        ok: true,
+        phoneId: res.data.id,
+        displayPhoneNumber: res.data.display_phone_number || '',
+        verifiedName: res.data.verified_name || '',
+        qualityRating: res.data.quality_rating || 'UNKNOWN'
+      };
+    }
+    const errMsg = formatMetaError(res);
+    return {
+      ok: false,
+      error: errMsg,
+      code: res.data && res.data.error && res.data.error.code,
+      subcode: res.data && res.data.error && res.data.error.error_subcode
+    };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 module.exports = {
   normalizeE164,
   sendMetaWhatsAppMessage,
   sendMetaTemplateMessage,
   sendWacrmApiMessage,
+  testMetaConnection,
+  formatMetaError,
   upsertContact,
   ensureConversation,
   recordMessage,

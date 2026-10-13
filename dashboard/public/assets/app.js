@@ -440,6 +440,7 @@ function getVisibleRoutes() {
       { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
       { id: 'recordings', label: 'Call Recordings & Transcripts', icon: 'record' },
       { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
+      { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
       { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
       { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
       { id: 'agents', label: 'My AI Agent', icon: 'users' },
@@ -460,6 +461,7 @@ function getVisibleRoutes() {
     { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
     { id: 'recordings', label: 'All Call Recordings', icon: 'record' },
     { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
+    { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
     { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
     { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
     { id: 'agents', label: 'AI Agents', icon: 'users' },
@@ -477,6 +479,7 @@ const ROUTES = [
   { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
   { id: 'recordings', label: 'Call Recordings & Transcripts', icon: 'record' },
   { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
+  { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
   { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
   { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
   { id: 'agents', label: 'Agents', icon: 'users' },
@@ -510,6 +513,7 @@ function navIcon(name) {
     invoice: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6M9 19h4"/>',
     plug: '<path d="M8 3v5M16 3v5M6 8h12v2a6 6 0 0 1-12 0V8zM12 16v5"/>',
     prompt: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 2 2-2 2M12 13h5"/>',
+    bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     logout: '<path d="M14 3.5H6.5A1.5 1.5 0 0 0 5 5v14a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M17 8l4 4-4 4"/><path d="M21 12H9"/>'
   };
   return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || paths.grid) + '</svg>';
@@ -518,6 +522,7 @@ function navIcon(name) {
 function uiIcon(name, size) {
   size = size || 16;
   const paths = {
+    bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
     phoneCall: '<path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
     building: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="22"/><line x1="15" y1="22" x2="15" y2="22"/><line x1="9" y1="18" x2="9" y2="18"/><line x1="15" y1="18" x2="15" y2="18"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/>',
@@ -585,8 +590,7 @@ function renderShell() {
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
       el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
       el('div', { class: 'top-route' }, [
-        el('span', { class: 'crumb' }, 'Seevora AI Voice Receptionist'),
-        el('span', { class: 'ttl', id: 'routeTitle' }, 'Overview')
+        el('span', { class: 'crumb' }, 'Seevora AI Voice Receptionist')
       ])
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
@@ -626,11 +630,11 @@ async function mountClerkUserButton() {
           },
           appearance: {
             variables: {
-              colorPrimary: '#0095FF',
+              colorPrimary: '#F59E0B',
               colorBackground: '#FFFFFF',
-              colorText: '#0F172A',
-              colorNeutral: '#0F172A',
-              borderRadius: '10px',
+              colorText: '#18181B',
+              colorNeutral: '#18181B',
+              borderRadius: '14px',
             },
           },
         });
@@ -670,45 +674,6 @@ async function doLogout() {
   renderAuth();
 }
 
-/* ---- health chips ---- */
-function healthChips() {
-  const layers = [
-    { key: 'tts', label: 'TTS' },
-    { key: 'llm', label: 'Brain' },
-    { key: 'telephony', label: 'Telephony' }
-  ];
-  return layers.map((L) => {
-    const chip = el('span', { class: 'hchip loading', 'data-layer': L.key }, [
-      el('span', { class: 'dot' }),
-      el('span', { class: 'lbl-txt' }, L.label)
-    ]);
-    return chip;
-  });
-}
-async function loadHealth() {
-  try {
-    const h = await api('/api/health', { allow401: true });
-    State.health = h;
-    paintHealth();
-  } catch (e) {
-    $$('#healthRow .hchip').forEach((c) => { c.className = 'hchip bad'; });
-  }
-}
-function paintHealth() {
-  const h = State.health; if (!h) return;
-  const map = {
-    tts: h.providers && h.providers.tts ? Object.values(h.providers.tts).some(Boolean) : false,
-    llm: h.providers && h.providers.llm ? Object.values(h.providers.llm).some(Boolean) : false,
-    telephony: h.providers && h.providers.telephony ? Object.values(h.providers.telephony).some(Boolean) : false
-  };
-  $$('#healthRow .hchip').forEach((c) => {
-    const layer = c.getAttribute('data-layer');
-    c.classList.remove('loading');
-    c.className = 'hchip ' + (map[layer] ? 'ok' : 'bad');
-    c.setAttribute('data-layer', layer);
-  });
-}
-
 /* ===========================================================================
    ROUTER
    =========================================================================== */
@@ -728,7 +693,7 @@ function currentRoute() {
   const visible = getVisibleRoutes();
   const found = visible.find((r) => r.id === hash);
   if (found) return found.id;
-  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
   if (allowed.includes(hash)) return hash;
   return 'overview';
 }
@@ -754,6 +719,7 @@ function onRoute() {
     recordings: viewRecordings,
     campaigns: viewCampaigns,
     'whatsapp-inbox': viewWhatsAppInbox,
+    'wa-automations': viewWhatsAppAutomations,
     'crm-pipeline': viewCrmPipeline,
     broadcasts: viewBroadcasts,
     invoices: viewInvoices,
@@ -773,7 +739,7 @@ function goto(id) { location.hash = '#/' + id; }
 
 /* ---- shared view header ---- */
 function viewHead(title, sub) {
-  return el('div', { class: 'view-head' }, [el('div', { class: 'view-head-copy' }, [el('h2', {}, title), sub ? el('p', {}, sub) : null])]);
+  return el('div', { class: 'view-head' }, [el('div', { class: 'view-head-copy' }, [el('h2', {}, title)])]);
 }
 
 
@@ -6172,6 +6138,709 @@ async function viewBroadcasts(root) {
   });
 
   loadHistory();
+}
+
+/* ===========================================================================
+   WhatsApp Automations & Workflows (Visual Builder & AI Engineer)
+   =========================================================================== */
+async function viewWhatsAppAutomations(root) {
+  root.appendChild(viewHead('WhatsApp Automations', 'Visual trigger-action workflows, smart auto-responders, and AI automation engineer for customer journeys.'));
+
+  // Main container
+  const container = el('div', { class: 'wa-auto-container', style: 'display:flex;flex-direction:column;gap:20px;' });
+  root.appendChild(container);
+
+  // 1. Connection Status Banner
+  const connBanner = el('div', { class: 'card', style: 'padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);' }, [
+    el('div', { class: 'flex items-center gap-3' }, [
+      el('span', { class: 'conn-indicator', style: 'display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B;' }),
+      el('div', {}, [
+        el('div', { class: 'conn-title', style: 'font-weight:600;font-size:0.9rem;' }, 'Checking WhatsApp Gateway Connection...'),
+        el('div', { class: 'conn-sub muted', style: 'font-size:0.78rem;' }, 'Testing Meta WhatsApp Cloud API credentials...')
+      ])
+    ]),
+    el('button', { class: 'btn btn-sm btn-ghost', style: 'font-size:0.8rem;' }, 'Manage WhatsApp Credentials')
+  ]);
+  container.appendChild(connBanner);
+
+  async function checkConnection() {
+    try {
+      const res = await api('/api/whatsapp/test-connection', { allow401: true });
+      const indicator = connBanner.querySelector('.conn-indicator');
+      const title = connBanner.querySelector('.conn-title');
+      const sub = connBanner.querySelector('.conn-sub');
+      if (res.ok) {
+        indicator.style.background = '#10B981';
+        title.textContent = `Meta WhatsApp Cloud Connected (+${res.displayPhoneNumber || res.phoneId || 'Active'})`;
+        sub.textContent = `Quality Rating: ${res.qualityRating || 'GREEN'} • Phone ID: ${res.phoneId || 'Configured'}`;
+      } else {
+        indicator.style.background = '#EF4444';
+        title.textContent = 'WhatsApp Gateway Notice: ' + (res.error || 'Connection Failed');
+        sub.innerHTML = `<span>Outbound live sends may fail. Click <b style="cursor:pointer;text-decoration:underline;">Manage WhatsApp Credentials</b> to update your Meta Access Token.</span>`;
+      }
+    } catch (e) {
+      const indicator = connBanner.querySelector('.conn-indicator');
+      const title = connBanner.querySelector('.conn-title');
+      const sub = connBanner.querySelector('.conn-sub');
+      indicator.style.background = '#EF4444';
+      title.textContent = 'Connection Error: ' + e.message;
+      sub.textContent = 'Unable to verify WhatsApp status. Check server connection.';
+    }
+  }
+  connBanner.querySelector('button').addEventListener('click', openWhatsAppConfigModal);
+  checkConnection();
+
+  // 2. Action Toolbar & Pre-built Templates Header
+  const actionRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
+    el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+      el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: uiIcon('bolt', 16) + ' New Automation' }),
+      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: '✨ AI Automation Engineer' }),
+      el('button', { class: 'btn btn-ghost', id: 'btnRefreshAuto', html: '↻ Refresh' })
+    ]),
+    el('div', { class: 'flex items-center gap-2', id: 'filterTabs' }, [
+      el('button', { class: 'btn btn-sm btn-ghost active', 'data-filter': 'all' }, 'All'),
+      el('button', { class: 'btn btn-sm btn-ghost', 'data-filter': 'active' }, 'Active'),
+      el('button', { class: 'btn btn-sm btn-ghost', 'data-filter': 'paused' }, 'Paused')
+    ])
+  ]);
+  container.appendChild(actionRow);
+
+  // 3. Quick Starter Presets Section
+  const presetsSection = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
+    el('div', { style: 'font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-dim);' }, '⚡ Quick Launch Presets (1-Click)'),
+    el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;' }, [
+      createPresetCard('👋 Welcome Auto-Reply', 'Inbound Message', 'Sends instant personalized greeting when someone texts.', {
+        name: 'Instant Welcome Auto-Reply',
+        triggerType: 'message_received',
+        triggerConfig: {},
+        steps: [
+          { type: 'send_message', text: 'Hi {{name}}! 👋 Thank you for reaching out to us. How can we assist you today?' },
+          { type: 'add_tag', tag: 'new-lead' }
+        ]
+      }),
+      createPresetCard('💰 Pricing Auto-Responder', 'Keyword: price, cost, rates', 'Instantly sends pricing details when keywords are matched.', {
+        name: 'Pricing & Packages Auto-Reply',
+        triggerType: 'keyword_match',
+        triggerConfig: { keywords: ['price', 'pricing', 'cost', 'package', 'rate'] },
+        steps: [
+          { type: 'send_message', text: 'Hi {{name}}, our packages start at just ₹2,999/month including AI Voice Receptionist + WhatsApp CRM! Reply "DEMO" to schedule a live walkthrough.' },
+          { type: 'add_tag', tag: 'pricing-inquiry' }
+        ]
+      }),
+      createPresetCard('📅 Meeting / Demo Link', 'Keyword: demo, meeting, call', 'Sends calendar booking link automatically.', {
+        name: 'Instant Demo Booking Link',
+        triggerType: 'keyword_match',
+        triggerConfig: { keywords: ['demo', 'meeting', 'book', 'appointment', 'talk'] },
+        steps: [
+          { type: 'send_message', text: 'Great to connect {{name}}! Pick a convenient slot on our calendar here: https://cal.com/seevora-demo/15min' },
+          { type: 'add_tag', tag: 'demo-requested' }
+        ]
+      }),
+      createPresetCard('🚀 New Contact Nurture', 'New Lead Added', 'Sends onboarding message and pushes webhook.', {
+        name: 'New Lead Onboarding Flow',
+        triggerType: 'new_contact',
+        triggerConfig: {},
+        steps: [
+          { type: 'send_message', text: 'Welcome {{name}}! Your account has been setup. Save this number for 24/7 AI Voice & WhatsApp support.' },
+          { type: 'add_tag', tag: 'onboarded' }
+        ]
+      })
+    ])
+  ]);
+  container.appendChild(presetsSection);
+
+  // 4. Automations Grid
+  const grid = el('div', { class: 'wa-auto-grid', id: 'automationsGrid' });
+  container.appendChild(grid);
+
+  let currentFilter = 'all';
+  let automationsList = [];
+
+  actionRow.querySelectorAll('#filterTabs button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      actionRow.querySelectorAll('#filterTabs button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.getAttribute('data-filter');
+      renderAutomations();
+    });
+  });
+
+  actionRow.querySelector('#btnNewAuto').addEventListener('click', () => openAutomationEditor());
+  actionRow.querySelector('#btnAiAuto').addEventListener('click', () => openAiAutomationModal());
+  actionRow.querySelector('#btnRefreshAuto').addEventListener('click', () => loadAutomations());
+
+  function createPresetCard(title, triggerDesc, desc, templateData) {
+    const card = el('div', { class: 'wa-preset-card' }, [
+      el('div', { style: 'font-weight:600;font-size:0.88rem;color:var(--ink);' }, title),
+      el('div', { class: 'wa-trigger-chip', style: 'align-self:flex-start;font-size:0.7rem;padding:2px 8px;' }, triggerDesc),
+      el('div', { class: 'muted', style: 'font-size:0.78rem;line-height:1.35;' }, desc),
+      el('button', { class: 'btn btn-sm btn-ghost', style: 'margin-top:6px;align-self:flex-start;font-size:0.76rem;color:var(--gold-deep);' }, '+ Use This Template')
+    ]);
+    card.querySelector('button').addEventListener('click', () => openAutomationEditor(templateData));
+    return card;
+  }
+
+  async function loadAutomations() {
+    grid.innerHTML = '<div class="muted" style="grid-column:1/-1;text-align:center;padding:40px;">Loading automations...</div>';
+    try {
+      const res = await api('/api/automations');
+      automationsList = res.automations || [];
+      renderAutomations();
+    } catch (e) {
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1;padding:30px;text-align:center;color:#EF4444;">Failed to load automations: ${e.message}</div>`;
+    }
+  }
+
+  function renderAutomations() {
+    grid.innerHTML = '';
+    const filtered = automationsList.filter((a) => {
+      if (currentFilter === 'active') return a.isActive;
+      if (currentFilter === 'paused') return !a.isActive;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="card" style="grid-column:1/-1;padding:50px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
+          <div style="width:54px;height:54px;border-radius:50%;background:rgba(224,174,0,0.15);display:flex;align-items:center;justify-content:center;color:#8C6200;">
+            ${uiIcon('bolt', 28)}
+          </div>
+          <h3 style="margin:0;font-size:1.15rem;">No Automations Found</h3>
+          <p class="muted" style="max-width:420px;margin:0;font-size:0.86rem;">
+            ${currentFilter === 'all' ? 'Create your first WhatsApp workflow or pick a starter template above to automate client replies, tags, and follow-ups.' : 'No ' + currentFilter + ' automations.'}
+          </p>
+          <button class="btn btn-primary" id="btnEmptyCreate" style="margin-top:8px;">+ Create Automation</button>
+        </div>
+      `;
+      const btn = grid.querySelector('#btnEmptyCreate');
+      if (btn) btn.addEventListener('click', () => openAutomationEditor());
+      return;
+    }
+
+    filtered.forEach((auto) => {
+      grid.appendChild(renderAutomationCard(auto));
+    });
+  }
+
+  function renderAutomationCard(auto) {
+    const card = el('div', { class: 'wa-card' });
+
+    // Trigger label
+    let triggerLabel = 'Inbound Message';
+    if (auto.triggerType === 'keyword_match') {
+      const kws = (auto.triggerConfig && auto.triggerConfig.keywords) || [];
+      triggerLabel = 'Keywords: ' + (kws.length ? kws.slice(0, 3).join(', ') + (kws.length > 3 ? '...' : '') : 'none');
+    } else if (auto.triggerType === 'new_contact') {
+      triggerLabel = 'New Contact Added';
+    } else if (auto.triggerType === 'schedule') {
+      triggerLabel = 'Schedule: ' + ((auto.triggerConfig && auto.triggerConfig.cronExpr) || 'Daily');
+    }
+
+    // Header
+    const toggleBtn = el('button', {
+      class: 'wa-toggle-btn ' + (auto.isActive ? 'active' : 'paused'),
+      html: auto.isActive ? '● Active' : '○ Paused'
+    });
+    toggleBtn.addEventListener('click', async () => {
+      try {
+        const res = await api(`/api/automations/${auto.id}/toggle`, { method: 'POST' });
+        auto.isActive = res.isActive;
+        toggleBtn.className = 'wa-toggle-btn ' + (auto.isActive ? 'active' : 'paused');
+        toggleBtn.textContent = auto.isActive ? '● Active' : '○ Paused';
+        toast(`Automation "${auto.name}" is now ${auto.isActive ? 'Active' : 'Paused'}.`, 'ok');
+      } catch (e) {
+        toast(e.message, 'err');
+      }
+    });
+
+    const header = el('div', { class: 'wa-card-header' }, [
+      el('div', { style: 'flex:1;min-width:0;' }, [
+        el('h4', { class: 'wa-card-title' }, auto.name),
+        el('span', { class: 'wa-trigger-chip' }, [el('span', { html: uiIcon('bolt', 12) }), triggerLabel])
+      ]),
+      toggleBtn
+    ]);
+    card.appendChild(header);
+
+    // Steps flow visualizer
+    const stepsFlow = el('div', { class: 'wa-steps-flow' });
+    const steps = auto.steps || [];
+    if (steps.length === 0) {
+      stepsFlow.appendChild(el('div', { class: 'muted', style: 'font-size:0.8rem;' }, 'No steps defined yet.'));
+    } else {
+      steps.forEach((step, idx) => {
+        let label = '';
+        let iconChar = '💬';
+        if (step.type === 'send_message') {
+          iconChar = '💬';
+          label = `Send: "${(step.text || '').slice(0, 42)}${(step.text || '').length > 42 ? '...' : ''}"`;
+        } else if (step.type === 'send_template') {
+          iconChar = '📑';
+          label = `Template: ${step.templateName || 'Unnamed'}`;
+        } else if (step.type === 'add_tag') {
+          iconChar = '🏷️';
+          label = `Add Tag: ${step.tag || ''}`;
+        } else if (step.type === 'remove_tag') {
+          iconChar = '✕';
+          label = `Remove Tag: ${step.tag || ''}`;
+        } else if (step.type === 'wait') {
+          iconChar = '⏱️';
+          label = `Wait ${step.seconds || 60}s`;
+        } else if (step.type === 'webhook') {
+          iconChar = '🌐';
+          label = `Webhook ${step.method || 'POST'} ${step.url ? new URL(step.url, 'http://x').pathname : ''}`;
+        } else {
+          iconChar = '⚡';
+          label = step.type;
+        }
+
+        const stepRow = el('div', { class: 'wa-step-item' }, [
+          el('span', { class: 'wa-step-badge' }, String(idx + 1)),
+          el('span', { style: 'font-size:0.9rem;' }, iconChar),
+          el('span', { class: 'wa-step-detail' }, label)
+        ]);
+        stepsFlow.appendChild(stepRow);
+      });
+    }
+    card.appendChild(stepsFlow);
+
+    // Footer stats & actions
+    const footer = el('div', { class: 'wa-card-footer' }, [
+      el('div', { class: 'wa-stats-text' }, [
+        el('div', {}, `Runs: ${auto.runCount || 0}`),
+        el('div', { class: 'muted', style: 'font-size:0.72rem;' }, auto.lastRunAt ? `Last: ${new Date(auto.lastRunAt).toLocaleTimeString()}` : 'Never fired')
+      ]),
+      el('div', { class: 'flex items-center gap-1' }, [
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'Test Run', html: '⚡ Test' }),
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'View Execution Logs', html: '📜 Logs' }),
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'Edit Automation', html: '✏️' }),
+        el('button', { class: 'btn btn-sm btn-ghost', style: 'color:#EF4444;', title: 'Delete', html: '✕' })
+      ])
+    ]);
+
+    const btns = footer.querySelectorAll('button');
+    // Test button
+    btns[0].addEventListener('click', () => openTestAutomationModal(auto));
+    // Logs button
+    btns[1].addEventListener('click', () => openLogsModal(auto));
+    // Edit button
+    btns[2].addEventListener('click', () => openAutomationEditor(auto));
+    // Delete button
+    btns[3].addEventListener('click', () => {
+      modal({
+        title: `Delete "${auto.name}"?`,
+        body: el('p', { class: 'muted' }, 'Are you sure you want to delete this automation? This action cannot be undone.'),
+        confirmText: 'Delete',
+        confirmKind: 'danger',
+        onConfirm: async () => {
+          await api('/api/automations/delete', { method: 'POST', body: { id: auto.id } });
+          toast('Automation deleted.', 'ok');
+          loadAutomations();
+        }
+      });
+    });
+
+    card.appendChild(footer);
+    return card;
+  }
+
+  // 5. Visual Automation Builder Modal
+  function openAutomationEditor(existing) {
+    const isEdit = existing && existing.id;
+    let stepsData = existing && existing.steps ? JSON.parse(JSON.stringify(existing.steps)) : [
+      { type: 'send_message', text: 'Hi {{name}}, thanks for messaging us! How can we help you today?' },
+      { type: 'add_tag', tag: 'lead' }
+    ];
+
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;max-height:68vh;overflow-y:auto;padding-right:4px;' });
+
+    // Name
+    const nameInput = el('input', { class: 'input', placeholder: 'e.g. Lead Qualification Auto-Responder', value: (existing && existing.name) || '' });
+    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Automation Name'), nameInput]));
+
+    // Trigger Type
+    const triggerSelect = el('select', { class: 'select' }, [
+      el('option', { value: 'message_received' }, '📥 Inbound Message (Any WhatsApp message received)'),
+      el('option', { value: 'keyword_match' }, '⚡ Keyword Match (When message contains specific words)'),
+      el('option', { value: 'new_contact' }, '👤 New Contact Created (Lead captured via voice or form)'),
+      el('option', { value: 'schedule' }, '⏱️ Scheduled / Recurring Broadcast (Cron expression)')
+    ]);
+    if (existing && existing.triggerType) triggerSelect.value = existing.triggerType;
+    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Trigger Event'), triggerSelect]));
+
+    // Trigger Config Box
+    const triggerConfigBox = el('div', { style: 'padding:12px;background:rgba(255,255,255,0.6);border:1px solid var(--line);border-radius:var(--r-sm);' });
+    const keywordInput = el('input', {
+      class: 'input',
+      placeholder: 'e.g. price, pricing, cost, demo, help (comma separated)',
+      value: (existing && existing.triggerConfig && existing.triggerConfig.keywords) ? existing.triggerConfig.keywords.join(', ') : ''
+    });
+    const cronInput = el('input', {
+      class: 'input',
+      placeholder: 'e.g. 0 9 * * 1 (Every Monday at 9:00 AM)',
+      value: (existing && existing.triggerConfig && existing.triggerConfig.cronExpr) || '0 9 * * *'
+    });
+
+    function updateTriggerConfigUI() {
+      triggerConfigBox.innerHTML = '';
+      const val = triggerSelect.value;
+      if (val === 'keyword_match') {
+        triggerConfigBox.appendChild(el('div', { class: 'form-group' }, [
+          el('label', {}, 'Keywords to match (comma separated)'),
+          keywordInput,
+          el('div', { class: 'muted', style: 'font-size:0.75rem;margin-top:4px;' }, 'Case-insensitive. If incoming WhatsApp message contains any of these words, this flow triggers.')
+        ]));
+      } else if (val === 'schedule') {
+        triggerConfigBox.appendChild(el('div', { class: 'form-group' }, [
+          el('label', {}, 'Cron Schedule (5-field: min hour dom mon dow)'),
+          cronInput,
+          el('div', { class: 'muted', style: 'font-size:0.75rem;margin-top:4px;' }, 'Example: "0 9 * * *" for daily at 9am, or "*/30 * * * *" for every 30 minutes.')
+        ]));
+      } else {
+        triggerConfigBox.appendChild(el('div', { class: 'muted', style: 'font-size:0.8rem;' },
+          val === 'message_received' ? 'Fires on every new inbound WhatsApp message received from a customer.' : 'Fires whenever a new contact is added to your CRM.'
+        ));
+      }
+    }
+    triggerSelect.addEventListener('change', updateTriggerConfigUI);
+    updateTriggerConfigUI();
+    body.appendChild(triggerConfigBox);
+
+    // Steps list editor
+    const stepsContainer = el('div', { style: 'display:flex;flex-direction:column;gap:8px;' });
+    const stepsWrapper = el('div', { class: 'form-group' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+        el('label', { style: 'margin:0;font-weight:600;' }, 'Workflow Actions / Steps'),
+        el('button', { type: 'button', class: 'btn btn-sm btn-secondary', id: 'btnAddStep', html: '+ Add Step' })
+      ]),
+      stepsContainer
+    ]);
+    body.appendChild(stepsWrapper);
+
+    function renderStepsEditor() {
+      stepsContainer.innerHTML = '';
+      stepsData.forEach((st, idx) => {
+        const stepRow = el('div', { class: 'wa-step-editor-row' });
+
+        const top = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:8px;' }, [
+          el('div', { class: 'flex items-center gap-2' }, [
+            el('span', { class: 'wa-step-badge' }, String(idx + 1)),
+            el('b', { style: 'font-size:0.82rem;' }, `Step ${idx + 1}`)
+          ]),
+          el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'color:#EF4444;font-size:0.76rem;', html: 'Remove Step' })
+        ]);
+        top.querySelector('button').addEventListener('click', () => {
+          stepsData.splice(idx, 1);
+          renderStepsEditor();
+        });
+        stepRow.appendChild(top);
+
+        const typeSelect = el('select', { class: 'select', style: 'font-size:0.82rem;' }, [
+          el('option', { value: 'send_message' }, '💬 Send WhatsApp Text Message'),
+          el('option', { value: 'send_template' }, '📑 Send WhatsApp Approved Template'),
+          el('option', { value: 'add_tag' }, '🏷️ Add CRM Tag'),
+          el('option', { value: 'remove_tag' }, '✕ Remove CRM Tag'),
+          el('option', { value: 'wait' }, '⏱️ Delay / Wait'),
+          el('option', { value: 'webhook' }, '🌐 Call External Webhook')
+        ]);
+        typeSelect.value = st.type || 'send_message';
+        stepRow.appendChild(typeSelect);
+
+        const configArea = el('div', { style: 'display:flex;flex-direction:column;gap:6px;' });
+
+        function updateStepConfigFields() {
+          configArea.innerHTML = '';
+          const t = typeSelect.value;
+          st.type = t;
+
+          if (t === 'send_message') {
+            const txt = el('textarea', { class: 'textarea', rows: 3, placeholder: 'Hi {{name}}, your request has been received.' });
+            txt.value = st.text || '';
+            txt.addEventListener('input', () => { st.text = txt.value; });
+
+            const varsRow = el('div', { class: 'flex items-center gap-2', style: 'font-size:0.75rem;' }, [
+              el('span', { class: 'muted' }, 'Insert:'),
+              el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'padding:2px 6px;font-size:0.72rem;' }, '{{name}}'),
+              el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'padding:2px 6px;font-size:0.72rem;' }, '{{phone}}')
+            ]);
+            varsRow.querySelectorAll('button')[0].addEventListener('click', () => { txt.value += '{{name}}'; st.text = txt.value; });
+            varsRow.querySelectorAll('button')[1].addEventListener('click', () => { txt.value += '{{phone}}'; st.text = txt.value; });
+
+            configArea.appendChild(txt);
+            configArea.appendChild(varsRow);
+          } else if (t === 'send_template') {
+            const tmplInput = el('input', { class: 'input', placeholder: 'Template name in Meta (e.g. hello_world)' });
+            tmplInput.value = st.templateName || '';
+            tmplInput.addEventListener('input', () => { st.templateName = tmplInput.value; });
+            configArea.appendChild(tmplInput);
+          } else if (t === 'add_tag' || t === 'remove_tag') {
+            const tagInput = el('input', { class: 'input', placeholder: 'e.g. interested, hot-lead, vip' });
+            tagInput.value = st.tag || '';
+            tagInput.addEventListener('input', () => { st.tag = tagInput.value; });
+            configArea.appendChild(tagInput);
+          } else if (t === 'wait') {
+            const secInput = el('input', { type: 'number', class: 'input', placeholder: 'Seconds to wait (e.g. 300 for 5m)' });
+            secInput.value = st.seconds || 60;
+            secInput.addEventListener('input', () => { st.seconds = parseInt(secInput.value, 10) || 60; });
+            configArea.appendChild(secInput);
+          } else if (t === 'webhook') {
+            const urlInput = el('input', { class: 'input', placeholder: 'https://api.yourdomain.com/lead-webhook' });
+            urlInput.value = st.url || '';
+            urlInput.addEventListener('input', () => { st.url = urlInput.value; });
+            configArea.appendChild(urlInput);
+          }
+        }
+
+        typeSelect.addEventListener('change', updateStepConfigFields);
+        updateStepConfigFields();
+        stepRow.appendChild(configArea);
+        stepsContainer.appendChild(stepRow);
+      });
+    }
+
+    stepsWrapper.querySelector('#btnAddStep').addEventListener('click', () => {
+      stepsData.push({ type: 'send_message', text: 'Hi {{name}}, thanks for contacting us!' });
+      renderStepsEditor();
+    });
+    renderStepsEditor();
+
+    modal({
+      title: isEdit ? `Edit Automation: ${existing.name}` : 'Create WhatsApp Automation',
+      body,
+      confirmText: isEdit ? 'Save Changes' : 'Create Automation',
+      onConfirm: async () => {
+        const name = nameInput.value.trim();
+        if (!name) throw new Error('Please provide an automation name.');
+        if (stepsData.length === 0) throw new Error('Please add at least one step to the automation.');
+
+        const triggerType = triggerSelect.value;
+        const triggerConfig = {};
+        if (triggerType === 'keyword_match') {
+          triggerConfig.keywords = keywordInput.value.split(',').map((s) => s.trim()).filter(Boolean);
+        } else if (triggerType === 'schedule') {
+          triggerConfig.cronExpr = cronInput.value.trim();
+        }
+
+        const payload = {
+          name,
+          triggerType,
+          triggerConfig,
+          steps: stepsData,
+          isActive: isEdit ? existing.isActive : true
+        };
+
+        if (isEdit) {
+          await api(`/api/automations/${existing.id}`, { method: 'POST', body: payload });
+          toast('Automation updated successfully.', 'ok');
+        } else {
+          await api('/api/automations', { method: 'POST', body: payload });
+          toast('Automation created successfully.', 'ok');
+        }
+        loadAutomations();
+      }
+    });
+  }
+
+  // 6. AI Automation Engineer Modal
+  function openAiAutomationModal() {
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.85rem;' },
+        'Describe your automation workflow in plain English. The AI Engineer will structure triggers, keyword matchers, messages, tags, and delays automatically.'
+      ),
+      el('textarea', {
+        class: 'textarea',
+        id: 'aiPromptInput',
+        rows: 4,
+        placeholder: 'e.g. When a client texts asking about price or cost, reply with our basic ₹2,999 package details and tag them as "pricing-lead", then wait 5 minutes and ask if they would like to talk to an agent.'
+      }),
+      el('div', { class: 'flex items-center gap-2 flex-wrap', style: 'font-size:0.75rem;' }, [
+        el('span', { class: 'muted' }, 'Try:'),
+        el('button', { type: 'button', class: 'btn btn-sm btn-ghost prompt-chip', style: 'font-size:0.72rem;padding:2px 8px;' }, 'Auto-reply to greetings & tag new lead'),
+        el('button', { type: 'button', class: 'btn btn-sm btn-ghost prompt-chip', style: 'font-size:0.72rem;padding:2px 8px;' }, 'Booking link on "demo" keyword')
+      ])
+    ]);
+
+    body.querySelectorAll('.prompt-chip')[0].addEventListener('click', () => {
+      body.querySelector('#aiPromptInput').value = 'When someone texts "hello", "hi", or "namaste", reply with a warm welcome and tag them as "new-inquiry".';
+    });
+    body.querySelectorAll('.prompt-chip')[1].addEventListener('click', () => {
+      body.querySelector('#aiPromptInput').value = 'When someone asks to "book" or "demo", reply with our calendar link and tag them as "ready-to-close".';
+    });
+
+    modal({
+      title: '✨ AI WhatsApp Automation Engineer',
+      body,
+      confirmText: 'Generate & Create Workflow',
+      onConfirm: async () => {
+        const prompt = body.querySelector('#aiPromptInput').value.trim();
+        if (!prompt) throw new Error('Please enter a description for the AI.');
+        toast('Generating automation flow with AI...', 'info');
+        const res = await api('/api/automations/ai', { method: 'POST', body: { prompt } });
+        if (res.automation) {
+          toast(`Automation "${res.automation.name}" created by AI Engineer!`, 'ok');
+          loadAutomations();
+        }
+      }
+    });
+  }
+
+  // 7. Test Fire Modal (Live execution with diagnostic output)
+  function openTestAutomationModal(auto) {
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' },
+        `Simulate or execute this automation against a test phone number. Real-time step logs will display below.`
+      ),
+      el('div', { class: 'form-group' }, [
+        el('label', {}, 'Recipient Phone Number'),
+        el('input', { class: 'input', id: 'testPhoneInput', placeholder: 'e.g. +919876543210', value: '+919876543210' })
+      ]),
+      el('div', { class: 'form-group' }, [
+        el('label', {}, 'Simulated Inbound Message Text'),
+        el('input', { class: 'input', id: 'testMsgInput', placeholder: 'e.g. What is the price?', value: 'Hello, what is the price?' })
+      ]),
+      el('div', { id: 'testResultsArea', style: 'padding:12px;background:#F8FAFC;border:1px solid var(--line);border-radius:var(--r-sm);max-height:240px;overflow-y:auto;display:none;' })
+    ]);
+
+    modal({
+      title: `⚡ Test Fire: ${auto.name}`,
+      body,
+      confirmText: 'Execute Test Run',
+      cancelText: 'Close',
+      onConfirm: async () => {
+        const phone = body.querySelector('#testPhoneInput').value.trim();
+        const msg = body.querySelector('#testMsgInput').value.trim();
+        if (!phone) throw new Error('Please provide a phone number.');
+
+        const resultsArea = body.querySelector('#testResultsArea');
+        resultsArea.style.display = 'block';
+        resultsArea.innerHTML = '<div class="muted" style="font-size:0.8rem;">Running automation steps...</div>';
+
+        try {
+          const res = await api(`/api/automations/${auto.id}/test`, {
+            method: 'POST',
+            body: { phone, messageText: msg }
+          });
+          resultsArea.innerHTML = '';
+          const steps = res.result || [];
+          steps.forEach((s, idx) => {
+            const isOk = s.ok;
+            const item = el('div', { style: `font-size:0.8rem;margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${isOk ? '#ECFDF5' : '#FEF2F2'};border:1px solid ${isOk ? '#A7F3D0' : '#FECACA'};` }, [
+              el('b', {}, `Step ${idx + 1} (${s.type}): `),
+              el('span', {}, isOk ? (s.mode === 'simulated' ? '✓ Simulated delivery' : '✓ Delivered successfully') : `✕ Failed: ${s.error || 'Step error'}`)
+            ]);
+            if (s.note) item.appendChild(el('div', { class: 'muted', style: 'font-size:0.74rem;margin-top:2px;' }, s.note));
+            resultsArea.appendChild(item);
+          });
+          toast('Automation test completed.', 'ok');
+        } catch (err) {
+          resultsArea.innerHTML = `<div style="color:#EF4444;font-size:0.82rem;">Test execution failed: ${err.message}</div>`;
+          throw err;
+        }
+      }
+    });
+  }
+
+  // 8. Execution Logs Modal
+  async function openLogsModal(auto) {
+    const body = el('div', { style: 'max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;' });
+    body.innerHTML = '<div class="muted" style="text-align:center;padding:20px;">Loading logs...</div>';
+
+    modal({
+      title: `📜 Execution History: ${auto.name}`,
+      body,
+      confirmText: 'Done',
+      cancelText: 'Close',
+      onConfirm: () => {}
+    });
+
+    try {
+      const res = await api(`/api/automations/${auto.id}/logs`);
+      const logs = (res.logs || []).reverse();
+      body.innerHTML = '';
+      if (logs.length === 0) {
+        body.innerHTML = '<div class="muted" style="text-align:center;padding:30px;">No execution logs recorded yet.</div>';
+        return;
+      }
+      logs.forEach((log) => {
+        const isSuccess = log.status === 'success';
+        const row = el('div', { style: `padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:rgba(255,255,255,0.7);display:flex;flex-direction:column;gap:4px;font-size:0.8rem;` }, [
+          el('div', { style: 'display:flex;align-items:center;justify-content:space-between;' }, [
+            el('b', {}, log.phone || 'Unknown Contact'),
+            el('span', { class: `badge badge-${isSuccess ? 'success' : 'danger'}`, style: 'font-size:0.7rem;' }, log.status)
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.72rem;' }, new Date(log.createdAt).toLocaleString()),
+          el('pre', { style: 'margin:4px 0 0;font-size:0.72rem;background:#F1F5F9;padding:6px;border-radius:4px;overflow-x:auto;max-height:100px;' }, log.detail || 'No details')
+        ]);
+        body.appendChild(row);
+      });
+    } catch (e) {
+      body.innerHTML = `<div style="color:#EF4444;">Failed to load logs: ${e.message}</div>`;
+    }
+  }
+
+  // 9. WhatsApp Credentials Modal (Directly fixes why messages are not going)
+  async function openWhatsAppConfigModal() {
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' });
+    body.innerHTML = '<div class="muted">Loading WhatsApp configuration...</div>';
+
+    let currentCfg = {};
+    try {
+      currentCfg = await api('/api/whatsapp/config');
+    } catch (_) {}
+
+    body.innerHTML = '';
+    const phoneIdInput = el('input', { class: 'input', placeholder: 'e.g. 1305746365962870', value: currentCfg.metaPhoneId || '' });
+    const wabaIdInput = el('input', { class: 'input', placeholder: 'e.g. 1071250892416905', value: currentCfg.metaWabaId || '' });
+    const tokenInput = el('textarea', { class: 'textarea', rows: 3, placeholder: 'EAAXsGpMcdxgBS...', value: currentCfg.metaToken || '' });
+
+    body.appendChild(el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' },
+      'Messages will fail if your Meta Access Token has expired (Meta temporary tokens expire after 24h). Renew your token from Meta Developer Portal -> WhatsApp -> API Setup or create a permanent System User Token.'
+    ));
+    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'WhatsApp Phone Number ID'), phoneIdInput]));
+    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'WhatsApp Business Account ID (WABA ID)'), wabaIdInput]));
+    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Meta Access Token (Temporary or Permanent)'), tokenInput]));
+
+    const testBtn = el('button', { type: 'button', class: 'btn btn-secondary', style: 'align-self:flex-start;font-size:0.8rem;' }, '⚡ Verify Token with Meta API');
+    const testResult = el('div', { style: 'font-size:0.8rem;display:none;' });
+    testBtn.addEventListener('click', async () => {
+      testResult.style.display = 'block';
+      testResult.textContent = 'Verifying with Meta Graph API...';
+      try {
+        const res = await api('/api/whatsapp/test-connection', { allow401: true });
+        if (res.ok) {
+          testResult.innerHTML = `<span style="color:#10B981;font-weight:600;">✓ Valid Token! Connected to +${res.displayPhoneNumber || res.phoneId}.</span>`;
+        } else {
+          testResult.innerHTML = `<span style="color:#EF4444;font-weight:600;">✕ Invalid/Expired Token: ${res.error || 'Check token'}.</span>`;
+        }
+      } catch (e) {
+        testResult.innerHTML = `<span style="color:#EF4444;">✕ Check failed: ${e.message}</span>`;
+      }
+    });
+    body.appendChild(testBtn);
+    body.appendChild(testResult);
+
+    modal({
+      title: 'WhatsApp Gateway & Meta Token Manager',
+      body,
+      confirmText: 'Save Credentials',
+      onConfirm: async () => {
+        await api('/api/whatsapp/config', {
+          method: 'POST',
+          body: {
+            mode: 'meta_cloud',
+            metaPhoneId: phoneIdInput.value.trim(),
+            metaWabaId: wabaIdInput.value.trim(),
+            metaToken: tokenInput.value.trim()
+          }
+        });
+        toast('WhatsApp credentials saved.', 'ok');
+        checkConnection();
+      }
+    });
+  }
+
+  // Initial load
+  loadAutomations();
 }
 
 /* ===========================================================================

@@ -33,9 +33,8 @@ Set up RapidX Voice, a production AI voice-agent platform, on this machine and s
    and you are live: a Voice Studio to generate speech, an agent builder, in-browser voice
    chat, and outbound calling, all on the Rumik voice at roughly one rupee per minute.
 
-Verify it works: the dashboard provider chips (TTS, Brain, Telephony) should all be green,
-and the Voice Studio "Synthesize" button should return audio. If a chip is grey, that key is
-missing or wrong in .env.
+Verify it works: the dashboard should load cleanly, and the Voice Studio
+"Synthesize" button should return audio.
 ```
 
 ---
