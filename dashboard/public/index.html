@@ -204,6 +204,57 @@
       to { transform: rotate(360deg); }
     }
 
+    /* Quick Demo Buttons */
+    .demo-buttons-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .btn-demo-sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 6px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .btn-demo-sub:hover {
+      background: #FFFFFF !important;
+      border-color: rgba(0, 0, 0, 0.18) !important;
+      color: var(--ink) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    }
+    .btn-demo-sub.btn-demo-primary {
+      background: rgba(0, 149, 255, 0.08);
+      border-color: rgba(0, 149, 255, 0.35);
+      color: #0284C7;
+      font-weight: 700;
+    }
+    .btn-demo-sub.btn-demo-primary:hover {
+      background: #0095FF !important;
+      border-color: #0095FF !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(0, 149, 255, 0.2);
+    }
+    @media (max-width: 420px) {
+      .demo-buttons-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* Right: Visual Showcase Column */
     .showcase-column {
       position: relative;
@@ -341,6 +392,20 @@
         <!-- Separate Dedicated Mount Points -->
         <div id="clerk-sign-in" class="clerk-slot" style="display: none;"></div>
         <div id="clerk-sign-up" class="clerk-slot" style="display: none;"></div>
+      </div>
+
+      <!-- Quick Demo Login Access -->
+      <div class="demo-access-wrap" style="margin-top: 16px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 400px; color: var(--ink-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;">
+          <div style="flex: 1; height: 1px; background: var(--line);"></div>
+          <span>Quick Demo Access</span>
+          <div style="flex: 1; height: 1px; background: var(--line);"></div>
+        </div>
+        <div class="demo-buttons-row">
+          <button id="btnQuickDemoAnimesh" type="button" class="btn-demo-sub btn-demo-primary" title="1-Click Quick Demo">⚡ Quick Demo</button>
+          <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">👑 Admin Demo</button>
+          <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">🏢 Client Demo</button>
+        </div>
       </div>
     </section>
 
@@ -526,6 +591,42 @@
             `;
           }
         }
+      }
+
+      async function doQuickLogin(email, password, btnElement) {
+        if (!btnElement) return;
+        const originalHtml = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.style.opacity = '0.7';
+        btnElement.textContent = 'Logging in...';
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: password || '' })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Login failed');
+          window.location.href = '/app.html';
+        } catch (err) {
+          alert(err.message || 'Quick demo login failed.');
+          btnElement.disabled = false;
+          btnElement.style.opacity = '1';
+          btnElement.innerHTML = originalHtml;
+        }
+      }
+
+      const btnAnimesh = document.getElementById('btnQuickDemoAnimesh');
+      if (btnAnimesh) {
+        btnAnimesh.addEventListener('click', () => doQuickLogin('animeshj425@gmail.com', '', btnAnimesh));
+      }
+      const btnAdmin = document.getElementById('btnQuickDemoAdmin');
+      if (btnAdmin) {
+        btnAdmin.addEventListener('click', () => doQuickLogin('admin@demo.com', 'admin123', btnAdmin));
+      }
+      const btnClient = document.getElementById('btnQuickDemoClient');
+      if (btnClient) {
+        btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
       }
 
       if (document.readyState === 'complete') {

@@ -516,14 +516,21 @@ async function apiLogin(req, res, body) {
 
   const isDemoAdmin = email === 'admin@demo.com' || email === 'demo@rapidx.ai' || email === 'admin@rapidx.ai';
   const isDemoClient = email === 'client@demo.com' || email === 'client@rapidx.ai';
-  const isDemoUser = isDemoAdmin || isDemoClient;
-  const isDemoPass = (isDemoAdmin && (password === 'admin' || password === 'admin123' || password === 'admin123456' || password === 'RapidXDemo1234!')) ||
+  const isDemoAnimesh = email === 'animeshj425@gmail.com';
+  const isDemoUser = isDemoAdmin || isDemoClient || isDemoAnimesh;
+  const isDemoPass = isDemoAnimesh ||
+                     (isDemoAdmin && (password === 'admin' || password === 'admin123' || password === 'admin123456' || password === 'RapidXDemo1234!')) ||
                      (isDemoClient && (password === 'client' || password === 'client123' || password === 'client123456' || password === 'RapidXDemo1234!')) ||
                      password === 'rapidxvoice' || password === 'RapidXDemo1234!';
 
   let user = d.users.find((u) => u.email === email);
   if (!user && isDemoAdmin) user = d.users.find((u) => u.role === 'super_admin' || u.email === 'admin@demo.com' || u.email === 'demo@rapidx.ai');
   if (!user && isDemoClient) user = d.users.find((u) => u.role === 'client' || u.email === 'client@demo.com' || u.email === 'client@rapidx.ai');
+  if (!user && isDemoAnimesh) {
+    const t = d.tenants[0] || { id: 'default' };
+    user = { id: 'u_animeshj425', email: 'animeshj425@gmail.com', name: 'Animesh Jain', role: 'client', tenantId: t.id, createdAt: new Date().toISOString() };
+    await core.mutate((store) => store.users.push(user));
+  }
 
   const passOk = user && (core.verifyPassword(password, user.passHash) || (isDemoUser && isDemoPass));
   if (!user || !passOk) {
