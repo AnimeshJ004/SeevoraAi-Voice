@@ -12,6 +12,8 @@
  */
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 
@@ -408,13 +410,40 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
 function getTenantWacrmConfig(db, tenantId) {
   if (!db.wacrmConfig) db.wacrmConfig = [];
   let cfg = db.wacrmConfig.find((c) => c.tenantId === tenantId);
+
+  // Dynamically re-read .env to ensure fresh credentials are used without server restarts
+  const candidates = [
+    path.join(__dirname, '..', '.env'),
+    path.join(__dirname, '..', '..', '.env'),
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), '..', '.env')
+  ];
+  for (const envFile of candidates) {
+    try {
+      if (fs.existsSync(envFile)) {
+        const txt = fs.readFileSync(envFile, 'utf8');
+        for (const line of txt.split('\n')) {
+          const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+          if (m && m[1].startsWith('WHATSAPP_')) {
+            process.env[m[1]] = m[2].replace(/^["']|["']$/g, '').trim();
+          }
+        }
+        break;
+      }
+    } catch (_) {}
+  }
+
+  const envPhoneId = process.env.WHATSAPP_PHONE_ID || '';
+  const envWabaId = process.env.WHATSAPP_WABA_ID || '';
+  const envToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
+
   if (!cfg) {
     cfg = {
       tenantId,
       mode: 'meta_cloud', // meta_cloud | wacrm_api
-      metaPhoneId: process.env.WHATSAPP_PHONE_ID || '',
-      metaWabaId: process.env.WHATSAPP_WABA_ID || '',
-      metaToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+      metaPhoneId: envPhoneId,
+      metaWabaId: envWabaId,
+      metaToken: envToken,
       wacrmBaseUrl: process.env.WACRM_BASE_URL || 'http://localhost:3000',
       wacrmApiKey: process.env.WACRM_API_KEY || '',
       autoFollowupEnabled: true,
@@ -424,9 +453,9 @@ function getTenantWacrmConfig(db, tenantId) {
     };
     db.wacrmConfig.push(cfg);
   } else {
-    if (!cfg.metaPhoneId && process.env.WHATSAPP_PHONE_ID) cfg.metaPhoneId = process.env.WHATSAPP_PHONE_ID;
-    if (!cfg.metaWabaId && process.env.WHATSAPP_WABA_ID) cfg.metaWabaId = process.env.WHATSAPP_WABA_ID;
-    if (!cfg.metaToken && process.env.WHATSAPP_ACCESS_TOKEN) cfg.metaToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    if (envPhoneId) cfg.metaPhoneId = envPhoneId;
+    if (envWabaId) cfg.metaWabaId = envWabaId;
+    if (envToken && cfg.metaToken !== envToken) cfg.metaToken = envToken;
   }
   return cfg;
 }
