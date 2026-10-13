@@ -18,15 +18,13 @@
 
   <style>
     :root {
-      --bg: #FAF7EF;
+      --bg: #F8FAFC;
       --card: #FFFFFF;
-      --ink: #18181B;
-      --ink-soft: #3F3F46;
-      --ink-dim: #71717A;
-      --line: #EFECE4;
-      --primary: #FACC15;
-      --primary-dark: #18181B;
-      --accent: #F59E0B;
+      --ink: #0F172A;
+      --ink-soft: #334155;
+      --ink-dim: #64748B;
+      --line: #E2E8F0;
+      --primary: #0095FF;
       --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -42,7 +40,7 @@
       margin: 0;
       padding: 0;
       font-family: var(--font);
-      background-color: var(--bg);
+      background-color: var(--card);
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
@@ -54,13 +52,13 @@
       width: 100vw;
     }
 
-    /* Split-Screen Edge-to-Edge Container with warm background */
+    /* Split-Screen Edge-to-Edge Container */
     .auth-wrapper {
       width: 100vw;
       min-height: 100vh;
       display: grid;
       grid-template-columns: minmax(440px, 520px) 1fr;
-      background: var(--bg);
+      background: var(--card);
       overflow: hidden;
     }
 
@@ -75,7 +73,7 @@
       position: relative;
       z-index: 5;
       border-right: 1px solid var(--line);
-      box-shadow: 12px 0 40px rgba(24, 24, 27, 0.03);
+      box-shadow: 12px 0 40px rgba(15, 23, 42, 0.04);
       overflow-y: auto;
     }
 
@@ -98,7 +96,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
     }
 
     .brand-logo img {
@@ -120,31 +118,30 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: #FEF9C3;
-      color: #854D0E;
-      border: 1px solid rgba(234, 179, 8, 0.3);
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: #EFF6FF;
+      color: #0284C7;
+      border: 1px solid rgba(2, 132, 199, 0.25);
       margin-left: 4px;
     }
 
     /* Tab Switcher */
     .auth-tabs-wrap {
       display: flex;
-      background: #F4EFE2;
-      border-radius: 999px;
+      background: #F1F5F9;
+      border-radius: 10px;
       padding: 4px;
       margin-bottom: 20px;
       max-width: 380px;
       width: 100%;
       align-self: center;
-      border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .auth-tab-btn {
       flex: 1;
-      padding: 8px 18px;
-      border-radius: 999px;
+      padding: 8px 16px;
+      border-radius: 8px;
       border: none;
       background: transparent;
       color: var(--ink-dim);
@@ -197,8 +194,8 @@
     .spinner {
       width: 36px;
       height: 36px;
-      border: 3px solid rgba(250, 204, 21, 0.25);
-      border-top-color: #F59E0B;
+      border: 3px solid rgba(0, 149, 255, 0.15);
+      border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
@@ -236,9 +233,9 @@
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.95);
-      border-radius: 28px;
-      padding: 32px 36px;
-      box-shadow: 0 24px 55px rgba(24, 24, 27, 0.16);
+      border-radius: 20px;
+      padding: 28px 32px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
       max-width: 600px;
     }
 
@@ -250,14 +247,14 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #B45309;
+      color: #0284C7;
       margin-bottom: 10px;
     }
 
     .showcase-card h2 {
       font-size: 24px;
       font-weight: 800;
-      color: #18181B;
+      color: #0F172A;
       letter-spacing: -0.02em;
       line-height: 1.25;
     }
@@ -441,14 +438,14 @@
                 logoPlacement: 'inside',
               },
               variables: {
-                colorPrimary: '#F59E0B',
+                colorPrimary: '#0095FF',
                 colorBackground: '#FFFFFF',
-                colorText: '#18181B',
-                colorTextSecondary: '#71717A',
-                colorInputBackground: '#FAF7EF',
-                colorInputText: '#18181B',
-                colorNeutral: '#18181B',
-                borderRadius: '14px',
+                colorText: '#0F172A',
+                colorTextSecondary: '#475569',
+                colorInputBackground: '#F8FAFC',
+                colorInputText: '#0F172A',
+                colorNeutral: '#0F172A',
+                borderRadius: '12px',
               },
               elements: {
                 card: {
@@ -457,35 +454,30 @@
                   backgroundColor: 'transparent',
                 },
                 socialButtonsBlockButton: {
-                  borderColor: '#EFECE4',
+                  borderColor: '#E2E8F0',
                   backgroundColor: '#FFFFFF',
-                  color: '#18181B',
+                  color: '#0F172A',
                   '&:hover': {
-                    backgroundColor: '#FAF7EF',
+                    backgroundColor: '#F8FAFC',
                   },
                 },
                 formButtonPrimary: {
-                  backgroundColor: '#FACC15',
-                  color: '#18181B',
-                  fontWeight: '700',
-                  border: '1px solid #EAB308',
-                  boxShadow: '0 2px 10px rgba(245, 158, 11, 0.25)',
+                  backgroundColor: '#0095FF',
                   '&:hover': {
-                    backgroundColor: '#EAB308',
+                    backgroundColor: '#0080DB',
                   },
                 },
                 formFieldInput: {
-                  borderColor: '#EFECE4',
-                  backgroundColor: '#FAF7EF',
-                  color: '#18181B',
+                  borderColor: '#E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  color: '#0F172A',
                   '&:focus': {
-                    borderColor: '#F59E0B',
+                    borderColor: '#0095FF',
                     backgroundColor: '#FFFFFF',
                   },
                 },
                 footerActionLink: {
-                  color: '#D97706',
-                  fontWeight: '600',
+                  color: '#0095FF',
                 },
               },
             },

@@ -110,7 +110,7 @@ calls from `_legacy/server.legacy.js` for the live ones.
 
 A single-page app shell (hash routing), premium dark, matches brand.css. Gate behind auth:
 unauthenticated shows a polished login/signup card; authenticated shows the console:
-1. **Overview** , greeting, usage sparkline, quick actions.
+1. **Overview** , greeting, live provider health chips, usage sparkline, quick actions.
 2. **Agents** , grid of the tenant's agents, an agent builder (name, persona, voice model+speaker+pitch,
    greeting, assigned DID), live voice preview button per agent (calls /api/tts), edit + delete.
 3. **Voice Studio** , text in, pick model (muga tones / mulberry speaker+pitch+description), synthesize
