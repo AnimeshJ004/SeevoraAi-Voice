@@ -6363,7 +6363,7 @@ async function viewWhatsAppInbox(root) {
     const textInput = el('input', { class: 'input', placeholder: 'Type a WhatsApp message...', style: 'flex:1' });
     const templateSelect = el('select', { class: 'select', style: 'width:210px;font-size:0.82rem' }, [
       el('option', { value: '' }, 'Templates / Prompts...'),
-      el('option', { value: '__META_TEMPLATE__hello_world' }, '⚡ Meta Template: hello_world (Bypasses 24h limit)'),
+      el('option', { value: '__META_TEMPLATE__hello_world' }, 'Meta Template: hello_world (Bypasses 24h limit)'),
       el('option', { value: 'Hi {{name}}, thanks for contacting Seevora AI Voice Receptionist. How can we help you today?' }, 'Welcome Message'),
       el('option', { value: 'Hello {{name}}, your appointment with our team has been confirmed. Reply to this message to reschedule.' }, 'Appointment Confirm'),
       el('option', { value: 'Hi {{name}}, as requested on your call, here is our complete brochure and service catalog: https://seevora.ai/brochure' }, 'Brochure Link')
@@ -6780,8 +6780,8 @@ async function viewWhatsAppAutomations(root) {
   const actionRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
     el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
       el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: '<span style="font-weight:700;font-size:1rem;margin-right:4px;">+</span> Create Workflow' }),
-      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: '✨ AI Flow Generator' }),
-      el('button', { class: 'btn btn-ghost', id: 'btnRefreshAuto', html: '↻ Refresh' })
+      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: 'AI Flow Generator' }),
+      el('button', { class: 'btn btn-ghost', id: 'btnRefreshAuto', html: 'Refresh' })
     ]),
     el('div', { class: 'flex items-center gap-2', id: 'filterTabs' }, [
       el('button', { class: 'btn btn-sm btn-ghost active', 'data-filter': 'all' }, 'All'),
@@ -6793,18 +6793,18 @@ async function viewWhatsAppAutomations(root) {
 
   // 3. Quick Starter Presets Section
   const presetsSection = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
-    el('div', { style: 'font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-dim);' }, '⚡ Quick Launch Presets (1-Click)'),
+    el('div', { style: 'font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-dim);' }, 'Quick Launch Presets (1-Click)'),
     el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;' }, [
-      createPresetCard('👋 Welcome Auto-Reply', 'Inbound Message', 'Sends instant personalized greeting when someone texts.', {
+      createPresetCard('Welcome Auto-Reply', 'Inbound Message', 'Sends instant personalized greeting when someone texts.', {
         name: 'Instant Welcome Auto-Reply',
         triggerType: 'message_received',
         triggerConfig: {},
         steps: [
-          { type: 'send_message', text: 'Hi {{name}}! 👋 Thank you for reaching out to us. How can we assist you today?' },
+          { type: 'send_message', text: 'Hi {{name}}! Thank you for reaching out to us. How can we assist you today?' },
           { type: 'add_tag', tag: 'new-lead' }
         ]
       }),
-      createPresetCard('💰 Pricing Auto-Responder', 'Keyword: price, cost, rates', 'Instantly sends pricing details when keywords are matched.', {
+      createPresetCard('Pricing Auto-Responder', 'Keyword: price, cost, rates', 'Instantly sends pricing details when keywords are matched.', {
         name: 'Pricing & Packages Auto-Reply',
         triggerType: 'keyword_match',
         triggerConfig: { keywords: ['price', 'pricing', 'cost', 'package', 'rate'] },
@@ -6813,7 +6813,7 @@ async function viewWhatsAppAutomations(root) {
           { type: 'add_tag', tag: 'pricing-inquiry' }
         ]
       }),
-      createPresetCard('📅 Meeting / Demo Link', 'Keyword: demo, meeting, call', 'Sends calendar booking link automatically.', {
+      createPresetCard('Meeting / Demo Link', 'Keyword: demo, meeting, call', 'Sends calendar booking link automatically.', {
         name: 'Instant Demo Booking Link',
         triggerType: 'keyword_match',
         triggerConfig: { keywords: ['demo', 'meeting', 'book', 'appointment', 'talk'] },
@@ -6822,7 +6822,7 @@ async function viewWhatsAppAutomations(root) {
           { type: 'add_tag', tag: 'demo-requested' }
         ]
       }),
-      createPresetCard('🚀 New Contact Nurture', 'New Lead Added', 'Sends onboarding message and pushes webhook.', {
+      createPresetCard('New Contact Nurture', 'New Lead Added', 'Sends onboarding message and pushes webhook.', {
         name: 'New Lead Onboarding Flow',
         triggerType: 'new_contact',
         triggerConfig: {},
@@ -6956,33 +6956,24 @@ async function viewWhatsAppAutomations(root) {
     } else {
       steps.forEach((step, idx) => {
         let label = '';
-        let iconChar = '💬';
         if (step.type === 'send_message') {
-          iconChar = '💬';
           label = `Send: "${(step.text || '').slice(0, 42)}${(step.text || '').length > 42 ? '...' : ''}"`;
         } else if (step.type === 'send_template') {
-          iconChar = '📑';
           label = `Template: ${step.templateName || 'Unnamed'}`;
         } else if (step.type === 'add_tag') {
-          iconChar = '🏷️';
           label = `Add Tag: ${step.tag || ''}`;
         } else if (step.type === 'remove_tag') {
-          iconChar = '✕';
           label = `Remove Tag: ${step.tag || ''}`;
         } else if (step.type === 'wait') {
-          iconChar = '⏱️';
           label = `Wait ${step.seconds || 60}s`;
         } else if (step.type === 'webhook') {
-          iconChar = '🌐';
           label = `Webhook ${step.method || 'POST'} ${step.url ? new URL(step.url, 'http://x').pathname : ''}`;
         } else {
-          iconChar = '⚡';
           label = step.type;
         }
 
         const stepRow = el('div', { class: 'wa-step-item' }, [
           el('span', { class: 'wa-step-badge' }, String(idx + 1)),
-          el('span', { style: 'font-size:0.9rem;' }, iconChar),
           el('span', { class: 'wa-step-detail' }, label)
         ]);
         stepsFlow.appendChild(stepRow);
@@ -6997,9 +6988,9 @@ async function viewWhatsAppAutomations(root) {
         el('div', { class: 'muted', style: 'font-size:0.72rem;' }, auto.lastRunAt ? `Last: ${new Date(auto.lastRunAt).toLocaleTimeString()}` : 'Never fired')
       ]),
       el('div', { class: 'flex items-center gap-1' }, [
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'Test Run', html: '⚡ Test' }),
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'View Execution Logs', html: '📜 Logs' }),
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'Edit Automation', html: '✏️' }),
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'Test Run', html: 'Test' }),
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'View Execution Logs', html: 'Logs' }),
+        el('button', { class: 'btn btn-sm btn-ghost', title: 'Edit Automation', html: 'Edit' }),
         el('button', { class: 'btn btn-sm btn-ghost', style: 'color:#EF4444;', title: 'Delete', html: '✕' })
       ])
     ]);
@@ -7046,10 +7037,10 @@ async function viewWhatsAppAutomations(root) {
 
     // Trigger Type
     const triggerSelect = el('select', { class: 'select' }, [
-      el('option', { value: 'message_received' }, '📥 Inbound Message (Any WhatsApp message received)'),
-      el('option', { value: 'keyword_match' }, '⚡ Keyword Match (When message contains specific words)'),
-      el('option', { value: 'new_contact' }, '👤 New Contact Created (Lead captured via voice or form)'),
-      el('option', { value: 'schedule' }, '⏱️ Scheduled / Recurring Broadcast (Cron expression)')
+      el('option', { value: 'message_received' }, 'Inbound Message (Any WhatsApp message received)'),
+      el('option', { value: 'keyword_match' }, 'Keyword Match (When message contains specific words)'),
+      el('option', { value: 'new_contact' }, 'New Contact Created (Lead captured via voice or form)'),
+      el('option', { value: 'schedule' }, 'Scheduled / Recurring Broadcast (Cron expression)')
     ]);
     if (existing && existing.triggerType) triggerSelect.value = existing.triggerType;
     body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Trigger Event'), triggerSelect]));
@@ -7122,12 +7113,12 @@ async function viewWhatsAppAutomations(root) {
         stepRow.appendChild(top);
 
         const typeSelect = el('select', { class: 'select', style: 'font-size:0.82rem;' }, [
-          el('option', { value: 'send_message' }, '💬 Send WhatsApp Text Message'),
-          el('option', { value: 'send_template' }, '📑 Send WhatsApp Approved Template'),
-          el('option', { value: 'add_tag' }, '🏷️ Add CRM Tag'),
-          el('option', { value: 'remove_tag' }, '✕ Remove CRM Tag'),
-          el('option', { value: 'wait' }, '⏱️ Delay / Wait'),
-          el('option', { value: 'webhook' }, '🌐 Call External Webhook')
+          el('option', { value: 'send_message' }, 'Send WhatsApp Text Message'),
+          el('option', { value: 'send_template' }, 'Send WhatsApp Approved Template'),
+          el('option', { value: 'add_tag' }, 'Add CRM Tag'),
+          el('option', { value: 'remove_tag' }, 'Remove CRM Tag'),
+          el('option', { value: 'wait' }, 'Delay / Wait'),
+          el('option', { value: 'webhook' }, 'Call External Webhook')
         ]);
         typeSelect.value = st.type || 'send_message';
         stepRow.appendChild(typeSelect);
@@ -7254,7 +7245,7 @@ async function viewWhatsAppAutomations(root) {
     });
 
     modal({
-      title: '✨ AI WhatsApp Automation Engineer',
+      title: 'AI WhatsApp Automation Engineer',
       body,
       confirmText: 'Generate & Create Workflow',
       onConfirm: async () => {
@@ -7280,7 +7271,7 @@ async function viewWhatsAppAutomations(root) {
         el('label', {}, 'Recipient Phone Number'),
         el('input', { class: 'input', id: 'testPhoneInput', placeholder: 'e.g. +918120590466', value: '+918120590466' }),
         el('p', { style: 'font-size:0.75rem;margin:5px 0 0 0;color:#B45309;line-height:1.4;' },
-          'ℹ️ Meta Sandbox Mode: Messages can only be delivered to numbers verified in your Meta Developer Console "To" recipient list (such as +918120590466). Unregistered numbers will be rejected by Meta until a real WhatsApp Business SIM number is connected.'
+          'Meta Sandbox Mode: Messages can only be delivered to numbers verified in your Meta Developer Console "To" recipient list (such as +918120590466). Unregistered numbers will be rejected by Meta until a real WhatsApp Business SIM number is connected.'
         )
       ]),
       el('div', { class: 'form-group' }, [
@@ -7291,7 +7282,7 @@ async function viewWhatsAppAutomations(root) {
     ]);
 
     modal({
-      title: `⚡ Test Fire: ${auto.name}`,
+      title: `Test Fire: ${auto.name}`,
       body,
       confirmText: 'Execute Test Run',
       cancelText: 'Close',
@@ -7324,7 +7315,7 @@ async function viewWhatsAppAutomations(root) {
           });
           if (hasSandboxError) {
             resultsArea.appendChild(el('div', { style: 'margin-top:8px;padding:8px 10px;border-radius:6px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;font-size:0.76rem;line-height:1.4;' },
-              '💡 Meta Sandbox Whitelist Restriction: Meta Developer sandbox test numbers can only send to verified numbers added under Meta Developer Portal -> WhatsApp -> API Setup -> "To" recipient list. To send to any real customer, register a live WhatsApp Business SIM number.'
+              'Meta Sandbox Whitelist Restriction: Meta Developer sandbox test numbers can only send to verified numbers added under Meta Developer Portal -> WhatsApp -> API Setup -> "To" recipient list. To send to any real customer, register a live WhatsApp Business SIM number.'
             ));
           }
           toast('Automation test completed.', 'ok');
@@ -7342,7 +7333,7 @@ async function viewWhatsAppAutomations(root) {
     body.innerHTML = '<div class="muted" style="text-align:center;padding:20px;">Loading logs...</div>';
 
     modal({
-      title: `📜 Execution History: ${auto.name}`,
+      title: `Execution History: ${auto.name}`,
       body,
       confirmText: 'Done',
       cancelText: 'Close',
@@ -7396,7 +7387,7 @@ async function viewWhatsAppAutomations(root) {
     body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'WhatsApp Business Account ID (WABA ID)'), wabaIdInput]));
     body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Meta Access Token (Temporary or Permanent)'), tokenInput]));
 
-    const testBtn = el('button', { type: 'button', class: 'btn btn-secondary', style: 'align-self:flex-start;font-size:0.8rem;' }, '⚡ Verify Token with Meta API');
+    const testBtn = el('button', { type: 'button', class: 'btn btn-secondary', style: 'align-self:flex-start;font-size:0.8rem;' }, 'Verify Token with Meta API');
     const testResult = el('div', { style: 'font-size:0.8rem;display:none;' });
     testBtn.addEventListener('click', async () => {
       testResult.style.display = 'block';
