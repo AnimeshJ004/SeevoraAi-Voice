@@ -3016,12 +3016,15 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
   const b = ctx.body || {};
   // Accept both `to` and `phone` field names from callers
   const to = wacrm.normalizeE164(b.to || b.phone || '');
-  const text = String(b.text || b.message || '').trim();
+  const templateName = String(b.templateName || (b.type === 'template' ? b.template : '') || '').trim();
+  const isTemplate = !!templateName;
+  const text = String(b.text || b.message || (isTemplate ? `[Template: ${templateName}]` : '')).trim();
+
   if (!to) {
     return core.sendJson(res, 400, { error: 'Recipient phone number is required (field: to or phone)', code: 'bad_phone' });
   }
-  if (!text) {
-    return core.sendJson(res, 400, { error: 'Message text is required (field: text or message)', code: 'bad_text' });
+  if (!text && !isTemplate) {
+    return core.sendJson(res, 400, { error: 'Message text or templateName is required', code: 'bad_text' });
   }
 
   const d = core.db();
@@ -3033,19 +3036,32 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
 
   try {
     if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
-      apiResult = await wacrm.sendMetaWhatsAppMessage({
-        phoneId: cfg.metaPhoneId,
-        token: cfg.metaToken,
-        to,
-        text
-      });
+      if (isTemplate) {
+        apiResult = await wacrm.sendMetaTemplateMessage({
+          phoneId: cfg.metaPhoneId,
+          token: cfg.metaToken,
+          to,
+          templateName,
+          languageCode: b.languageCode || 'en_US',
+          components: Array.isArray(b.components) ? b.components : []
+        });
+      } else {
+        apiResult = await wacrm.sendMetaWhatsAppMessage({
+          phoneId: cfg.metaPhoneId,
+          token: cfg.metaToken,
+          to,
+          text
+        });
+      }
       deliveryStatus = 'sent';
     } else if (cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
       apiResult = await wacrm.sendWacrmApiMessage({
         baseUrl: cfg.wacrmBaseUrl,
         apiKey: cfg.wacrmApiKey,
         to,
-        text
+        text,
+        type: isTemplate ? 'template' : 'text',
+        template: isTemplate ? { name: templateName } : null
       });
       deliveryStatus = 'sent';
     } else {
@@ -3065,10 +3081,10 @@ async function apiWhatsAppSendMessage(req, res, ctx) {
     msgRecord = wacrm.recordMessage(database, ctx.tenant.id, {
       phone: to,
       direction: 'outbound',
-      type: 'text',
+      type: isTemplate ? 'template' : 'text',
       text,
       status: deliveryStatus,
-      metadata: { ...(apiResult || {}), sendError }
+      metadata: { ...(apiResult || {}), templateName: templateName || undefined, sendError }
     });
   });
 

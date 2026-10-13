@@ -6361,15 +6361,18 @@ async function viewWhatsAppInbox(root) {
 
     // Input Bar
     const textInput = el('input', { class: 'input', placeholder: 'Type a WhatsApp message...', style: 'flex:1' });
-    const templateSelect = el('select', { class: 'select', style: 'width:180px;font-size:0.82rem' }, [
-      el('option', { value: '' }, 'Quick Template...'),
+    const templateSelect = el('select', { class: 'select', style: 'width:210px;font-size:0.82rem' }, [
+      el('option', { value: '' }, 'Templates / Prompts...'),
+      el('option', { value: '__META_TEMPLATE__hello_world' }, '⚡ Meta Template: hello_world (Bypasses 24h limit)'),
       el('option', { value: 'Hi {{name}}, thanks for contacting Seevora AI Voice Receptionist. How can we help you today?' }, 'Welcome Message'),
       el('option', { value: 'Hello {{name}}, your appointment with our team has been confirmed. Reply to this message to reschedule.' }, 'Appointment Confirm'),
       el('option', { value: 'Hi {{name}}, as requested on your call, here is our complete brochure and service catalog: https://seevora.ai/brochure' }, 'Brochure Link')
     ]);
 
     templateSelect.addEventListener('change', () => {
-      if (templateSelect.value) {
+      if (templateSelect.value.startsWith('__META_TEMPLATE__')) {
+        textInput.value = '[Meta Template: hello_world]';
+      } else if (templateSelect.value) {
         textInput.value = templateSelect.value.replace(/\{\{name\}\}/gi, activeConv.name || 'there');
       }
     });
@@ -6380,10 +6383,17 @@ async function viewWhatsAppInbox(root) {
       const text = textInput.value.trim();
       if (!text) return;
       sendBtn.disabled = true;
+      const isMetaTemplate = templateSelect.value.startsWith('__META_TEMPLATE__');
+      const tmplName = isMetaTemplate ? templateSelect.value.replace('__META_TEMPLATE__', '') : null;
       try {
         const res = await api('/api/whatsapp/messages', {
           method: 'POST',
-          body: { phone, text }
+          body: {
+            phone,
+            text,
+            templateName: tmplName,
+            languageCode: 'en_US'
+          }
         });
         textInput.value = '';
         templateSelect.value = '';
@@ -6392,7 +6402,7 @@ async function viewWhatsAppInbox(root) {
         if (res && res.warning) {
           toast(res.warning, 'warn', 8000);
         } else {
-          toast('Message sent.', 'ok');
+          toast(isMetaTemplate ? 'Meta Template dispatched!' : 'Message sent.', 'ok');
         }
       } catch (err) {
         toast('Failed to send WhatsApp message: ' + err.message, 'err');

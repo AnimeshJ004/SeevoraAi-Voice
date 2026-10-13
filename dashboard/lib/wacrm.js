@@ -120,10 +120,16 @@ async function sendMetaWhatsAppMessage({ phoneId, token, to, text, previewUrl = 
 /**
  * Send WhatsApp Template message via Meta WhatsApp Business Cloud API.
  */
-async function sendMetaTemplateMessage({ phoneId, token, to, templateName, languageCode = 'en', components = [] }) {
+async function sendMetaTemplateMessage({ phoneId, token, to, templateName, languageCode = 'en_US', components = [] }) {
   const recipient = normalizeE164(to).replace(/^\+/, '');
   if (!recipient) throw new Error('Recipient phone number is required and must be valid E.164.');
   if (!phoneId || !token) throw new Error('WhatsApp Phone Number ID and Access Token are required.');
+
+  // Normalize language: Meta standard templates are typically registered under en_US
+  let lang = languageCode || 'en_US';
+  if (lang === 'en' && (templateName === 'hello_world' || templateName.startsWith('jaspers_market'))) {
+    lang = 'en_US';
+  }
 
   const payload = {
     messaging_product: 'whatsapp',
@@ -132,7 +138,7 @@ async function sendMetaTemplateMessage({ phoneId, token, to, templateName, langu
     type: 'template',
     template: {
       name: templateName,
-      language: { code: languageCode },
+      language: { code: lang },
       components: components
     }
   };
@@ -148,7 +154,14 @@ async function sendMetaTemplateMessage({ phoneId, token, to, templateName, langu
     }
   };
 
-  const res = await sendHttpRequest(options, payload);
+  let res = await sendHttpRequest(options, payload);
+  if (res.status >= 400 && res.data && res.data.error && res.data.error.code === 132001) {
+    // Retry with complementary language (en_US <-> en)
+    const fallbackLang = lang === 'en_US' ? 'en' : 'en_US';
+    payload.template.language.code = fallbackLang;
+    res = await sendHttpRequest(options, payload);
+  }
+
   if (res.status >= 400) {
     const msg = formatMetaError(res, recipient);
     const err = new Error(msg);
