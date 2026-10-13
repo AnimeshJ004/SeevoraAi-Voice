@@ -108,3 +108,45 @@ test('Clerk authorization hasAccess enforces plan hierarchy and roles', () => {
   // super_admin bypasses plan limits
   assert.equal(clerk.hasAccess(adminUser, { requiredPlan: 'enterprise' }), true);
 });
+
+test('Clerk updateClerkMetadata validates secret key and builds public_metadata payload', async () => {
+  await assert.rejects(
+    async () => clerk.updateClerkMetadata('user_123', { publicMetadata: { role: 'owner' } }, { secretKey: '' }),
+    /CLERK_SECRET_KEY is not configured/i
+  );
+});
+
+test('core.syncClerkMetadataForUser populates Clerk publicMetadata with plan, role, tenantId, and credits', async () => {
+  const core = require('../lib/core');
+  const origUpdate = clerk.updateClerkMetadata;
+  const prevKey = process.env.CLERK_SECRET_KEY;
+  process.env.CLERK_SECRET_KEY = 'sk_test_mock_123';
+
+  let calledWith = null;
+  clerk.updateClerkMetadata = async (userId, body) => {
+    calledWith = { userId, body };
+    return { id: userId, publicMetadata: body.publicMetadata };
+  };
+
+  try {
+    // Ensure test user has a clerkUserId
+    await core.mutate((mutDb) => {
+      const u = mutDb.users[0];
+      if (u) u.clerkUserId = u.clerkUserId || 'user_clerk_test_123';
+    });
+
+    const testUser = core.db().users[0];
+    const res = await core.syncClerkMetadataForUser(testUser.id);
+    assert.ok(calledWith, 'updateClerkMetadata should have been called');
+    assert.equal(calledWith.userId, testUser.clerkUserId);
+    assert.equal(calledWith.body.publicMetadata.role, testUser.role);
+    assert.ok(calledWith.body.publicMetadata.plan, 'plan must be populated');
+    assert.ok(calledWith.body.publicMetadata.tenantId, 'tenantId must be populated');
+    assert.ok(typeof calledWith.body.publicMetadata.credits === 'number', 'credits must be numeric');
+    assert.equal(calledWith.body.publicMetadata.billingStatus, 'active');
+  } finally {
+    clerk.updateClerkMetadata = origUpdate;
+    process.env.CLERK_SECRET_KEY = prevKey;
+  }
+});
+

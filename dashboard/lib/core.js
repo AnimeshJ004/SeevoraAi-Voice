@@ -362,48 +362,64 @@ async function getSession(req) {
       const claims = clerk.decodeJwt(clerkToken);
       if (claims && claims.sub) {
         const d = db();
-        let user = d.users.find((u) => u.clerkUserId === claims.sub || (claims.email && u.email && u.email.toLowerCase() === claims.email.toLowerCase()));
+        // Strict privacy: A user account is strictly keyed to their unique Clerk sub
+        let user = d.users.find((u) => u.clerkUserId === claims.sub);
 
         let clerkUser = null;
         let email = claims.email;
         let name = claims.name;
-        let role = (claims.metadata && claims.metadata.role) || 'client';
-        let plan = (claims.metadata && claims.metadata.plan) || 'starter';
 
-        if (process.env.CLERK_SECRET_KEY && (!user || !user.email || user.email.includes('@clerk.user') || !user.name || user.name.startsWith('user_'))) {
+        // Extract role from token claims first
+        const rawClaimRole = (claims.metadata && claims.metadata.role) ||
+                             (claims.public_metadata && claims.public_metadata.role) ||
+                             (claims.publicMetadata && claims.publicMetadata.role) ||
+                             claims.role;
+        let role = (rawClaimRole === 'super_admin' || rawClaimRole === 'admin') ? rawClaimRole : 'client';
+        let plan = (claims.metadata && claims.metadata.plan) || (claims.public_metadata && claims.public_metadata.plan) || 'starter';
+
+        const needsClerkFetch = process.env.CLERK_SECRET_KEY && (
+          !user ||
+          !user.email ||
+          user.email.includes('@clerk.user') ||
+          !user.name ||
+          user.name.startsWith('user_') ||
+          !user.clerkRoleCheckedAt ||
+          (Date.now() - user.clerkRoleCheckedAt > 300000)
+        );
+
+        if (needsClerkFetch) {
           try {
             clerkUser = await clerk.getClerkUser(claims.sub);
             if (clerkUser) {
               if (clerkUser.email) email = clerkUser.email;
               if (clerkUser.name && !clerkUser.name.startsWith('user_')) name = clerkUser.name;
-              if (clerkUser.publicMetadata) {
-                role = clerkUser.publicMetadata.role || role;
-                plan = clerkUser.publicMetadata.plan || plan;
+              const metaRole = clerkUser.publicMetadata && clerkUser.publicMetadata.role;
+              // Admin role must only be assigned if explicitly set in Clerk publicMetadata
+              if (metaRole === 'super_admin' || metaRole === 'admin') {
+                role = metaRole;
+              } else {
+                role = 'client';
+              }
+              if (clerkUser.publicMetadata && clerkUser.publicMetadata.plan) {
+                plan = clerkUser.publicMetadata.plan;
               }
             }
           } catch (_) {}
         }
 
-        // If not found by clerkUserId, look for existing account with this verified email
-        if (!user && email && !email.includes('@clerk.user')) {
-          const matchingUsers = d.users.filter((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
-          if (matchingUsers.length > 0) {
-            // Pick the user with onboarding completed or existing agents first
-            user = matchingUsers.find((u) => {
-              const t = d.tenants.find((x) => x.id === u.tenantId);
-              const hasAgents = d.agents.some((a) => a.tenantId === u.tenantId);
-              return u.onboardingCompleted || (t && t.onboardingCompleted) || hasAgents;
-            }) || matchingUsers[0];
-
-            // Re-bind Clerk user ID to this established account
-            user.clerkUserId = claims.sub;
+        // If existing user, synchronize role if changed in Clerk
+        if (user) {
+          const targetRole = role || 'client';
+          if (user.role !== targetRole || !user.clerkRoleCheckedAt || (Date.now() - user.clerkRoleCheckedAt > 300000)) {
             await mutate((mutDb) => {
-              const mu = mutDb.users.find((x) => x.id === user.id);
-              if (mu) {
-                mu.clerkUserId = claims.sub;
-                if (name && (!mu.name || mu.name.startsWith('user_'))) mu.name = name;
+              const u = mutDb.users.find((x) => x.id === user.id);
+              if (u) {
+                u.role = targetRole;
+                u.clerkRoleCheckedAt = Date.now();
               }
             });
+            user.role = targetRole;
+            user.clerkRoleCheckedAt = Date.now();
           }
         }
 
@@ -437,8 +453,9 @@ async function getSession(req) {
             clerkUserId: claims.sub,
             email,
             name,
-            role,
+            role: role || 'client',
             status: 'active',
+            clerkRoleCheckedAt: Date.now(),
             onboardingCompleted: clerkOnboarded,
             createdAt: new Date().toISOString(),
           };
@@ -450,6 +467,22 @@ async function getSession(req) {
               mutDb.wallets.push({ id: genId('wal_'), tenantId, currency: 'INR', balancePaise: 1000, updatedAt: new Date().toISOString() });
             }
           });
+
+          if (process.env.CLERK_SECRET_KEY && claims.sub) {
+            clerk.updateClerkMetadata(claims.sub, {
+              publicMetadata: {
+                role: user.role || 'client',
+                plan: tenant.plan || 'starter',
+                billingStatus: 'active',
+                billingInterval: 'monthly',
+                tenantId: tenant.id,
+                credits: 1000,
+                onboardingCompleted: Boolean(clerkOnboarded),
+              }
+            }).catch((err) => {
+              console.error('Clerk initial publicMetadata sync failed:', err.message);
+            });
+          }
         } else if (!tenant) {
           const tenantId = user.tenantId || genId('t_');
           tenant = {
@@ -525,13 +558,6 @@ async function getSession(req) {
               if (t) t.onboardingCompleted = true;
             });
           }
-
-          // Sync to Clerk public metadata if not yet stored
-          if (isFinished && user.clerkUserId && process.env.CLERK_SECRET_KEY && (!clerkUser || !clerkUser.publicMetadata || !clerkUser.publicMetadata.onboardingCompleted)) {
-            clerk.updateClerkMetadata(user.clerkUserId, {
-              publicMetadata: { onboardingCompleted: true }
-            }).catch(() => {});
-          }
         }
 
         if (user && tenant && user.status === 'active' && tenant.status === 'active') {
@@ -566,7 +592,7 @@ async function getSession(req) {
   const tenant = d.tenants.find((t) => t.id === session.tenantId);
   if (!user || !tenant || user.status !== 'active' || tenant.status !== 'active') return null;
   const impersonator = session.impersonatorUserId ? d.users.find((u) => u.id === session.impersonatorUserId && u.status === 'active') : null;
-  if (session.impersonatorUserId && (!impersonator || impersonator.role !== 'super_admin')) return null;
+  if (session.impersonatorUserId && (!impersonator || (impersonator.role !== 'admin' && impersonator.role !== 'super_admin'))) return null;
   return { session, user, tenant, impersonator };
 }
 
@@ -578,7 +604,7 @@ async function destroySession(req) {
   await mutate((d) => { d.sessions = d.sessions.filter((s) => s.token !== token && s.tokenHash !== tokenHash); });
 }
 
-const ROLE_LEVEL = { client: 1, member: 1, owner: 2, admin: 3, super_admin: 4 };
+const ROLE_LEVEL = { client: 1, member: 1, owner: 1, admin: 3, super_admin: 3 };
 function hasRole(user, minimum) {
   return (ROLE_LEVEL[user && user.role] || 0) >= (ROLE_LEVEL[minimum] || 99);
 }
@@ -669,10 +695,103 @@ function serveStatic(req, res) {
 }
 
 /* ==========================================================================
-   8. id helper
+   8. id & clerk sync helpers
    ========================================================================== */
 function genId(prefix) {
   return prefix + crypto.randomBytes(8).toString('hex');
+}
+
+const _clerkSyncInFlight = new Map();
+let _clerkRateLimitedUntil = 0;
+
+/**
+ * Pushes the user's role, plan, tenantId, credits, and onboarding status
+ * to Clerk's public_metadata so the Clerk Dashboard displays full user metadata.
+ * Uses in-flight deduplication and optional throttling to prevent 429 rate limit errors.
+ */
+async function syncClerkMetadataForUser(userIdOrClerkId, options = {}) {
+  if (!process.env.CLERK_SECRET_KEY) return null;
+  const force = Boolean(options && (options.force || options === true));
+  const throttle = Boolean(options && options.throttle);
+
+  // If Clerk returned 429 previously, wait until backoff expires
+  if (Date.now() < _clerkRateLimitedUntil && !force) return null;
+
+  const d = db();
+  const user = d.users.find((u) => u.id === userIdOrClerkId || u.clerkUserId === userIdOrClerkId);
+  if (!user || !user.clerkUserId) return null;
+
+  // Throttle: don't re-sync if already synced within the last 10 minutes when throttle is requested
+  if (throttle && !force && user.clerkSyncedAt && (Date.now() - user.clerkSyncedAt < 600000)) {
+    return null;
+  }
+
+  // Deduplicate in-flight promises so concurrent requests share one call
+  if (_clerkSyncInFlight.has(user.clerkUserId)) {
+    return _clerkSyncInFlight.get(user.clerkUserId);
+  }
+
+  const syncPromise = (async () => {
+    try {
+      const tenant = d.tenants.find((t) => t.id === user.tenantId) || { id: user.tenantId, plan: 'starter', status: 'active', billingInterval: 'monthly' };
+      const wallet = (d.wallets || []).find((w) => w.tenantId === tenant.id) || { balancePaise: 1000 };
+      const isFinished = Boolean(user.onboardingCompleted || tenant.onboardingCompleted);
+
+      // Check current Clerk metadata so we never clobber an admin assignment made in Clerk Dashboard!
+      let effectiveRole = user.role || 'client';
+      try {
+        const remoteUser = await clerk.getClerkUser(user.clerkUserId);
+        if (remoteUser && remoteUser.publicMetadata && remoteUser.publicMetadata.role) {
+          if (remoteUser.publicMetadata.role === 'admin' || remoteUser.publicMetadata.role === 'super_admin') {
+            effectiveRole = remoteUser.publicMetadata.role;
+            if (user.role !== effectiveRole) {
+              await mutate((mutDb) => {
+                const mu = mutDb.users.find((x) => x.id === user.id);
+                if (mu) {
+                  mu.role = effectiveRole;
+                  mu.clerkRoleCheckedAt = Date.now();
+                }
+              });
+              user.role = effectiveRole;
+            }
+          }
+        }
+      } catch (_) {}
+
+      const payload = {
+        role: effectiveRole,
+        plan: tenant.plan || 'starter',
+        billingStatus: tenant.planStatus || tenant.status || 'active',
+        billingInterval: tenant.billingInterval || 'monthly',
+        tenantId: tenant.id,
+        credits: wallet.balancePaise,
+        onboardingCompleted: isFinished,
+      };
+
+      const updated = await clerk.updateClerkMetadata(user.clerkUserId, {
+        publicMetadata: payload,
+      });
+
+      await mutate((mutDb) => {
+        const mu = mutDb.users.find((x) => x.id === user.id);
+        if (mu) mu.clerkSyncedAt = Date.now();
+      });
+      user.clerkSyncedAt = Date.now();
+      return updated;
+    } catch (err) {
+      if (err && (err.statusCode === 429 || (err.message && err.message.includes('Too many requests')))) {
+        // Backoff for 2 minutes and fail silently without throwing unhandled rejection
+        _clerkRateLimitedUntil = Date.now() + 120000;
+        return null;
+      }
+      throw err;
+    } finally {
+      _clerkSyncInFlight.delete(user.clerkUserId);
+    }
+  })();
+
+  _clerkSyncInFlight.set(user.clerkUserId, syncPromise);
+  return syncPromise;
 }
 
 module.exports = {
@@ -687,5 +806,6 @@ module.exports = {
   rateOk,
   serveStatic, MIME,
   genId,
+  syncClerkMetadataForUser,
   clerk,
 };

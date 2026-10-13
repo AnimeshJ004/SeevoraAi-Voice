@@ -159,17 +159,44 @@ async function verifySessionToken(token, config) {
   };
 }
 
+const _clerkUserCache = new Map();
+const _clerkUserInFlight = new Map();
+
 /**
  * Fetch a user profile from Clerk by user ID.
+ * Features in-flight promise deduplication and short-lived caching (15s)
+ * to avoid hammering Clerk's rate limits during parallel dashboard requests.
  */
 async function getClerkUser(userId, config) {
+  if (!userId) return null;
   const cfg = validateClerkConfig(config);
-  const user = await clerkRequest({
-    method: 'GET',
-    path: `/v1/users/${encodeURIComponent(userId)}`,
-    secretKey: cfg.secretKey,
-  });
-  return normalizeClerkUser(user);
+
+  const cached = _clerkUserCache.get(userId);
+  if (cached && (Date.now() - cached.ts < 15000)) {
+    return cached.data;
+  }
+
+  if (_clerkUserInFlight.has(userId)) {
+    return _clerkUserInFlight.get(userId);
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const user = await clerkRequest({
+        method: 'GET',
+        path: `/v1/users/${encodeURIComponent(userId)}`,
+        secretKey: cfg.secretKey,
+      });
+      const normalized = normalizeClerkUser(user);
+      _clerkUserCache.set(userId, { ts: Date.now(), data: normalized });
+      return normalized;
+    } finally {
+      _clerkUserInFlight.delete(userId);
+    }
+  })();
+
+  _clerkUserInFlight.set(userId, fetchPromise);
+  return fetchPromise;
 }
 
 /**
@@ -189,7 +216,11 @@ async function updateClerkMetadata(userId, { publicMetadata, privateMetadata, un
     secretKey: cfg.secretKey,
   });
 
-  return normalizeClerkUser(updated);
+  const normalized = normalizeClerkUser(updated);
+  if (userId) {
+    _clerkUserCache.set(userId, { ts: Date.now(), data: normalized });
+  }
+  return normalized;
 }
 
 /**
@@ -210,7 +241,7 @@ function normalizeClerkUser(user) {
     imageUrl: user.image_url,
     publicMetadata: publicMeta,
     privateMetadata: user.private_metadata || {},
-    role: publicMeta.role || 'member',
+    role: publicMeta.role || 'client',
     plan: publicMeta.plan || 'free',
     credits: Number(publicMeta.credits || 0),
     subscriptionStatus: publicMeta.subscriptionStatus || 'inactive',
@@ -281,7 +312,7 @@ function hasAccess(user, { requiredPlan, requiredRole }) {
   }
 
   if (requiredPlan) {
-    const planHierarchy = { free: 0, starter: 1, growth: 2, scale: 3, enterprise: 4 };
+    const planHierarchy = { free: 0, starter: 1, growth: 2, scale: 3, business: 3, enterprise: 4 };
     const userRank = planHierarchy[String(user.plan).toLowerCase()] || 0;
     const reqRank = planHierarchy[String(requiredPlan).toLowerCase()] || 0;
     if (userRank < reqRank) return false;
