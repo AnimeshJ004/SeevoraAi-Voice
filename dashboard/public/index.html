@@ -207,8 +207,8 @@
     /* Quick Demo Buttons */
     .demo-buttons-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
       width: 100%;
       max-width: 400px;
     }
@@ -217,13 +217,13 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 9px 6px;
+      padding: 10px 14px;
       border-radius: 10px;
       border: 1px solid var(--line);
       background: var(--bg);
       color: var(--ink);
       font-family: inherit;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -236,18 +236,6 @@
       color: var(--ink) !important;
       transform: translateY(-1px);
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
-    }
-    .btn-demo-sub.btn-demo-primary {
-      background: rgba(0, 149, 255, 0.08);
-      border-color: rgba(0, 149, 255, 0.35);
-      color: #0284C7;
-      font-weight: 700;
-    }
-    .btn-demo-sub.btn-demo-primary:hover {
-      background: #0095FF !important;
-      border-color: #0095FF !important;
-      color: #FFFFFF !important;
-      box-shadow: 0 4px 12px rgba(0, 149, 255, 0.2);
     }
     @media (max-width: 420px) {
       .demo-buttons-row {
@@ -402,7 +390,6 @@
           <div style="flex: 1; height: 1px; background: var(--line);"></div>
         </div>
         <div class="demo-buttons-row">
-          <button id="btnQuickDemoAnimesh" type="button" class="btn-demo-sub btn-demo-primary" title="1-Click Quick Demo">⚡ Quick Demo</button>
           <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">👑 Admin Demo</button>
           <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">🏢 Client Demo</button>
         </div>
@@ -616,10 +603,6 @@
         }
       }
 
-      const btnAnimesh = document.getElementById('btnQuickDemoAnimesh');
-      if (btnAnimesh) {
-        btnAnimesh.addEventListener('click', () => doQuickLogin('animeshj425@gmail.com', '', btnAnimesh));
-      }
       const btnAdmin = document.getElementById('btnQuickDemoAdmin');
       if (btnAdmin) {
         btnAdmin.addEventListener('click', () => doQuickLogin('admin@demo.com', 'admin123', btnAdmin));
