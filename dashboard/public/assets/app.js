@@ -390,11 +390,16 @@ async function boot() {
       (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true')
     ) : false;
 
-    const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
+    const isPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
+    const isCompleted = isPlatformAdmin || (State.me && State.me.user && State.me.user.onboardingCompleted) ||
       (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
       clerkOnboarded;
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    if (!isCompleted) {
+    if (isPlatformAdmin) {
+      if (hash === 'onboarding' || hash === 'ai-creator' || !hash) {
+        location.hash = '#/overview';
+      }
+    } else if (!isCompleted) {
       location.hash = '#/onboarding';
     } else if (hash === 'onboarding' || hash === 'ai-creator') {
       location.hash = '#/overview';
@@ -416,11 +421,16 @@ async function boot() {
             (localStorage.getItem('seevora_onboarded_' + retryCu.id) === 'true')
           ) : false;
 
-          const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
+          const retryIsPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
+          const isCompleted = retryIsPlatformAdmin || (State.me && State.me.user && State.me.user.onboardingCompleted) ||
             (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
             retryClerkOnboarded;
           const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-          if (!isCompleted) {
+          if (retryIsPlatformAdmin) {
+            if (hash === 'onboarding' || hash === 'ai-creator' || !hash) {
+              location.hash = '#/overview';
+            }
+          } else if (!isCompleted) {
             location.hash = '#/onboarding';
           } else if (hash === 'onboarding' || hash === 'ai-creator') {
             location.hash = '#/overview';
@@ -479,7 +489,7 @@ function getVisibleRoutes() {
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
-    if (u && !u.onboardingCompleted) {
+    if (u && !u.onboardingCompleted && !['admin', 'super_admin'].includes(u.role)) {
       routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (8-Step)', icon: 'sparkle' });
     }
     return routes;
@@ -724,6 +734,18 @@ async function doLogout() {
    =========================================================================== */
 function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+  const isPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
+  if (isPlatformAdmin) {
+    if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
+      return 'overview';
+    }
+    const adminAllowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings'];
+    if (hash && adminAllowed.includes(hash)) {
+      return hash;
+    }
+    return 'overview';
+  }
+
   const cu = window.Clerk && window.Clerk.user;
   const clerkOnboarded = cu ? (
     (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) ||

@@ -378,7 +378,8 @@ async function boot() {
 function publicUser(u) {
   const d = core.db();
   const hasAgents = d.agents && d.agents.some((a) => a.tenantId === u.tenantId);
-  const isCompleted = !!u.onboardingCompleted || hasAgents;
+  const isAdmin = ['admin', 'super_admin'].includes(u.role);
+  const isCompleted = !!u.onboardingCompleted || hasAgents || isAdmin;
   return { id: u.id, tenantId: u.tenantId, email: u.email, name: u.name, role: u.role, status: u.status, createdAt: u.createdAt, onboardingCompleted: isCompleted };
 }
 function publicTenant(t) {

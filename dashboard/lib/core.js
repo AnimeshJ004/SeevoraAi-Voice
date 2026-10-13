@@ -583,10 +583,11 @@ async function getSession(req) {
             if (!tenant.name || tenant.name.startsWith('user_')) tenant.name = tenantTitle;
           }
 
-          // Auto-heal onboarding status if tenant already has an active agent or Clerk has metadata
+          // Auto-heal onboarding status if admin, tenant has active agent, or Clerk has metadata
+          const isAdmin = ['admin', 'super_admin'].includes(user.role);
           const hasAgents = d.agents && d.agents.some((a) => a.tenantId === tenant.id);
           const clerkOnboarded = !!(clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted);
-          const isFinished = !!(user.onboardingCompleted || tenant.onboardingCompleted || hasAgents || clerkOnboarded);
+          const isFinished = !!(isAdmin || user.onboardingCompleted || tenant.onboardingCompleted || hasAgents || clerkOnboarded);
 
           if (isFinished && (!user.onboardingCompleted || !tenant.onboardingCompleted)) {
             user.onboardingCompleted = true;
