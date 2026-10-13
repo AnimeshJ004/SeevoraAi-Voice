@@ -1,9 +1,9 @@
 # Secrets. Never commit real keys.
 .env
 
-# Runtime state (auto-created and seeded on first boot).
-data/
-!data/.gitkeep
+# Runtime state (db.json tracked for deployment seed).
+data/*.tmp
+data/*.log
 
 # Dependencies (there are none, but never sync these if they ever appear).
 node_modules

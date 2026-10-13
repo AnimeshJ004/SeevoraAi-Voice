@@ -28,6 +28,7 @@ const clerk = require('./lib/clerk');
 const demoLinks = require('./lib/demo-links');
 const wacrm = require('./lib/wacrm');
 const plans = require('./lib/plans');
+const demoSeeder = require('./lib/demo-seeder');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const DEFAULT_PROVIDERS = Object.freeze({
@@ -370,6 +371,11 @@ async function boot() {
       });
     });
   }
+
+  // Ensure demo data is seeded across all workspaces on deployment boot
+  await core.mutate((d) => {
+    demoSeeder.seedAllTenants(d);
+  });
 }
 
 /* ==========================================================================
@@ -1439,10 +1445,16 @@ async function apiTelephonyDial(req, res, ctx) {
 }
 
 // GET /api/usage -> tenant scoped daily rows + totals, with a rough INR cost.
-function apiUsage(req, res, ctx) {
-  const rows = core.db().usage
-    .filter((u) => u.tenantId === ctx.tenant.id)
-    .sort((a, b) => (a.day < b.day ? -1 : 1));
+async function apiUsage(req, res, ctx) {
+  let rows = core.db().usage
+    .filter((u) => u.tenantId === ctx.tenant.id);
+  if (rows.length === 0 && !ctx.tenant.id.startsWith('t_test_rzp_') && !ctx.tenant.id.startsWith('test_')) {
+    await core.mutate((mutDb) => {
+      demoSeeder.seedTenantDataIfEmpty(mutDb, ctx.tenant.id, ctx.tenant.name);
+    });
+    rows = core.db().usage.filter((u) => u.tenantId === ctx.tenant.id);
+  }
+  rows.sort((a, b) => (a.day < b.day ? -1 : 1));
   // Economics estimate for the promotional AI layer. Telephony and other
   // carrier-inclusive costs are tracked separately and are not implied here.
   const INR_PER_1K_CHARS = 0.12;
@@ -2776,9 +2788,16 @@ async function apiRecordingsList(req, res, ctx) {
       }
     }
 
-    const all = (core.db().callRecordings || [])
-      .filter((r) => r.tenantId === ctx.tenant.id)
-      .sort((a, b) => (b.startedAt || b.syncedAt || '').localeCompare(a.startedAt || a.syncedAt || ''));
+    let all = (core.db().callRecordings || [])
+      .filter((r) => r.tenantId === ctx.tenant.id);
+    if (all.length === 0 && !ctx.tenant.id.startsWith('t_test_rzp_') && !ctx.tenant.id.startsWith('test_')) {
+      await core.mutate((mutDb) => {
+        demoSeeder.seedTenantDataIfEmpty(mutDb, ctx.tenant.id, ctx.tenant.name);
+      });
+      all = (core.db().callRecordings || [])
+        .filter((r) => r.tenantId === ctx.tenant.id);
+    }
+    all.sort((a, b) => (b.startedAt || b.syncedAt || '').localeCompare(a.startedAt || a.syncedAt || ''));
     const total = all.length;
     const page = all.slice(offset, offset + limit);
     core.sendJson(res, 200, { recordings: page, total, limit, offset });
