@@ -78,6 +78,15 @@ async function api(path, opts) {
     try {
       const tok = await window.Clerk.session.getToken();
       if (tok) init.headers['Authorization'] = 'Bearer ' + tok;
+      if (window.Clerk.user) {
+        const cu = window.Clerk.user;
+        const fullName = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.fullName || cu.username || '';
+        const emailAddr = (cu.primaryEmailAddress && cu.primaryEmailAddress.emailAddress) || (cu.emailAddresses && cu.emailAddresses[0] && cu.emailAddresses[0].emailAddress) || '';
+        const isOnboarded = (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) || (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) || (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true');
+        if (fullName) init.headers['X-Clerk-User-Name'] = encodeURIComponent(fullName);
+        if (emailAddr) init.headers['X-Clerk-User-Email'] = encodeURIComponent(emailAddr);
+        if (isOnboarded) init.headers['X-Clerk-Onboarded'] = '1';
+      }
     } catch (_) { }
   }
   const controller = new AbortController();
@@ -374,8 +383,16 @@ async function boot() {
     const me = await api('/api/me', { allow401: true });
     State.me = me;
 
+    const cu = window.Clerk && window.Clerk.user;
+    const clerkOnboarded = cu ? (
+      (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) ||
+      (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) ||
+      (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true')
+    ) : false;
+
     const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-      (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
+      (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
+      clerkOnboarded;
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
     if (!isCompleted) {
       location.hash = '#/onboarding';
@@ -392,8 +409,16 @@ async function boot() {
         if (tok) {
           const me = await api('/api/me', { allow401: true });
           State.me = me;
+          const retryCu = window.Clerk.user;
+          const retryClerkOnboarded = retryCu ? (
+            (retryCu.unsafeMetadata && retryCu.unsafeMetadata.onboardingCompleted) ||
+            (retryCu.publicMetadata && retryCu.publicMetadata.onboardingCompleted) ||
+            (localStorage.getItem('seevora_onboarded_' + retryCu.id) === 'true')
+          ) : false;
+
           const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-            (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
+            (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
+            retryClerkOnboarded;
           const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
           if (!isCompleted) {
             location.hash = '#/onboarding';
@@ -579,7 +604,9 @@ function renderShell() {
     nav,
     el('div', { class: 'side-foot' }, [
       (function () {
-        const cleanName = (u.name && !u.name.startsWith('user_')) ? u.name : ((u.email && !u.email.includes('@clerk.user')) ? u.email : ((t.name && !t.name.startsWith('user_')) ? t.name : 'Workspace'));
+        const clerkName = (window.Clerk && window.Clerk.user && ([window.Clerk.user.firstName, window.Clerk.user.lastName].filter(Boolean).join(' ') || window.Clerk.user.fullName || window.Clerk.user.username));
+        const isFallback = !u.name || u.name.startsWith('user_') || /^User [a-zA-Z0-9]{4}$/.test(u.name);
+        const cleanName = (!isFallback) ? u.name : (clerkName || ((u.email && !u.email.includes('@clerk.user')) ? u.email : ((t.name && !t.name.startsWith('user_')) ? t.name : 'Workspace')));
         const cleanTenant = (t.name && !t.name.startsWith('user_')) ? t.name : (cleanName + "'s Workspace");
         const roleLabel = isPlatformAdmin ? 'Admin' : `${(t.plan ? t.plan.replace(/_/g, ' ') : 'starter')} plan`;
         const roleStyle = isPlatformAdmin ? 'color:#FF6B6B;font-weight:700;' : 'color:var(--ink-dim);font-weight:500;';
@@ -2128,6 +2155,12 @@ async function viewOnboarding(root) {
     class: 'btn btn-ghost btn-sm',
     style: 'margin-left:auto;font-weight:600',
     onclick: async () => {
+      if (window.Clerk && window.Clerk.user) {
+        localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
+        if (typeof window.Clerk.user.update === 'function') {
+          window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+        }
+      }
       await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
       if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
       if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
@@ -2575,6 +2608,12 @@ async function viewOnboarding(root) {
             did: ''
           };
           const res = await api('/api/agents', { method: 'POST', body: payload });
+          if (window.Clerk && window.Clerk.user) {
+            localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
+            if (typeof window.Clerk.user.update === 'function') {
+              window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+            }
+          }
           await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
           if (answers.whatsapp && (answers.whatsapp.metaPhoneId || answers.whatsapp.metaToken || answers.whatsapp.metaAppId)) {
             await api('/api/whatsapp/config', { method: 'POST', body: answers.whatsapp }).catch(() => { });

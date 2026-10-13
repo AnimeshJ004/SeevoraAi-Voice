@@ -369,6 +369,13 @@ async function getSession(req) {
         let email = claims.email;
         let name = claims.name;
 
+        const clientHeaderName = (req.headers && req.headers['x-clerk-user-name']) ? decodeURIComponent(req.headers['x-clerk-user-name']).trim() : '';
+        const clientHeaderEmail = (req.headers && req.headers['x-clerk-user-email']) ? decodeURIComponent(req.headers['x-clerk-user-email']).trim() : '';
+        const clientHeaderOnboarded = req.headers && req.headers['x-clerk-onboarded'] === '1';
+
+        if (!name && clientHeaderName) name = clientHeaderName;
+        if (!email && clientHeaderEmail) email = clientHeaderEmail;
+
         // Extract role from token claims first
         const rawClaimRole = (claims.metadata && claims.metadata.role) ||
                              (claims.public_metadata && claims.public_metadata.role) ||
@@ -407,19 +414,45 @@ async function getSession(req) {
           } catch (_) {}
         }
 
-        // If existing user, synchronize role if changed in Clerk
+        // If existing user, synchronize role, real name, email, or onboarding state
         if (user) {
           const targetRole = role || 'client';
-          if (user.role !== targetRole || !user.clerkRoleCheckedAt || (Date.now() - user.clerkRoleCheckedAt > 300000)) {
+          const isFallbackName = !user.name || user.name.startsWith('user_') || /^User [a-zA-Z0-9]{4}$/.test(user.name);
+          const shouldUpdateName = isFallbackName && name && !name.startsWith('user_') && !/^User [a-zA-Z0-9]{4}$/.test(name);
+          const shouldUpdateEmail = (!user.email || user.email.includes('@clerk.user')) && email && !email.includes('@clerk.user');
+          const shouldUpdateOnboard = clientHeaderOnboarded && !user.onboardingCompleted;
+          const shouldUpdateRole = user.role !== targetRole || !user.clerkRoleCheckedAt || (Date.now() - user.clerkRoleCheckedAt > 300000);
+
+          if (shouldUpdateRole || shouldUpdateName || shouldUpdateEmail || shouldUpdateOnboard) {
             await mutate((mutDb) => {
               const u = mutDb.users.find((x) => x.id === user.id);
               if (u) {
-                u.role = targetRole;
-                u.clerkRoleCheckedAt = Date.now();
+                if (shouldUpdateRole) {
+                  u.role = targetRole;
+                  u.clerkRoleCheckedAt = Date.now();
+                }
+                if (shouldUpdateName) u.name = name;
+                if (shouldUpdateEmail) u.email = email;
+                if (shouldUpdateOnboard) u.onboardingCompleted = true;
+              }
+              const t = mutDb.tenants.find((x) => x.id === user.tenantId);
+              if (t) {
+                if (shouldUpdateName && (t.name.startsWith('user_') || /Workspace$/.test(t.name))) {
+                  t.name = `${name}'s Workspace`;
+                }
+                if (shouldUpdateOnboard) t.onboardingCompleted = true;
               }
             });
-            user.role = targetRole;
-            user.clerkRoleCheckedAt = Date.now();
+            if (shouldUpdateRole) {
+              user.role = targetRole;
+              user.clerkRoleCheckedAt = Date.now();
+            }
+            if (shouldUpdateName) user.name = name;
+            if (shouldUpdateEmail) user.email = email;
+            if (shouldUpdateOnboard) {
+              user.onboardingCompleted = true;
+              if (tenant) tenant.onboardingCompleted = true;
+            }
           }
         }
 
@@ -435,7 +468,10 @@ async function getSession(req) {
 
           const tenantId = genId('t_');
           const userId = genId('u_');
-          const clerkOnboarded = !!(clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted);
+          const clerkOnboarded = !!(
+            (clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted) ||
+            clientHeaderOnboarded
+          );
 
           tenant = {
             id: tenantId,
