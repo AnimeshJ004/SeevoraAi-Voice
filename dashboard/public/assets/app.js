@@ -707,7 +707,13 @@ async function doLogout() {
   }
   document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
   document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
+  const savedOnboards = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('seevora_onboarded_')) savedOnboards[k] = localStorage.getItem(k);
+  }
   try { localStorage.clear(); sessionStorage.clear(); } catch (_) { }
+  Object.keys(savedOnboards).forEach((k) => { localStorage.setItem(k, savedOnboards[k]); });
   State.me = null;
   resetData();
   renderAuth();
@@ -718,22 +724,30 @@ async function doLogout() {
    =========================================================================== */
 function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+  const cu = window.Clerk && window.Clerk.user;
+  const clerkOnboarded = cu ? (
+    (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) ||
+    (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) ||
+    (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true')
+  ) : false;
+
   const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-    (State.me && State.me.tenant && State.me.tenant.onboardingCompleted);
+    (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
+    clerkOnboarded;
 
   if (hash === 'ai-creator' || hash === 'onboarding') {
     return isCompleted ? 'overview' : 'onboarding';
+  }
+
+  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  if (hash && allowed.includes(hash)) {
+    return hash;
   }
 
   if (!isCompleted) {
     return 'onboarding';
   }
 
-  const visible = getVisibleRoutes();
-  const found = visible.find((r) => r.id === hash);
-  if (found) return found.id;
-  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
-  if (allowed.includes(hash)) return hash;
   return 'overview';
 }
 function onRoute() {
@@ -2071,21 +2085,21 @@ const ONBOARD_STEPS = [
     num: 1,
     badge: 'Step 1 of 8 • Business Identity',
     title: 'What is your business or company name?',
-    sub: 'Your AI agent will introduce itself as the voice representative for this business.',
+    sub: 'Your AI agent will introduce itself for this company or brand. (You can also add separate agents for your other companies anytime).',
     type: 'text',
     key: 'businessName',
-    placeholder: 'e.g. Apex Health, Skyline Realty, Nexa Solutions...',
+    placeholder: 'e.g. Apex Health, Skyline Realty, Nexa Solutions (or Group name)...',
     default: ''
   },
   {
     num: 2,
-    badge: 'Step 2 of 8 • Industry Sector',
+    badge: 'Step 2 of 8 • Industry Sector(s)',
     title: 'What industry does your company operate in?',
-    sub: 'Select the primary sector to tailor conversation vocabulary and customer behavior.',
-    type: 'pills',
+    sub: 'Select one or more sectors your business or group operates in.',
+    type: 'multipills',
     key: 'industry',
     options: ['Healthcare & Clinic', 'Real Estate & Property', 'Home Services & HVAC', 'E-Commerce & Retail', 'Legal & Financial', 'Automotive', 'Hospitality', 'Other'],
-    default: 'Healthcare & Clinic'
+    default: ['Home Services & HVAC']
   },
   {
     num: 3,
@@ -2390,6 +2404,15 @@ async function viewOnboarding(root) {
   }
 
   async function triggerAgentGeneration() {
+    api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => {});
+    if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
+    if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
+    if (window.Clerk && window.Clerk.user) {
+      localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
+      if (typeof window.Clerk.user.update === 'function') {
+        window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+      }
+    }
     container.innerHTML = '';
     const loadingCard = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:50px 24px' }, [
       el('span', { class: 'spin boot-spin', style: 'width:28px;height:28px;margin-bottom:16px' }),
@@ -2416,7 +2439,7 @@ async function viewOnboarding(root) {
 
     const payload = {
       businessName: answers.businessName,
-      industry: answers.industry,
+      industry: Array.isArray(answers.industry) ? answers.industry.join(', ') : (answers.industry || 'Multi-Industry'),
       objective: goalText,
       tone: answers.tone,
       language: answers.language,

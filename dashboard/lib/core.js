@@ -420,7 +420,9 @@ async function getSession(req) {
           const isFallbackName = !user.name || user.name.startsWith('user_') || /^User [a-zA-Z0-9]{4}$/.test(user.name);
           const shouldUpdateName = isFallbackName && name && !name.startsWith('user_') && !/^User [a-zA-Z0-9]{4}$/.test(name);
           const shouldUpdateEmail = (!user.email || user.email.includes('@clerk.user')) && email && !email.includes('@clerk.user');
-          const shouldUpdateOnboard = clientHeaderOnboarded && !user.onboardingCompleted;
+          const userEmail = email || user.email;
+          const wasEverOnboarded = !!(userEmail && d.users.some((x) => x.email && x.email.toLowerCase() === userEmail.toLowerCase() && x.onboardingCompleted));
+          const shouldUpdateOnboard = (clientHeaderOnboarded || wasEverOnboarded || (clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted)) && !user.onboardingCompleted;
           const shouldUpdateRole = user.role !== targetRole || !user.clerkRoleCheckedAt || (Date.now() - user.clerkRoleCheckedAt > 300000);
 
           if (shouldUpdateRole || shouldUpdateName || shouldUpdateEmail || shouldUpdateOnboard) {
@@ -468,9 +470,11 @@ async function getSession(req) {
 
           const tenantId = genId('t_');
           const userId = genId('u_');
+          const existingUserWithEmail = d.users.find((x) => x.email && email && x.email.toLowerCase() === email.toLowerCase() && x.onboardingCompleted);
           const clerkOnboarded = !!(
             (clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted) ||
-            clientHeaderOnboarded
+            clientHeaderOnboarded ||
+            existingUserWithEmail
           );
 
           tenant = {

@@ -877,7 +877,7 @@ async function apiAgentsGenerateFromNeeds(req, res, ctx) {
   const needs = String(b.needs || '').trim().slice(0, 10000);
   const transcript = String(b.transcript || '').trim().slice(0, 20000);
   const businessName = String(b.businessName || '').trim().slice(0, 80);
-  const industry = String(b.industry || 'General Business').trim().slice(0, 60);
+  const industry = String(b.industry || 'General Business').trim().slice(0, 200);
   const objective = String(b.objective || 'Appointment booking and inquiry intake').trim().slice(0, 100);
   const tone = String(b.tone || 'Warm, professional, and clear').trim().slice(0, 60);
   const language = String(b.language || 'English (Indian accent)').trim().slice(0, 60);

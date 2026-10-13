@@ -433,3 +433,99 @@ th { color: var(--ink-dim); }
   gap: 8px;
 }
 
+/* ---- Onboarding Wizard (Soft Glass theme integration) ---- */
+.onboard-step-card {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-card) !important;
+  padding: clamp(28px, 4vw, 40px);
+}
+.onboard-step-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim) !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  margin-bottom: 10px;
+}
+.onboard-q-title {
+  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  font-weight: 750;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 6px;
+  letter-spacing: -0.015em;
+}
+.onboard-q-sub {
+  font-size: 0.92rem;
+  color: var(--ink-dim);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+.onboard-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(20, 20, 20, 0.08);
+  border-radius: 999px;
+}
+.onboard-progress-fill {
+  height: 100%;
+  background: var(--charcoal) !important;
+  border-radius: 999px;
+}
+.onboard-pill-btn {
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  font-weight: 560;
+  border: 1px solid rgba(20, 20, 20, 0.09) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: var(--ink) !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.onboard-pill-btn:hover {
+  background: #FFFFFF !important;
+  border-color: rgba(20, 20, 20, 0.28) !important;
+  transform: translateY(-1px);
+}
+.onboard-pill-btn.selected {
+  background: var(--charcoal) !important;
+  border-color: var(--charcoal) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-1px);
+}
+.onboard-step-card .input,
+.onboard-step-card .textarea {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+.onboard-step-card .input:focus,
+.onboard-step-card .textarea:focus {
+  background: #FFFFFF !important;
+  border-color: rgba(20, 20, 20, 0.55) !important;
+  box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.45) !important;
+  outline: none !important;
+}
+.onboard-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+}
+
