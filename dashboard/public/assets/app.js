@@ -631,7 +631,7 @@ function renderShell() {
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
       isPlatformAdmin
-        ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;letter-spacing:0.3px;' }, '👑 Admin')
+        ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;letter-spacing:0.3px;' }, 'Admin')
         : null,
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
     ].filter(Boolean))
@@ -5941,7 +5941,7 @@ async function viewSettings(root) {
     el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px' }, [
       el('h3', { class: 't-h3' }, 'User Profile & Account'),
       isAdm
-        ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;padding:4px 12px;border-radius:14px;font-size:0.78rem;' }, '👑 Admin')
+        ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;padding:4px 12px;border-radius:14px;font-size:0.78rem;' }, 'Admin')
         : null
     ].filter(Boolean)),
     el('div', { class: 'flex items-center gap-3', style: 'margin-bottom:16px;padding:12px;background:var(--bg-2);border-radius:10px' }, [
