@@ -7,36 +7,25 @@ const crypto = require('crypto');
 const dbPath = path.join(__dirname, '..', 'data', 'db.json');
 const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
 
-const ADMIN_TENANT_ID = 't_61cb4c3f0a845e2a';
-const CLIENT_TENANT_ID = 't_4feb1d5f86369faa';
-
 function genId(prefix) {
   return (prefix || '') + crypto.randomBytes(8).toString('hex');
 }
 
-// 1. Ensure wallets for both demo tenants
-function ensureWallet(tenantId, balancePaise) {
-  if (!db.wallets) db.wallets = [];
-  let w = db.wallets.find((x) => x.tenantId === tenantId);
-  if (!w) {
-    w = {
-      id: genId('wal_'),
-      tenantId,
-      currency: 'INR',
-      balancePaise: balancePaise || 10000,
-      createdAt: new Date(Date.now() - 15 * 86400000).toISOString()
-    };
-    db.wallets.push(w);
-  } else {
-    w.balancePaise = balancePaise;
-  }
-  return w;
-}
+// Ensure all collections exist
+const COLLECTIONS = [
+  'tenants', 'users', 'agents', 'usage', 'sessions', 'wallets', 'ledger',
+  'paymentIntents', 'supportTickets', 'supportMessages', 'auditEvents',
+  'presets', 'byonConnections', 'hvacJobs', 'hvacSettings', 'paymentEvents', 'demoLinks',
+  'invoices', 'invoiceEvents', 'integrationRequests', 'agencyPrompts',
+  'clientActivities', 'tenantStatusEvents', 'callRecordings',
+  'crmContacts', 'crmPipelines', 'waConversations', 'waMessages',
+  'waTemplates', 'waBroadcasts', 'waAutomations', 'wacrmConfig'
+];
+COLLECTIONS.forEach((c) => {
+  if (!Array.isArray(db[c])) db[c] = [];
+});
 
-ensureWallet(ADMIN_TENANT_ID, 250000); // ₹2,500
-ensureWallet(CLIENT_TENANT_ID, 185000); // ₹1,850
-
-// 2. Extra Portfolio Workspaces for Admin Panel
+// 1. Extra Portfolio Workspaces for Admin Panel
 const extraTenants = [
   {
     id: 't_apex_diag_demo',
@@ -68,7 +57,7 @@ const extraTenants = [
     id: 't_starlight_auto_demo',
     name: 'Starlight Motors Sales & Service',
     slug: 'starlight-motors',
-    plan: 'starter',
+    plan: 'growth',
     status: 'active',
     privacyMode: 'standard',
     createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
@@ -104,300 +93,15 @@ extraTenants.forEach((et) => {
       privacyMode: et.privacyMode,
       createdAt: et.createdAt,
       providers: et.providers,
-      onboardingCompleted: true
-    });
-  }
-  ensureWallet(et.id, et.walletBalance);
-  // Add demo user for tenant
-  const userExists = db.users.some((u) => u.tenantId === et.id);
-  if (!userExists) {
-    db.users.push({
-      id: genId('u_'),
-      tenantId: et.id,
-      email: `manager@${et.slug}.com`,
-      name: et.name.split(' ')[0] + ' Manager',
-      role: 'client',
-      status: 'active',
-      createdAt: et.createdAt,
-      onboardingCompleted: true
+      limits: { maxAgents: 5, maxConcurrentCalls: 4, maxMinutesMonthly: 5000 }
     });
   }
 });
 
-// 3. Usage Records (Last 7 Days) for realistic charts
-if (!db.usage) db.usage = [];
-const today = new Date();
-for (let d = 6; d >= 0; d--) {
-  const dt = new Date(today);
-  dt.setDate(today.getDate() - d);
-  const dayStr = dt.toISOString().slice(0, 10);
-
-  // Client Demo usage
-  if (!db.usage.some((u) => u.tenantId === CLIENT_TENANT_ID && u.day === dayStr)) {
-    db.usage.push({
-      tenantId: CLIENT_TENANT_ID,
-      day: dayStr,
-      chars: 8500 + d * 1100,
-      calls: 14 + (d % 3) * 6,
-      llmTokens: 14200 + d * 1800
-    });
-  }
-
-  // Extra tenants usage
-  extraTenants.forEach((et) => {
-    if (!db.usage.some((u) => u.tenantId === et.id && u.day === dayStr)) {
-      db.usage.push({
-        tenantId: et.id,
-        day: dayStr,
-        chars: 12000 + (d % 4) * 2000,
-        calls: 18 + (d % 4) * 8,
-        llmTokens: 19000 + (d % 4) * 3000
-      });
-    }
-  });
-}
-
-// 4. Invoices (Platform & Client)
-if (!db.invoices) db.invoices = [];
-const dummyInvoices = [
+// Master Call Templates (10 realistic calls: 5 Inbound, 5 Outbound with full transcripts)
+const CALL_TEMPLATES = [
   {
-    id: 'inv_demo_01',
-    tenantId: CLIENT_TENANT_ID,
-    invoiceNumber: 'RX-2026-0012',
-    clientName: 'Client Demo Workspace',
-    clientEmail: 'client@demo.com',
-    description: 'Growth Plan (Quarterly Voice Receptionist + WhatsApp Suite)',
-    amountPaise: 899700, // ₹8,997
-    currency: 'INR',
-    issueDate: '2026-10-01',
-    dueDate: '2026-10-15',
-    status: 'paid',
-    deliveryStatus: 'sent',
-    createdAt: '2026-10-01T10:00:00.000Z',
-    updatedAt: '2026-10-02T14:30:00.000Z',
-    issuedAt: '2026-10-01T10:00:00.000Z'
-  },
-  {
-    id: 'inv_demo_02',
-    tenantId: CLIENT_TENANT_ID,
-    invoiceNumber: 'RX-2026-0019',
-    clientName: 'Client Demo Workspace',
-    clientEmail: 'client@demo.com',
-    description: 'Custom CRM Webhook & Google Sheets Automation Setup',
-    amountPaise: 350000, // ₹3,500
-    currency: 'INR',
-    issueDate: '2026-10-10',
-    dueDate: '2026-10-24',
-    status: 'issued',
-    deliveryStatus: 'sent',
-    createdAt: '2026-10-10T09:15:00.000Z',
-    updatedAt: '2026-10-10T09:15:00.000Z',
-    issuedAt: '2026-10-10T09:15:00.000Z'
-  },
-  {
-    id: 'inv_demo_03',
-    tenantId: 't_nexus_realty_demo',
-    invoiceNumber: 'RX-2026-0015',
-    clientName: 'Nexus Prime Real Estate',
-    clientEmail: 'billing@nexusrealty.com',
-    description: 'Agency Unlimited Plan (5 Voice Agents + 10,000 Outbound Minutes)',
-    amountPaise: 2499900, // ₹24,999
-    currency: 'INR',
-    issueDate: '2026-10-05',
-    dueDate: '2026-10-19',
-    status: 'paid',
-    deliveryStatus: 'sent',
-    createdAt: '2026-10-05T11:00:00.000Z',
-    updatedAt: '2026-10-06T12:00:00.000Z',
-    issuedAt: '2026-10-05T11:00:00.000Z'
-  },
-  {
-    id: 'inv_demo_04',
-    tenantId: 't_apex_diag_demo',
-    invoiceNumber: 'RX-2026-0021',
-    clientName: 'Apex Health & Diagnostics',
-    clientEmail: 'accounts@apexhealth.in',
-    description: 'Dedicated Indian Virtual DID Number + Studio Addon',
-    amountPaise: 500000, // ₹5,000
-    currency: 'INR',
-    issueDate: '2026-10-11',
-    dueDate: '2026-10-25',
-    status: 'issued',
-    deliveryStatus: 'sent',
-    createdAt: '2026-10-11T16:20:00.000Z',
-    updatedAt: '2026-10-11T16:20:00.000Z',
-    issuedAt: '2026-10-11T16:20:00.000Z'
-  }
-];
-
-dummyInvoices.forEach((inv) => {
-  if (!db.invoices.some((x) => x.id === inv.id)) {
-    db.invoices.push(inv);
-  }
-});
-
-// 5. Payment Events (PayU / Webhooks log for Admin Panel)
-if (!db.paymentEvents) db.paymentEvents = [];
-const dummyPaymentEvents = [
-  {
-    id: genId('pe_'),
-    txnid: 'payu_tx_90128471',
-    reason: 'Wallet Auto-Recharge (₹2,500 approved via UPI)',
-    status: 'success',
-    amountPaise: 250000,
-    tenantId: CLIENT_TENANT_ID,
-    createdAt: '2026-10-12T11:45:22.000Z'
-  },
-  {
-    id: genId('pe_'),
-    txnid: 'payu_tx_89110294',
-    reason: 'Invoice RX-2026-0012 Payment - Growth Quarterly Plan',
-    status: 'success',
-    amountPaise: 899700,
-    tenantId: CLIENT_TENANT_ID,
-    createdAt: '2026-10-02T14:30:10.000Z'
-  },
-  {
-    id: genId('pe_'),
-    txnid: 'payu_tx_88049102',
-    reason: 'Invoice RX-2026-0015 Payment - Agency Unlimited Plan',
-    status: 'success',
-    amountPaise: 2499900,
-    tenantId: 't_nexus_realty_demo',
-    createdAt: '2026-10-06T12:00:45.000Z'
-  },
-  {
-    id: genId('pe_'),
-    txnid: 'payu_tx_87901842',
-    reason: 'Wallet Top-Up - ₹5,000 Call Credits',
-    status: 'success',
-    amountPaise: 500000,
-    tenantId: 't_apex_diag_demo',
-    createdAt: '2026-10-08T18:12:05.000Z'
-  },
-  {
-    id: genId('pe_'),
-    txnid: 'payu_tx_86491023',
-    reason: 'Webhook Ping / Signature Verification Test',
-    status: 'received',
-    amountPaise: 0,
-    tenantId: ADMIN_TENANT_ID,
-    createdAt: '2026-10-09T08:00:00.000Z'
-  }
-];
-
-dummyPaymentEvents.forEach((pe) => {
-  if (!db.paymentEvents.some((x) => x.txnid === pe.txnid)) {
-    db.paymentEvents.push(pe);
-  }
-});
-
-// 6. Support Tickets & Messages (Populates Admin and Client Support views)
-if (!db.supportTickets) db.supportTickets = [];
-if (!db.supportMessages) db.supportMessages = [];
-
-const dummyTickets = [
-  {
-    id: 'tic_demo_01',
-    tenantId: CLIENT_TENANT_ID,
-    createdBy: 'u_client_demo',
-    subject: 'WhatsApp Meta Cloud API Template Approval Help',
-    priority: 'normal',
-    status: 'open',
-    createdAt: '2026-10-12T10:15:00.000Z',
-    updatedAt: '2026-10-12T14:22:00.000Z',
-    messages: [
-      {
-        id: genId('msg_'),
-        authorName: 'Client Demo User',
-        body: 'Hi team, we registered the "welcome_appointment" template in our Meta WABA account. Does Seevora support auto-retry if Meta returns code 132001?',
-        createdAt: '2026-10-12T10:15:00.000Z'
-      },
-      {
-        id: genId('msg_'),
-        authorName: 'Seevora Support Engineer',
-        body: 'Hello! Yes, Seevora includes automated fallback retry between en_US and en for error code 132001. Your template will dispatch seamlessly!',
-        createdAt: '2026-10-12T14:22:00.000Z'
-      }
-    ]
-  },
-  {
-    id: 'tic_demo_02',
-    tenantId: 't_apex_diag_demo',
-    createdBy: 'u_apex_demo',
-    subject: 'Custom Medical Terminology Pronunciation for Rumik TTS',
-    priority: 'high',
-    status: 'in_progress',
-    createdAt: '2026-10-11T15:30:00.000Z',
-    updatedAt: '2026-10-12T09:00:00.000Z',
-    messages: [
-      {
-        id: genId('msg_'),
-        authorName: 'Apex Health Admin',
-        body: 'We would like the voice assistant to pronounce "Echocardiogram" and "MRI Scan" with Indian English accent pitch.',
-        createdAt: '2026-10-11T15:30:00.000Z'
-      },
-      {
-        id: genId('msg_'),
-        authorName: 'Seevora Voice Architect',
-        body: 'We have updated the voice persona phoneme map in Rumik muga model. Testing outbound sample calls now.',
-        createdAt: '2026-10-12T09:00:00.000Z'
-      }
-    ]
-  },
-  {
-    id: 'tic_demo_03',
-    tenantId: 't_nexus_realty_demo',
-    createdBy: 'u_nexus_demo',
-    subject: 'Adding 2nd Indian DID Phone Number for Bangalore Office',
-    priority: 'normal',
-    status: 'open',
-    createdAt: '2026-10-13T08:45:00.000Z',
-    updatedAt: '2026-10-13T08:45:00.000Z',
-    messages: [
-      {
-        id: genId('msg_'),
-        authorName: 'Nexus Realty Admin',
-        body: 'Please provision a +91 80 Karnataka DID number for our second receptionist bot.',
-        createdAt: '2026-10-13T08:45:00.000Z'
-      }
-    ]
-  }
-];
-
-dummyTickets.forEach((t) => {
-  if (!db.supportTickets.some((x) => x.id === t.id)) {
-    db.supportTickets.push({
-      id: t.id,
-      tenantId: t.tenantId,
-      createdBy: t.createdBy,
-      subject: t.subject,
-      priority: t.priority,
-      status: t.status,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt
-    });
-    t.messages.forEach((m) => {
-      db.supportMessages.push({
-        id: m.id,
-        ticketId: t.id,
-        tenantId: t.tenantId,
-        authorName: m.authorName,
-        body: m.body,
-        internal: false,
-        createdAt: m.createdAt
-      });
-    });
-  }
-});
-
-// 7. Call Recordings (Realistic Inbound & Outbound for Client Demo)
-if (!db.callRecordings) db.callRecordings = [];
-const dummyCalls = [
-  {
-    id: 'rec_client_01',
-    tenantId: CLIENT_TENANT_ID,
-    dograhRunId: '801201',
+    refSuffix: '01',
     phoneNumber: '+919820154321',
     callerNumber: '+919820154321',
     calledNumber: '+918071582519',
@@ -406,15 +110,13 @@ const dummyCalls = [
     status: 'completed',
     durationSeconds: 114,
     agentName: 'Priya - Front-Desk Receptionist',
-    startedAt: '2026-10-13T10:14:00.000Z',
-    summary: 'Caller inquired about teeth scaling and root canal consultation. Qualified as high-intent lead.',
-    transcript: 'Agent: Hi! Thanks for calling Seevora Voice Receptionist. I am Priya, how can I help you today?\nCaller: Hello Priya, what are your clinic timings and do you have appointments today for consultation?\nAgent: We are open Monday through Saturday from 9 AM to 8 PM! We currently have a 4:30 PM slot available today with Dr. Sharma. Would you like me to book that for you?\nCaller: Yes, please book 4:30 PM under Rohan Sharma.\nAgent: Wonderful, Rohan! Your consultation is scheduled for today at 4:30 PM. I am sending you a confirmation on WhatsApp right now.',
-    recordingAvailable: true
+    dayOffset: 0,
+    hourOffset: 2,
+    summary: 'Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma.',
+    transcript: 'Agent: Namaste! Thanks for calling Seevora AI Voice. Main Priya hoon, batayein aaj main aapki kya madad kar sakti hoon?\nCaller: Haan Priya ji, mujhe appointment book karna tha consultation ke liye. Aaj koi slot available hai kya?\nAgent: Bilkul! Aaj sham 4:30 PM aur 6:00 PM par Dr. Sharma ke slots available hain. Kaunsa time aapke liye convenient rahega?\nCaller: 4:30 PM wala slot book kar dijiye, under Rohan Sharma.\nAgent: Perfect Rohan ji! Aapka appointment 4:30 PM par confirm kar diya gaya hai. Confirmation details WhatsApp par bhej di gayi hain. Aur koi jankari chahiye?\nCaller: Nahi, thank you so much Priya ji!\nAgent: You are welcome, have a great day!'
   },
   {
-    id: 'rec_client_02',
-    tenantId: CLIENT_TENANT_ID,
-    dograhRunId: '801202',
+    refSuffix: '02',
     phoneNumber: '+919811234567',
     callerNumber: '+918071582519',
     calledNumber: '+919811234567',
@@ -423,15 +125,13 @@ const dummyCalls = [
     status: 'completed',
     durationSeconds: 78,
     agentName: 'Priya - Outbound Followup',
-    startedAt: '2026-10-13T09:30:00.000Z',
-    summary: 'Followed up on website inquiry. Shared brochure link on WhatsApp.',
-    transcript: 'Agent: Hello Ananya! This is Priya calling from Seevora Voice. You requested info on our cosmetic dental packages.\nCaller: Hi Priya! Yes, can you send me the price breakdown?\nAgent: Absolutely! Our complete whitening and alignment catalog is being shared to your WhatsApp right now. Reply there anytime to book your slot.\nCaller: Thank you so much, will check!',
-    recordingAvailable: true
+    dayOffset: 0,
+    hourOffset: 4,
+    summary: 'Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.',
+    transcript: 'Agent: Hello Ananya! This is Priya calling from Seevora Voice following up on your website enquiry regarding our service packages.\nCaller: Hi Priya! Yes, I was looking for the pricing details and brochure.\nAgent: Wonderful! I have just dispatched our comprehensive brochure with all pricing tiers directly to your WhatsApp. Would you like me to reserve a free consultation slot?\nCaller: Let me check the brochure first, then I will reply on WhatsApp.\nAgent: Sounds great Ananya! Feel free to reply on WhatsApp anytime. Have a wonderful day!'
   },
   {
-    id: 'rec_client_03',
-    tenantId: CLIENT_TENANT_ID,
-    dograhRunId: '801203',
+    refSuffix: '03',
     phoneNumber: '+919833456789',
     callerNumber: '+919833456789',
     calledNumber: '+918071582519',
@@ -440,15 +140,13 @@ const dummyCalls = [
     status: 'completed',
     durationSeconds: 92,
     agentName: 'Priya - Front-Desk Receptionist',
-    startedAt: '2026-10-12T16:20:00.000Z',
-    summary: 'Emergency dental inquiry. Provided emergency hotline and clinic address.',
-    transcript: 'Agent: Hello, welcome to Seevora! How may I assist you today?\nCaller: Hi, do you handle dental emergencies? I have severe pain in a molar.\nAgent: Yes, we accommodate same-day emergency visits. Our team is alerted. Please head to our central clinic, and Dr. Verma will attend to you immediately.\nCaller: Great, on my way.',
-    recordingAvailable: true
+    dayOffset: 1,
+    hourOffset: 1,
+    summary: 'Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.',
+    transcript: 'Agent: Namaste! Seevora Voice me aapka swagat hai. Main aapki kya sahayata kar sakti hoon?\nCaller: Namaste, mujhe clinic ke working hours aur location ke baare me puchna tha.\nAgent: Hamara clinic Monday se Saturday subah 9 baje se raat 8 baje tak khula rehta hai. Address MG Road central branch par hai. Kya aapko Google Maps location WhatsApp par share kar doon?\nCaller: Haan please, is number par WhatsApp share kar dijiye.\nAgent: Done! Map location aur directions bhej diye gaye hain.\nCaller: Shukriya Priya ji!'
   },
   {
-    id: 'rec_client_04',
-    tenantId: CLIENT_TENANT_ID,
-    dograhRunId: '801204',
+    refSuffix: '04',
     phoneNumber: '+919844567890',
     callerNumber: '+918071582519',
     calledNumber: '+919844567890',
@@ -457,198 +155,433 @@ const dummyCalls = [
     status: 'completed',
     durationSeconds: 65,
     agentName: 'Priya - Outbound Followup',
-    startedAt: '2026-10-12T14:10:00.000Z',
-    summary: 'Appointment reminder call for tomorrow morning.',
-    transcript: 'Agent: Hello Pooja! This is a quick friendly reminder for your appointment tomorrow at 11 AM.\nCaller: Hi Priya! Yes, I will be there on time. Thanks for the call!\nAgent: You are welcome Pooja, have a great day!',
-    recordingAvailable: true
+    dayOffset: 1,
+    hourOffset: 3,
+    summary: 'Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed.',
+    transcript: 'Agent: Hello Pooja ji! This is Priya from Seevora Voice with a quick reminder for your scheduled appointment tomorrow morning at 11:00 AM.\nCaller: Hello Priya! Yes, thank you for reminding me. I will be there at 11 sharp.\nAgent: Glad to hear that Pooja ji! Please let us know if you need any assistance with parking or directions. See you tomorrow!'
+  },
+  {
+    refSuffix: '05',
+    phoneNumber: '+919920384712',
+    callerNumber: '+919920384712',
+    calledNumber: '+918071582519',
+    direction: 'inbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 142,
+    agentName: 'Priya - Front-Desk Receptionist',
+    dayOffset: 2,
+    hourOffset: 2,
+    summary: 'Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.',
+    transcript: 'Agent: Namaste Vikramaditya ji! How can I assist you today?\nCaller: Hi Priya, I need details on corporate employee wellness plans.\nAgent: We offer tailored corporate plans covering preventive checkups, routine consultations, and digital health records for teams of all sizes. May I know your approximate team size?\nCaller: We have around 45 team members right now.\nAgent: Excellent! I will connect you with our corporate relations manager Rajesh. He will share custom quote proposals today by 2 PM.\nCaller: Perfect, thank you Priya.'
+  },
+  {
+    refSuffix: '06',
+    phoneNumber: '+919845012399',
+    callerNumber: '+918071582519',
+    calledNumber: '+919845012399',
+    direction: 'outbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 86,
+    agentName: 'Priya - Outbound Followup',
+    dayOffset: 2,
+    hourOffset: 5,
+    summary: 'Post-visit feedback collection. Positive patient experience recorded.',
+    transcript: 'Agent: Hello Kavita! Priya here from Seevora Voice. Calling regarding your feedback from yesterday consultation.\nCaller: Oh hi Priya! The doctor was very attentive and the front desk was super efficient.\nAgent: We are delighted to hear that Kavita! A feedback link has also been shared on your WhatsApp. We look forward to serving you again.'
+  },
+  {
+    refSuffix: '07',
+    phoneNumber: '+919702234110',
+    callerNumber: '+919702234110',
+    calledNumber: '+918071582519',
+    direction: 'inbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 105,
+    agentName: 'Priya - Front-Desk Receptionist',
+    dayOffset: 3,
+    hourOffset: 1,
+    summary: 'Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.',
+    transcript: 'Agent: Hello Rahul ji! Welcome to Seevora. How may I help you?\nCaller: Hello, I wanted to inquire if medical insurance cashless facility is available at your center?\nAgent: Yes Rahul ji, we have tie-ups with all major TPA and private health insurers for seamless cashless claims. Our billing desk handles approvals directly.\nCaller: That is very helpful, thank you!\nAgent: You are welcome! Feel free to call us anytime.'
+  },
+  {
+    refSuffix: '08',
+    phoneNumber: '+919987654321',
+    callerNumber: '+918071582519',
+    calledNumber: '+919987654321',
+    direction: 'outbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 98,
+    agentName: 'Priya - Outbound Followup',
+    dayOffset: 3,
+    hourOffset: 4,
+    summary: 'Diagnostic report delivery follow-up. PDF sent via WhatsApp.',
+    transcript: 'Agent: Hello Sneha ji! This is Priya from Seevora Voice following up on your diagnostic lab report.\nCaller: Hi Priya, has the blood panel report arrived?\nAgent: Yes Sneha ji! The doctor has reviewed the report and it has been uploaded to your secure patient portal and sent on WhatsApp as a PDF.\nCaller: Excellent, I see the WhatsApp message now. Thank you!\nAgent: You are very welcome! Take care.'
+  },
+  {
+    refSuffix: '09',
+    phoneNumber: '+919811190234',
+    callerNumber: '+919811190234',
+    calledNumber: '+918071582519',
+    direction: 'inbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 120,
+    agentName: 'Priya - Front-Desk Receptionist',
+    dayOffset: 4,
+    hourOffset: 2,
+    summary: 'Appointment reschedule request. Moved slot to Friday 5:00 PM.',
+    transcript: 'Agent: Namaste Amit ji! Welcome to Seevora AI Voice. How can I assist you?\nCaller: Hi Priya, can I reschedule my appointment from Thursday to Friday 5 PM?\nAgent: Absolutely! Checking our schedule... Yes, Friday at 5:00 PM is available. I have updated your slot.\nCaller: Thank you Priya, that was very quick!\nAgent: Glad to help! You will receive the updated calendar invite shortly.'
+  },
+  {
+    refSuffix: '10',
+    phoneNumber: '+919820011223',
+    callerNumber: '+919820011223',
+    calledNumber: '+918071582519',
+    direction: 'inbound',
+    mode: 'vobiz',
+    status: 'completed',
+    durationSeconds: 80,
+    agentName: 'Priya - Front-Desk Receptionist',
+    dayOffset: 4,
+    hourOffset: 6,
+    summary: 'Home sample collection booked for tomorrow 8:00 AM.',
+    transcript: 'Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.'
   }
 ];
 
-dummyCalls.forEach((call) => {
-  if (!db.callRecordings.some((x) => x.id === call.id)) {
-    db.callRecordings.unshift(call);
+// Target tenants to seed: All non-test tenants
+const targetTenants = db.tenants.filter((t) => !t.id.startsWith('t_test_rzp_'));
+
+console.log('Seeding demo data across ' + targetTenants.length + ' tenants...');
+
+targetTenants.forEach((tenant) => {
+  const tid = tenant.id;
+
+  // 1. Upgrade plan to Growth if Starter (unlocks all tabs, automations, broadcasts)
+  if (!tenant.plan || tenant.plan === 'starter' || tenant.plan === 'client_starter') {
+    tenant.plan = 'growth';
   }
-});
+  tenant.status = 'active';
 
-// 8. CRM Contacts & Leads (Populates Leads & Pipeline)
-if (!db.crmContacts) db.crmContacts = [];
-const dummyContacts = [
-  {
-    id: 'con_client_01',
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Rohan Sharma',
-    phone: '+919820154321',
-    email: 'rohan.sharma@gmail.com',
-    stage: 'demo_scheduled',
-    pipelineStage: 'demo_scheduled',
-    tags: ['new-lead', 'appointment-confirmed', 'hot-lead'],
-    source: 'voice_inbound',
-    notes: 'Consultation booked for today at 4:30 PM.',
-    createdAt: '2026-10-13T10:14:00.000Z',
-    updatedAt: '2026-10-13T10:16:00.000Z'
-  },
-  {
-    id: 'con_client_02',
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Ananya Iyer',
-    phone: '+919811234567',
-    email: 'ananya.iyer@outlook.com',
-    stage: 'qualified',
-    pipelineStage: 'qualified',
-    tags: ['pricing-inquiry', 'brochure-sent'],
-    source: 'voice_outbound',
-    notes: 'Received brochure link on WhatsApp. Considering cosmetic package.',
-    createdAt: '2026-10-13T09:30:00.000Z',
-    updatedAt: '2026-10-13T09:32:00.000Z'
-  },
-  {
-    id: 'con_client_03',
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Vikram Mehta',
-    phone: '+919833456789',
-    email: 'vikram.m@techcorp.in',
-    stage: 'customer',
-    pipelineStage: 'customer',
-    tags: ['vip', 'onboarded'],
-    source: 'voice_inbound',
-    notes: 'Visited clinic for emergency checkup, subscribed to annual dental plan.',
-    createdAt: '2026-10-12T16:20:00.000Z',
-    updatedAt: '2026-10-12T17:00:00.000Z'
-  },
-  {
-    id: 'con_client_04',
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Pooja Verma',
-    phone: '+919844567890',
-    email: 'pooja.verma@gmail.com',
-    stage: 'customer',
-    pipelineStage: 'customer',
-    tags: ['active-client'],
-    source: 'voice_outbound',
-    notes: 'Regular checkup patient, appointment confirmed.',
-    createdAt: '2026-10-12T14:10:00.000Z',
-    updatedAt: '2026-10-12T14:12:00.000Z'
-  },
-  {
-    id: 'con_client_05',
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Kavita Nair',
-    phone: '+919855678901',
-    email: 'kavita.nair@yahoo.com',
-    stage: 'lead',
-    pipelineStage: 'lead',
-    tags: ['website-form'],
-    source: 'web_chat',
-    notes: 'Texted on WhatsApp asking about family dental package pricing.',
-    createdAt: '2026-10-13T08:15:00.000Z',
-    updatedAt: '2026-10-13T08:15:00.000Z'
-  }
-];
-
-dummyContacts.forEach((c) => {
-  if (!db.crmContacts.some((x) => x.phone === c.phone && x.tenantId === c.tenantId)) {
-    db.crmContacts.push(c);
-  }
-});
-
-// 9. WhatsApp Conversations & Messages (Populates WhatsApp Inbox)
-if (!db.waConversations) db.waConversations = [];
-if (!db.waMessages) db.waMessages = [];
-
-const dummyWhatsApp = [
-  {
-    phone: '+919820154321',
-    name: 'Rohan Sharma',
-    messages: [
-      { direction: 'inbound', text: 'Hi, I need an appointment for today evening.' },
-      { direction: 'outbound', text: 'Hi Rohan! 👋 Thank you for reaching out to Seevora. Your consultation with Dr. Sharma is booked for today at 4:30 PM. See you soon!' },
-      { direction: 'inbound', text: 'Great, thanks for the quick confirmation!' }
-    ]
-  },
-  {
-    phone: '+919811234567',
-    name: 'Ananya Iyer',
-    messages: [
-      { direction: 'outbound', text: 'Hi Ananya, as requested on your call, here is our complete cosmetic dental brochure: https://seevora.ai/brochure' },
-      { direction: 'inbound', text: 'Thanks! Does the smile makeover package include cleanings?' },
-      { direction: 'outbound', text: 'Yes, it includes 2 professional cleanings and complimentary whitening touch-up.' }
-    ]
-  },
-  {
-    phone: '+919855678901',
-    name: 'Kavita Nair',
-    messages: [
-      { direction: 'inbound', text: 'price of family checkup?' },
-      { direction: 'outbound', text: 'Hi Kavita! Our comprehensive family checkup starts at ₹1,499 covering up to 4 family members. Reply DEMO to book a call!' }
-    ]
-  }
-];
-
-dummyWhatsApp.forEach((dw) => {
-  let conv = db.waConversations.find((c) => c.phone === dw.phone && c.tenantId === CLIENT_TENANT_ID);
-  if (!conv) {
-    conv = {
-      id: genId('conv_'),
-      tenantId: CLIENT_TENANT_ID,
-      contactId: genId('con_'),
-      phone: dw.phone,
-      name: dw.name,
-      unreadCount: 0,
-      status: 'active',
-      lastMessageText: dw.messages[dw.messages.length - 1].text.slice(0, 80),
-      lastMessageAt: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 86400000).toISOString()
+  // 2. Ensure Wallet (₹2,500)
+  let w = db.wallets.find((x) => x.tenantId === tid);
+  if (!w) {
+    w = {
+      id: genId('wal_'),
+      tenantId: tid,
+      currency: 'INR',
+      balancePaise: 250000,
+      createdAt: new Date(Date.now() - 30 * 86400000).toISOString()
     };
-    db.waConversations.push(conv);
+    db.wallets.push(w);
+  } else if ((w.balancePaise || 0) < 50000) {
+    w.balancePaise = 250000;
   }
-  dw.messages.forEach((m, idx) => {
-    const msgId = 'msg_demo_' + dw.phone.slice(-4) + '_' + idx;
-    if (!db.waMessages.some((x) => x.id === msgId)) {
-      db.waMessages.push({
-        id: msgId,
-        tenantId: CLIENT_TENANT_ID,
-        conversationId: conv.id,
-        contactId: conv.contactId,
-        phone: dw.phone,
-        direction: m.direction,
-        type: 'text',
-        text: m.text,
-        status: 'delivered',
-        metadata: {},
-        createdAt: new Date(Date.now() - (3 - idx) * 3600000).toISOString()
+
+  // 3. Ensure Active AI Voice Agent
+  let ag = db.agents.find((x) => x.tenantId === tid);
+  if (!ag) {
+    ag = {
+      id: 'ag_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12),
+      tenantId: tid,
+      name: 'Priya - AI Voice Receptionist',
+      role: 'receptionist',
+      language: 'hi-IN',
+      tts: { provider: 'rumik', model: 'muga', voice: 'speaker_2', tone: 'warm & professional' },
+      stt: { provider: 'deepgram', model: 'nova-2', language: 'hi' },
+      llm: { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: 'Namaste! Seevora Voice Receptionist me aapka swagat hai. Main Priya hoon, batayein main aapki kya sahayata kar sakti hoon?',
+      prompt: 'You are Priya, a polite, helpful AI voice receptionist speaking natural conversational Hindi and English (Hinglish). Greet callers warmly, answer questions about timings, services, appointments, and guide them to schedule consultations.',
+      createdAt: new Date(Date.now() - 25 * 86400000).toISOString()
+    };
+    db.agents.push(ag);
+  }
+
+  // 4. Ensure 14 Days of Daily Usage (calls, chars, minutes, tokens, cost)
+  const existingUsageDays = new Set(db.usage.filter((u) => u.tenantId === tid).map((u) => u.day));
+  for (let d = 13; d >= 0; d--) {
+    const dayStr = new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
+    if (!existingUsageDays.has(dayStr)) {
+      const calls = 14 + (d % 6) * 4;
+      const chars = 16000 + (d % 6) * 3500;
+      const minutes = 28 + (d % 6) * 8;
+      const llmTokens = 22000 + (d % 6) * 4000;
+      const costInr = Math.round(((chars / 1000) * 0.12 + calls * 0.9 + minutes * 1.5) * 100) / 100;
+      db.usage.push({
+        id: genId('usg_'),
+        tenantId: tid,
+        day: dayStr,
+        calls,
+        chars,
+        minutes,
+        llmTokens,
+        costInr
       });
     }
-  });
+  }
+
+  // 5. Ensure Call Recordings (10 calls: 5 Inbound + 5 Outbound with full transcripts)
+  const tenantCalls = db.callRecordings.filter((r) => r.tenantId === tid);
+  if (tenantCalls.length < 8) {
+    CALL_TEMPLATES.forEach((tmpl, idx) => {
+      const callId = 'rec_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + tmpl.refSuffix;
+      if (!db.callRecordings.some((r) => r.id === callId)) {
+        const startedAt = new Date(Date.now() - (tmpl.dayOffset * 86400000 + tmpl.hourOffset * 3600000)).toISOString();
+        db.callRecordings.unshift({
+          id: callId,
+          tenantId: tid,
+          dograhRunId: '80' + (idx + 100),
+          phoneNumber: tmpl.phoneNumber,
+          callerNumber: tmpl.callerNumber,
+          calledNumber: tmpl.calledNumber,
+          direction: tmpl.direction,
+          mode: tmpl.mode,
+          status: tmpl.status,
+          durationSeconds: tmpl.durationSeconds,
+          agentName: tmpl.agentName,
+          startedAt,
+          summary: tmpl.summary,
+          transcript: tmpl.transcript,
+          recordingAvailable: true
+        });
+      }
+    });
+  }
+
+  // 6. Ensure CRM Contacts (7 leads across all stages with deal values)
+  const tenantCrm = db.crmContacts.filter((c) => c.tenantId === tid);
+  if (tenantCrm.length < 5) {
+    const sampleContacts = [
+      { name: 'Rohan Sharma', phone: '+919820154321', stage: 'Closed Won', dealValue: 18500, notes: 'Full comprehensive consultation completed. Highly satisfied.' },
+      { name: 'Ananya Roy', phone: '+919811234567', stage: 'Proposal Sent', dealValue: 35000, notes: 'Sent digital service catalog & quotation on WhatsApp.' },
+      { name: 'Dr. Sameer Verma', phone: '+919833456789', stage: 'Call Completed', dealValue: 12000, notes: 'Inquired about branch address and appointment slots.' },
+      { name: 'Vikramaditya Roy', phone: '+919920384712', stage: 'Qualified', dealValue: 65000, notes: 'Corporate wellness program for 45 members.' },
+      { name: 'Pooja Agarwal', phone: '+919844567890', stage: 'Closed Won', dealValue: 22000, notes: 'Scheduled follow-up session. Reminder sent.' },
+      { name: 'Rahul Mehra', phone: '+919702234110', stage: 'New Lead', dealValue: 8000, notes: 'Insurance cashless coverage inquiry from web widget.' },
+      { name: 'Kavita Menon', phone: '+919845012399', stage: 'Call Completed', dealValue: 15000, notes: 'Positive feedback recorded for yesterday session.' }
+    ];
+
+    sampleContacts.forEach((sc, idx) => {
+      const cid = 'con_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
+      if (!db.crmContacts.some((c) => c.id === cid)) {
+        db.crmContacts.push({
+          id: cid,
+          tenantId: tid,
+          name: sc.name,
+          phone: sc.phone,
+          stage: sc.stage,
+          dealValue: sc.dealValue,
+          notes: sc.notes,
+          source: 'voice_ai',
+          tags: ['voice_ai', 'lead'],
+          createdAt: new Date(Date.now() - (idx + 1) * 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - idx * 3600000).toISOString()
+        });
+      }
+    });
+  }
+
+  // 7. Ensure WhatsApp Conversations & Messages
+  const tenantConvs = db.waConversations.filter((c) => c.tenantId === tid);
+  if (tenantConvs.length < 3) {
+    const waThreads = [
+      {
+        phone: '+919820154321',
+        name: 'Rohan Sharma',
+        preview: 'Aapka consultation 4:30 PM confirm ho gaya hai.',
+        messages: [
+          { from: 'user', text: 'Hi, kya aaj 4:30 PM ka slot confirm hai?' },
+          { from: 'agent', text: 'Namaste Rohan ji! Haan, aapka appointment aaj 4:30 PM par Dr. Sharma ke sath confirmed hai.' },
+          { from: 'user', text: 'Thank you! Main time par aa jaunga.' }
+        ]
+      },
+      {
+        phone: '+919811234567',
+        name: 'Ananya Roy',
+        preview: 'Comprehensive brochure and pricing tiers dispatched.',
+        messages: [
+          { from: 'user', text: 'Hi Priya, can you send the price breakdown?' },
+          { from: 'agent', text: 'Hello Ananya! Here is our complete service catalog and pricing package tiers: https://seevora.ai/catalog' },
+          { from: 'user', text: 'Thanks! Reviewing now.' }
+        ]
+      },
+      {
+        phone: '+919833456789',
+        name: 'Dr. Sameer Verma',
+        preview: 'Clinic Google Maps directions link shared.',
+        messages: [
+          { from: 'user', text: 'Please send clinic location on Google Maps.' },
+          { from: 'agent', text: 'Here is our central clinic location: https://maps.google.com/?q=SeevoraClinic' },
+          { from: 'user', text: 'Got it, thank you!' }
+        ]
+      },
+      {
+        phone: '+919987654321',
+        name: 'Sneha Patel',
+        preview: 'Diagnostic report PDF uploaded.',
+        messages: [
+          { from: 'agent', text: 'Hello Sneha ji! Your diagnostic health report is ready: https://seevora.ai/reports/s_9021.pdf' },
+          { from: 'user', text: 'Received the PDF, thank you so much Priya!' }
+        ]
+      }
+    ];
+
+    waThreads.forEach((th, idx) => {
+      const convId = 'wac_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
+      if (!db.waConversations.some((c) => c.id === convId)) {
+        db.waConversations.push({
+          id: convId,
+          tenantId: tid,
+          phoneNumber: th.phone,
+          customerName: th.name,
+          lastMessageText: th.preview,
+          lastMessageAt: new Date(Date.now() - (idx * 3600000 + 1800000)).toISOString(),
+          unreadCount: 0,
+          createdAt: new Date(Date.now() - 5 * 86400000).toISOString()
+        });
+
+        th.messages.forEach((msg, mIdx) => {
+          db.waMessages.push({
+            id: genId('wam_'),
+            conversationId: convId,
+            tenantId: tid,
+            sender: msg.from,
+            text: msg.text,
+            timestamp: new Date(Date.now() - (idx * 3600000 + (3 - mIdx) * 600000)).toISOString()
+          });
+        });
+      }
+    });
+  }
+
+  // 8. Ensure WhatsApp Automations (3 pre-built workflows)
+  const tenantAutos = db.waAutomations.filter((a) => a.tenantId === tid);
+  if (tenantAutos.length < 2) {
+    const sampleAutomations = [
+      {
+        name: 'Post-Call WhatsApp Brochure & Location Follow-up',
+        triggerType: 'call_completed',
+        isActive: true,
+        steps: [
+          { type: 'send_whatsapp_template', template: 'appointment_confirmation' },
+          { type: 'tag_contact', tag: 'called_lead' }
+        ]
+      },
+      {
+        name: 'Instant Inbound Greeting & Booking Auto-Responder',
+        triggerType: 'message_received',
+        isActive: true,
+        steps: [
+          { type: 'send_whatsapp_message', text: 'Namaste! Seevora AI Voice me aapka swagat hai. How can we assist you today?' }
+        ]
+      },
+      {
+        name: 'Missed Call WhatsApp Alert & Priority Callback',
+        triggerType: 'call_missed',
+        isActive: true,
+        steps: [
+          { type: 'send_whatsapp_message', text: 'Sorry we missed your voice call! Our AI receptionist will call you back in 5 minutes.' }
+        ]
+      }
+    ];
+
+    sampleAutomations.forEach((auto) => {
+      db.waAutomations.push({
+        id: genId('auto_'),
+        tenantId: tid,
+        name: auto.name,
+        triggerType: auto.triggerType,
+        isActive: auto.isActive,
+        steps: auto.steps,
+        createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
+      });
+    });
+  }
+
+  // 9. Ensure Invoices (2 invoices: 1 Paid, 1 Issued)
+  const tenantInvoices = db.invoices.filter((inv) => inv.tenantId === tid);
+  if (tenantInvoices.length < 2) {
+    const inv1Id = 'inv_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_01';
+    const inv2Id = 'inv_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_02';
+    if (!db.invoices.some((x) => x.id === inv1Id)) {
+      db.invoices.push({
+        id: inv1Id,
+        tenantId: tid,
+        invoiceNumber: 'SV-2026-' + Math.floor(1000 + Math.random() * 9000),
+        clientName: tenant.name || 'Workspace Client',
+        clientEmail: 'billing@' + (tenant.slug || 'workspace') + '.in',
+        description: 'Growth Plan Subscription (Quarterly AI Voice Receptionist + WhatsApp Suite)',
+        amountPaise: 899700,
+        currency: 'INR',
+        issueDate: '2026-10-01',
+        dueDate: '2026-10-15',
+        status: 'paid',
+        deliveryStatus: 'sent',
+        createdAt: '2026-10-01T10:00:00.000Z',
+        updatedAt: '2026-10-02T14:30:00.000Z',
+        issuedAt: '2026-10-01T10:00:00.000Z'
+      });
+    }
+    if (!db.invoices.some((x) => x.id === inv2Id)) {
+      db.invoices.push({
+        id: inv2Id,
+        tenantId: tid,
+        invoiceNumber: 'SV-2026-' + Math.floor(1000 + Math.random() * 9000),
+        clientName: tenant.name || 'Workspace Client',
+        clientEmail: 'billing@' + (tenant.slug || 'workspace') + '.in',
+        description: 'Outbound Telephony Minutes Pack & WhatsApp Cloud Add-on',
+        amountPaise: 250000,
+        currency: 'INR',
+        issueDate: '2026-10-10',
+        dueDate: '2026-10-24',
+        status: 'issued',
+        deliveryStatus: 'sent',
+        createdAt: '2026-10-10T09:15:00.000Z',
+        updatedAt: '2026-10-10T09:15:00.000Z',
+        issuedAt: '2026-10-10T09:15:00.000Z'
+      });
+    }
+  }
+
+  // 10. Ensure Support Tickets (2 tickets)
+  const tenantTickets = db.supportTickets.filter((st) => st.tenantId === tid);
+  if (tenantTickets.length < 2) {
+    const t1Id = 'tick_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_01';
+    const t2Id = 'tick_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_02';
+    if (!db.supportTickets.some((x) => x.id === t1Id)) {
+      db.supportTickets.push({
+        id: t1Id,
+        tenantId: tid,
+        subject: 'Custom Hindi Tone Calibration for Voice Receptionist',
+        status: 'resolved',
+        priority: 'normal',
+        category: 'voice_ai',
+        createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 6 * 86400000).toISOString()
+      });
+    }
+    if (!db.supportTickets.some((x) => x.id === t2Id)) {
+      db.supportTickets.push({
+        id: t2Id,
+        tenantId: tid,
+        subject: 'WhatsApp Official Green Tick Verification Guidance',
+        status: 'open',
+        priority: 'high',
+        category: 'whatsapp',
+        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 86400000).toISOString()
+      });
+    }
+  }
 });
 
-// 10. AI Agents for Client Demo
-if (!db.agents) db.agents = [];
-let clientAgent = db.agents.find((a) => a.tenantId === CLIENT_TENANT_ID);
-if (!clientAgent) {
-  clientAgent = {
-    id: genId('ag_'),
-    tenantId: CLIENT_TENANT_ID,
-    name: 'Priya - AI Voice Receptionist',
-    persona: 'A warm, professional front-desk medical and dental clinic receptionist who greets callers, answers FAQs, qualifies inquiries, and confirms appointments.',
-    tts: { provider: 'rumik', voice: 'ira', model: 'muga' },
-    greeting: 'Hi! Thank you for calling Seevora Clinic. I am Priya, your front-desk AI assistant. How can I help you today?',
-    telephony: { did: '+918071582519', provider: 'vobiz' },
-    status: 'active',
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString()
-  };
-  db.agents.push(clientAgent);
-}
+// Atomic write to db.json
+const tmpPath = dbPath + '.tmp';
+fs.writeFileSync(tmpPath, JSON.stringify(db, null, 2), 'utf8');
+fs.renameSync(tmpPath, dbPath);
 
-// Save back to db.json
-fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf8');
-console.log('✅ Demo dummy data successfully seeded!');
-console.log('- Total Tenants:', db.tenants.length);
-console.log('- Total Users:', db.users.length);
-console.log('- Total Invoices:', db.invoices.length);
-console.log('- Total Payment Events:', db.paymentEvents.length);
-console.log('- Total Support Tickets:', db.supportTickets.length);
-console.log('- Total Call Recordings:', db.callRecordings.length);
-console.log('- Total CRM Contacts:', db.crmContacts.length);
-console.log('- Total WhatsApp Conversations:', db.waConversations.length);
-console.log('- Total WhatsApp Messages:', db.waMessages.length);
-console.log('- Total Usage Rows:', db.usage.length);
+console.log('✓ Successfully seeded demo data across all workspaces in db.json!');

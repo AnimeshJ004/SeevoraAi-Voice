@@ -1451,15 +1451,17 @@ function apiUsage(req, res, ctx) {
     day: r.day,
     chars: r.chars || 0,
     calls: r.calls || 0,
+    minutes: r.minutes || Math.round((r.calls || 0) * 2.5),
     llmTokens: r.llmTokens || 0,
     costInr: Math.round(((r.chars || 0) / 1000 * INR_PER_1K_CHARS + (r.calls || 0) * INR_PER_CALL) * 100) / 100,
   }));
   const totals = days.reduce((acc, d) => ({
     chars: acc.chars + d.chars,
     calls: acc.calls + d.calls,
+    minutes: acc.minutes + d.minutes,
     llmTokens: acc.llmTokens + d.llmTokens,
     costInr: Math.round((acc.costInr + d.costInr) * 100) / 100,
-  }), { chars: 0, calls: 0, llmTokens: 0, costInr: 0 });
+  }), { chars: 0, calls: 0, minutes: 0, llmTokens: 0, costInr: 0 });
   core.sendJson(res, 200, { days, totals });
 }
 
