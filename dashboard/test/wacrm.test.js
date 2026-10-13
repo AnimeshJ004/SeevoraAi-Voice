@@ -115,8 +115,8 @@ test('WACRM: processVoiceCallCompletion automatically updates pipeline and recor
   assert.ok(contact.tags.includes('disposition:appointment_booked'));
 
   // Ensure conversation timeline has call summary
-  const convMessages = db.waMessages.filter((m) => m.phone === '+919123456780');
-  assert.equal(convMessages.length, 1);
-  assert.equal(convMessages[0].type, 'call_summary');
-  assert.ok(convMessages[0].text.includes('Caller requested appointment for Saturday at 11am'));
+  const summaryMessages = db.waMessages.filter((m) => m.phone === '+919123456780' && m.type === 'call_summary');
+  assert.equal(summaryMessages.length, 1);
+  assert.equal(summaryMessages[0].type, 'call_summary');
+  assert.ok(summaryMessages[0].text.includes('Caller requested appointment for Saturday at 11am'));
 });

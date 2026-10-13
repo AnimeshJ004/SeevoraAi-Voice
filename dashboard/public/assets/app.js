@@ -4546,14 +4546,12 @@ async function viewCampaigns(root) {
   const sampleBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, 'Load Sample Leads');
   sampleBtn.addEventListener('click', () => {
     const samples = [
-      { id: 'ld_1', name: 'Bhavu (Owner Test)', phone: '+91 8120590466', rawNumber: '8120590466', status: 'pending', error: null, timestamp: null },
-      { id: 'ld_2', name: 'Dr. Sharma (Clinic Lead)', phone: '+91 9876543210', rawNumber: '9876543210', status: 'pending', error: null, timestamp: null },
-      { id: 'ld_3', name: 'Ananya Verma (Inquiry)', phone: '+91 8765432109', rawNumber: '8765432109', status: 'pending', error: null, timestamp: null }
+      { id: 'ld_1', name: 'Bhavu (Owner Verified)', phone: '+91 8120590466', rawNumber: '8120590466', status: 'pending', error: null, timestamp: null }
     ];
     campaignState.leads = campaignState.leads.concat(samples);
     saveCampaignLeads();
     renderAll();
-    toast('Added 3 sample leads for testing.', 'ok');
+    toast('Added verified lead (+91 8120590466) for testing.', 'ok');
   });
 
   const wacrmBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px;margin-left:8px' }, 'Sync Leads from WACRM');
@@ -6360,7 +6358,7 @@ async function viewWhatsAppInbox(root) {
       if (!text) return;
       sendBtn.disabled = true;
       try {
-        await api('/api/whatsapp/messages', {
+        const res = await api('/api/whatsapp/messages', {
           method: 'POST',
           body: { phone, text }
         });
@@ -6368,7 +6366,11 @@ async function viewWhatsAppInbox(root) {
         templateSelect.value = '';
         await loadMessages();
         loadConversations();
-        toast('Message sent.', 'ok');
+        if (res && res.warning) {
+          toast(res.warning, 'warn', 8000);
+        } else {
+          toast('Message sent.', 'ok');
+        }
       } catch (err) {
         toast('Failed to send WhatsApp message: ' + err.message, 'err');
       } finally {
@@ -6405,11 +6407,17 @@ async function viewWhatsAppInbox(root) {
         msgs.forEach((m) => {
           const isSystem = m.direction === 'system';
           const isInbound = m.direction === 'inbound';
+          const isFailed = m.status === 'failed';
+          const failErr = (m.metadata && (m.metadata.sendError || m.metadata.error)) || 'Send failed';
           const bubbleWrap = el('div', { class: `wacrm-bubble-wrap ${isSystem ? 'system' : (isInbound ? 'inbound' : 'outbound')}` }, [
-            el('div', { class: `wacrm-bubble ${isSystem ? 'system' : (isInbound ? 'inbound' : 'outbound')}` }, m.text),
+            el('div', { class: `wacrm-bubble ${isSystem ? 'system' : (isInbound ? 'inbound' : 'outbound')} ${isFailed ? 'failed' : ''}` }, m.text),
             el('div', { class: 'wacrm-bubble-meta' }, [
               el('span', {}, m.createdAt ? m.createdAt.slice(11, 16) : ''),
-              !isInbound && !isSystem ? el('span', {}, ' ✓✓') : null
+              !isInbound && !isSystem ? (
+                isFailed
+                  ? el('span', { title: failErr, style: 'color:#EF4444;font-size:0.72rem;cursor:help;margin-left:4px;font-weight:600;' }, ' ✕ Failed')
+                  : el('span', { style: 'color:#10B981;' }, ' ✓✓')
+              ) : null
             ])
           ]);
           messagesArea.appendChild(bubbleWrap);
@@ -7237,7 +7245,10 @@ async function viewWhatsAppAutomations(root) {
       ),
       el('div', { class: 'form-group' }, [
         el('label', {}, 'Recipient Phone Number'),
-        el('input', { class: 'input', id: 'testPhoneInput', placeholder: 'e.g. +919876543210', value: '+919876543210' })
+        el('input', { class: 'input', id: 'testPhoneInput', placeholder: 'e.g. +918120590466', value: '+918120590466' }),
+        el('p', { style: 'font-size:0.75rem;margin:5px 0 0 0;color:#B45309;line-height:1.4;' },
+          'ℹ️ Meta Sandbox Mode: Messages can only be delivered to numbers verified in your Meta Developer Console "To" recipient list (such as +918120590466). Unregistered numbers will be rejected by Meta until a real WhatsApp Business SIM number is connected.'
+        )
       ]),
       el('div', { class: 'form-group' }, [
         el('label', {}, 'Simulated Inbound Message Text'),
@@ -7267,8 +7278,10 @@ async function viewWhatsAppAutomations(root) {
           });
           resultsArea.innerHTML = '';
           const steps = res.result || [];
+          let hasSandboxError = false;
           steps.forEach((s, idx) => {
             const isOk = s.ok;
+            if (!isOk && String(s.error || '').includes('131030')) hasSandboxError = true;
             const item = el('div', { style: `font-size:0.8rem;margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${isOk ? '#ECFDF5' : '#FEF2F2'};border:1px solid ${isOk ? '#A7F3D0' : '#FECACA'};` }, [
               el('b', {}, `Step ${idx + 1} (${s.type}): `),
               el('span', {}, isOk ? (s.mode === 'simulated' ? '✓ Simulated delivery' : '✓ Delivered successfully') : `✕ Failed: ${s.error || 'Step error'}`)
@@ -7276,6 +7289,11 @@ async function viewWhatsAppAutomations(root) {
             if (s.note) item.appendChild(el('div', { class: 'muted', style: 'font-size:0.74rem;margin-top:2px;' }, s.note));
             resultsArea.appendChild(item);
           });
+          if (hasSandboxError) {
+            resultsArea.appendChild(el('div', { style: 'margin-top:8px;padding:8px 10px;border-radius:6px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;font-size:0.76rem;line-height:1.4;' },
+              '💡 Meta Sandbox Whitelist Restriction: Meta Developer sandbox test numbers can only send to verified numbers added under Meta Developer Portal -> WhatsApp -> API Setup -> "To" recipient list. To send to any real customer, register a live WhatsApp Business SIM number.'
+            ));
+          }
           toast('Automation test completed.', 'ok');
         } catch (err) {
           resultsArea.innerHTML = `<div style="color:#EF4444;font-size:0.82rem;">Test execution failed: ${err.message}</div>`;

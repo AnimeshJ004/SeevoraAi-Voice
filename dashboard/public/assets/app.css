@@ -5396,6 +5396,11 @@
   border: 1px solid #BAE6FD;
   border-radius: 14px 14px 3px 14px;
 }
+.wacrm-bubble.outbound.failed {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
 .wacrm-bubble.system {
   background: #EFF6FF;
   border: 1px dashed #93C5FD;

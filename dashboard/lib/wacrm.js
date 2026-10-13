@@ -354,10 +354,10 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
   // 3. Check tenant WhatsApp auto-reply settings
   const config = getTenantWacrmConfig(db, tenantId);
   if (config && config.autoFollowupEnabled && config.autoFollowupMessage) {
+    const replyText = config.autoFollowupMessage
+      .replace(/\{\{name\}\}/gi, contact.name || 'there')
+      .replace(/\{\{phone\}\}/gi, contact.phone);
     try {
-      const replyText = config.autoFollowupMessage
-        .replace(/\{\{name\}\}/gi, contact.name || 'there')
-        .replace(/\{\{phone\}\}/gi, contact.phone);
 
       if (config.mode === 'meta_cloud' && config.metaPhoneId && config.metaToken) {
         await sendMetaWhatsAppMessage({
