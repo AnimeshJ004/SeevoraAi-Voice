@@ -6739,8 +6739,8 @@ async function viewWhatsAppAutomations(root) {
   // 2. Action Toolbar & Pre-built Templates Header
   const actionRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
     el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: uiIcon('bolt', 16) + ' New Automation' }),
-      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: '✨ AI Automation Engineer' }),
+      el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: '<span style="font-weight:700;font-size:1rem;margin-right:4px;">+</span> Create Workflow' }),
+      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: '✨ AI Flow Generator' }),
       el('button', { class: 'btn btn-ghost', id: 'btnRefreshAuto', html: '↻ Refresh' })
     ]),
     el('div', { class: 'flex items-center gap-2', id: 'filterTabs' }, [
@@ -6849,13 +6849,13 @@ async function viewWhatsAppAutomations(root) {
       grid.innerHTML = `
         <div class="card" style="grid-column:1/-1;padding:50px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
           <div style="width:54px;height:54px;border-radius:50%;background:rgba(224,174,0,0.15);display:flex;align-items:center;justify-content:center;color:#8C6200;">
-            ${uiIcon('bolt', 28)}
+            ${navIcon('sparkle')}
           </div>
           <h3 style="margin:0;font-size:1.15rem;">No Automations Found</h3>
           <p class="muted" style="max-width:420px;margin:0;font-size:0.86rem;">
             ${currentFilter === 'all' ? 'Create your first WhatsApp workflow or pick a starter template above to automate client replies, tags, and follow-ups.' : 'No ' + currentFilter + ' automations.'}
           </p>
-          <button class="btn btn-primary" id="btnEmptyCreate" style="margin-top:8px;">+ Create Automation</button>
+          <button class="btn btn-primary" id="btnEmptyCreate" style="margin-top:8px;">+ Create Workflow</button>
         </div>
       `;
       const btn = grid.querySelector('#btnEmptyCreate');
