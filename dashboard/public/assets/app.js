@@ -6696,47 +6696,7 @@ async function viewWhatsAppAutomations(root) {
   const container = el('div', { class: 'wa-auto-container', style: 'display:flex;flex-direction:column;gap:20px;' });
   root.appendChild(container);
 
-  // 1. Connection Status Banner
-  const connBanner = el('div', { class: 'card', style: 'padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);' }, [
-    el('div', { class: 'flex items-center gap-3' }, [
-      el('span', { class: 'conn-indicator', style: 'display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B;' }),
-      el('div', {}, [
-        el('div', { class: 'conn-title', style: 'font-weight:600;font-size:0.9rem;' }, 'Checking WhatsApp Gateway Connection...'),
-        el('div', { class: 'conn-sub muted', style: 'font-size:0.78rem;' }, 'Testing Meta WhatsApp Cloud API credentials...')
-      ])
-    ]),
-    el('button', { class: 'btn btn-sm btn-ghost', style: 'font-size:0.8rem;' }, 'Manage WhatsApp Credentials')
-  ]);
-  container.appendChild(connBanner);
-
-  async function checkConnection() {
-    try {
-      const res = await api('/api/whatsapp/test-connection', { allow401: true });
-      const indicator = connBanner.querySelector('.conn-indicator');
-      const title = connBanner.querySelector('.conn-title');
-      const sub = connBanner.querySelector('.conn-sub');
-      if (res.ok) {
-        indicator.style.background = '#10B981';
-        title.textContent = `Meta WhatsApp Cloud Connected (+${res.displayPhoneNumber || res.phoneId || 'Active'})`;
-        sub.textContent = `Quality Rating: ${res.qualityRating || 'GREEN'} • Phone ID: ${res.phoneId || 'Configured'}`;
-      } else {
-        indicator.style.background = '#EF4444';
-        title.textContent = 'WhatsApp Gateway Notice: ' + (res.error || 'Connection Failed');
-        sub.innerHTML = `<span>Outbound live sends may fail. Click <b style="cursor:pointer;text-decoration:underline;">Manage WhatsApp Credentials</b> to update your Meta Access Token.</span>`;
-      }
-    } catch (e) {
-      const indicator = connBanner.querySelector('.conn-indicator');
-      const title = connBanner.querySelector('.conn-title');
-      const sub = connBanner.querySelector('.conn-sub');
-      indicator.style.background = '#EF4444';
-      title.textContent = 'Connection Error: ' + e.message;
-      sub.textContent = 'Unable to verify WhatsApp status. Check server connection.';
-    }
-  }
-  connBanner.querySelector('button').addEventListener('click', openWhatsAppConfigModal);
-  checkConnection();
-
-  // 2. Action Toolbar & Pre-built Templates Header
+  // 1. Action Toolbar & Pre-built Templates Header
   const actionRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
     el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
       el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: '<span style="font-weight:700;font-size:1rem;margin-right:4px;">+</span> Create Workflow' }),
@@ -7380,7 +7340,6 @@ async function viewWhatsAppAutomations(root) {
           }
         });
         toast('WhatsApp credentials saved.', 'ok');
-        checkConnection();
       }
     });
   }
