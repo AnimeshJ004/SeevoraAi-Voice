@@ -1838,12 +1838,19 @@
 }
 
 .support-layout,
-.admin-layout,
 .settings-split {
   display: grid;
   grid-template-columns: minmax(280px, .75fr) minmax(0, 1.25fr);
   gap: 18px;
   align-items: start;
+}
+
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 18px;
+  width: 100%;
 }
 
 .support-compose {
@@ -1901,10 +1908,6 @@
   gap: 8px;
 }
 
-.admin-layout {
-  margin-top: 18px;
-  grid-template-columns: 1.25fr .75fr;
-}
 
 .admin-row {
   display: grid;
@@ -3361,17 +3364,22 @@
   border-bottom: 1px solid var(--line);
 }
 
+.admin-client-card {
+  width: 100%;
+  margin-top: 18px;
+}
+
 .admin-client-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(95px, .65fr)) auto auto;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(85px, 0.65fr)) auto auto;
   align-items: center;
-  gap: 14px;
-  padding: 15px 20px;
+  gap: 16px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--line);
 }
 
 .admin-client-row:hover {
-  background: #fcfbf7;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .admin-client-identity {
@@ -3429,7 +3437,10 @@
 
 .admin-client-actions {
   display: flex;
-  gap: 5px;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .agency-events-card {

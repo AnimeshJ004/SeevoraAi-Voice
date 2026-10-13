@@ -5811,7 +5811,10 @@ async function viewAdmin(root) {
   const tenantHost = el('div', { class: 'card admin-client-card' }, skeleton('sk-card', 1));
   const ticketHost = el('div', { class: 'ticket-list' }, skeleton('sk-card', 2));
   const eventHost = el('div', { class: 'card card-pad admin-table agency-events-card' }, skeleton('sk-card', 1));
-  root.appendChild(stats); root.appendChild(el('div', { class: 'admin-layout' }, [tenantHost, ticketHost])); root.appendChild(eventHost);
+  root.appendChild(stats);
+  root.appendChild(tenantHost);
+  root.appendChild(ticketHost);
+  root.appendChild(eventHost);
   try {
     const calls = [api('/api/admin/tickets'), api('/api/admin/payment-events')];
     if (superAdmin) calls.unshift(api('/api/admin/overview'), api('/api/admin/tenants'), api('/api/admin/users'));
@@ -5823,7 +5826,14 @@ async function viewAdmin(root) {
     tenantHost.innerHTML = ''; tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Portfolio'), el('h3', {}, 'Client workspaces')]), superAdmin ? el('button', { class: 'btn btn-ghost btn-sm', onclick: openClientComposer }, 'Add client') : null]));
     if (superAdmin) (ts.tenants || []).forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
     else tenantHost.appendChild(el('div', { class: 'muted' }, 'Tenant controls require super admin access.'));
-    ticketHost.innerHTML = ''; (tickets.tickets || []).forEach((t) => ticketHost.appendChild(ticketCard(t, true)));
+    ticketHost.innerHTML = '';
+    const openTicketsList = tickets.tickets || [];
+    if (openTicketsList.length) {
+      ticketHost.style.display = 'grid';
+      openTicketsList.forEach((t) => ticketHost.appendChild(ticketCard(t, true)));
+    } else {
+      ticketHost.style.display = 'none';
+    }
     eventHost.innerHTML = ''; eventHost.appendChild(el('div', { class: 'agency-card-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Financial operations'), el('h3', {}, 'PayU event log')])]));
     (events.events || []).slice(0, 25).forEach((e) => eventHost.appendChild(el('div', { class: 'admin-row' }, [el('div', {}, [el('b', {}, e.txnid || 'Unknown transaction'), el('small', { class: 'muted' }, (e.reason || '') + ' · ' + (e.createdAt || ''))]), el('span', { class: 'pill' }, e.status || 'received')])));
     if (!(events.events || []).length) eventHost.appendChild(el('div', { class: 'muted' }, 'No PayU webhooks received yet.'));
@@ -5832,15 +5842,15 @@ async function viewAdmin(root) {
 
 function adminTenantRow(t, users) {
   const wallet = t.wallet || {};
-  const toggle = el('button', { class: 'btn btn-ghost' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
+  const toggle = el('button', { class: 'btn btn-ghost btn-sm' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
   toggle.onclick = async () => {
     const status = t.status === 'suspended' ? 'active' : 'suspended';
     await api('/api/admin/tenants/status', { method: 'POST', body: { tenantId: t.id, status: status } });
     toast('Tenant set to ' + status + '.', 'ok'); onRoute();
   };
-  const credit = el('button', { class: 'btn btn-ghost', onclick: () => adjustWallet(t) }, 'Adjust credit');
-  const inspect = el('button', { class: 'btn btn-primary', onclick: () => inspectTenant(t, users || []) }, 'Open workspace');
-  const approach = el('button', { class: 'btn btn-ghost', onclick: () => openClientApproach(t) }, 'Log approach');
+  const credit = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => adjustWallet(t) }, 'Adjust credit');
+  const inspect = el('button', { class: 'btn btn-primary btn-sm', onclick: () => inspectTenant(t, users || []) }, 'Open workspace');
+  const approach = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openClientApproach(t) }, 'Log approach');
   return el('div', { class: 'admin-client-row' }, [
     el('div', { class: 'admin-client-identity' }, [el('span', { class: 'client-avatar' }, initials(t.name)), el('div', {}, [el('b', {}, t.name), el('small', { class: 'muted' }, (t.users || 0) + ' users, ' + (t.agents || 0) + ' agents')])]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Activity'), el('strong', {}, fmtInr((t.calls || 0)) + ' calls')]),
