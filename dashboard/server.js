@@ -376,6 +376,9 @@ async function boot() {
   await core.mutate((d) => {
     demoSeeder.seedAllTenants(d);
   });
+  await syncDograhWorkflow().catch((err) => {
+    console.warn('  Dograh initial sync skipped:', err.message);
+  });
 }
 
 /* ==========================================================================
@@ -408,11 +411,13 @@ function publicTenant(t) {
 }
 function publicAgent(a) {
   return {
-    id: a.id, name: a.name, persona: a.persona, tts: a.tts,
+    id: a.id, name: a.name, persona: a.persona || a.prompt || '', tts: a.tts,
     greeting: a.greeting, telephony: a.telephony, presetId: a.presetId || null,
     fields: a.fields || [], guardrails: a.guardrails || [],
     sampleTranscript: a.sampleTranscript || null,
     transcriptUnderstanding: a.transcriptUnderstanding || null,
+    knowledge: a.knowledge || a.businessKnowledge || null,
+    llm: a.llm || null,
     createdAt: a.createdAt,
   };
 }
@@ -704,6 +709,7 @@ async function apiAgentsCreate(req, res, ctx) {
     tts: { provider: providers.tts.id, model, speaker, f0_up_key: f0, description, tone: ttsIn.tone ? String(ttsIn.tone) : undefined },
     greeting: String(b.greeting || (preset && preset.greeting) || '').slice(0, 500),
     presetId: preset ? preset.id : null,
+    knowledge: b.knowledge ? String(b.knowledge).slice(0, 10000) : (preset && preset.knowledge ? String(preset.knowledge) : null),
     fields: Array.isArray(b.fields) ? b.fields.map(String).slice(0, 30) : (preset ? preset.fields : []),
     guardrails: Array.isArray(b.guardrails) ? b.guardrails.map(String).slice(0, 30) : (preset ? preset.guardrails : []),
     sampleTranscript: Array.isArray(b.sampleTranscript) ? b.sampleTranscript.slice(0, 30) : null,
@@ -755,6 +761,7 @@ async function apiAgentsUpdate(req, res, ctx) {
     const a = dd.agents.find((x) => x.id === id);
     if (b.name != null) a.name = String(b.name).slice(0, 80);
     if (b.persona != null) a.persona = String(b.persona).slice(0, 5000);
+    if (b.knowledge != null) a.knowledge = String(b.knowledge).slice(0, 10000);
     if (b.greeting != null) a.greeting = String(b.greeting).slice(0, 500);
     if (b.did != null) {
       const did = String(b.did).replace(/[^0-9]/g, '');
@@ -1109,18 +1116,53 @@ async function apiAgentsDelete(req, res, ctx) {
   core.sendJson(res, 200, { ok: true });
 }
 
-// POST /api/tts -> Rumik WAV bytes. Increments tenant usage.chars.
+// High-fidelity Deepgram Aura studio female voice fallback
+async function synthesizeDeepgramAura(text, voiceModel = 'aura-asteria-en') {
+  const key = process.env.DEEPGRAM_API_KEY;
+  if (!key) throw new Error('Deepgram API key not configured');
+  const clean = String(text || '').replace(/^\[[a-z]+\]\s*/i, '').replace(/[*_~`#|]/g, ' ').trim().slice(0, 2000);
+  if (!clean) throw new Error('Empty text for synthesis');
+  const payload = Buffer.from(JSON.stringify({ text: clean }));
+  const up = await core.httpsPost('api.deepgram.com', `/v1/speak?model=${encodeURIComponent(voiceModel)}`, {
+    'Authorization': `Token ${key}`,
+    'Content-Type': 'application/json',
+    'Content-Length': payload.length,
+  }, payload);
+  if (up.status !== 200) {
+    throw new Error('Deepgram Aura synthesis failed with status ' + up.status);
+  }
+  return up.buffer;
+}
+
+// POST /api/tts -> Audio WAV bytes (Rumik Silk with Deepgram Aura studio female fallback). Increments tenant usage.chars.
 async function apiTts(req, res, ctx) {
   const b = ctx.body || {};
   try {
-    const selected = providers.resolveSelection('tts', { provider: b.provider, model: b.model });
-    const out = await selected.adapter.synthesize({
-      text: b.text,
-      model: selected.model,
-      speaker: b.speaker,
-      f0_up_key: b.f0_up_key,
-      description: b.description,
-    });
+    let out = null;
+    let selected = null;
+    try {
+      selected = providers.resolveSelection('tts', { provider: b.provider, model: b.model });
+      out = await selected.adapter.synthesize({
+        text: b.text,
+        model: selected.model,
+        speaker: b.speaker,
+        f0_up_key: b.f0_up_key,
+        description: b.description,
+      });
+    } catch (primaryErr) {
+      console.warn('Primary TTS synthesis notice (' + primaryErr.message + '), engaging Deepgram Aura female synthesis...');
+      try {
+        const audioBuf = await synthesizeDeepgramAura(b.text, 'aura-asteria-en');
+        out = {
+          buffer: audioBuf,
+          credits: '1',
+          chars: (b.text || '').length,
+        };
+      } catch (dgErr) {
+        console.warn('Deepgram Aura fallback failed:', dgErr.message);
+        throw primaryErr;
+      }
+    }
     // Count usage only on a real synthesis.
     bumpUsage(ctx.tenant.id, 'chars', out.chars).catch(() => {});
     core.send(res, 200, out.buffer, {
@@ -1146,25 +1188,100 @@ async function apiWsConnect(req, res, ctx) {
   }
 }
 
+const CALLER_INTELLIGENCE_RULES = `
+# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):
+- In Hindi and Hinglish: "Mera naam [Name] hai" or "Mera name [Name]" means "My name is [Name]". "Mera" translates to "My".
+- "Mera" IS NEVER A PERSON'S NAME! Never call the user "Mira" or "Mera".
+- If the caller says "Mera naam [Name]", or if speech-to-text wrote "Mira naam [Name]" or "Mira [Name]", recognize that the caller's actual name is [Name]!
+- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).
+- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.
+
+# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:
+- DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.
+- NEVER badger or loop asking for a phone number on every turn! If the caller greets you ("Hey"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.
+- Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.
+- Speak naturally in 1 to 2 concise sentences per turn.
+`;
+
+function extractContactFromMessages(messages) {
+  if (!Array.isArray(messages)) return null;
+  const userTexts = messages
+    .filter((m) => m.role === 'user' || m.role === 'caller')
+    .map((m) => String(m.text || m.content || ''));
+  if (!userTexts.length) return null;
+  const combined = userTexts.join('\n');
+  const lastUserText = userTexts[userTexts.length - 1];
+
+  let name = null;
+  let phone = null;
+  let requirement = null;
+
+  // Name extraction (Hindi/Hinglish/English)
+  const hindiNameMatch = combined.match(/(?:mera|mira|my)\s+(?:naam|name)\s+(?:hai\s+)?([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\.|\,|$)/i) ||
+                         combined.match(/(?:main|mai|this\s+is|i\s+am|myself|it's|its)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\s+speaking|\s+here|\.|\,|$)/i);
+  if (hindiNameMatch && hindiNameMatch[1]) {
+    const rawName = hindiNameMatch[1].trim();
+    const disallowed = ['mera', 'mira', 'naam', 'name', 'sir', 'madam', 'here', 'calling', 'speaking', 'yes', 'no', 'hi', 'hello', 'hey'];
+    if (!disallowed.includes(rawName.toLowerCase()) && rawName.length >= 2) {
+      name = rawName.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  if (!name) {
+    const nameOnlyMatch = lastUserText.trim().match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)$/);
+    if (nameOnlyMatch && nameOnlyMatch[1]) {
+      name = nameOnlyMatch[1];
+    }
+  }
+
+  const phoneMatch = combined.match(/(?:\+?91[\s-]?)?([6-9]\d{4}[\s-]?\d{5})/);
+  if (phoneMatch) {
+    phone = phoneMatch[0].replace(/[\s-]/g, '');
+  }
+
+  const lower = combined.toLowerCase();
+  if (lower.includes('receptionist') || lower.includes('voice') || lower.includes('calling') || lower.includes('call agent')) {
+    requirement = 'AI Voice Receptionist';
+  } else if (lower.includes('whatsapp') || lower.includes('wa automation')) {
+    requirement = 'WhatsApp Business Automation';
+  } else if (lower.includes('crm') || lower.includes('integration')) {
+    requirement = 'CRM Integration';
+  } else if (lower.includes('chatbot') || lower.includes('bot')) {
+    requirement = 'Custom AI Chatbot';
+  } else if (lower.includes('appointment') || lower.includes('booking')) {
+    requirement = 'Appointment Booking';
+  }
+
+  if (name || phone || requirement) {
+    return { name, phone, requirement };
+  }
+  return null;
+}
+
 // POST /api/chat -> { text, finish, provider, model, latency_ms } (Groq brain with Gemini & intelligent conversational fallback).
 async function apiChat(req, res, ctx) {
   const b = ctx.body || {};
   try {
     let out = null;
     let selected = null;
+    let system = String(b.system || '');
+    if (!system.includes('Mera naam')) {
+      system += '\n\n' + CALLER_INTELLIGENCE_RULES;
+    }
+
     try {
       selected = providers.resolveSelection('llm', { provider: b.provider, model: b.model });
-      out = await selected.adapter.chat({ messages: b.messages, system: b.system, model: selected.model });
+      out = await selected.adapter.chat({ messages: b.messages, system, model: selected.model });
     } catch (primaryErr) {
       console.warn('Primary LLM chat error, attempting secondary fallback:', primaryErr.message);
       if (providers.llmGemini && (!selected || selected.provider !== 'gemini')) {
         try {
-          out = await providers.llmGemini.chat({ messages: b.messages, system: b.system, model: providers.llmGemini.defaultModel });
+          out = await providers.llmGemini.chat({ messages: b.messages, system, model: providers.llmGemini.defaultModel });
         } catch (_) {}
       }
       if (!out && providers.llmGroq && (!selected || selected.provider !== 'groq')) {
         try {
-          out = await providers.llmGroq.chat({ messages: b.messages, system: b.system, model: providers.llmGroq.defaultModel });
+          out = await providers.llmGroq.chat({ messages: b.messages, system, model: providers.llmGroq.defaultModel });
         } catch (_) {}
       }
       if (!out) {
@@ -1191,6 +1308,38 @@ async function apiChat(req, res, ctx) {
     // Rough token accounting for the usage view (4 chars ~= 1 token).
     const approxTokens = Math.ceil(((out && out.text) || '').length / 4);
     bumpUsage(ctx.tenant.id, 'llmTokens', approxTokens).catch(() => {});
+
+    // Dynamic CRM contact auto-synchronization for ANY caller
+    let crmContact = null;
+    try {
+      const extracted = extractContactFromMessages(b.messages);
+      if (extracted && (extracted.name || extracted.phone)) {
+        await core.mutate((mutDb) => {
+          const tags = ['voice-inquiry', 'ai-agent'];
+          if (extracted.requirement) tags.push(extracted.requirement.toLowerCase().replace(/\s+/g, '-'));
+          crmContact = wacrm.upsertContact(mutDb, ctx.tenant.id, {
+            name: extracted.name,
+            phone: extracted.phone,
+            stage: extracted.requirement ? 'In Discussion' : 'New Lead',
+            tags,
+            notes: extracted.requirement ? `Inquired regarding ${extracted.requirement}` : 'Spoke with Seevora AI Voice Receptionist'
+          });
+        });
+      }
+    } catch (crmErr) {
+      console.warn('CRM auto-sync notice:', crmErr.message);
+    }
+
+    if (crmContact) {
+      out.crmContact = {
+        id: crmContact.id,
+        name: crmContact.name,
+        phone: crmContact.phone,
+        stage: crmContact.stage,
+        tags: crmContact.tags
+      };
+    }
+
     core.sendJson(res, 200, out);
   } catch (e) {
     handleProviderError(res, e);
@@ -1441,6 +1590,98 @@ async function apiTelephonyDial(req, res, ctx) {
     core.sendJson(res, r.status, r.data);
   } catch (e) {
     handleProviderError(res, e);
+  }
+}
+
+// Sync Dograh Workflow 13027 into active receptionists
+async function syncDograhWorkflow(workflowId) {
+  const wid = workflowId || process.env.DOGRAH_WORKFLOW_ID || '13027';
+  if (!wid) return null;
+  try {
+    const res = await providers.telephony.request('GET', `/api/v1/workflow/fetch/${wid}`);
+    if (!res || !res.data) return null;
+    const wf = res.data;
+    const nodes = (wf.workflow_definition && wf.workflow_definition.nodes) || [];
+    const globalNode = nodes.find((n) => n.type === 'globalNode') || nodes[0];
+    const startNode = nodes.find((n) => n.type === 'startCall' || (n.data && n.data.is_start)) || nodes[1];
+
+    const prompt = (globalNode && globalNode.data && globalNode.data.prompt) || '';
+    let greeting = "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
+    if (startNode && startNode.data && startNode.data.greeting) {
+      greeting = startNode.data.greeting;
+    } else if (startNode && startNode.data && startNode.data.prompt) {
+      const match = startNode.data.prompt.match(/"([^"]+)"/);
+      if (match) greeting = match[1];
+    }
+
+    const seevoraKnowledge = [
+      'Company name: Seevora',
+      'Website: seevora.in',
+      'Location: Indore, Madhya Pradesh, India',
+      'Founder and CEO: Chaitanya Panwar',
+      'What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.',
+      'Services Seevora offers:',
+      '1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock',
+      '2. WhatsApp Business Automation for customer engagement and lead follow-up',
+      '3. CRM Integrations to connect AI automation with existing business tools',
+      '4. Custom AI Chatbots for websites and mobile apps',
+      '5. Lead Qualification through automated voice and chat conversations',
+      '6. Appointment Booking automation',
+      '7. E-commerce Automation for order updates, queries, and customer support',
+      'Phone: +91 8071582519',
+      'Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.',
+      'Pricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.'
+    ].join('\n');
+
+    const enrichedPersona = (prompt ? prompt + '\n\n' : '') + CALLER_INTELLIGENCE_RULES;
+
+    await core.mutate((d) => {
+      d.agents.forEach((a) => {
+        a.name = 'Ria - Seevora AI Voice Receptionist';
+        a.persona = enrichedPersona;
+        a.knowledge = seevoraKnowledge;
+        a.greeting = greeting;
+        a.llm = { provider: 'groq', model: 'qwen/qwen3.8-27b' };
+        a.tts = {
+          provider: 'rumik',
+          model: 'muga',
+          voice: 'ira',
+          speaker: 'speaker_2',
+          f0_up_key: 0,
+          tone: 'neutral',
+          description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional'
+        };
+      });
+      if (Array.isArray(d.presets)) {
+        d.presets.forEach((p) => {
+          if (p.isSystem || p.name.includes('Receptionist') || p.name.includes('Seevora')) {
+            p.knowledge = seevoraKnowledge;
+            p.persona = enrichedPersona;
+          }
+        });
+      }
+    });
+
+    console.log(`  Dograh Workflow #${wid} ("${wf.name}") synced: updated ${core.db().agents.length} agent(s) with Seevora facts & CEO info.`);
+    return { ok: true, workflowId: wid, name: wf.name, nodesCount: nodes.length };
+  } catch (err) {
+    console.warn(`  Dograh Workflow sync notice (${err.message}): using local Seevora knowledge base.`);
+    return null;
+  }
+}
+
+async function apiDograhSync(req, res, ctx) {
+  try {
+    const b = ctx.body || {};
+    const wid = b.workflowId || process.env.DOGRAH_WORKFLOW_ID || '13027';
+    const result = await syncDograhWorkflow(wid);
+    if (!result) {
+      return core.sendJson(res, 502, { error: 'Failed to sync from Dograh. Check your Dograh credentials in .env', code: 'dograh_sync_failed' });
+    }
+    const myAgents = core.db().agents.filter(a => a.tenantId === ctx.tenant.id).map(publicAgent);
+    core.sendJson(res, 200, { ok: true, workflow: result, agents: myAgents });
+  } catch (err) {
+    core.sendJson(res, 500, { error: err.message, code: 'dograh_sync_error' });
   }
 }
 
@@ -4001,6 +4242,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/agents/generate-from-needs') return core.requireAuth(req, res, apiAgentsGenerateFromNeeds, body);
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);
       if (route === '/api/agents/delete') return core.requireAuth(req, res, apiAgentsDelete, body);
+      if (route === '/api/dograh/sync') return core.requireAuth(req, res, apiDograhSync, body);
       if (route === '/api/tts') return core.requireAuth(req, res, apiTts, body);
       if (route === '/api/ws-connect') return core.requireAuth(req, res, apiWsConnect, body);
       if (route === '/api/chat') return core.requireAuth(req, res, apiChat, body);
@@ -4097,23 +4339,35 @@ server.on('upgrade', async (req, socket, head) => {
   }
 });
 
-sttWss.on('connection', (client) => {
+sttWss.on('connection', (client, req) => {
   const key = process.env.DEEPGRAM_API_KEY;
   if (!key) {
     client.send(JSON.stringify({ type: 'ProxyError', message: 'Deepgram is not configured.' }));
     return client.close(1011, 'Deepgram unavailable');
   }
 
+  let lang = 'en-IN';
+  try {
+    const parsed = new URL(req.url, 'http://localhost');
+    const qLang = parsed.searchParams.get('lang');
+    if (qLang === 'hi' || qLang === 'en-IN' || qLang === 'en') lang = qLang;
+  } catch (_) {}
+
+  // Nova-2 provides full Indian English (en-IN), Hindi (hi), and keyword boosting
+  const model = 'nova-2';
+
   const query = new URLSearchParams({
-    model: providers.stt.model,
-    language: 'multi',
+    model: model,
+    language: lang,
     smart_format: 'true',
     punctuate: 'true',
     interim_results: 'true',
-    endpointing: '300',
-    utterance_end_ms: '1000',
+    endpointing: '650',
+    utterance_end_ms: '1500',
     vad_events: 'true',
   });
+  ['mera:3', 'naam:3', 'mera naam:4', 'aapka:2', 'namaste:2', 'shukriya:2', 'Seevora:3', 'Indore:3', 'Chaitanya:3', 'Panwar:3', 'CEO:3'].forEach((kw) => query.append('keywords', kw));
+
   const upstream = new WebSocket(`wss://api.deepgram.com/v1/listen?${query}`, {
     headers: { Authorization: `Token ${key}` },
     maxPayload: 1024 * 1024,

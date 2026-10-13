@@ -243,7 +243,8 @@ const sttDeepgram = {
     if (audio.length < 200) throw new ProviderError('no audio', 422, 'no_audio');
     const mime = String(opts.mime || 'audio/webm').split(';')[0];
     const started = Date.now();
-    const path = `/v1/listen?model=${encodeURIComponent(this.model)}&language=multi&smart_format=true&punctuate=true&utterances=false`;
+    const lang = opts.language || 'en-IN';
+    const path = `/v1/listen?model=${encodeURIComponent(this.model)}&language=${encodeURIComponent(lang)}&smart_format=true&punctuate=true&utterances=false&keywords=Seevora:3&keywords=Indore:3&keywords=Chaitanya:3&keywords=Panwar:3&keywords=CEO:3`;
     const up = await httpsPost(DEEPGRAM_HOST, path, {
       'Authorization': `Token ${key}`,
       'Content-Type': mime,
@@ -278,9 +279,7 @@ const llmGroq = {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw notConfigured(this.label, this.needs);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const systemText = opts.skipVoiceRule
-      ? String(opts.system || DEFAULT_SYSTEM).slice(0, 8000)
-      : (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 3000);
+    const systemText = String(opts.system || DEFAULT_SYSTEM).slice(0, 10000) + (opts.skipVoiceRule ? '' : ('\n\n' + VOICE_LANG_RULE));
     const messages = [{ role: 'system', content: systemText }]
       .concat(history.filter((m) => m && m.text).map((m) => ({
         role: (m.role === 'assistant' || m.role === 'model') ? 'assistant' : 'user',
@@ -337,9 +336,7 @@ const llmGemini = {
 
     const model = selectedModel(this, opts.model);
     const history = Array.isArray(opts.messages) ? opts.messages.slice(-16) : [];
-    const system = opts.skipVoiceRule
-      ? String(opts.system || DEFAULT_SYSTEM).slice(0, 8000)
-      : (String(opts.system || DEFAULT_SYSTEM) + VOICE_LANG_RULE).slice(0, 2000);
+    const system = String(opts.system || DEFAULT_SYSTEM).slice(0, 10000) + (opts.skipVoiceRule ? '' : ('\n\n' + VOICE_LANG_RULE));
     const contents = history
       .filter((m) => m && m.text)
       .map((m) => ({

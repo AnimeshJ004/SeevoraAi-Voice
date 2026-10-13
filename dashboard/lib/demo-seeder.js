@@ -182,21 +182,82 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
   }
 
   // 2. Active Agent
-  if (!d.agents.some((a) => a.tenantId === tid)) {
-    d.agents.push({
+  const seevoraFacts = [
+    'Company name: Seevora',
+    'Website: seevora.in',
+    'Location: Indore, Madhya Pradesh, India',
+    'Founder and CEO: Chaitanya Panwar',
+    'What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.',
+    'Services Seevora offers:',
+    '1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock',
+    '2. WhatsApp Business Automation for customer engagement and lead follow-up',
+    '3. CRM Integrations to connect AI automation with existing business tools',
+    '4. Custom AI Chatbots for websites and mobile apps',
+    '5. Lead Qualification through automated voice and chat conversations',
+    '6. Appointment Booking automation',
+    '7. E-commerce Automation for order updates, queries, and customer support',
+    'Phone: +91 8071582519',
+    'Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.',
+    'Pricing: Custom pricing based on business requirements and call volume. Offer a free callback from the team.'
+  ].join('\n');
+
+  const dograhPrompt = `# WHO YOU ARE
+You are Ria, the AI receptionist for Seevora. You are on a live phone call.
+
+# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)
+Company name: Seevora
+Website: seevora.in
+Location: Indore, Madhya Pradesh, India
+Founder and CEO: Chaitanya Panwar
+What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.
+Services Seevora offers:
+1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock
+2. WhatsApp Business Automation for customer engagement and lead follow-up
+3. CRM Integrations to connect AI automation with existing business tools
+4. Custom AI Chatbots for websites and mobile apps
+5. Lead Qualification through automated voice and chat conversations
+6. Appointment Booking automation
+7. E-commerce Automation for order updates, queries, and customer support
+
+If asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.
+If asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.
+
+# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING
+- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!
+  * If the caller speaks Hindi or Hinglish (e.g. "Seevora ke baare me batao", "Aap kya karte ho?", "Founder kaun hai?"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!
+  * If the caller speaks English (e.g. "Tell me about Seevora", "Who is the CEO?"): Reply in natural English.
+  * Always mirror the caller's language dynamically from turn to turn.
+- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.
+- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.
+- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.
+- NEVER say "sorry, I didn't catch that" repeatedly. Roll with remarks and steer back to how you can assist.`;
+
+  let agent = d.agents.find((a) => a.tenantId === tid);
+  if (!agent) {
+    agent = {
       id: 'ag_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12),
       tenantId: tid,
-      name: 'Priya - AI Voice Receptionist',
+      name: 'Ria - Seevora AI Voice Receptionist',
       role: 'receptionist',
       language: 'hi-IN',
-      tts: { provider: 'rumik', model: 'muga', voice: 'speaker_2', tone: 'warm & professional' },
-      stt: { provider: 'deepgram', model: 'nova-2', language: 'hi' },
-      llm: { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+      tts: { provider: 'rumik', model: 'muga', voice: 'ira', speaker: 'speaker_2', tone: 'neutral', description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional' },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
       telephony: { provider: 'vobiz', did: '+918071582519' },
-      greeting: 'Namaste! Seevora Voice Receptionist me aapka swagat hai. Main Priya hoon, batayein main aapki kya sahayata kar sakti hoon?',
-      prompt: 'You are Priya, a polite, helpful AI voice receptionist speaking natural conversational Hindi and English (Hinglish). Greet callers warmly, answer questions about timings, services, appointments, and guide them to schedule consultations.',
+      greeting: "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?",
+      persona: dograhPrompt,
+      knowledge: seevoraFacts,
       createdAt: new Date(Date.now() - 25 * 86400000).toISOString()
-    });
+    };
+    d.agents.push(agent);
+  } else {
+    // Keep agent synced with Seevora facts
+    agent.name = 'Ria - Seevora AI Voice Receptionist';
+    agent.persona = dograhPrompt;
+    agent.knowledge = seevoraFacts;
+    agent.greeting = "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
+    agent.llm = { provider: 'groq', model: 'qwen/qwen3.8-27b' };
+    agent.tts = { provider: 'rumik', model: 'muga', voice: 'ira', speaker: 'speaker_2', tone: 'neutral', description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional' };
   }
 
   // 3. 14 Days Usage

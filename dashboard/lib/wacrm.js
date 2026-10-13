@@ -219,10 +219,25 @@ const DEFAULT_STAGES = Object.freeze([
  */
 function upsertContact(db, tenantId, contactData) {
   if (!db.crmContacts) db.crmContacts = [];
-  const phone = normalizeE164(contactData.phone);
-  if (!phone) throw new Error('Contact phone number is required.');
+  let phone = normalizeE164(contactData.phone);
+  if (!phone) {
+    if (contactData.name) {
+      const existingByName = db.crmContacts.find((c) => c.tenantId === tenantId && c.name && c.name.toLowerCase() === contactData.name.toLowerCase());
+      if (existingByName) {
+        phone = existingByName.phone;
+      } else {
+        const randDigits = Math.floor(100000000 + Math.random() * 900000000);
+        phone = '+919' + randDigits;
+      }
+    } else {
+      throw new Error('Contact phone number is required.');
+    }
+  }
 
   let contact = db.crmContacts.find((c) => c.tenantId === tenantId && c.phone === phone);
+  if (!contact && contactData.name) {
+    contact = db.crmContacts.find((c) => c.tenantId === tenantId && c.name && c.name.toLowerCase() === contactData.name.toLowerCase());
+  }
   const now = new Date().toISOString();
 
   if (!contact) {

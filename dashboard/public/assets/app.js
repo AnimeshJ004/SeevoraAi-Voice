@@ -280,18 +280,30 @@ async function speakUtterance(text, ttsOrAgent, callbacks) {
     console.warn('Server TTS unavailable, falling back seamlessly to Web Speech API:', err.message);
   }
 
-  // Tier 3: Native Web Speech API Fallback (Guaranteed to speak in browser with zero failure)
+  // Tier 3: Native Web Speech API Fallback (Strict female voice selection - never robotic male)
   if (!played && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     await new Promise((resolve) => {
       const utter = new SpeechSynthesisUtterance(spoken);
       const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find((v) => v.lang.includes('en-IN')) ||
-        voices.find((v) => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('google')) ||
-        voices.find((v) => v.lang.startsWith('en')) || voices[0];
+      const femaleKeywords = ['female', 'zira', 'neerja', 'jenny', 'samantha', 'victoria', 'kavya', 'priya', 'swara', 'geeta', 'ananya', 'aria', 'sara', 'eva', 'ava', 'sonia', 'aditi', 'kiran'];
+      const maleKeywords = ['david', 'mark', 'george', 'richard', 'james', 'ravi', 'male', 'guy', 'stefan'];
+      
+      const isFemale = (v) => {
+        const name = (v.name || '').toLowerCase();
+        return femaleKeywords.some((k) => name.includes(k)) && !maleKeywords.some((k) => name.includes(k));
+      };
+
+      const preferred = voices.find((v) => v.lang.includes('en-IN') && isFemale(v)) ||
+        voices.find((v) => isFemale(v) && v.lang.startsWith('en')) ||
+        voices.find((v) => isFemale(v)) ||
+        voices.find((v) => v.lang.includes('en-IN') && !maleKeywords.some((k) => (v.name || '').toLowerCase().includes(k))) ||
+        voices.find((v) => !maleKeywords.some((k) => (v.name || '').toLowerCase().includes(k))) ||
+        voices[0];
+
       if (preferred) utter.voice = preferred;
       utter.rate = 1.02;
-      utter.pitch = tone === 'excited' ? 1.12 : 1.04;
+      utter.pitch = tone === 'excited' ? 1.18 : 1.14;
       utter.onend = resolve;
       utter.onerror = resolve;
       window.speechSynthesis.speak(utter);
@@ -1673,6 +1685,37 @@ async function viewAgents(root) {
     root.appendChild(quotaBanner);
   }
 
+  const dograhSyncBar = el('div', {
+    style: 'display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 16px;margin-bottom:18px;flex-wrap:wrap;gap:10px;'
+  }, [
+    el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+      el('span', { style: 'font-weight:600;font-size:0.9rem;' }, '🐕 Dograh Telephony Orchestrator:'),
+      el('span', { class: 'muted', style: 'font-size:0.84rem;' }, 'Workflow #13027 (Seevora AI Voice Receptionist • DID +918071582519)')
+    ]),
+    el('button', {
+      class: 'btn btn-secondary btn-sm',
+      id: 'btnDograhSync',
+      style: 'display:inline-flex;align-items:center;gap:6px;',
+      onclick: async (ev) => {
+        const btn = ev.currentTarget;
+        btn.disabled = true;
+        btn.textContent = '🔄 Syncing from Dograh...';
+        try {
+          const res = await api('/api/dograh/sync', { method: 'POST' });
+          toast(`Synced successfully with Dograh Workflow #${(res.workflow && res.workflow.workflowId) || 13027}! Receptionist updated with latest Seevora facts & CEO info.`, 'ok');
+          await ensureAgents(true);
+          paintAgents();
+        } catch (err) {
+          toast('Dograh sync failed: ' + err.message, 'err');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🔄 Sync from Dograh';
+        }
+      }
+    }, '🔄 Sync from Dograh')
+  ]);
+  root.appendChild(dograhSyncBar);
+
   const builder = buildAgentForm(null);
   root.appendChild(builder);
 
@@ -1716,6 +1759,7 @@ function buildAgentForm(existing) {
 
   const nameI = el('input', { class: 'input', id: 'f_name', type: 'text', value: e.name || '', placeholder: 'Front Desk', maxlength: 80 });
   const personaI = el('textarea', { class: 'textarea', id: 'f_persona', rows: 4, placeholder: 'You are a warm, sharp receptionist. Answer in 1 to 2 short spoken sentences, qualify the lead, and book a callback.' }, e.persona || '');
+  const knowledgeI = el('textarea', { class: 'textarea', id: 'f_knowledge', rows: 4, placeholder: 'Company facts, working hours, pricing plans, service details, and FAQs...' }, e.knowledge || '');
   const greetI = el('input', { class: 'input', id: 'f_greeting', type: 'text', value: e.greeting || '', placeholder: 'Hi, thanks for calling RapidX. How can I help today.', maxlength: 240 });
   const descI = el('input', { class: 'input', id: 'f_desc', type: 'text', value: (tts.description || ''), placeholder: 'Optional voice direction, e.g. calm and confident' });
 
@@ -1758,8 +1802,9 @@ function buildAgentForm(existing) {
     el('div', { class: 'form-grid' }, [
       field('Agent name', nameI),
       field('Assigned number', didSel),
-      (function () { const f = field('Persona', personaI); f.classList.add('full'); return f; })(),
-      (function () { const f = field('Greeting', greetI); f.classList.add('full'); return f; })(),
+      (function () { const f = field('Persona (Tone & Behavioral Prompt)', personaI); f.classList.add('full'); return f; })(),
+      (function () { const f = field('Knowledge Base (Business Facts, Hours, Pricing & FAQs)', knowledgeI); f.classList.add('full'); return f; })(),
+      (function () { const f = field('Greeting (Spoken upon call connection)', greetI); f.classList.add('full'); return f; })(),
       field('Voice model', modelSeg),
       toneField,
       pitchField,
@@ -1788,6 +1833,7 @@ function buildAgentForm(existing) {
     const payload = {
       name: name,
       persona: persona,
+      knowledge: knowledgeI.value.trim(),
       greeting: greetI.value.trim(),
       did: didSel.value || '',
       tts: {
@@ -1811,7 +1857,7 @@ function buildAgentForm(existing) {
         if (res.agent) State.agents.push(res.agent);
         toast('Agent created.', 'ok');
         // reset the inline form
-        nameI.value = ''; personaI.value = ''; greetI.value = ''; descI.value = ''; didSel.value = '';
+        nameI.value = ''; personaI.value = ''; knowledgeI.value = ''; greetI.value = ''; descI.value = ''; didSel.value = '';
       }
       paintAgents();
     } catch (ex) {
@@ -3232,9 +3278,33 @@ async function viewTalk(root, customAgent) {
   if (!customAgent) {
     root.appendChild(viewHead('Talk to your agent', 'Live interactive voice conversation. Speak naturally with your microphone or test by reading from your generated script.'));
   } else {
-    root.appendChild(el('div', { style: 'margin-bottom:16px' }, [
-      el('h3', { class: 't-h3', style: 'margin-bottom:4px' }, `Testing: ${activeAgent.name}`),
-      el('p', { class: 'soft', style: 'font-size:.84rem' }, 'Speak into your microphone or click any dialogue prompt below to hear the agent voice in real time.')
+    root.appendChild(el('div', { style: 'margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;' }, [
+      el('div', {}, [
+        el('h3', { class: 't-h3', style: 'margin-bottom:4px' }, `Testing: ${activeAgent.name}`),
+        el('p', { class: 'soft', style: 'font-size:.84rem' }, 'Speak into your microphone or click any dialogue prompt below to hear the agent voice in real time.')
+      ]),
+      el('button', {
+        class: 'btn btn-secondary btn-sm',
+        style: 'display:inline-flex;align-items:center;gap:6px;',
+        onclick: async (ev) => {
+          const btn = ev.currentTarget;
+          btn.disabled = true;
+          btn.textContent = '🔄 Syncing...';
+          try {
+            const res = await api('/api/dograh/sync', { method: 'POST' });
+            toast(`Synced with Dograh Workflow #${(res.workflow && res.workflow.workflowId) || 13027}!`, 'ok');
+            if (res.agents && res.agents.length) {
+              const updated = res.agents.find(a => a.id === activeAgent.id) || res.agents[0];
+              Object.assign(activeAgent, updated);
+            }
+          } catch (e) {
+            toast('Sync failed: ' + e.message, 'err');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = '🔄 Sync from Dograh';
+          }
+        }
+      }, '🔄 Sync from Dograh')
     ]));
   }
 
@@ -3243,6 +3313,9 @@ async function viewTalk(root, customAgent) {
   let isThinking = false;
   let isSpeaking = false;
   let speechRec = null;
+  let micStream = null;
+  let mediaRec = null;
+  let dgWs = null;
 
   // Visualizer Orb Stage
   const orb = el('div', { class: 'voice-orb', 'aria-hidden': 'true' }, [
@@ -3256,6 +3329,25 @@ async function viewTalk(root, customAgent) {
   ]);
 
   // Status & Metrics Row
+  let sttLang = 'en-IN';
+  const langSel = el('select', {
+    class: 'select',
+    style: 'width:auto;font-size:0.8rem;padding:4px 8px;',
+    title: 'Select microphone language for speech-to-text',
+    onchange: (e) => {
+      sttLang = e.target.value;
+      toast(`Microphone language set to: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+      if (isListening) {
+        stopVoiceListening();
+        startVoiceListening();
+      }
+    }
+  }, [
+    el('option', { value: 'en-IN', selected: true }, '🇮🇳 English / Hinglish'),
+    el('option', { value: 'hi' }, '🇮🇳 Hindi (हिन्दी)'),
+    el('option', { value: 'en' }, '🌐 English (General)')
+  ]);
+
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
   const statusText = el('span', {}, 'Ready');
   const statusPill = el('div', { class: 'conversation-status idle', role: 'status' }, [statusDot, statusText]);
@@ -3372,7 +3464,20 @@ async function viewTalk(root, customAgent) {
     const startTime = performance.now();
 
     try {
-      let systemPrompt = activeAgent.persona || 'You are a warm, sharp AI phone receptionist. Speak in 1 to 2 short sentences per turn.';
+      let systemPrompt = (activeAgent.persona || activeAgent.prompt || '').trim();
+      if (!systemPrompt) {
+        systemPrompt = 'You are Ria, a warm, polite, and intelligent AI voice receptionist for Seevora. Respond in 1 to 2 short, natural spoken sentences per turn.';
+      }
+      if (!systemPrompt.includes('Mera naam')) {
+        systemPrompt += `\n\n# CALLER NAME RECOGNITION & CONVERSATIONAL RULES:
+- "Mera naam [Name]" in Hindi means "My name is [Name]". "Mera" translates to "My", NEVER the caller's name! Never address the user as "Mira".
+- Extract the caller's actual name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, etc.).
+- Never repeat the caller's name on every single sentence. Greet them once naturally.
+- Never loop or badger asking for a phone number on every turn. Answer their questions first, and only ask for phone number when booking or requesting a callback.`;
+      }
+      if (activeAgent.knowledge) {
+        systemPrompt += '\n\n# BUSINESS FACTS & KNOWLEDGE:\n' + activeAgent.knowledge;
+      }
       if (activeTone === 'excited') {
         systemPrompt += ' Keep replies crisp, direct, and under 20 words, driving toward securing a confirmed booking immediately.';
       }
@@ -3382,7 +3487,8 @@ async function viewTalk(root, customAgent) {
         timeoutMs: 25000,
         body: {
           messages: convo.map((m) => ({ role: m.role === 'bot' ? 'model' : 'user', text: m.text })),
-          system: systemPrompt
+          system: systemPrompt,
+          model: (activeAgent.llm && activeAgent.llm.model && !activeAgent.llm.model.includes('llama-3.3')) ? activeAgent.llm.model : 'qwen/qwen3.8-27b'
         }
       });
 
@@ -3393,6 +3499,16 @@ async function viewTalk(root, customAgent) {
       const reply = (res.text || '').trim() || 'Thank you. I have noted your inquiry. How else may I assist you today?';
       addBubble('bot', reply);
       convo.push({ role: 'bot', text: reply });
+
+      if (res.crmContact) {
+        const c = res.crmContact;
+        const crmPill = el('div', {
+          class: 'bubble sys',
+          style: 'background:rgba(46,196,182,0.14);border:1px solid rgba(46,196,182,0.45);color:var(--text);font-size:0.75rem;padding:6px 12px;margin:6px 0;display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-sm);'
+        }, `👤 Lead Synced to CRM: ${c.name || 'Caller'} (${c.phone || 'Phone pending'}) • ${c.stage || 'New Lead'}`);
+        transcriptHost.appendChild(crmPill);
+        transcriptHost.scrollTop = transcriptHost.scrollHeight;
+      }
 
       isSpeaking = true;
       setPhase('speaking', 'Agent speaking...');
@@ -3406,7 +3522,7 @@ async function viewTalk(root, customAgent) {
     } catch (err) {
       typingBubble.remove();
       console.warn('Turn error, using conversational resilience:', err.message);
-      const safeReply = 'I understand your request. Let me note that down and ensure our team confirms your booking. What day or time suits you best?';
+      const safeReply = 'Namaste, I have noted your inquiry. Our team will assist you with your booking. What day or time works best for you?';
       addBubble('bot', safeReply);
       convo.push({ role: 'bot', text: safeReply });
       await speakUtterance(safeReply, activeAgent);
@@ -3418,81 +3534,250 @@ async function viewTalk(root, customAgent) {
     }
   }
 
-  // Voice Recognition Setup
-  function startVoiceListening() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast('Speech recognition supported in modern Chrome/Edge browsers.', 'info');
-      return;
-    }
+  // Voice Recognition Setup: Tier 1 Deepgram Nova-3 Stream via /api/stt/stream with resilient browser fallback
+  async function startVoiceListening() {
     stopAllSpeech();
 
-    try {
-      speechRec = new SpeechRecognition();
-      speechRec.continuous = true;
-      speechRec.interimResults = true;
-      speechRec.lang = 'en-IN';
+    // Natural greeting on first start
+    if (convo.length === 0) {
+      const greeting = activeAgent.greeting || "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
+      addBubble('bot', greeting);
+      convo.push({ role: 'bot', text: greeting });
+      isSpeaking = true;
+      setPhase('speaking', 'Ria speaking greeting...');
+      await speakUtterance(greeting, activeAgent);
+      isSpeaking = false;
+    }
 
-      let liveUserBubble = null;
+    let liveUserBubble = null;
+    let silenceTimer = null;
+    let accumulatedFinalText = '';
+    let currentInterimText = '';
 
-      speechRec.onstart = () => {
-        isListening = true;
-        setPhase('listening', 'Listening to your voice...');
-        sessionBtn.classList.add('active');
-        $('.conversation-btn-label', sessionBtn).textContent = 'End Voice Talk';
-      };
+    const commitSpeech = (text) => {
+      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+      let cleaned = (text || accumulatedFinalText || currentInterimText || '').trim();
+      accumulatedFinalText = '';
+      currentInterimText = '';
 
-      speechRec.onresult = (e) => {
-        let interim = '';
-        let final = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const trans = e.results[i][0].transcript;
-          if (e.results[i].isFinal) final += trans;
-          else interim += trans;
-        }
+      // Normalize common phonetic STT hearing errors for Indian speech:
+      // "Mira naam..." -> "Mera naam..."
+      // "Mira name..." -> "Mera naam..."
+      cleaned = cleaned.replace(/^mira\s+(naam|name)\b/i, 'Mera naam');
+      cleaned = cleaned.replace(/\bmira\s+(naam|name)\b/gi, 'mera naam');
 
-        const currentSpoken = (final || interim).trim();
-        if (currentSpoken) {
-          if (!liveUserBubble) {
-            liveUserBubble = el('div', { class: 'bubble user live-transcript', style: 'opacity:.7' }, currentSpoken);
-            transcriptHost.appendChild(liveUserBubble);
-          } else {
-            liveUserBubble.textContent = currentSpoken;
+      if (cleaned && cleaned.length >= 2 && !isThinking && !isSpeaking) {
+        if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
+        runTurn(cleaned);
+      }
+    };
+
+    // Tier 1: Deepgram Nova Live Streaming WebSocket via /api/stt/stream
+    if (window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+
+        const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        dgWs = new WebSocket(`${wsProto}${location.host}/api/stt/stream?lang=${encodeURIComponent(sttLang)}`);
+        dgWs.binaryType = 'arraybuffer';
+
+        dgWs.onopen = () => {
+          isListening = true;
+          setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
+          sessionBtn.classList.add('active');
+          $('.conversation-btn-label', sessionBtn).textContent = 'End Voice Talk';
+        };
+
+        dgWs.onmessage = (event) => {
+          if (typeof event.data !== 'string') return;
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'ProxyReady') {
+              const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+              mediaRec = new MediaRecorder(micStream, mime ? { mimeType: mime } : {});
+              mediaRec.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !isSpeaking) {
+                  dgWs.send(e.data);
+                }
+              };
+              mediaRec.start(250);
+              return;
+            }
+
+            if (isSpeaking) return;
+
+            if (msg.channel && msg.channel.alternatives && msg.channel.alternatives[0]) {
+              const alt = msg.channel.alternatives[0];
+              const transcript = (alt.transcript || '').trim();
+
+              if (transcript) {
+                if (msg.is_final) {
+                  accumulatedFinalText = (accumulatedFinalText + ' ' + transcript).trim();
+                  currentInterimText = '';
+                } else {
+                  currentInterimText = transcript;
+                }
+
+                const displayText = (accumulatedFinalText + ' ' + currentInterimText).trim();
+                if (displayText) {
+                  if (!liveUserBubble) {
+                    liveUserBubble = el('div', { class: 'bubble user live-transcript', style: 'opacity:.7' }, displayText);
+                    transcriptHost.appendChild(liveUserBubble);
+                  } else {
+                    liveUserBubble.textContent = displayText;
+                  }
+                  transcriptHost.scrollTop = transcriptHost.scrollHeight;
+                }
+
+                if (silenceTimer) clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => {
+                  const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
+                  if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking) {
+                    commitSpeech(toCommit);
+                  }
+                }, 1000);
+
+                if (msg.speech_final) {
+                  const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
+                  const wordCount = toCommit.split(/\s+/).filter(Boolean).length;
+                  if (wordCount >= 3 && !isThinking && !isSpeaking) {
+                    commitSpeech(toCommit);
+                  }
+                }
+              }
+            }
+
+            if (msg.type === 'UtteranceEnd') {
+              const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
+              if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking) {
+                commitSpeech(toCommit);
+              }
+            }
+          } catch (_) {}
+        };
+
+        dgWs.onerror = (err) => {
+          console.warn('Deepgram STT stream notice:', err);
+          if (isListening && !mediaRec) startWebSpeechFallback();
+        };
+
+        dgWs.onclose = () => {
+          if (isListening && !mediaRec) startWebSpeechFallback();
+        };
+
+        return;
+      } catch (micErr) {
+        console.warn('Deepgram microphone stream unavailable, falling back:', micErr.message);
+      }
+    }
+
+    // Tier 2: Browser SpeechRecognition Fallback
+    startWebSpeechFallback();
+
+    function startWebSpeechFallback() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        toast('Please enable microphone access or type in the box below.', 'info');
+        return;
+      }
+
+      try {
+        speechRec = new SpeechRecognition();
+        speechRec.continuous = true;
+        speechRec.interimResults = true;
+        speechRec.lang = sttLang === 'hi' ? 'hi-IN' : 'en-IN';
+
+        speechRec.onstart = () => {
+          isListening = true;
+          setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
+          sessionBtn.classList.add('active');
+          $('.conversation-btn-label', sessionBtn).textContent = 'End Voice Talk';
+        };
+
+        speechRec.onresult = (e) => {
+          if (isSpeaking) return;
+
+          let interim = '';
+          let final = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const trans = e.results[i][0].transcript;
+            if (e.results[i].isFinal) final += trans;
+            else interim += trans;
           }
-          transcriptHost.scrollTop = transcriptHost.scrollHeight;
-        }
 
-        if (final && final.trim()) {
-          if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
-          runTurn(final.trim());
-        }
-      };
+          const currentSpoken = (final || interim).trim();
+          if (currentSpoken) {
+            lastSpokenText = currentSpoken;
+            if (!liveUserBubble) {
+              liveUserBubble = el('div', { class: 'bubble user live-transcript', style: 'opacity:.7' }, currentSpoken);
+              transcriptHost.appendChild(liveUserBubble);
+            } else {
+              liveUserBubble.textContent = currentSpoken;
+            }
+            transcriptHost.scrollTop = transcriptHost.scrollHeight;
 
-      speechRec.onerror = (e) => {
-        console.warn('Speech recognition notice:', e.error);
-        if (e.error === 'not-allowed') {
-          toast('Microphone access blocked. Please permit microphone.', 'err');
-          stopVoiceListening();
-        }
-      };
+            if (silenceTimer) clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => {
+              if (lastSpokenText && !isThinking && !isSpeaking) {
+                commitSpeech(lastSpokenText);
+              }
+            }, 1200);
+          }
+        };
 
-      speechRec.onend = () => {
-        if (isListening) {
-          try { speechRec.start(); } catch (_) { }
-        }
-      };
+        speechRec.onerror = (e) => {
+          console.warn('Speech recognition notice:', e.error);
+          if (e.error === 'not-allowed') {
+            toast('Microphone access blocked. Please permit microphone.', 'err');
+            stopVoiceListening();
+          } else if (e.error === 'network') {
+            toast('Browser Speech API network offline. You can also type below.', 'info');
+            stopVoiceListening();
+          }
+        };
 
-      speechRec.start();
-    } catch (err) {
-      toast('Could not start speech recognition: ' + err.message, 'err');
-      stopVoiceListening();
+        speechRec.onend = () => {
+          if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+          if (lastSpokenText && !isThinking && !isSpeaking) {
+            commitSpeech(lastSpokenText);
+          }
+          if (isListening && speechRec) {
+            setTimeout(() => {
+              if (isListening && speechRec) {
+                try { speechRec.start(); } catch (_) {}
+              }
+            }, 250);
+          }
+        };
+
+        speechRec.start();
+      } catch (err) {
+        toast('Speech recognition notice: ' + err.message, 'info');
+        stopVoiceListening();
+      }
     }
   }
 
   function stopVoiceListening() {
     isListening = false;
+    if (mediaRec && mediaRec.state !== 'inactive') {
+      try { mediaRec.stop(); } catch (_) {}
+    }
+    mediaRec = null;
+    if (micStream) {
+      try { micStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+      micStream = null;
+    }
+    if (dgWs) {
+      try { dgWs.close(); } catch (_) {}
+      dgWs = null;
+    }
     if (speechRec) {
-      try { speechRec.stop(); } catch (_) { }
+      try { speechRec.stop(); } catch (_) {}
       speechRec = null;
     }
     sessionBtn.classList.remove('active');
@@ -3590,7 +3875,7 @@ async function viewTalk(root, customAgent) {
   // Assemble Main Panel
   const controlsRow = el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:10px;margin-bottom:14px' }, [
     el('div', { class: 'flex items-center gap-2' }, [sessionBtn, interruptBtn, clearBtn]),
-    el('div', { class: 'flex items-center gap-2' }, [statusPill, timingText])
+    el('div', { class: 'flex items-center gap-2' }, [langSel, statusPill, timingText])
   ]);
 
   const textRow = el('div', { class: 'flex gap-2', style: 'margin-bottom:14px' }, [textInput, sendBtn]);
