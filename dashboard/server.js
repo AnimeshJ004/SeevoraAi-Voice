@@ -27,6 +27,7 @@ const razorpay = require('./lib/razorpay');
 const clerk = require('./lib/clerk');
 const demoLinks = require('./lib/demo-links');
 const wacrm = require('./lib/wacrm');
+const plans = require('./lib/plans');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 const DEFAULT_PROVIDERS = Object.freeze({
@@ -50,38 +51,8 @@ const CREDIT_PACKS = Object.freeze({
   scale: Object.freeze({ amount: '1000.00', currency: 'INR', credits: 100000, productinfo: 'RapidX Voice Scale Credits' }),
 });
 
-const SEEVORA_PLANS = Object.freeze({
-  starter: Object.freeze({
-    id: 'starter',
-    name: 'Starter Plan',
-    amount: '5199.00',
-    amountPaise: 519900,
-    voiceMinutes: 500,
-    activeWorkflows: 3,
-    currency: 'INR',
-    productinfo: 'Seevora Starter Plan - Monthly (500 mins, 3 workflows)',
-  }),
-  growth: Object.freeze({
-    id: 'growth',
-    name: 'Growth Plan (Most Popular)',
-    amount: '10999.00',
-    amountPaise: 1099900,
-    voiceMinutes: 1000,
-    activeWorkflows: 10,
-    currency: 'INR',
-    productinfo: 'Seevora Growth Plan - Monthly (1,000 mins, 10 workflows)',
-  }),
-  business: Object.freeze({
-    id: 'business',
-    name: 'Business Plan',
-    amount: '25999.00',
-    amountPaise: 2599900,
-    voiceMinutes: 2500,
-    activeWorkflows: 30,
-    currency: 'INR',
-    productinfo: 'Seevora Business Plan - Monthly (2,500 mins, 30 workflows)',
-  }),
-});
+const SEEVORA_PLANS = plans.SEEVORA_PLANS;
+
 
 function payuConfig() {
   if (!process.env.PAYU_KEY || !process.env.PAYU_SALT) return null;
@@ -414,11 +385,18 @@ function publicTenant(t) {
   const d = core.db();
   const hasAgents = d.agents && d.agents.some((a) => a.tenantId === t.id);
   const isCompleted = !!t.onboardingCompleted || hasAgents;
+  const usageAndLimits = plans.getTenantUsageAndLimits(d, t.id);
   return {
     id: t.id, name: t.name, slug: t.slug, createdAt: t.createdAt,
-    branding: t.branding, providers: t.providers, plan: t.plan,
+    branding: t.branding, providers: t.providers, plan: t.plan || 'starter',
+    billingInterval: t.billingInterval || 'monthly',
+    planExpiresAt: t.planExpiresAt || null,
+    planStatus: t.planStatus || 'active',
     status: t.status, privacyMode: t.privacyMode,
     onboardingCompleted: isCompleted,
+    limits: usageAndLimits.limits,
+    features: usageAndLimits.features,
+    usage: usageAndLimits.usage,
   };
 }
 function publicAgent(a) {
@@ -584,11 +562,20 @@ async function apiMe(req, res, ctx) {
     'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Pragma': 'no-cache',
   };
-  const cookieHeader = req.headers && req.headers.cookie;
-  if (!cookieHeader || !cookieHeader.includes('rxv_sess=')) {
-    const token = await core.createSession(ctx.user.id, ctx.tenant.id);
-    headers['Set-Cookie'] = core.sessionCookie(token);
+  // Always synchronize session cookie with current user to prevent cross-account cookie residue
+  const token = await core.createSession(ctx.user.id, ctx.tenant.id);
+  headers['Set-Cookie'] = core.sessionCookie(token);
+
+  // Non-blocking metadata sync to Clerk if authenticated with Clerk
+  const clerkUserId = ctx.user.clerkUserId || (ctx.session && ctx.session.clerkUserId);
+  if (clerkUserId && process.env.CLERK_SECRET_KEY) {
+    core.syncClerkMetadataForUser(ctx.user.id, { throttle: true }).catch((err) => {
+      if (err && (!err.message || !err.message.includes('Too many requests'))) {
+        console.warn('apiMe Clerk metadata sync non-fatal error:', err.message);
+      }
+    });
   }
+
   core.send(res, 200, JSON.stringify({
     user: publicUser(ctx.user),
     tenant: publicTenant(ctx.tenant),
@@ -675,6 +662,17 @@ function apiAgentsList(req, res, ctx) {
 }
 
 async function apiAgentsCreate(req, res, ctx) {
+  const wfCheck = plans.checkWorkflowLimit(core.db(), ctx.tenant.id, ctx.user);
+  if (!wfCheck.allowed) {
+    return core.sendJson(res, 403, {
+      error: wfCheck.error,
+      code: wfCheck.code,
+      limit: wfCheck.limit,
+      current: wfCheck.current,
+      requiredPlan: wfCheck.currentPlan === 'starter' ? 'growth' : 'business',
+    });
+  }
+
   const b = ctx.body || {};
   const preset = b.presetId ? core.db().presets.find((p) => p.id === String(b.presetId) && (p.isSystem || p.tenantId === ctx.tenant.id)) : null;
   if (b.presetId && !preset) return core.sendJson(res, 404, { error: 'preset not found', code: 'not_found' });
@@ -1390,8 +1388,29 @@ async function apiTelephonyDial(req, res, ctx) {
     const r = await providers.telephony.dial(b.number, { workflowId });
     // Count the dial attempt against today's usage.
     bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => {});
-    // Auto-sync into WACRM leads & conversation timeline
+    const runId = r.data && (r.data.run_id || r.data.id || r.data.call_id);
+    // Auto-sync into WACRM leads, conversation timeline, and tenant-scoped callRecordings
     core.mutate((d) => {
+      if (runId) {
+        if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+        d.callRecordings.push({
+          id: `rec_${runId}`,
+          tenantId: ctx.tenant.id,
+          dograhRunId: String(runId),
+          phoneNumber: b.number,
+          callerNumber: '+918071582519',
+          calledNumber: b.number,
+          direction: 'outbound',
+          status: 'initiated',
+          durationSeconds: 0,
+          transcript: '',
+          recordingAvailable: false,
+          summary: 'Outbound call initiated',
+          agentName: b.agentName || 'Seevora AI Voice Receptionist',
+          startedAt: new Date().toISOString(),
+          syncedAt: new Date().toISOString(),
+        });
+      }
       wacrm.upsertContact(d, ctx.tenant.id, {
         phone: b.number,
         stage: 'Call Completed',
@@ -1517,7 +1536,9 @@ function apiBillingConfig(req, res) {
       publishableKey: process.env.CLERK_PUBLISHABLE_KEY || null,
       enabled: !!(process.env.CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY),
     },
-    plans: SEEVORA_PLANS,
+    plans: plans.SEEVORA_PLANS,
+    addons: plans.SEEVORA_ADDONS,
+    walletPacks: plans.WALLET_TOPUP_PACKS,
     creditPacks: CREDIT_PACKS,
   });
 }
@@ -1533,21 +1554,46 @@ async function apiRazorpayOrderCreate(req, res, ctx) {
   let description = '';
   let itemType = 'pack';
   let itemId = '';
+  let interval = 'monthly';
 
-  if (b.planId && SEEVORA_PLANS[b.planId]) {
-    const plan = SEEVORA_PLANS[b.planId];
-    amountPaise = plan.amountPaise;
-    credits = plan.amountPaise;
-    description = plan.productinfo;
+  if (b.planId) {
+    const planKey = String(b.planId).toLowerCase();
+    const plan = plans.SEEVORA_PLANS[planKey];
+    if (!plan || plan.quoteOnly) {
+      return core.sendJson(res, 422, { error: `Invalid planId. Must be one of: starter, growth, business`, code: 'bad_plan' });
+    }
+    interval = ['monthly', 'quarterly', 'annual'].includes(b.interval) ? b.interval : 'monthly';
+    const priceObj = plan.prices[interval] || plan.prices.monthly;
+    amountPaise = priceObj.amountPaise;
+    credits = 0; // Subscription plan purchase
+    description = priceObj.productinfo || `${plan.name} Plan (${interval})`;
     itemType = 'plan';
     itemId = plan.id;
+  } else if (b.packId && (plans.WALLET_TOPUP_PACKS[b.packId] || CREDIT_PACKS[b.packId])) {
+    const pack = plans.WALLET_TOPUP_PACKS[b.packId] || CREDIT_PACKS[b.packId];
+    amountPaise = pack.amountPaise || Math.round(Number(pack.amount) * 100);
+    credits = pack.credits || amountPaise;
+    description = pack.description || pack.productinfo || 'Seevora Prepaid Wallet Recharge';
+    itemType = 'pack';
+    itemId = b.packId;
+  } else if (b.customAmount) {
+    // Custom wallet top-up (minimum ₹500 = 50000 paise)
+    const amt = Math.round(Number(b.customAmount));
+    if (!Number.isFinite(amt) || amt < 500) {
+      return core.sendJson(res, 422, { error: 'Minimum prepaid wallet recharge is ₹500', code: 'min_wallet_amount' });
+    }
+    amountPaise = amt * 100;
+    credits = amountPaise;
+    description = `Seevora Prepaid Wallet Recharge (₹${amt})`;
+    itemType = 'pack';
+    itemId = 'custom_topup';
   } else {
-    const packId = String(b.packId || 'starter');
-    const pack = CREDIT_PACKS[packId];
-    if (!pack) return core.sendJson(res, 422, { error: `Invalid packId. Must be one of: ${Object.keys(CREDIT_PACKS).join(', ')} or planId: ${Object.keys(SEEVORA_PLANS).join(', ')}`, code: 'bad_pack' });
-    amountPaise = Math.round(Number(pack.amount) * 100);
-    credits = pack.credits;
-    description = pack.productinfo;
+    // Fall back to default pack
+    const packId = String(b.packId || 'topup_500');
+    const pack = plans.WALLET_TOPUP_PACKS[packId] || CREDIT_PACKS[packId] || plans.WALLET_TOPUP_PACKS.topup_500;
+    amountPaise = pack.amountPaise || Math.round(Number(pack.amount) * 100);
+    credits = pack.credits || amountPaise;
+    description = pack.description || pack.productinfo || 'Seevora Prepaid Wallet Recharge';
     itemType = 'pack';
     itemId = packId;
   }
@@ -1558,6 +1604,7 @@ async function apiRazorpayOrderCreate(req, res, ctx) {
     userId: ctx.user.id,
     itemType,
     itemId,
+    interval: itemType === 'plan' ? interval : undefined,
     clerkUserId: ctx.session.clerkUserId || ctx.user.clerkUserId || '',
   };
 
@@ -1579,6 +1626,7 @@ async function apiRazorpayOrderCreate(req, res, ctx) {
     itemId,
     packId: itemType === 'pack' ? itemId : undefined,
     planId: itemType === 'plan' ? itemId : undefined,
+    billingInterval: itemType === 'plan' ? interval : undefined,
     status: 'created',
     tenantId: ctx.tenant.id,
     userId: ctx.user.id,
@@ -1593,7 +1641,7 @@ async function apiRazorpayOrderCreate(req, res, ctx) {
 
   await core.mutate((d) => {
     d.paymentIntents.push(intent);
-    addAudit(d, ctx, 'billing.razorpay_order.created', 'payment_intent', intent.id, { orderId: order.id, itemType, itemId, amountPaise });
+    addAudit(d, ctx, 'billing.razorpay_order.created', 'payment_intent', intent.id, { orderId: order.id, itemType, itemId, amountPaise, interval });
   });
 
   const checkoutOptions = razorpay.buildCheckoutOptions({
@@ -1647,6 +1695,7 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
   let duplicate = false;
   let entry = null;
   let newBalance = 0;
+  let planUpdated = false;
 
   await core.mutate((mutDb) => {
     const intent = mutDb.paymentIntents.find((x) => x.id === stored.id);
@@ -1657,12 +1706,26 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
       return;
     }
 
-    entry = addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
-      paymentIntentId: intent.id,
-      orderId,
-      paymentId,
-      packId: intent.packId,
-    });
+    if (intent.itemType === 'plan') {
+      // Plan Subscription Activation
+      const tenant = mutDb.tenants.find((t) => t.id === intent.tenantId);
+      if (tenant) {
+        tenant.plan = intent.planId;
+        tenant.billingInterval = intent.billingInterval || 'monthly';
+        const days = intent.billingInterval === 'annual' ? 365 : (intent.billingInterval === 'quarterly' ? 90 : 30);
+        tenant.planExpiresAt = new Date(Date.now() + days * 86400000).toISOString();
+        tenant.planStatus = 'active';
+        planUpdated = true;
+      }
+    } else {
+      // Wallet Credit Recharge
+      entry = addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
+        paymentIntentId: intent.id,
+        orderId,
+        paymentId,
+        packId: intent.packId,
+      });
+    }
 
     intent.status = 'credited';
     intent.paymentId = paymentId;
@@ -1676,10 +1739,10 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
       id: core.genId('aud_'),
       tenantId: intent.tenantId,
       actorUserId: intent.userId,
-      action: 'billing.payment.credited',
-      targetType: 'payment_intent',
-      targetId: intent.id,
-      metadata: { ledgerId: entry ? entry.id : null, provider: 'razorpay', paymentId },
+      action: intent.itemType === 'plan' ? 'billing.plan.subscribed' : 'billing.payment.credited',
+      targetType: intent.itemType === 'plan' ? 'tenant' : 'payment_intent',
+      targetId: intent.itemType === 'plan' ? intent.tenantId : intent.id,
+      metadata: { provider: 'razorpay', paymentId, orderId, planId: intent.planId, interval: intent.billingInterval, credits: intent.credits },
       createdAt: intent.updatedAt,
     });
   });
@@ -1688,13 +1751,17 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
   const clerkUserId = ctx.session.clerkUserId || ctx.user.clerkUserId;
   if (clerkUserId && process.env.CLERK_SECRET_KEY) {
     try {
+      const publicMeta = {
+        credits: newBalance,
+        billingStatus: 'active',
+        lastPaymentAt: new Date().toISOString(),
+      };
+      if (stored.itemType === 'plan') {
+        publicMeta.plan = stored.planId;
+        publicMeta.billingInterval = stored.billingInterval || 'monthly';
+      }
       await clerk.updateClerkMetadata(clerkUserId, {
-        publicMetadata: {
-          plan: stored.packId || 'growth',
-          credits: newBalance,
-          billingStatus: 'active',
-          lastPaymentAt: new Date().toISOString(),
-        },
+        publicMetadata: publicMeta,
       });
     } catch (clerkErr) {
       console.error('Clerk metadata sync error:', clerkErr.message);
@@ -1705,6 +1772,8 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
     ok: true,
     credited: !duplicate,
     duplicate,
+    planUpdated,
+    plan: stored.planId || undefined,
     balancePaise: newBalance,
     paymentId,
   });
@@ -1742,12 +1811,23 @@ async function apiRazorpayWebhook(req, res, rawBody) {
       await core.mutate((mutDb) => {
         const intent = mutDb.paymentIntents.find((x) => x.orderId === orderId);
         if (intent && intent.status !== 'credited') {
-          addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
-            paymentIntentId: intent.id,
-            orderId,
-            paymentId,
-            webhook: true,
-          });
+          if (intent.itemType === 'plan') {
+            const tenant = mutDb.tenants.find((t) => t.id === intent.tenantId);
+            if (tenant) {
+              tenant.plan = intent.planId;
+              tenant.billingInterval = intent.billingInterval || 'monthly';
+              const days = intent.billingInterval === 'annual' ? 365 : (intent.billingInterval === 'quarterly' ? 90 : 30);
+              tenant.planExpiresAt = new Date(Date.now() + days * 86400000).toISOString();
+              tenant.planStatus = 'active';
+            }
+          } else {
+            addLedgerEntry(mutDb, intent.tenantId, intent.credits, 'payment_credit', `razorpay:${paymentId}`, intent.userId, {
+              paymentIntentId: intent.id,
+              orderId,
+              paymentId,
+              webhook: true,
+            });
+          }
           intent.status = 'credited';
           intent.paymentId = paymentId;
           intent.updatedAt = new Date().toISOString();
@@ -1757,6 +1837,117 @@ async function apiRazorpayWebhook(req, res, rawBody) {
   }
 
   core.sendJson(res, 200, { received: true });
+}
+
+async function apiClerkSyncMetadata(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const clerkUserId = ctx.user.clerkUserId || (ctx.session && ctx.session.clerkUserId);
+  if (!clerkUserId) {
+    return core.sendJson(res, 400, { error: 'Current user is not linked to a Clerk account', code: 'no_clerk_account' });
+  }
+  if (!process.env.CLERK_SECRET_KEY) {
+    return core.sendJson(res, 503, { error: 'CLERK_SECRET_KEY is not configured', code: 'clerk_unconfigured' });
+  }
+
+  try {
+    const updated = await core.syncClerkMetadataForUser(ctx.user.id);
+    return core.sendJson(res, 200, {
+      ok: true,
+      clerkUserId,
+      publicMetadata: updated ? updated.publicMetadata : null,
+    });
+  } catch (err) {
+    return core.sendJson(res, 502, { error: `Clerk metadata sync failed: ${err.message}`, code: 'clerk_sync_failed' });
+  }
+}
+
+async function apiClerkWebhook(req, res, rawBody) {
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const verified = clerk.verifySvixWebhook({
+      headers: req.headers,
+      rawBody,
+      webhookSecret,
+    });
+    if (!verified.valid) {
+      return core.sendJson(res, 400, { error: `Invalid Clerk webhook signature: ${verified.reason}`, code: 'invalid_signature' });
+    }
+  }
+
+  let event;
+  try {
+    event = JSON.parse(rawBody);
+  } catch (_) {
+    return core.sendJson(res, 400, { error: 'Invalid JSON payload' });
+  }
+
+  const type = event.type || '';
+  const data = event.data || {};
+  const clerkUserId = data.id;
+
+  if (!clerkUserId) {
+    return core.sendJson(res, 200, { received: true, ignored: 'no_user_id' });
+  }
+
+  if (type === 'user.created' || type === 'user.updated') {
+    const emailObj = (data.email_addresses || []).find((e) => e.id === data.primary_email_address_id) || (data.email_addresses && data.email_addresses[0]);
+    const email = emailObj ? emailObj.email_address : '';
+    const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || (email ? email.split('@')[0] : 'User');
+
+    let targetUserId = null;
+    await core.mutate((mutDb) => {
+      let u = mutDb.users.find((x) => x.clerkUserId === clerkUserId);
+      if (!u && email) {
+        u = mutDb.users.find((x) => x.email && x.email.toLowerCase() === email.toLowerCase());
+      }
+
+      if (u) {
+        u.clerkUserId = clerkUserId;
+        if (fullName && (!u.name || u.name.startsWith('user_'))) u.name = fullName;
+        if (email && (!u.email || u.email.includes('@clerk.user'))) u.email = email;
+        targetUserId = u.id;
+      } else {
+        const tenantId = core.genId('t_');
+        const userId = core.genId('u_');
+        const tenant = {
+          id: tenantId,
+          name: `${fullName}'s Workspace`,
+          slug: `tenant-${tenantId.slice(2)}`,
+          plan: 'starter',
+          status: 'active',
+          onboardingCompleted: false,
+          createdAt: new Date().toISOString(),
+        };
+        const newUser = {
+          id: userId,
+          tenantId,
+          clerkUserId,
+          email: email || `${clerkUserId}@clerk.user`,
+          name: fullName,
+          role: 'owner',
+          status: 'active',
+          onboardingCompleted: false,
+          createdAt: new Date().toISOString(),
+        };
+        mutDb.tenants.push(tenant);
+        mutDb.users.push(newUser);
+        if (!mutDb.wallets.some((w) => w.tenantId === tenantId)) {
+          mutDb.wallets.push({ id: core.genId('wal_'), tenantId, currency: 'INR', balancePaise: 1000, updatedAt: new Date().toISOString() });
+        }
+        targetUserId = userId;
+      }
+    });
+
+    if (targetUserId && process.env.CLERK_SECRET_KEY) {
+      try {
+        await core.syncClerkMetadataForUser(targetUserId);
+      } catch (err) {
+        console.warn('Webhook Clerk sync failed:', err.message);
+      }
+    }
+  }
+
+  core.sendJson(res, 200, { received: true, type });
 }
 
 function apiSupportList(req, res, ctx) {
@@ -2158,7 +2349,7 @@ async function apiTenantUpdate(req, res, ctx) {
 async function apiMemberRole(req, res, ctx) {
   const b = ctx.body || {};
   const role = String(b.role || '');
-  if (!['owner', 'member'].includes(role)) return core.sendJson(res, 422, { error: 'tenant roles are owner or member', code: 'bad_role' });
+  if (!['client', 'admin', 'owner', 'member'].includes(role)) return core.sendJson(res, 422, { error: 'invalid role, must be client or admin', code: 'bad_role' });
   const target = core.db().users.find((u) => u.id === String(b.userId || '') && u.tenantId === ctx.tenant.id);
   if (!target) return core.sendJson(res, 404, { error: 'user not found', code: 'not_found' });
   await core.mutate((d) => { const u = d.users.find((x) => x.id === target.id); u.role = role; addAudit(d, ctx, 'member.role.updated', 'user', u.id, { role }); });
@@ -2296,10 +2487,10 @@ async function apiAdminUserRole(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
   const role = String(b.role || '');
-  if (!['super_admin', 'admin', 'owner', 'member'].includes(role)) return core.sendJson(res, 422, { error: 'invalid role', code: 'bad_role' });
+  if (!['admin', 'client', 'super_admin', 'owner', 'member'].includes(role)) return core.sendJson(res, 422, { error: 'invalid role, must be admin or client', code: 'bad_role' });
   const user = core.db().users.find((u) => u.id === String(b.userId || ''));
   if (!user) return core.sendJson(res, 404, { error: 'user not found', code: 'not_found' });
-  if (user.id === ctx.user.id && role !== 'super_admin') return core.sendJson(res, 409, { error: 'cannot remove your own super admin role', code: 'self_target' });
+  if (user.id === ctx.user.id && role !== 'admin' && role !== 'super_admin') return core.sendJson(res, 409, { error: 'cannot remove your own admin role', code: 'self_target' });
   await core.mutate((d) => { d.users.find((u) => u.id === user.id).role = role; addAudit(d, ctx, 'admin.user.role', 'user', user.id, { role }); });
   core.sendJson(res, 200, { user: publicUser({ ...user, role }) });
 }
@@ -2552,40 +2743,27 @@ async function apiRecordingsList(req, res, ctx) {
     const q = new URL(req.url, 'http://local').searchParams;
     const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
     const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
-    // Fetch fresh data from Dograh and upsert into our db.
-    let freshRuns = [];
-    try {
-      const result = await providers.telephony.fetchRecordings({ limit, offset });
-      freshRuns = result.runs || [];
-    } catch (_) { /* use cached data if Dograh is unreachable */ }
-
-    if (freshRuns.length > 0) {
-      await core.mutate((d) => {
-        if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
-        for (const run of freshRuns) {
-          const normalized = normalizeRun(run, ctx.tenant.id);
-          if (!normalized.dograhRunId) continue;
-          const existing = d.callRecordings.findIndex((r) => r.dograhRunId === normalized.dograhRunId && r.tenantId === ctx.tenant.id);
-          if (existing >= 0) {
-            if (!normalized.transcript && d.callRecordings[existing].transcript) {
-              normalized.transcript = d.callRecordings[existing].transcript;
-            }
-            d.callRecordings[existing] = { ...d.callRecordings[existing], ...normalized };
-          } else {
-            d.callRecordings.push(normalized);
+    // Refresh status and details strictly for this tenant's own recordings
+    const d = core.db();
+    const activeRuns = (d.callRecordings || []).filter(
+      (r) => r.tenantId === ctx.tenant.id && r.dograhRunId && (!r.transcript || r.status === 'initiated' || r.status === 'in_progress')
+    );
+    if (activeRuns.length > 0) {
+      for (const rec of activeRuns.slice(0, 10)) {
+        try {
+          const detail = await providers.telephony.fetchRunDetail(rec.dograhRunId);
+          if (detail) {
+            const updated = normalizeRun(detail, ctx.tenant.id);
+            await core.mutate((mutDb) => {
+              if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
+              const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === rec.dograhRunId && r.tenantId === ctx.tenant.id);
+              if (idx >= 0) {
+                mutDb.callRecordings[idx] = { ...mutDb.callRecordings[idx], ...updated, tenantId: ctx.tenant.id };
+              }
+            });
           }
-          if (normalized.phoneNumber) {
-            try {
-              wacrm.upsertContact(d, ctx.tenant.id, {
-                phone: normalized.phoneNumber,
-                stage: 'Call Completed',
-                tags: [normalized.direction === 'inbound' ? 'inbound-call' : 'outbound-call'],
-                notes: normalized.summary || (normalized.transcript ? normalized.transcript.slice(0, 300) : '')
-              });
-            } catch (_) {}
-          }
-        }
-      });
+        } catch (_) {}
+      }
     }
 
     const all = (core.db().callRecordings || [])
@@ -2723,9 +2901,18 @@ function apiCrmContactsList(req, res, ctx) {
 async function apiCrmContactUpsert(req, res, ctx) {
   const b = ctx.body || {};
   if (!b.phone) return core.sendJson(res, 400, { error: 'Phone number is required', code: 'bad_phone' });
+  const d = core.db();
+  const phone = wacrm.normalizeE164(b.phone);
+  const exists = (d.crmContacts || []).some((c) => c.tenantId === ctx.tenant.id && (c.phone === phone || c.phone === b.phone));
+  if (!exists) {
+    const check = plans.checkContactsLimit(d, ctx.tenant.id, 1, ctx.user);
+    if (!check.allowed) {
+      return core.sendJson(res, 403, { error: check.error, code: check.code, limit: check.limit, current: check.current });
+    }
+  }
   let contact;
-  await core.mutate((d) => {
-    contact = wacrm.upsertContact(d, ctx.tenant.id, b);
+  await core.mutate((mutDb) => {
+    contact = wacrm.upsertContact(mutDb, ctx.tenant.id, b);
   });
   core.sendJson(res, 200, { contact });
 }
@@ -2735,11 +2922,17 @@ async function apiCrmImportContacts(req, res, ctx) {
   const list = Array.isArray(b.contacts) ? b.contacts : [];
   if (!list.length) return core.sendJson(res, 400, { error: 'No contacts provided', code: 'empty_list' });
 
+  const d = core.db();
+  const check = plans.checkContactsLimit(d, ctx.tenant.id, list.length, ctx.user);
+  if (!check.allowed) {
+    return core.sendJson(res, 403, { error: check.error, code: check.code, limit: check.limit, current: check.current });
+  }
+
   const imported = [];
-  await core.mutate((d) => {
+  await core.mutate((mutDb) => {
     for (const item of list) {
       if (item.phone) {
-        imported.push(wacrm.upsertContact(d, ctx.tenant.id, item));
+        imported.push(wacrm.upsertContact(mutDb, ctx.tenant.id, item));
       }
     }
   });
@@ -2940,6 +3133,16 @@ function apiWhatsAppTemplatesList(req, res, ctx) {
 }
 
 async function apiWhatsAppBroadcastCreate(req, res, ctx) {
+  const bcCheck = plans.assertFeatureAllowed(ctx.tenant, 'broadcasts', ctx.user);
+  if (!bcCheck.allowed) {
+    return core.sendJson(res, 403, {
+      error: bcCheck.error,
+      code: bcCheck.code,
+      requiredPlan: bcCheck.requiredPlan,
+      currentPlan: bcCheck.currentPlan,
+    });
+  }
+
   const b = ctx.body || {};
   const name = String(b.name || 'Broadcast ' + new Date().toISOString().slice(0, 10));
   const text = String(b.text || '');
@@ -3619,12 +3822,12 @@ const server = http.createServer(async (req, res) => {
     if (route.startsWith('/api/')) {
       if (!core.rateOk(ip)) return core.sendJson(res, 429, { error: 'rate limited', code: 'rate' });
 
-      const payuInbound = route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return';
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !payuInbound && !requestOriginAllowed(req)) {
+      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/whatsapp/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return';
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !inboundWebhook && !requestOriginAllowed(req)) {
         return core.sendJson(res, 403, { error: 'cross-origin request blocked', code: 'bad_origin' });
       }
       const requestContentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !payuInbound && requestContentType && requestContentType !== 'application/json') {
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !inboundWebhook && requestContentType && requestContentType !== 'application/json') {
         return core.sendJson(res, 415, { error: 'application/json required', code: 'bad_content_type' });
       }
 
@@ -3640,6 +3843,13 @@ const server = http.createServer(async (req, res) => {
         try { rawBody = await readRawBody(req); }
         catch (e) { return core.sendJson(res, 400, { error: e.message, code: 'bad_body' }); }
         return apiRazorpayWebhook(req, res, rawBody);
+      }
+
+      if (route === '/api/clerk/webhook' && req.method === 'POST') {
+        let rawBody;
+        try { rawBody = await readRawBody(req); }
+        catch (e) { return core.sendJson(res, 400, { error: e.message, code: 'bad_body' }); }
+        return apiClerkWebhook(req, res, rawBody);
       }
 
       // ---- Public GET routes ----
@@ -3671,12 +3881,12 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/invoices') return core.requireRole(req, res, 'owner', apiInvoices);
         if (route === '/api/integrations') return core.requireRole(req, res, 'owner', apiIntegrations);
         if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksList);
-        if (route === '/api/admin/overview') return core.requireRole(req, res, 'super_admin', apiAdminOverview);
-        if (route === '/api/admin/tenants') return core.requireRole(req, res, 'super_admin', apiAdminTenants);
-        if (route === '/api/admin/users') return core.requireRole(req, res, 'super_admin', apiAdminUsers);
+        if (route === '/api/admin/overview') return core.requireRole(req, res, 'admin', apiAdminOverview);
+        if (route === '/api/admin/tenants') return core.requireRole(req, res, 'admin', apiAdminTenants);
+        if (route === '/api/admin/users') return core.requireRole(req, res, 'admin', apiAdminUsers);
         if (route === '/api/admin/audit') return core.requireRole(req, res, 'admin', apiAdminAudit);
         if (route === '/api/admin/tickets') return core.requireRole(req, res, 'admin', apiAdminTickets);
-        if (route === '/api/admin/tenant-detail') return core.requireRole(req, res, 'super_admin', apiAdminTenantDetail);
+        if (route === '/api/admin/tenant-detail') return core.requireRole(req, res, 'admin', apiAdminTenantDetail);
         if (route === '/api/admin/payment-events') return core.requireRole(req, res, 'admin', apiAdminPaymentEvents);
         if (route === '/api/hvac/desk') return core.requireAuth(req, res, apiHvacDesk);
         if (route === '/api/hvac/event-types') return core.requireAuth(req, res, apiHvacEventTypes);
@@ -3764,20 +3974,21 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
       if (route === '/api/tenant/update') return core.requireRole(req, res, 'owner', apiTenantUpdate, body);
       if (route === '/api/tenant/onboarding-complete') return core.requireAuth(req, res, apiTenantOnboardingComplete, body);
+      if (route === '/api/clerk/sync-metadata') return core.requireAuth(req, res, apiClerkSyncMetadata, body);
       if (route === '/api/members/role') return core.requireRole(req, res, 'owner', apiMemberRole, body);
       if (route === '/api/invoices') return core.requireRole(req, res, 'admin', apiInvoiceCreate, body);
       if (route === '/api/invoices/status') return core.requireRole(req, res, 'admin', apiInvoiceStatus, body);
       if (route === '/api/integrations/request') return core.requireRole(req, res, 'owner', apiIntegrationRequest, body);
       if (route === '/api/agency/prompt') return core.requireRole(req, res, 'owner', apiAgencyPromptSave, body);
       if (route === '/api/admin/client-approach') return core.requireRole(req, res, 'admin', apiClientApproach, body);
-      if (route === '/api/admin/tenants') return core.requireRole(req, res, 'super_admin', apiAdminTenantCreate, body);
-      if (route === '/api/admin/tenants/status') return core.requireRole(req, res, 'super_admin', apiAdminTenantStatus, body);
-      if (route === '/api/admin/users/status') return core.requireRole(req, res, 'super_admin', apiAdminUserStatus, body);
-      if (route === '/api/admin/users/role') return core.requireRole(req, res, 'super_admin', apiAdminUserRole, body);
+      if (route === '/api/admin/tenants') return core.requireRole(req, res, 'admin', apiAdminTenantCreate, body);
+      if (route === '/api/admin/tenants/status') return core.requireRole(req, res, 'admin', apiAdminTenantStatus, body);
+      if (route === '/api/admin/users/status') return core.requireRole(req, res, 'admin', apiAdminUserStatus, body);
+      if (route === '/api/admin/users/role') return core.requireRole(req, res, 'admin', apiAdminUserRole, body);
       if (route === '/api/admin/wallet/adjust') return core.requireRole(req, res, 'admin', apiAdminWalletAdjust, body);
       if (route === '/api/admin/tickets/reply') return core.requireRole(req, res, 'admin', apiAdminTicketReply, body);
       if (route === '/api/admin/tickets/update') return core.requireRole(req, res, 'admin', apiAdminTicketUpdate, body);
-      if (route === '/api/admin/impersonations') return core.requireRole(req, res, 'super_admin', apiAdminImpersonate, body);
+      if (route === '/api/admin/impersonations') return core.requireRole(req, res, 'admin', apiAdminImpersonate, body);
       if (route === '/api/hvac/jobs') return core.requireAuth(req, res, apiHvacJobSave, body);
       if (route === '/api/hvac/book') return core.requireAuth(req, res, apiHvacBook, body);
       if (route.startsWith('/api/recordings/') && route.endsWith('/transcribe')) return core.requireAuth(req, res, apiRecordingTranscribe, body);
