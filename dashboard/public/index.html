@@ -64,10 +64,11 @@
 
     /* Left: Clerk Auth Mount Column (Clean Light Theme) */
     .auth-column {
-      padding: clamp(32px, 5vw, 56px);
+      padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 48px);
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      align-items: center;
+      justify-content: flex-start;
       background: #FFFFFF;
       min-height: 100vh;
       position: relative;
@@ -77,12 +78,24 @@
       overflow-y: auto;
     }
 
+    .auth-content-inner {
+      width: 100%;
+      max-width: 400px;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
     /* Brand Header */
     .brand-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 20px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0;
     }
 
     .brand-logo {
@@ -132,15 +145,14 @@
       background: #F1F5F9;
       border-radius: 10px;
       padding: 4px;
-      margin-bottom: 20px;
-      max-width: 380px;
       width: 100%;
-      align-self: center;
+      max-width: 400px;
+      margin: 0;
     }
 
     .auth-tab-btn {
       flex: 1;
-      padding: 8px 16px;
+      padding: 9px 16px;
       border-radius: 8px;
       border: none;
       background: transparent;
@@ -167,17 +179,43 @@
     /* Mount Containers */
     #clerk-mount-zone {
       width: 100%;
-      min-height: 480px;
+      max-width: 400px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: flex-start;
+      margin: 0;
     }
 
     .clerk-slot {
       width: 100%;
       display: flex;
       justify-content: center;
+    }
+
+    /* Clerk Native Card Integration (prevent floating overlap) */
+    #clerk-mount-zone .cl-rootBox,
+    #clerk-mount-zone .cl-cardBox,
+    #clerk-mount-zone .cl-signIn-root,
+    #clerk-mount-zone .cl-signUp-root {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin: 0 !important;
+    }
+    #clerk-mount-zone .cl-card {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 16px !important;
+      background: #FFFFFF !important;
+      margin: 0 !important;
+      padding: 24px 22px 20px !important;
+      position: relative !important;
+      top: 0 !important;
+      left: 0 !important;
     }
 
     /* Clerk Loading Spinner */
@@ -188,7 +226,7 @@
       justify-content: center;
       gap: 16px;
       color: var(--ink-dim);
-      padding: 60px 0;
+      padding: 40px 0;
     }
 
     .spinner {
@@ -204,7 +242,36 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Quick Demo Buttons */
+    /* Quick Demo Access */
+    .demo-access-wrap {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .demo-divider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      color: var(--ink-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    .demo-line {
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
     .demo-buttons-row {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -355,42 +422,44 @@
   <main class="auth-wrapper">
     <!-- Left Column: Pure Clerk Auth (Light Theme) -->
     <section class="auth-column" aria-label="Authentication">
-      <!-- Seevora Brand Row -->
-      <div class="brand-row">
-        <div class="brand-logo">
-          <img src="/assets/seevora-logo.png" alt="SeevoraVoice Logo" width="34" height="34" />
-        </div>
-        <span class="brand-name">SeevoraVoice</span>
-      </div>
-
-      <!-- Quick Switch Tabs -->
-      <div class="auth-tabs-wrap" role="tablist">
-        <button id="tabBtnSignIn" class="auth-tab-btn active" type="button" role="tab" aria-selected="true">Sign In</button>
-        <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create Account</button>
-      </div>
-
-      <!-- Mount Zone -->
-      <div id="clerk-mount-zone">
-        <div id="clerk-loader-init" class="clerk-loader">
-          <div class="spinner"></div>
-          <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.01em;">Loading Clerk authentication...</span>
+      <div class="auth-content-inner">
+        <!-- Seevora Brand Row -->
+        <div class="brand-row">
+          <div class="brand-logo">
+            <img src="/assets/seevora-logo.png" alt="SeevoraVoice Logo" width="34" height="34" />
+          </div>
+          <span class="brand-name">SeevoraVoice</span>
         </div>
 
-        <!-- Separate Dedicated Mount Points -->
-        <div id="clerk-sign-in" class="clerk-slot" style="display: none;"></div>
-        <div id="clerk-sign-up" class="clerk-slot" style="display: none;"></div>
-      </div>
-
-      <!-- Quick Demo Login Access -->
-      <div class="demo-access-wrap" style="margin-top: 16px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 400px; color: var(--ink-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;">
-          <div style="flex: 1; height: 1px; background: var(--line);"></div>
-          <span>Quick Demo Access</span>
-          <div style="flex: 1; height: 1px; background: var(--line);"></div>
+        <!-- Quick Switch Tabs -->
+        <div class="auth-tabs-wrap" role="tablist">
+          <button id="tabBtnSignIn" class="auth-tab-btn active" type="button" role="tab" aria-selected="true">Sign In</button>
+          <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create Account</button>
         </div>
-        <div class="demo-buttons-row">
-          <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
-          <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
+
+        <!-- Mount Zone -->
+        <div id="clerk-mount-zone">
+          <div id="clerk-loader-init" class="clerk-loader">
+            <div class="spinner"></div>
+            <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.01em;">Loading Clerk authentication...</span>
+          </div>
+
+          <!-- Dedicated Slots for Sign In and Sign Up (Embedded directly on page, no external redirect) -->
+          <div id="clerk-sign-in-slot" class="clerk-slot"></div>
+          <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
+        </div>
+
+        <!-- Quick Demo Login Access -->
+        <div class="demo-access-wrap">
+          <div class="demo-divider-row">
+            <div class="demo-line"></div>
+            <span>Quick Demo Access</span>
+            <div class="demo-line"></div>
+          </div>
+          <div class="demo-buttons-row">
+            <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
+            <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
+          </div>
         </div>
       </div>
     </section>
@@ -425,55 +494,156 @@
 
       const tabSignIn = document.getElementById('tabBtnSignIn');
       const tabSignUp = document.getElementById('tabBtnSignUp');
-      const signInSlot = document.getElementById('clerk-sign-in');
-      const signUpSlot = document.getElementById('clerk-sign-up');
+      const signInSlot = document.getElementById('clerk-sign-in-slot');
+      const signUpSlot = document.getElementById('clerk-sign-up-slot');
+      const mountZone = document.getElementById('clerk-mount-zone');
       const loader = document.getElementById('clerk-loader-init');
 
-      function isSignUpRoute() {
-        const h = window.location.hash || '';
-        const p = window.location.pathname || '';
-        return h.startsWith('#/sign-up') || h.startsWith('#/signup') || p === '/sign-up' || p === '/signup';
+      let currentTab = 'sign-in';
+      let clerkReady = false;
+      let signUpMounted = false;
+
+      const clerkAppearance = {
+        layout: {
+          socialButtonsVariant: 'iconButton',
+          logoPlacement: 'inside',
+        },
+        variables: {
+          colorPrimary: '#0095FF',
+          colorBackground: '#FFFFFF',
+          colorText: '#0F172A',
+          colorTextSecondary: '#475569',
+          colorInputBackground: '#F8FAFC',
+          colorInputText: '#0F172A',
+          colorNeutral: '#0F172A',
+          borderRadius: '12px',
+        },
+        elements: {
+          card: {
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.04)',
+            border: '1px solid #E2E8F0',
+            borderRadius: '16px',
+            backgroundColor: '#FFFFFF',
+          },
+          rootBox: {
+            width: '100%',
+            maxWidth: '400px',
+            margin: '0',
+          },
+          cardBox: {
+            width: '100%',
+            maxWidth: '400px',
+            margin: '0',
+            boxShadow: 'none',
+            border: 'none',
+          },
+          socialButtonsBlockButton: {
+            borderColor: '#E2E8F0',
+            backgroundColor: '#FFFFFF',
+            color: '#0F172A',
+            '&:hover': {
+              backgroundColor: '#F8FAFC',
+            },
+          },
+          formButtonPrimary: {
+            backgroundColor: '#0095FF',
+            '&:hover': {
+              backgroundColor: '#0080DB',
+            },
+          },
+          formFieldInput: {
+            borderColor: '#E2E8F0',
+            backgroundColor: '#F8FAFC',
+            color: '#0F172A',
+            '&:focus': {
+              borderColor: '#0095FF',
+              backgroundColor: '#FFFFFF',
+            },
+          },
+          footerActionLink: {
+            color: '#0095FF',
+          },
+        },
+      };
+
+      function showSignIn() {
+        currentTab = 'sign-in';
+        tabSignIn.classList.add('active');
+        tabSignIn.setAttribute('aria-selected', 'true');
+        tabSignUp.classList.remove('active');
+        tabSignUp.setAttribute('aria-selected', 'false');
+
+        if (signUpSlot) signUpSlot.style.display = 'none';
+        if (signInSlot) signInSlot.style.display = 'flex';
       }
 
-      function updateActiveView() {
-        const signUpMode = isSignUpRoute();
-        if (signUpMode) {
-          if (signInSlot) signInSlot.style.display = 'none';
-          if (signUpSlot) signUpSlot.style.display = 'flex';
-          tabSignIn.classList.remove('active');
-          tabSignIn.setAttribute('aria-selected', 'false');
-          tabSignUp.classList.add('active');
-          tabSignUp.setAttribute('aria-selected', 'true');
-        } else {
-          if (signInSlot) signInSlot.style.display = 'flex';
-          if (signUpSlot) signUpSlot.style.display = 'none';
-          tabSignIn.classList.add('active');
-          tabSignIn.setAttribute('aria-selected', 'true');
-          tabSignUp.classList.remove('active');
-          tabSignUp.setAttribute('aria-selected', 'false');
+      function showSignUp() {
+        currentTab = 'sign-up';
+        tabSignUp.classList.add('active');
+        tabSignUp.setAttribute('aria-selected', 'true');
+        tabSignIn.classList.remove('active');
+        tabSignIn.setAttribute('aria-selected', 'false');
+
+        if (signInSlot) signInSlot.style.display = 'none';
+        if (signUpSlot) {
+          signUpSlot.style.display = 'flex';
+          if (!signUpMounted && clerkReady && window.Clerk) {
+            signUpMounted = true;
+            window.Clerk.mountSignUp(signUpSlot, {
+              appearance: clerkAppearance,
+              fallbackRedirectUrl: '/app.html',
+              signInUrl: '/#sign-in',
+            });
+          }
         }
       }
 
-      tabSignIn.addEventListener('click', function () {
-        if (window.location.hash !== '#/sign-in') {
-          window.location.hash = '#/sign-in';
-        } else {
-          updateActiveView();
-        }
+      tabSignIn.addEventListener('click', function (e) {
+        e.preventDefault();
+        showSignIn();
       });
 
-      tabSignUp.addEventListener('click', function () {
-        if (window.location.hash !== '#/sign-up') {
-          window.location.hash = '#/sign-up';
-        } else {
-          updateActiveView();
-        }
+      tabSignUp.addEventListener('click', function (e) {
+        e.preventDefault();
+        showSignUp();
       });
 
-      window.addEventListener('hashchange', updateActiveView);
+      // Capture clicks on Clerk internal links to switch tabs seamlessly without navigating away to clerk.accounts.dev
+      if (mountZone) {
+        mountZone.addEventListener('click', function (e) {
+          const anchor = e.target.closest('a');
+          if (!anchor) return;
+          const href = (anchor.getAttribute('href') || '').toLowerCase();
+          const text = (anchor.textContent || '').toLowerCase().trim();
 
+          if (href.includes('sign-up') || text === 'sign up' || text.includes('sign up')) {
+            e.preventDefault();
+            e.stopPropagation();
+            showSignUp();
+          } else if (href.includes('sign-in') || text === 'sign in' || text.includes('sign in')) {
+            e.preventDefault();
+            e.stopPropagation();
+            showSignIn();
+          }
+        }, true);
+      }
+
+      let clerkPollCount = 0;
       async function initClerk() {
         if (!window.Clerk) {
+          clerkPollCount++;
+          if (clerkPollCount > 60) {
+            if (loader) {
+              loader.innerHTML = `
+                <div style="text-align:center;padding:24px;color:#DC2626;background:#FEF2F2;border-radius:12px;border:1px solid #FECACA;max-width:360px;">
+                  <p style="font-weight:600;margin-bottom:6px;">Authentication service unavailable</p>
+                  <p style="font-size:12.5px;color:#64748B;margin-bottom:12px;">Clerk authentication could not be reached. Please check your internet connection.</p>
+                  <button type="button" onclick="location.reload()" style="padding:6px 14px;border-radius:6px;border:1px solid #DC2626;background:#FFFFFF;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">Retry</button>
+                </div>
+              `;
+            }
+            return;
+          }
           setTimeout(initClerk, 150);
           return;
         }
@@ -483,55 +653,7 @@
             ui: {
               ClerkUI: window.__internal_ClerkUICtor,
             },
-            appearance: {
-              layout: {
-                socialButtonsVariant: 'iconButton',
-                logoPlacement: 'inside',
-              },
-              variables: {
-                colorPrimary: '#0095FF',
-                colorBackground: '#FFFFFF',
-                colorText: '#0F172A',
-                colorTextSecondary: '#475569',
-                colorInputBackground: '#F8FAFC',
-                colorInputText: '#0F172A',
-                colorNeutral: '#0F172A',
-                borderRadius: '12px',
-              },
-              elements: {
-                card: {
-                  boxShadow: 'none',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                },
-                socialButtonsBlockButton: {
-                  borderColor: '#E2E8F0',
-                  backgroundColor: '#FFFFFF',
-                  color: '#0F172A',
-                  '&:hover': {
-                    backgroundColor: '#F8FAFC',
-                  },
-                },
-                formButtonPrimary: {
-                  backgroundColor: '#0095FF',
-                  '&:hover': {
-                    backgroundColor: '#0080DB',
-                  },
-                },
-                formFieldInput: {
-                  borderColor: '#E2E8F0',
-                  backgroundColor: '#F8FAFC',
-                  color: '#0F172A',
-                  '&:focus': {
-                    borderColor: '#0095FF',
-                    backgroundColor: '#FFFFFF',
-                  },
-                },
-                footerActionLink: {
-                  color: '#0095FF',
-                },
-              },
-            },
+            appearance: clerkAppearance,
           });
 
           // The starting URL must always show the login page. If a previous Clerk
@@ -549,22 +671,22 @@
           // Hide initial loader
           if (loader) loader.style.display = 'none';
 
-          // Mount SignIn into dedicated signInSlot (routes existing accounts to app)
+          clerkReady = true;
+
+          // Mount SignIn into dedicated visible slot
           window.Clerk.mountSignIn(signInSlot, {
-            routing: 'hash',
-            signUpUrl: '#/sign-up',
+            appearance: clerkAppearance,
             fallbackRedirectUrl: '/app.html',
+            signUpUrl: '/#sign-up',
           });
 
-          // Mount SignUp into dedicated signUpSlot (routes new accounts to app)
-          window.Clerk.mountSignUp(signUpSlot, {
-            routing: 'hash',
-            signInUrl: '#/sign-in',
-            fallbackRedirectUrl: '/app.html',
-          });
-
-          // Show the correct one based on current hash
-          updateActiveView();
+          // Check starting view
+          const p = window.location.pathname || '';
+          if (h.includes('sign-up') || h.includes('signup') || p.includes('sign-up') || p.includes('signup')) {
+            showSignUp();
+          } else {
+            showSignIn();
+          }
 
         } catch (err) {
           console.error('Error initializing Clerk:', err);

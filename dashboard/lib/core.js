@@ -32,7 +32,11 @@ const ROOT = path.join(__dirname, '..');
    Reads ROOT/.env once. Existing process.env wins, so real shell vars override.
    ========================================================================== */
 function loadEnv() {
-  const candidates = [path.join(ROOT, '.env'), path.join(ROOT, '..', '.env')];
+  const candidates = [
+    path.resolve(ROOT, '..', '.env'),      // Project root .env (primary source of truth)
+    path.resolve(process.cwd(), '.env'),   // Current working directory .env
+    path.resolve(ROOT, '.env'),            // dashboard/.env fallback
+  ];
   for (const envFile of candidates) {
     try {
       if (!fs.existsSync(envFile)) continue;

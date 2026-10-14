@@ -61,7 +61,7 @@
         "llm": "groq",
         "telephony": "vobiz"
       },
-      "plan": "client_starter",
+      "plan": "growth",
       "status": "active",
       "privacyMode": "standard"
     },
@@ -457,10 +457,10 @@
       "name": "Animesh Jain",
       "role": "client",
       "status": "active",
-      "clerkRoleCheckedAt": 1791884748512,
+      "clerkRoleCheckedAt": 1791964900431,
       "onboardingCompleted": true,
       "createdAt": "2026-10-13T09:35:32.614Z",
-      "clerkSyncedAt": 1791884749037
+      "clerkSyncedAt": 1791964900958
     },
     {
       "id": "u_8ff90caf9b46f69a",
@@ -470,10 +470,10 @@
       "name": "Animesh Jain",
       "role": "client",
       "status": "active",
-      "clerkRoleCheckedAt": 1791886526252,
+      "clerkRoleCheckedAt": 1791964874426,
       "onboardingCompleted": true,
       "createdAt": "2026-10-13T09:48:33.655Z",
-      "clerkSyncedAt": 1791886081074
+      "clerkSyncedAt": 1791964874879
     },
     {
       "id": "u_247d32421a22f22b",
@@ -3493,6 +3493,176 @@
       "minutes": 36,
       "llmTokens": 26000,
       "costInr": 72.54
+    },
+    {
+      "id": "usg_7b49af6bb42f60df",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_16b82d0ce1e62ba0",
+      "tenantId": "t_4feb1d5f86369faa",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_4567ad7750806ce9",
+      "tenantId": "t_727626099827b74f",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_98ca8905db6b38a8",
+      "tenantId": "t_bde226c83b26fdb3",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_6a5698e1e27094c6",
+      "tenantId": "t_55db3c78d879e389",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_59669fce648f5510",
+      "tenantId": "t_18038962115e5032",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_8582dcccfc58ca31",
+      "tenantId": "t_8aee2a82e53db4dc",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_fa38e40813ae0651",
+      "tenantId": "t_53d0cb6352491b01",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_1de601d74b9ef8f1",
+      "tenantId": "t_5d81dcac99898375",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_d83c28db8095fec0",
+      "tenantId": "t_8bf9b7d0959fade2",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_2253d7335324756e",
+      "tenantId": "t_chaitanya_panwar",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_269e1e5bb82ef7b1",
+      "tenantId": "t_6a65c2445f5f9724",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_3bade4df3f023900",
+      "tenantId": "t_cefc98bfe5a09ae2",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_af18651a8d44b2b9",
+      "tenantId": "t_apex_diag_demo",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_ce1da7d188a9e626",
+      "tenantId": "t_nexus_realty_demo",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_cf8e4075e72245b1",
+      "tenantId": "t_starlight_auto_demo",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_214c7b16a72e4d1c",
+      "tenantId": "t_horizon_law_demo",
+      "day": "2026-10-14",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
     }
   ],
   "sessions": [
