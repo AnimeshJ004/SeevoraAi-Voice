@@ -377,8 +377,10 @@ function ensureCharts() {
    BOOT
    =========================================================================== */
 async function ensureClerkReady() {
+  const hasCookie = typeof document !== 'undefined' && document.cookie && document.cookie.includes('rxv_sess=');
+  const maxWait = hasCookie ? 300 : 2500;
   let waited = 0;
-  while (!window.Clerk && waited < 5000) {
+  while (!window.Clerk && waited < maxWait) {
     await new Promise((r) => setTimeout(r, 100));
     waited += 100;
   }
@@ -4571,9 +4573,10 @@ async function viewInbound(root) {
       const timeStr = dt ? dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
       const chevron = el('span', {
-        style: 'display:inline-block;transition:transform .2s;color:var(--ink-dim);transform:' + (isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'),
+        style: 'display:inline-block;color:var(--ink-dim);transform:' + (isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'),
         html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>'
       });
+
 
       const tr = el('tr', {
         class: 'rec-row-head' + (isExpanded ? ' expanded' : ''),

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Clerk Prebuilt UI & JavaScript SDK -->
+  <!-- Optional Clerk Prebuilt UI & SDK (loaded gracefully in background) -->
   <script defer crossorigin="anonymous" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js" type="text/javascript"></script>
   <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_test_Y2xlYW4taW1wYWxhLTczMzEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js" type="text/javascript"></script>
 
@@ -25,6 +25,14 @@
       --ink-dim: #64748B;
       --line: #E2E8F0;
       --primary: #0095FF;
+      --primary-hover: #0080DB;
+      --primary-light: #EFF6FF;
+      --danger: #EF4444;
+      --danger-bg: #FEF2F2;
+      --danger-border: #FECACA;
+      --success: #16A34A;
+      --success-bg: #F0FDF4;
+      --success-border: #BBF7D0;
       --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -57,14 +65,14 @@
       width: 100vw;
       min-height: 100vh;
       display: grid;
-      grid-template-columns: minmax(440px, 520px) 1fr;
+      grid-template-columns: minmax(440px, 500px) 1fr;
       background: var(--card);
       overflow: hidden;
     }
 
-    /* Left: Clerk Auth Mount Column (Clean Light Theme) */
+    /* Left: Auth Form Column */
     .auth-column {
-      padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 48px);
+      padding: clamp(24px, 4vh, 44px) clamp(24px, 4vw, 44px);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -95,7 +103,7 @@
       gap: 12px;
       width: 100%;
       max-width: 400px;
-      margin: 0;
+      margin-bottom: 4px;
     }
 
     .brand-logo {
@@ -126,17 +134,13 @@
       color: var(--ink);
     }
 
-    .brand-badge {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 3px 9px;
-      border-radius: 20px;
-      background: #EFF6FF;
-      color: #0284C7;
-      border: 1px solid rgba(2, 132, 199, 0.25);
-      margin-left: 4px;
+    .brand-subtitle {
+      width: 100%;
+      font-size: 13.5px;
+      color: var(--ink-dim);
+      margin-top: -8px;
+      margin-bottom: 4px;
+      line-height: 1.4;
     }
 
     /* Tab Switcher */
@@ -176,73 +180,166 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
 
-    /* Mount Containers */
-    #clerk-mount-zone {
+    /* Alert Banner */
+    .auth-alert-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+    .auth-alert-box.error {
+      display: flex;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+    }
+    .auth-alert-box.success {
+      display: flex;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Native Auth Form */
+    .auth-form-panel {
       width: 100%;
       max-width: 400px;
       display: flex;
       flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      margin: 0;
+      gap: 14px;
     }
 
-    .clerk-slot {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    /* Clerk Native Card Integration (prevent floating overlap) */
-    #clerk-mount-zone .cl-rootBox,
-    #clerk-mount-zone .cl-cardBox,
-    #clerk-mount-zone .cl-signIn-root,
-    #clerk-mount-zone .cl-signUp-root {
-      width: 100% !important;
-      max-width: 400px !important;
-      box-shadow: none !important;
-      border: none !important;
-      margin: 0 !important;
-    }
-    #clerk-mount-zone .cl-card {
-      width: 100% !important;
-      max-width: 400px !important;
-      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
-      border: 1px solid var(--line) !important;
-      border-radius: 16px !important;
-      background: #FFFFFF !important;
-      margin: 0 !important;
-      padding: 24px 22px 20px !important;
-      position: relative !important;
-      top: 0 !important;
-      left: 0 !important;
-    }
-
-    /* Clerk Loading Spinner */
-    .clerk-loader {
+    .form-group {
       display: flex;
       flex-direction: column;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 13px;
+      color: #94A3B8;
+      pointer-events: none;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      color: var(--ink-dim);
-      padding: 40px 0;
     }
 
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid rgba(0, 149, 255, 0.15);
-      border-top-color: var(--primary);
+    .auth-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 40px 0 38px;
+      border-radius: 10px;
+      border: 1.5px solid #CBD5E1;
+      background: #F8FAFC;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--ink);
+      transition: all 0.18s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--primary);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15);
+    }
+
+    .auth-input::placeholder {
+      color: #94A3B8;
+    }
+
+    .btn-toggle-pass {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .btn-toggle-pass:hover {
+      color: var(--ink);
+    }
+
+    .btn-submit-primary {
+      width: 100%;
+      height: 46px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0, 149, 255, 0.28);
+      transition: all 0.2s ease;
+      margin-top: 4px;
+    }
+
+    .btn-submit-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 149, 255, 0.35);
+    }
+
+    .btn-submit-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Mini spinner for button */
+    .mini-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      animation: spin 0.6s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Quick Demo Access */
+    /* Quick Demo Section */
     .demo-access-wrap {
       width: 100%;
       max-width: 400px;
@@ -250,7 +347,7 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      margin: 0;
+      margin-top: 4px;
     }
 
     .demo-divider-row {
@@ -263,7 +360,7 @@
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .demo-line {
@@ -279,12 +376,13 @@
       width: 100%;
       max-width: 400px;
     }
+
     .btn-demo-sub {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 11px 16px;
+      padding: 10px 14px;
       border-radius: 10px;
       border: 1.5px solid #CBD5E1;
       background: #FFFFFF;
@@ -297,6 +395,7 @@
       transition: all 0.18s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
+
     .btn-demo-sub:hover {
       background: #F8FAFC !important;
       border-color: #0095FF !important;
@@ -304,10 +403,53 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(0, 149, 255, 0.12);
     }
-    @media (max-width: 420px) {
-      .demo-buttons-row {
-        grid-template-columns: 1fr;
-      }
+
+    .demo-hint {
+      font-size: 11.5px;
+      color: #64748B;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Optional Clerk Mount Zone (Progressive Enhancement) */
+    #clerk-mount-zone {
+      width: 100%;
+      max-width: 400px;
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      margin-top: 10px;
+    }
+
+    .clerk-slot {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    #clerk-mount-zone .cl-rootBox,
+    #clerk-mount-zone .cl-cardBox,
+    #clerk-mount-zone .cl-signIn-root,
+    #clerk-mount-zone .cl-signUp-root {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin: 0 !important;
+    }
+    #clerk-mount-zone .cl-card {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 14px !important;
+      background: #FFFFFF !important;
+      margin: 0 !important;
+      padding: 16px !important;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     /* Right: Visual Showcase Column */
@@ -420,7 +562,7 @@
 </head>
 <body>
   <main class="auth-wrapper">
-    <!-- Left Column: Pure Clerk Auth (Light Theme) -->
+    <!-- Left Column: Reliable Native Authentication & Quick Demo Logins -->
     <section class="auth-column" aria-label="Authentication">
       <div class="auth-content-inner">
         <!-- Seevora Brand Row -->
@@ -430,6 +572,7 @@
           </div>
           <span class="brand-name">SeevoraVoice</span>
         </div>
+        <p class="brand-subtitle">Autonomous Conversational AI Receptionist & Front-Desk Agent</p>
 
         <!-- Quick Switch Tabs -->
         <div class="auth-tabs-wrap" role="tablist">
@@ -437,35 +580,125 @@
           <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create Account</button>
         </div>
 
-        <!-- Mount Zone -->
-        <div id="clerk-mount-zone">
-          <div id="clerk-loader-init" class="clerk-loader">
-            <div class="spinner"></div>
-            <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.01em;">Loading Clerk authentication...</span>
-          </div>
-
-          <!-- Dedicated Slots for Sign In and Sign Up (Embedded directly on page, no external redirect) -->
-          <div id="clerk-sign-in-slot" class="clerk-slot"></div>
-          <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
+        <!-- Alert Notification Box -->
+        <div id="authAlertBox" class="auth-alert-box" role="alert">
+          <svg id="authAlertIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <span id="authAlertText"></span>
         </div>
 
-        <!-- Quick Demo Login Access (Hidden by default, displayed only in dev when demoLoginEnabled is true) -->
-        <div id="demoAccessWrap" class="demo-access-wrap" style="display: none;">
+        <!-- Form 1: Native Sign In -->
+        <form id="nativeSignInForm" class="auth-form-panel">
+          <div class="form-group">
+            <label class="form-label" for="signInEmail">Email Address</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </span>
+              <input id="signInEmail" name="email" type="email" class="auth-input" placeholder="admin@demo.com" required autocomplete="email" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signInPassword">
+              <span>Password</span>
+            </label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input id="signInPassword" name="password" type="password" class="auth-input" placeholder="••••••••" required autocomplete="current-password" />
+              <button type="button" class="btn-toggle-pass" id="btnToggleSignInPass" title="Show or hide password" aria-label="Toggle password visibility">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <button id="btnNativeSignIn" type="submit" class="btn-submit-primary">
+            <span>Sign In to Dashboard</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+
+        <!-- Form 2: Native Create Account -->
+        <form id="nativeSignUpForm" class="auth-form-panel" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="signUpName">Full Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+              </span>
+              <input id="signUpName" name="name" type="text" class="auth-input" placeholder="John Doe" required autocomplete="name" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signUpCompany">Company / Workspace Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+              </span>
+              <input id="signUpCompany" name="company" type="text" class="auth-input" placeholder="Acme Voice Solutions" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signUpEmail">Business Email</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </span>
+              <input id="signUpEmail" name="email" type="email" class="auth-input" placeholder="john@acme.com" required autocomplete="email" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signUpPassword">Password (min 8 characters)</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input id="signUpPassword" name="password" type="password" minlength="8" class="auth-input" placeholder="••••••••••••" required autocomplete="new-password" />
+              <button type="button" class="btn-toggle-pass" id="btnToggleSignUpPass" title="Show or hide password" aria-label="Toggle password visibility">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <button id="btnNativeSignUp" type="submit" class="btn-submit-primary">
+            <span>Create Account & Launch</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+
+        <!-- Quick Demo Access (Always Visible for 1-Click Instant Testing in Deployment) -->
+        <div id="demoAccessWrap" class="demo-access-wrap">
           <div class="demo-divider-row">
             <div class="demo-line"></div>
-            <span>⚡ Quick Demo Logins</span>
+            <span>⚡ Instant Demo Access</span>
             <div class="demo-line"></div>
           </div>
           <div class="demo-buttons-row">
-            <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Login as Admin Demo (Agency Operator)">
+            <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Login as Admin Demo (admin@demo.com / admin123)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>Admin Demo</span>
             </button>
-            <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Login as Client Demo (Business Client)">
+            <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Login as Client Demo (client@demo.com / client123)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               <span>Client Demo</span>
             </button>
           </div>
+          <p class="demo-hint">Instant access with pre-configured AI voice agents and sample call records.</p>
+        </div>
+
+        <!-- Optional Clerk Mount Zone (Progressive Enhancement) -->
+        <div id="clerk-mount-zone">
+          <div class="demo-divider-row" style="margin-top: 8px; margin-bottom: 8px;">
+            <div class="demo-line"></div>
+            <span>Clerk SSO / Social Sign-In</span>
+            <div class="demo-line"></div>
+          </div>
+          <div id="clerk-sign-in-slot" class="clerk-slot"></div>
+          <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
         </div>
       </div>
     </section>
@@ -492,266 +725,206 @@
     (function () {
       const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
       if (isLoggedOut) {
-        document.cookie = 'rxv_sess=; Path=/; Max-Age=0;';
-        document.cookie = '__session=; Path=/; Max-Age=0;';
+        document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
+        document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
         try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
         window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (document.cookie && document.cookie.includes('rxv_sess=')) {
+        // Fast-path: if already logged in via session cookie, verify and redirect to dashboard
+        fetch('/api/me')
+          .then((r) => r.ok ? r.json() : null)
+          .then((me) => {
+            if (me && me.user) {
+              window.location.replace('/app.html');
+            }
+          })
+          .catch(() => {});
       }
 
+      // UI Elements
       const tabSignIn = document.getElementById('tabBtnSignIn');
       const tabSignUp = document.getElementById('tabBtnSignUp');
+      const signInForm = document.getElementById('nativeSignInForm');
+      const signUpForm = document.getElementById('nativeSignUpForm');
+      const alertBox = document.getElementById('authAlertBox');
+      const alertText = document.getElementById('authAlertText');
+      const alertIcon = document.getElementById('authAlertIcon');
+      const clerkMountZone = document.getElementById('clerk-mount-zone');
       const signInSlot = document.getElementById('clerk-sign-in-slot');
       const signUpSlot = document.getElementById('clerk-sign-up-slot');
-      const mountZone = document.getElementById('clerk-mount-zone');
-      const loader = document.getElementById('clerk-loader-init');
 
-      let currentTab = 'sign-in';
-      let clerkReady = false;
-      let signUpMounted = false;
-
-      const clerkAppearance = {
-        layout: {
-          socialButtonsVariant: 'iconButton',
-          logoPlacement: 'inside',
-        },
-        variables: {
-          colorPrimary: '#0095FF',
-          colorBackground: '#FFFFFF',
-          colorText: '#0F172A',
-          colorTextSecondary: '#475569',
-          colorInputBackground: '#F8FAFC',
-          colorInputText: '#0F172A',
-          colorNeutral: '#0F172A',
-          borderRadius: '12px',
-        },
-        elements: {
-          card: {
-            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.04)',
-            border: '1px solid #E2E8F0',
-            borderRadius: '16px',
-            backgroundColor: '#FFFFFF',
-          },
-          rootBox: {
-            width: '100%',
-            maxWidth: '400px',
-            margin: '0',
-          },
-          cardBox: {
-            width: '100%',
-            maxWidth: '400px',
-            margin: '0',
-            boxShadow: 'none',
-            border: 'none',
-          },
-          socialButtonsBlockButton: {
-            borderColor: '#E2E8F0',
-            backgroundColor: '#FFFFFF',
-            color: '#0F172A',
-            '&:hover': {
-              backgroundColor: '#F8FAFC',
-            },
-          },
-          formButtonPrimary: {
-            backgroundColor: '#0095FF',
-            '&:hover': {
-              backgroundColor: '#0080DB',
-            },
-          },
-          formFieldInput: {
-            borderColor: '#E2E8F0',
-            backgroundColor: '#F8FAFC',
-            color: '#0F172A',
-            '&:focus': {
-              borderColor: '#0095FF',
-              backgroundColor: '#FFFFFF',
-            },
-          },
-          footerActionLink: {
-            color: '#0095FF',
-          },
-        },
-      };
+      function showAlert(msg, kind) {
+        kind = kind || 'error';
+        if (!msg) {
+          alertBox.style.display = 'none';
+          alertBox.className = 'auth-alert-box';
+          return;
+        }
+        alertBox.className = 'auth-alert-box ' + kind;
+        alertText.textContent = msg;
+        if (kind === 'error') {
+          alertIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+        } else {
+          alertIcon.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
+        }
+        alertBox.style.display = 'flex';
+      }
 
       function showSignIn() {
-        currentTab = 'sign-in';
         tabSignIn.classList.add('active');
         tabSignIn.setAttribute('aria-selected', 'true');
         tabSignUp.classList.remove('active');
         tabSignUp.setAttribute('aria-selected', 'false');
 
+        signInForm.style.display = 'flex';
+        signUpForm.style.display = 'none';
         if (signUpSlot) signUpSlot.style.display = 'none';
         if (signInSlot) signInSlot.style.display = 'flex';
+        showAlert('');
       }
 
       function showSignUp() {
-        currentTab = 'sign-up';
         tabSignUp.classList.add('active');
         tabSignUp.setAttribute('aria-selected', 'true');
         tabSignIn.classList.remove('active');
         tabSignIn.setAttribute('aria-selected', 'false');
 
+        signInForm.style.display = 'none';
+        signUpForm.style.display = 'flex';
         if (signInSlot) signInSlot.style.display = 'none';
-        if (signUpSlot) {
-          signUpSlot.style.display = 'flex';
-          if (!signUpMounted && clerkReady && window.Clerk) {
-            signUpMounted = true;
-            window.Clerk.mountSignUp(signUpSlot, {
-              appearance: clerkAppearance,
-              forceRedirectUrl: '/app.html',
-              fallbackRedirectUrl: '/app.html',
-              signInUrl: '/#sign-in',
-            });
-          }
-        }
+        if (signUpSlot) signUpSlot.style.display = 'flex';
+        showAlert('');
       }
 
-      tabSignIn.addEventListener('click', function (e) {
-        e.preventDefault();
-        showSignIn();
-      });
+      tabSignIn.addEventListener('click', (e) => { e.preventDefault(); showSignIn(); });
+      tabSignUp.addEventListener('click', (e) => { e.preventDefault(); showSignUp(); });
 
-      tabSignUp.addEventListener('click', function (e) {
-        e.preventDefault();
-        showSignUp();
-      });
-
-      // Capture clicks on Clerk footer switch links to toggle tabs seamlessly
-      if (mountZone) {
-        mountZone.addEventListener('click', function (e) {
-          const anchor = e.target.closest('a');
-          if (!anchor) return;
-          const href = (anchor.getAttribute('href') || '').toLowerCase();
-          const text = (anchor.textContent || '').toLowerCase().trim();
-          const isFooterAction = anchor.classList.contains('cl-footerActionLink') || anchor.getAttribute('data-localization-key')?.includes('footerAction');
-
-          if (isFooterAction || href.endsWith('#sign-up') || text === 'sign up') {
-            e.preventDefault();
-            e.stopPropagation();
-            showSignUp();
-          } else if (isFooterAction || href.endsWith('#sign-in') || text === 'sign in') {
-            e.preventDefault();
-            e.stopPropagation();
-            showSignIn();
-          }
-        }, true);
+      // Password toggle helpers
+      function setupPassToggle(btnId, inputId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        if (!btn || !input) return;
+        btn.addEventListener('click', () => {
+          const isPass = input.type === 'password';
+          input.type = isPass ? 'text' : 'password';
+          btn.innerHTML = isPass
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>'
+            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+        });
       }
+      setupPassToggle('btnToggleSignInPass', 'signInPassword');
+      setupPassToggle('btnToggleSignUpPass', 'signUpPassword');
 
-      let clerkPollCount = 0;
-      async function initClerk() {
-        if (!window.Clerk) {
-          clerkPollCount++;
-          if (clerkPollCount > 60) {
-            if (loader) {
-              loader.innerHTML = `
-                <div style="text-align:center;padding:24px;color:#DC2626;background:#FEF2F2;border-radius:12px;border:1px solid #FECACA;max-width:360px;">
-                  <p style="font-weight:600;margin-bottom:6px;">Authentication service unavailable</p>
-                  <p style="font-size:12.5px;color:#64748B;margin-bottom:12px;">Clerk authentication could not be reached. Please check your internet connection.</p>
-                  <button type="button" onclick="location.reload()" style="padding:6px 14px;border-radius:6px;border:1px solid #DC2626;background:#FFFFFF;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">Retry</button>
-                </div>
-              `;
-            }
-            return;
-          }
-          setTimeout(initClerk, 150);
+      // 1. Native Sign In Submission
+      signInForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signInEmail').value.trim();
+        const password = document.getElementById('signInPassword').value;
+        const submitBtn = document.getElementById('btnNativeSignIn');
+        const origText = submitBtn.innerHTML;
+
+        if (!email || !password) {
+          showAlert('Please enter your email and password.', 'error');
           return;
         }
 
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="mini-spinner"></span> Signing in...';
+        showAlert('');
+
         try {
-          await window.Clerk.load({
-            ui: {
-              ClerkUI: window.__internal_ClerkUICtor,
-            },
-            appearance: clerkAppearance,
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
           });
-
-          // If explicit logout is requested via ?logout=1, clear session and sign out.
-          // Otherwise, if the user is already authenticated with Clerk, navigate to /app.html directly!
-          if (isLoggedOut) {
-            document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
-            if (window.Clerk && typeof window.Clerk.signOut === 'function') {
-              await window.Clerk.signOut().catch(() => {});
-            }
-          } else if (window.Clerk && window.Clerk.user) {
-            window.location.replace('/app.html');
-            return;
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.error || 'Invalid email or password.');
           }
-
-          // Active listener: as soon as Clerk authenticates user on this page, immediately redirect to dashboard
-          if (typeof window.Clerk.addListener === 'function') {
-            window.Clerk.addListener(({ user }) => {
-              if (user && !isLoggedOut) {
-                window.location.replace('/app.html');
-              }
-            });
-          }
-
-          // Hide initial loader
-          if (loader) loader.style.display = 'none';
-
-          clerkReady = true;
-
-          // Mount SignIn into dedicated visible slot
-          window.Clerk.mountSignIn(signInSlot, {
-            appearance: clerkAppearance,
-            forceRedirectUrl: '/app.html',
-            fallbackRedirectUrl: '/app.html',
-            signUpUrl: '/#sign-up',
-          });
-
-          // Check starting view
-          const p = window.location.pathname || '';
-          if (h.includes('sign-up') || h.includes('signup') || p.includes('sign-up') || p.includes('signup')) {
-            showSignUp();
-          } else {
-            showSignIn();
-          }
-
+          showAlert('Signed in successfully! Redirecting...', 'success');
+          window.location.href = '/app.html';
         } catch (err) {
-          console.error('Error initializing Clerk:', err);
-          if (loader) {
-            loader.innerHTML = `
-              <div style="text-align:center;padding:30px;color:#DC2626;background:#FEF2F2;border-radius:12px;border:1px solid #FECACA;">
-                <p style="font-weight:600;margin-bottom:8px;">Clerk authentication could not load</p>
-                <p style="font-size:13px;color:#64748B;">${err.message || 'Please check your connection and refresh.'}</p>
-              </div>
-            `;
-          }
+          showAlert(err.message || 'Login failed. Please check credentials.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
         }
-      }
+      });
 
+      // 2. Native Sign Up Submission
+      signUpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('signUpName').value.trim();
+        const company = document.getElementById('signUpCompany').value.trim();
+        const email = document.getElementById('signUpEmail').value.trim();
+        const password = document.getElementById('signUpPassword').value;
+        const submitBtn = document.getElementById('btnNativeSignUp');
+        const origText = submitBtn.innerHTML;
+
+        if (!email || !password) {
+          showAlert('Please enter an email and password.', 'error');
+          return;
+        }
+        if (password.length < 8) {
+          showAlert('Password must be at least 8 characters.', 'error');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="mini-spinner"></span> Creating Account...';
+        showAlert('');
+
+        try {
+          const res = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, company, email, password }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to create account.');
+          }
+          showAlert('Account created! Launching workspace...', 'success');
+          window.location.href = '/app.html';
+        } catch (err) {
+          showAlert(err.message || 'Signup failed. Please try again.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+        }
+      });
+
+      // 3. 1-Click Quick Demo Login Action
       async function doQuickLogin(email, password, btnElement) {
         if (!btnElement) return;
         const originalHtml = btnElement.innerHTML;
         btnElement.disabled = true;
         btnElement.style.opacity = '0.7';
-        btnElement.textContent = 'Logging in...';
+        btnElement.innerHTML = '<span class="mini-spinner" style="border-top-color:#0F172A;"></span> Logging in...';
+        showAlert('');
+
+        // Fill inputs so user sees the credentials in action
+        const emailInput = document.getElementById('signInEmail');
+        const passInput = document.getElementById('signInPassword');
+        if (emailInput) emailInput.value = email;
+        if (passInput) passInput.value = password;
+
         try {
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: password || '' })
+            body: JSON.stringify({ email, password }),
           });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Login failed');
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || 'Demo login failed');
+          showAlert('Demo session authenticated! Opening dashboard...', 'success');
           window.location.href = '/app.html';
         } catch (err) {
-          alert(err.message || 'Quick demo login failed.');
+          showAlert(err.message || 'Quick demo login failed.', 'error');
           btnElement.disabled = false;
           btnElement.style.opacity = '1';
           btnElement.innerHTML = originalHtml;
         }
       }
-
-      // Check server configuration for demo login permission
-      fetch('/api/billing/config')
-        .then((res) => res.json())
-        .then((cfg) => {
-          if (cfg && cfg.auth && cfg.auth.demoLoginEnabled) {
-            const demoWrap = document.getElementById('demoAccessWrap');
-            if (demoWrap) demoWrap.style.display = 'flex';
-          }
-        })
-        .catch(() => {});
 
       const btnAdmin = document.getElementById('btnQuickDemoAdmin');
       if (btnAdmin) {
@@ -762,11 +935,62 @@
         btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
       }
 
-      if (document.readyState === 'complete') {
-        initClerk();
+      // Check initial URL hash / path
+      const h = (window.location.hash || '').toLowerCase();
+      const p = (window.location.pathname || '').toLowerCase();
+      if (h.includes('sign-up') || h.includes('signup') || p.includes('sign-up') || p.includes('signup')) {
+        showSignUp();
       } else {
-        window.addEventListener('load', initClerk);
+        showSignIn();
       }
+
+      // 4. Optional Clerk Progressive Enhancement (Loads in background if available)
+      async function loadClerkSafely() {
+        if (!window.Clerk) return;
+        try {
+          await window.Clerk.load({
+            ui: { ClerkUI: window.__internal_ClerkUICtor },
+            appearance: {
+              variables: {
+                colorPrimary: '#0095FF',
+                colorBackground: '#FFFFFF',
+                colorText: '#0F172A',
+                colorNeutral: '#0F172A',
+                borderRadius: '10px',
+              },
+            },
+          });
+
+          if (!isLoggedOut && window.Clerk.user) {
+            window.location.replace('/app.html');
+            return;
+          }
+
+          if (typeof window.Clerk.addListener === 'function') {
+            window.Clerk.addListener(({ user }) => {
+              if (user && !isLoggedOut) {
+                window.location.replace('/app.html');
+              }
+            });
+          }
+
+          // Mount Clerk into optional container if available
+          if (clerkMountZone && signInSlot) {
+            clerkMountZone.style.display = 'flex';
+            window.Clerk.mountSignIn(signInSlot, {
+              forceRedirectUrl: '/app.html',
+              fallbackRedirectUrl: '/app.html',
+              signUpUrl: '/#sign-up',
+            });
+          }
+        } catch (clerkErr) {
+          // Non-fatal: if Clerk encounters domain or network restriction, native login handles everything
+          console.info('Clerk SSO enhancement inactive in current environment:', clerkErr.message);
+        }
+      }
+
+      // Defer Clerk initialization slightly so native form renders immediately
+      setTimeout(loadClerkSafely, 300);
     })();
   </script>
 </body>

@@ -102,16 +102,26 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  background-color: #DCE9F6;
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Zero-cost fixed ambient background layer — NEVER causes scroll repaint */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background:
     radial-gradient(ellipse 1100px 750px at 85% -5%, rgba(167, 243, 208, 0.40) 0%, transparent 65%),
     radial-gradient(ellipse 900px 600px at 0% 100%, rgba(186, 230, 253, 0.55) 0%, transparent 60%),
     radial-gradient(ellipse 800px 500px at 50% 50%, rgba(240, 249, 255, 0.45) 0%, transparent 70%),
     linear-gradient(155deg, #DCE9F6 0%, #E7F1F8 40%, #DBE7F4 100%);
-  background-attachment: fixed;
-  color: var(--ink);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
 }
 
 /* Atmosphere orbs */
@@ -169,9 +179,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   align-items: stretch;
   padding: 20px 14px;
-  background: rgba(255, 255, 255, 0.40);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(245, 250, 255, 0.96);
   border-right: 1px solid rgba(203, 213, 225, 0.55);
   position: sticky;
   top: 0;
@@ -435,7 +443,7 @@ h1, h2, h3, h4, h5, h6 {
 .main {
   grid-area: main;
   padding: 4px 28px 36px;
-  overflow-y: auto;
+  min-width: 0;
 }
 
 /* Full-page workspace layout for Assistant & full-bleed views */
@@ -471,18 +479,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .view {
-  animation: fadeUp 0.22s ease both;
+  animation: fadeUp 0.18s ease forwards;
   background: transparent !important;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ==========================================================================
@@ -539,7 +542,6 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(255,255,255,0.85) !important;
   border: 1px solid var(--line-2) !important;
   color: var(--ink-soft) !important;
-  backdrop-filter: blur(8px);
 }
 
 .btn-ghost:hover {
@@ -592,20 +594,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
-   INPUTS (Translucent Glassmorphic Form Fields)
+   INPUTS (Form Fields — Solid Clean Background, NO backdrop-filter)
    ========================================================================== */
 .input, .textarea, .select, input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
-  background: rgba(255, 255, 255, 0.48) !important;
-  backdrop-filter: blur(14px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: rgba(255, 255, 255, 0.90) !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  border-top: 1.5px solid rgba(220, 235, 250, 0.95) !important;
   border-radius: 12px !important;
   padding: 10px 14px !important;
   font-size: 0.88rem !important;
   color: #0F172A !important;
   box-shadow: inset 0 1px 3px rgba(15, 45, 90, 0.04), 0 2px 6px rgba(15, 45, 90, 0.02) !important;
-  transition: all 0.2s ease !important;
   font-family: var(--font) !important;
 }
 
@@ -631,20 +630,17 @@ select option {
    CARDS (Translucent Glassmorphic Matching Background)
    ========================================================================== */
 .card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(24px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
   border-radius: 22px !important;
-  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.05), 0 2px 8px rgba(15, 45, 90, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.06), 0 2px 8px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   padding: 22px !important;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  /* NO backdrop-filter — causes repaint on hover/scroll causing flicker */
 }
 
 .card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(160, 200, 240, 0.85) !important;
   box-shadow: 0 16px 40px -6px rgba(0, 149, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
@@ -652,35 +648,29 @@ select option {
 .campaign-stat-box,
 .stat-card,
 .rec-stat-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(20px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #E8F3FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.65) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.9) !important;
   border-radius: 18px !important;
   padding: 16px 20px !important;
-  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  /* NO backdrop-filter — causes scroll flicker */
 }
 
 .campaign-stat-box:hover,
 .stat-card:hover,
 .rec-stat-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(225, 240, 255, 0.52) 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 14px 32px -4px rgba(0, 149, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 14px 32px -4px rgba(0, 149, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(160, 200, 240, 0.85) !important;
 }
 
 /* Dropzone & Import Area */
 .dropzone-box {
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: #F0F7FF !important;
   border: 2px dashed rgba(0, 149, 255, 0.35) !important;
   border-radius: 18px !important;
   padding: 36px 24px !important;
-  transition: all 0.22s ease !important;
+  /* NO backdrop-filter — causes scroll flicker */
 }
 
 .dropzone-box:hover {
@@ -691,14 +681,13 @@ select option {
 /* Table Card & Container */
 .rec-card-table,
 .table-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.60) 0%, rgba(230, 243, 255, 0.40) 100%) !important;
-  backdrop-filter: blur(24px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: #FAFCFF !important;
+  border: 1px solid rgba(186, 214, 242, 0.6) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.85) !important;
   border-radius: 20px !important;
-  box-shadow: 0 10px 32px -4px rgba(15, 45, 90, 0.05) !important;
+  box-shadow: 0 8px 28px -4px rgba(15, 45, 90, 0.05) !important;
   overflow: hidden !important;
+  /* NO backdrop-filter — causes scroll/hover flicker in table */
 }
 
 /* ==========================================================================
@@ -735,10 +724,8 @@ select option {
   font-weight: 600 !important;
   font-size: 0.74rem !important;
   padding: 3px 10px !important;
-  background: rgba(241, 245, 249, 0.75) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  background: #F1F5F9 !important;
+  border: 1px solid #CBD5E1 !important;
   color: #475569 !important;
 }
 
@@ -749,7 +736,7 @@ select option {
 }
 
 .pill.inprogress {
-  background: rgba(239, 246, 255, 0.85) !important;
+  background: rgba(239, 246, 255, 0.95) !important;
   border-color: #BFDBFE !important;
   color: #0369A1 !important;
 }
@@ -758,11 +745,9 @@ select option {
    VOICE CALL STAGE (Talk to Agent)
    ========================================================================== */
 .voice-call-stage {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.60) 0%, rgba(230, 243, 255, 0.40) 100%) !important;
-  backdrop-filter: blur(24px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
   border-radius: 24px !important;
   box-shadow: 0 12px 36px -6px rgba(15, 45, 90, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
   padding: 28px 20px !important;
@@ -955,11 +940,9 @@ select option {
 
 /* Frosted Bento Cards */
 .sv-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(28px) saturate(1.25);
-  -webkit-backdrop-filter: blur(28px) saturate(1.25);
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
   border-radius: 24px;
   padding: 22px;
   box-shadow: 0 10px 32px -6px rgba(15, 45, 90, 0.05), 0 1px 3px rgba(15, 45, 90, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.85);
@@ -967,14 +950,11 @@ select option {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sv-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
-  transform: translateY(-2px);
+  border-color: rgba(160, 200, 240, 0.85) !important;
   box-shadow: 0 18px 45px -8px rgba(15, 45, 90, 0.09), 0 2px 6px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  border-color: rgba(255, 255, 255, 0.98) !important;
 }
 
 /* Hero card with smooth ambient gradient */
@@ -1547,21 +1527,17 @@ select option {
   display: flex;
   align-items: center;
   gap: 11px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(16px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
   border-radius: 16px !important;
   padding: 12px 14px !important;
   margin-bottom: 14px !important;
   box-shadow: 0 4px 14px -2px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
-  transition: all 0.2s ease !important;
 }
 
 .sv-contact-pill:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(160, 200, 240, 0.9) !important;
 }
 
 .sv-contact-av {
@@ -1607,29 +1583,23 @@ select option {
 .sv-change-btn:hover { color: #047857; text-decoration: underline; }
 
 .sv-input-box {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(16px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
   border-radius: 16px !important;
   padding: 14px 16px !important;
   margin-bottom: 14px !important;
   box-shadow: 0 4px 14px -2px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
-  transition: all 0.2s ease !important;
 }
 
 .sv-input-box:focus-within {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(225, 240, 255, 0.55) 100%) !important;
   border-color: rgba(0, 149, 255, 0.6) !important;
   box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .sv-country-pill {
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  background: #F1F5F9 !important;
+  border: 1px solid #CBD5E1 !important;
   border-radius: 99px !important;
   padding: 3px 10px !important;
   font-size: 0.72rem !important;
@@ -2135,7 +2105,6 @@ tr:hover td { background: #F8FAFC; }
 .pricing-plan-card,
 .ticket-message,
 .support-compose,
-.rec-toolbar,
 .agent-card,
 .agent-form-box,
 .campaign-dialer-card,
@@ -2148,39 +2117,36 @@ tr:hover td { background: #F8FAFC; }
 .profile-card,
 .stage-col,
 .ticket-layout .card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
-  backdrop-filter: blur(20px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.82) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EBF4FF 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
 }
 
 .wacrm-pipeline-col-header {
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.75) !important;
+  background: #EEF4FA !important;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.75) !important;
 }
 
 .wacrm-deal-card:hover,
 .pricing-plan-card:hover,
 .meter-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(160, 200, 240, 0.85) !important;
   box-shadow: 0 14px 34px -4px rgba(0, 149, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .rec-toolbar {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
   border-radius: 16px !important;
   padding: 12px 16px !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 45, 90, 0.04) !important;
 }
 
 .rec-filter-select {
-  background: rgba(255, 255, 255, 0.48) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.80) !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
   border-radius: 12px !important;
   color: #0F172A !important;
+  padding: 8px 12px !important;
 }

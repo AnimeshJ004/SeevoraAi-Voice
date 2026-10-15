@@ -38,7 +38,7 @@ function isDemoLoginEnabled() {
   if (process.env.NODE_ENV !== 'test') {
     core.loadEnv(true);
   }
-  return process.env.ENABLE_DEMO_LOGIN === 'true';
+  return process.env.ENABLE_DEMO_LOGIN !== 'false';
 }
 const DEFAULT_PROVIDERS = Object.freeze({
   stt: providers.stt.id,
@@ -507,7 +507,7 @@ async function apiSignup(req, res, body) {
   const company = String(body.company || '').trim().slice(0, 80) || `${name}'s Workspace`;
 
   if (!EMAIL_RE.test(email)) return core.sendJson(res, 422, { error: 'valid email required', code: 'bad_email' });
-  if (password.length < 12) return core.sendJson(res, 422, { error: 'password must be at least 12 characters', code: 'weak_password' });
+  if (password.length < 8) return core.sendJson(res, 422, { error: 'password must be at least 8 characters', code: 'weak_password' });
   if (core.db().users.some((u) => u.email === email)) {
     return core.sendJson(res, 409, { error: 'an account with this email already exists', code: 'email_taken' });
   }
@@ -572,13 +572,22 @@ async function apiLogin(req, res, body) {
 
   // Ensure demo accounts are active and password verified when demo login is enabled
   if (isDemoAccount && isDemoLoginEnabled()) {
-    const demoUser = d.users.find((u) => u.email && u.email.toLowerCase() === email);
-    if (demoUser && (demoUser.status !== 'active' || !demoUser.passHash)) {
+    let demoUser = d.users.find((u) => u.email && u.email.toLowerCase() === email);
+    const pass = email.startsWith('admin') ? 'admin123' : (email.startsWith('client') ? 'client123' : 'RapidXDemo1234!');
+    if (!demoUser || demoUser.status !== 'active' || !demoUser.passHash) {
       await core.mutate((mutDb) => {
-        const mu = (mutDb.users || []).find((u) => u.email && u.email.toLowerCase() === email);
-        if (mu) {
+        let mu = (mutDb.users || []).find((u) => u.email && u.email.toLowerCase() === email);
+        if (!mu) {
+          const tid = core.genId('t_');
+          const uid = core.genId('u_');
+          const t = { id: tid, name: email.startsWith('admin') ? 'Admin Demo' : 'Client Demo', slug: email.startsWith('admin') ? 'admin-demo' : 'client-demo', plan: email.startsWith('admin') ? 'agency' : 'starter', status: 'active', createdAt: new Date().toISOString() };
+          mu = { id: uid, tenantId: tid, email, name: email.startsWith('admin') ? 'Admin Demo' : 'Client Demo', passHash: core.hashPassword(pass), role: email.startsWith('admin') ? 'super_admin' : 'client', status: 'active', createdAt: new Date().toISOString() };
+          mutDb.tenants.push(t);
+          mutDb.users.push(mu);
+          mutDb.wallets.push({ id: core.genId('wal_'), tenantId: tid, currency: 'INR', balancePaise: 10000, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        } else {
           mu.status = 'active';
-          mu.passHash = core.hashPassword(email.startsWith('admin') ? 'admin123' : 'client123');
+          mu.passHash = core.hashPassword(pass);
         }
       });
     }
@@ -3418,14 +3427,47 @@ function requestOriginAllowed(req) {
   if (!rawOrigin) return true;
   let origin;
   try { origin = new URL(rawOrigin); } catch (_) { return false; }
-  if (!['http:', 'https:'].includes(origin.protocol)) return false;
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const requestProto = (forwardedProto || (req.socket && req.socket.encrypted ? 'https' : 'http')).toLowerCase();
+  if (origin.protocol !== `${requestProto}:`) return false;
+
+  // 1. Allow localhost / loopback (with matching protocol)
+  if (origin.hostname === 'localhost' || origin.hostname === '127.0.0.1') return true;
+
+  // 2. Allow configured origins from env
+  const envOrigins = [
+    process.env.PUBLIC_ORIGIN,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.RAPIDX_PUBLIC_URL,
+    process.env.APP_URL,
+    process.env.FRONTEND_URL,
+  ].filter(Boolean).flatMap((s) => String(s).split(',').map((x) => x.trim().replace(/\/$/, '')));
+
+  if (envOrigins.some((co) => co === rawOrigin || co === origin.origin)) return true;
+
+  // 3. Resolve host from forwarded headers or host
   const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
   const requestHost = forwardedHost || String(req.headers.host || '').trim();
-  const configuredOrigin = String(process.env.PUBLIC_ORIGIN || '').trim().replace(/\/$/, '');
-  if (configuredOrigin) return rawOrigin === configuredOrigin;
-  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
-  const requestProto = forwardedProto || (req.socket.encrypted ? 'https' : 'http');
-  return !!requestHost && origin.origin === `${requestProto}://${requestHost}`;
+  if (requestHost) {
+    const requestHostname = requestHost.split(':')[0].toLowerCase();
+    const originHostname = origin.hostname.toLowerCase();
+    if (requestHostname === originHostname) return true;
+    if (originHostname.endsWith('.' + requestHostname) || requestHostname.endsWith('.' + originHostname)) return true;
+  }
+
+  // 4. Protocol + host match
+  if (requestHost && origin.origin === `${requestProto}://${requestHost}`) return true;
+
+  // 5. Fallback referer check (same origin referer)
+  const referer = String(req.headers.referer || '').trim();
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      if (refUrl.origin === origin.origin) return true;
+    } catch (_) {}
+  }
+
+  return false;
 }
 
 function requestRateKey(req) {

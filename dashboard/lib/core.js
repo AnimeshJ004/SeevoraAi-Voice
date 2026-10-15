@@ -379,15 +379,25 @@ async function createImpersonationSession(actorUserId, targetUserId, targetTenan
 // Build the Set-Cookie header value for a fresh session.
 function sessionCookie(token, req) {
   const maxAge = Math.floor(SESSION_TTL_MS / 1000);
-  const isExplicitHttp = req && (req.headers && req.headers['x-forwarded-proto'] === 'http');
-  const isSecureEnv = process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false';
-  const secure = (isSecureEnv && !isExplicitHttp) ? '; Secure' : '';
+  const proto = (req && req.headers && (req.headers['x-forwarded-proto'] || (req.socket && req.socket.encrypted ? 'https' : 'http'))) || 'http';
+  const isHttps = proto.toLowerCase() === 'https' ||
+    (req && req.headers && req.headers.origin && req.headers.origin.startsWith('https://')) ||
+    (req && req.headers && req.headers.referer && req.headers.referer.startsWith('https://'));
+  const isSecureExplicit = process.env.COOKIE_SECURE === 'true';
+  const isSecureDisabled = process.env.COOKIE_SECURE === 'false';
+  const secure = (isSecureExplicit || (isHttps && !isSecureDisabled)) ? '; Secure' : '';
   return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 // Build the Set-Cookie header value that clears the session.
-function clearCookie() {
-  const secure = process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false' ? '; Secure' : '';
+function clearCookie(req) {
+  const proto = (req && req.headers && (req.headers['x-forwarded-proto'] || (req.socket && req.socket.encrypted ? 'https' : 'http'))) || 'http';
+  const isHttps = proto.toLowerCase() === 'https' ||
+    (req && req.headers && req.headers.origin && req.headers.origin.startsWith('https://')) ||
+    (req && req.headers && req.headers.referer && req.headers.referer.startsWith('https://'));
+  const isSecureExplicit = process.env.COOKIE_SECURE === 'true';
+  const isSecureDisabled = process.env.COOKIE_SECURE === 'false';
+  const secure = (isSecureExplicit || (isHttps && !isSecureDisabled)) ? '; Secure' : '';
   return `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
@@ -717,7 +727,7 @@ async function requireAuth(req, res, handler, body) {
   if (!ctx) {
     const headers = { 'Content-Type': 'application/json' };
     if (parseCookieToken(req)) {
-      headers['Set-Cookie'] = clearCookie();
+      headers['Set-Cookie'] = clearCookie(req);
     }
     return send(res, 401, JSON.stringify({ error: 'authentication required', code: 'no_session' }), headers);
   }
