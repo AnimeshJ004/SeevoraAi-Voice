@@ -98,17 +98,20 @@ function selectedModel(adapter, requestedModel) {
 function normalizeSpokenText(raw) {
   if (!raw) return '';
   let s = String(raw).trim();
-  const toneMatch = s.match(/^(\[[a-z]+\])\s*/i);
-  const tonePrefix = toneMatch ? toneMatch[1] + ' ' : '';
+  // Strip muga-style [tone] prefix tags (not needed for mulberry)
   s = s.replace(/^\[[a-z]+\]\s*/i, '');
+  // Convert numbers and symbols to natural spoken forms
   s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
+  s = s.replace(/\b(\d+)\s*%/g, (_, n) => n + ' percent');
   s = s.replace(/\s*&\s*/g, ' and ');
   s = s.replace(/\s*@\s*/g, ' at ');
-  s = s.replace(/\s*%\s*/g, ' percent ');
+  // Domain names spoken naturally
   s = s.replace(/([a-zA-Z0-9_-]+)\.(in|com|ai|io|org)\b/gi, '$1 dot $2');
+  // Remove markdown / formatting characters that TTS reads literally
   s = s.replace(/[*_~`#|]/g, ' ');
+  // Collapse multiple spaces
   s = s.replace(/\s+/g, ' ').trim();
-  return tonePrefix + s;
+  return s;
 }
 
 const ttsRumik = {
@@ -134,20 +137,21 @@ const ttsRumik = {
     if (!text.trim()) throw new ProviderError('text is required', 422, 'no_text');
 
     const payload = { model, text };
-    // Both mulberry and muga support description (voice direction) and speaker.
-    // muga is the expressive model and especially needs a description to produce
-    // natural Indian-English / Hinglish output. Without one it defaults to an
-    // accent that sounds "ajeeb" (off). Fall back to RUMIK_VOICE_DESCRIPTION or
-    // a sensible built-in default so the voice is always pleasant.
+    // Mulberry uses description + speaker + f0_up_key for voice shaping.
+    // A highly detailed human description is the #1 lever for natural-sounding speech.
+    // Read from env so voice character can be tuned without code changes.
     const defaultDescription = process.env.RUMIK_VOICE_DESCRIPTION
-      || 'a warm, clear Indian female voice, fluent in both English and Hindi, with natural Hinglish conversational pacing, friendly and professional';
+      || 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
     const description = opts.description
       ? String(opts.description).slice(0, 500)
       : defaultDescription;
     payload.description = description;
     if (opts.speaker && TTS_SPEAKERS.has(opts.speaker)) payload.speaker = opts.speaker;
-    if (Number.isFinite(opts.f0_up_key)) {
-      payload.f0_up_key = Math.max(-12, Math.min(12, opts.f0_up_key | 0));
+    else if (process.env.RUMIK_SPEAKER && TTS_SPEAKERS.has(process.env.RUMIK_SPEAKER)) payload.speaker = process.env.RUMIK_SPEAKER;
+    else payload.speaker = 'speaker_2';
+    const f0Raw = opts.f0_up_key !== undefined ? opts.f0_up_key : Number(process.env.RUMIK_F0_UP_KEY || 0);
+    if (Number.isFinite(f0Raw)) {
+      payload.f0_up_key = Math.max(-12, Math.min(12, Math.round(f0Raw)));
     }
     for (const k of ['temperature', 'top_p', 'top_k', 'repetition_penalty', 'max_new_tokens']) {
       if (Number.isFinite(opts[k])) payload[k] = opts[k];

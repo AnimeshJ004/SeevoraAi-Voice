@@ -235,28 +235,30 @@ async function speakUtterance(text, ttsOrAgent, callbacks) {
   callbacks = callbacks || {};
   stopAllSpeech();
   const tts = (ttsOrAgent && ttsOrAgent.tts) ? ttsOrAgent.tts : (ttsOrAgent || {});
-  const model = tts.model || 'muga';
+  const model = tts.model || 'mulberry';
   const tone = tts.tone || 'neutral';
   const speaker = tts.speaker || 'speaker_2';
-  const f0 = Number.isFinite(tts.f0_up_key) ? tts.f0_up_key : 0;
+  const f0 = Number.isFinite(tts.f0_up_key) ? tts.f0_up_key : -1;
   let spoken = cleanSpokenText(text);
   if (!spoken) return;
 
   if (typeof callbacks.onStart === 'function') callbacks.onStart();
 
   let played = false;
-  // Tier 1 & 2: Server Rumik Silk TTS
+  // Tier 1 & 2: Server Rumik Silk TTS (mulberry model, always pass description)
   try {
     const formatted = (model === 'muga' && tone && tone !== 'neutral') ? `[${tone}] ${spoken.slice(0, 1000)}` : spoken.slice(0, 1000);
+    const ttsDescription = tts.description ||
+      'a warm, articulate 28-year-old Indian female receptionist, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
     const res = await api('/api/tts', {
       method: 'POST',
-      timeoutMs: 9000,
+      timeoutMs: 18000,
       body: {
         text: formatted,
-        model,
-        speaker,
-        f0_up_key: f0,
-        description: tts.description
+        model: model || 'mulberry',
+        speaker: speaker || 'speaker_2',
+        f0_up_key: Number.isFinite(f0) ? f0 : -1,
+        description: ttsDescription
       }
     });
     const buf = await res.arrayBuffer();
@@ -1751,10 +1753,10 @@ function buildAgentForm(existing) {
   const tts = e.tts || {};
   const card = el('div', { class: 'card builder' });
   const state = {
-    model: tts.model || 'muga',
+    model: tts.model || 'mulberry',
     tone: tts.tone || 'neutral',
     speaker: tts.speaker || 'speaker_2',
-    f0: tts.f0_up_key != null ? tts.f0_up_key : 0
+    f0: tts.f0_up_key != null ? tts.f0_up_key : -1
   };
 
   const nameI = el('input', { class: 'input', id: 'f_name', type: 'text', value: e.name || '', placeholder: 'Front Desk', maxlength: 80 });
@@ -3263,7 +3265,7 @@ async function viewTalk(root, customAgent) {
       name: 'Seevora AI Voice Receptionist',
       greeting: 'Hi, thanks for calling! How can I assist you with your inquiry today?',
       persona: 'You are a warm, sharp AI telephone receptionist. Answer in 1 to 2 short sentences per turn, qualify caller needs, and offer appointment scheduling.',
-      tts: { model: 'muga', tone: 'neutral', speaker: 'speaker_2', description: 'warm, friendly conversational tone' },
+      tts: { model: 'mulberry', tone: 'neutral', speaker: 'speaker_2', f0_up_key: -1, description: 'warm, friendly conversational tone' },
       sampleTranscript: [
         { speaker: 'caller', text: 'Hi, what services do you provide and what are your rates?', annotation: 'Inquiring about offerings and pricing' },
         { speaker: 'caller', text: 'Can I book an appointment for tomorrow morning?', annotation: 'Booking request' },
@@ -3312,10 +3314,104 @@ async function viewTalk(root, customAgent) {
   let isListening = false;
   let isThinking = false;
   let isSpeaking = false;
+  let micMuted = false;          // true while agent TTS plays + cooldown
+  let postSpeakTimer = null;     // cooldown timer ref
   let speechRec = null;
   let micStream = null;
   let mediaRec = null;
   let dgWs = null;
+  let lastSpokenText = '';
+  let liveUserBubble = null;
+  let silenceTimer = null;
+  let accumulatedFinalText = '';
+  let currentInterimText = '';
+
+  // --- Hardware-level & state-level microphone control (prevents self-hearing echo) ---
+  function muteMic() {
+    micMuted = true;
+    if (postSpeakTimer) { clearTimeout(postSpeakTimer); postSpeakTimer = null; }
+    // 1. Hardware track silencing: disable audio packets directly at browser WebRTC layer
+    if (micStream) {
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
+    }
+    // 2. Pause MediaRecorder so Deepgram receives zero audio during TTS
+    if (mediaRec && mediaRec.state === 'recording') {
+      try { mediaRec.pause(); } catch (_) {}
+    }
+    // 3. Stop browser SpeechRecognition
+    if (speechRec) {
+      try { if (speechRec.abort) speechRec.abort(); else speechRec.stop(); } catch (_) {}
+    }
+    // 4. Wipe all pending recognition text buffers
+    accumulatedFinalText = '';
+    currentInterimText = '';
+    lastSpokenText = '';
+    if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+    if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
+  }
+
+  function unmuteMic() {
+    if (postSpeakTimer) { clearTimeout(postSpeakTimer); postSpeakTimer = null; }
+    // Enforce 1000ms cooldown after speech finishes so speaker audio completely decays
+    postSpeakTimer = setTimeout(() => {
+      micMuted = false;
+      accumulatedFinalText = '';
+      currentInterimText = '';
+      lastSpokenText = '';
+      if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
+      // Re-enable microphone tracks
+      if (micStream) {
+        try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
+      }
+      // Resume MediaRecorder
+      if (mediaRec && mediaRec.state === 'paused') {
+        try { mediaRec.resume(); } catch (_) {}
+      }
+      // Restart Web Speech if Web Speech is active and Deepgram is not
+      if (isListening && speechRec && !mediaRec) {
+        try { speechRec.start(); } catch (_) {}
+      }
+      if (isListening) {
+        setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
+      }
+    }, 1000);
+  }
+
+  function commitSpeech(text) {
+    if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+    if (micMuted || isSpeaking) {
+      accumulatedFinalText = '';
+      currentInterimText = '';
+      lastSpokenText = '';
+      return;
+    }
+    let cleaned = (text || accumulatedFinalText || currentInterimText || lastSpokenText || '').trim();
+    accumulatedFinalText = '';
+    currentInterimText = '';
+    lastSpokenText = '';
+
+    // Normalize common phonetic STT hearing errors for Indian speech:
+    cleaned = cleaned.replace(/^mira\s+(naam|name)\b/i, 'Mera naam');
+    cleaned = cleaned.replace(/\bmira\s+(naam|name)\b/gi, 'mera naam');
+
+    if (!cleaned || cleaned.length < 2 || isThinking || isSpeaking || micMuted) return;
+
+    // Self-Echo Guard: If the recognized text matches the bot's last spoken reply, drop it!
+    const lastBot = convo.slice().reverse().find(m => m.role === 'bot');
+    if (lastBot && lastBot.text) {
+      const cleanNorm = cleaned.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const botNorm = lastBot.text.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanNorm.length >= 8 && (botNorm.includes(cleanNorm) || cleanNorm.includes(botNorm) || botNorm.startsWith(cleanNorm.slice(0, 20)))) {
+        console.warn('Blocked self-echo loop in speech recognition:', cleaned);
+        if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
+        return;
+      }
+    }
+
+    if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
+    runTurn(cleaned);
+  }
+
 
   // Visualizer Orb Stage
   const orb = el('div', { class: 'voice-orb', 'aria-hidden': 'true' }, [
@@ -3511,12 +3607,14 @@ async function viewTalk(root, customAgent) {
       }
 
       isSpeaking = true;
+      muteMic();
       setPhase('speaking', 'Agent speaking...');
       await speakUtterance(reply, Object.assign({}, activeAgent, { tts: Object.assign({}, activeAgent.tts || {}, { tone: activeTone }) }), {
         onStart: () => { setPhase('speaking', 'Agent speaking...'); },
         onEnd: () => {
           isSpeaking = false;
-          setPhase(isListening ? 'listening' : 'idle', isListening ? 'Listening' : 'Ready');
+          unmuteMic();
+          setPhase(isListening ? 'listening' : 'idle', isListening ? 'Listening...' : 'Ready');
         }
       });
     } catch (err) {
@@ -3525,11 +3623,15 @@ async function viewTalk(root, customAgent) {
       const safeReply = 'Namaste, I have noted your inquiry. Our team will assist you with your booking. What day or time works best for you?';
       addBubble('bot', safeReply);
       convo.push({ role: 'bot', text: safeReply });
+      isSpeaking = true;
+      muteMic();
       await speakUtterance(safeReply, activeAgent);
+      isSpeaking = false;
+      unmuteMic();
     } finally {
       isThinking = false;
       if (!isSpeaking) {
-        setPhase(isListening ? 'listening' : 'idle', isListening ? 'Listening' : 'Ready');
+        setPhase(isListening ? 'listening' : 'idle', isListening ? 'Listening...' : 'Ready');
       }
     }
   }
@@ -3537,8 +3639,31 @@ async function viewTalk(root, customAgent) {
   // Voice Recognition Setup: Tier 1 Deepgram Nova-3 Stream via /api/stt/stream with resilient browser fallback
   async function startVoiceListening() {
     stopAllSpeech();
+    muteMic();
 
-    // Natural greeting on first start
+    // 1. Acquire microphone access immediately on user gesture
+    if (window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !micStream) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: true },
+            autoGainControl: { ideal: true },
+            channelCount: 1,
+            sampleRate: 16000
+          }
+        });
+      } catch (micErr) {
+        console.warn('Microphone stream error, falling back:', micErr.message);
+      }
+    }
+
+    // Keep mic tracks disabled during greeting
+    if (micStream) {
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
+    }
+
+    // 2. Natural greeting on first start
     if (convo.length === 0) {
       const greeting = activeAgent.greeting || "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
       addBubble('bot', greeting);
@@ -3549,45 +3674,18 @@ async function viewTalk(root, customAgent) {
       isSpeaking = false;
     }
 
-    let liveUserBubble = null;
-    let silenceTimer = null;
-    let accumulatedFinalText = '';
-    let currentInterimText = '';
-
-    const commitSpeech = (text) => {
-      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-      let cleaned = (text || accumulatedFinalText || currentInterimText || '').trim();
-      accumulatedFinalText = '';
-      currentInterimText = '';
-
-      // Normalize common phonetic STT hearing errors for Indian speech:
-      // "Mira naam..." -> "Mera naam..."
-      // "Mira name..." -> "Mera naam..."
-      cleaned = cleaned.replace(/^mira\s+(naam|name)\b/i, 'Mera naam');
-      cleaned = cleaned.replace(/\bmira\s+(naam|name)\b/gi, 'mera naam');
-
-      if (cleaned && cleaned.length >= 2 && !isThinking && !isSpeaking) {
-        if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
-        runTurn(cleaned);
-      }
-    };
-
-    // Tier 1: Deepgram Nova Live Streaming WebSocket via /api/stt/stream
-    if (window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // 3. Connect Tier 1 Deepgram Nova Live Streaming WebSocket via /api/stt/stream
+    if (micStream && window.MediaRecorder) {
       try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-
         const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
         dgWs = new WebSocket(`${wsProto}${location.host}/api/stt/stream?lang=${encodeURIComponent(sttLang)}`);
         dgWs.binaryType = 'arraybuffer';
 
         dgWs.onopen = () => {
           isListening = true;
-          setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
           sessionBtn.classList.add('active');
           $('.conversation-btn-label', sessionBtn).textContent = 'End Voice Talk';
+          unmuteMic();
         };
 
         dgWs.onmessage = (event) => {
@@ -3600,7 +3698,8 @@ async function viewTalk(root, customAgent) {
                 : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
               mediaRec = new MediaRecorder(micStream, mime ? { mimeType: mime } : {});
               mediaRec.ondataavailable = (e) => {
-                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !isSpeaking) {
+                // Strictly block audio from reaching Deepgram while agent is speaking or in cooldown
+                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !micMuted && !isSpeaking) {
                   dgWs.send(e.data);
                 }
               };
@@ -3608,7 +3707,8 @@ async function viewTalk(root, customAgent) {
               return;
             }
 
-            if (isSpeaking) return;
+            // Drop ALL Deepgram messages while mic is muted or agent is speaking
+            if (micMuted || isSpeaking) return;
 
             if (msg.channel && msg.channel.alternatives && msg.channel.alternatives[0]) {
               const alt = msg.channel.alternatives[0];
@@ -3636,37 +3736,54 @@ async function viewTalk(root, customAgent) {
                 if (silenceTimer) clearTimeout(silenceTimer);
                 silenceTimer = setTimeout(() => {
                   const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
-                  if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking) {
+                  if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
                     commitSpeech(toCommit);
                   }
-                }, 1000);
+                }, 1300);
 
                 if (msg.speech_final) {
-                  const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
-                  const wordCount = toCommit.split(/\s+/).filter(Boolean).length;
-                  if (wordCount >= 3 && !isThinking && !isSpeaking) {
-                    commitSpeech(toCommit);
-                  }
+                  if (silenceTimer) clearTimeout(silenceTimer);
+                  silenceTimer = setTimeout(() => {
+                    const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
+                    if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
+                      commitSpeech(toCommit);
+                    }
+                  }, 900);
                 }
               }
             }
 
             if (msg.type === 'UtteranceEnd') {
-              const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
-              if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking) {
-                commitSpeech(toCommit);
-              }
+              if (silenceTimer) clearTimeout(silenceTimer);
+              silenceTimer = setTimeout(() => {
+                const toCommit = (accumulatedFinalText + ' ' + currentInterimText).trim();
+                if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
+                  commitSpeech(toCommit);
+                }
+              }, 750);
             }
           } catch (_) {}
         };
 
         dgWs.onerror = (err) => {
           console.warn('Deepgram STT stream notice:', err);
-          if (isListening && !mediaRec) startWebSpeechFallback();
+          if (isListening) {
+            if (mediaRec && mediaRec.state !== 'inactive') {
+              try { mediaRec.stop(); } catch (_) {}
+            }
+            mediaRec = null;
+            startWebSpeechFallback();
+          }
         };
 
         dgWs.onclose = () => {
-          if (isListening && !mediaRec) startWebSpeechFallback();
+          if (isListening) {
+            if (mediaRec && mediaRec.state !== 'inactive') {
+              try { mediaRec.stop(); } catch (_) {}
+            }
+            mediaRec = null;
+            startWebSpeechFallback();
+          }
         };
 
         return;
@@ -3699,7 +3816,8 @@ async function viewTalk(root, customAgent) {
         };
 
         speechRec.onresult = (e) => {
-          if (isSpeaking) return;
+          // Drop ALL results while agent is speaking or mic is muted/cooling down
+          if (isSpeaking || micMuted) return;
 
           let interim = '';
           let final = '';
@@ -3722,7 +3840,7 @@ async function viewTalk(root, customAgent) {
 
             if (silenceTimer) clearTimeout(silenceTimer);
             silenceTimer = setTimeout(() => {
-              if (lastSpokenText && !isThinking && !isSpeaking) {
+              if (lastSpokenText && !isThinking && !isSpeaking && !micMuted) {
                 commitSpeech(lastSpokenText);
               }
             }, 1200);
@@ -3742,12 +3860,14 @@ async function viewTalk(root, customAgent) {
 
         speechRec.onend = () => {
           if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-          if (lastSpokenText && !isThinking && !isSpeaking) {
+          // Only commit if mic is not muted (not during/after agent TTS)
+          if (lastSpokenText && !isThinking && !isSpeaking && !micMuted) {
             commitSpeech(lastSpokenText);
           }
-          if (isListening && speechRec) {
+          // Only auto-restart when NOT muted — unmuteMic() will restart when cooldown ends
+          if (isListening && speechRec && !micMuted) {
             setTimeout(() => {
-              if (isListening && speechRec) {
+              if (isListening && speechRec && !micMuted) {
                 try { speechRec.start(); } catch (_) {}
               }
             }, 250);
