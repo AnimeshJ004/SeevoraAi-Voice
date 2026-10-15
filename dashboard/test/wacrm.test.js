@@ -120,3 +120,87 @@ test('WACRM: processVoiceCallCompletion automatically updates pipeline and recor
   assert.equal(summaryMessages[0].type, 'call_summary');
   assert.ok(summaryMessages[0].text.includes('Caller requested appointment for Saturday at 11am'));
 });
+
+test('WACRM: extractLeadDataFromCall extracts real caller name, budget, email, company, and appointment', () => {
+  const callWithGreeting = {
+    phoneNumber: '+919820011223',
+    summary: 'Home sample collection booked for tomorrow 8:00 AM.',
+    transcript: 'Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.'
+  };
+
+  const extractedGreeting = wacrm.extractLeadDataFromCall(callWithGreeting);
+  assert.equal(extractedGreeting.name, 'Deepa');
+  assert.equal(extractedGreeting.phone, '+919820011223');
+  assert.ok(extractedGreeting.tags.includes('appointment-booked'));
+  assert.ok(extractedGreeting.structuredNotes.includes('Home sample collection booked'));
+
+  const callWithFullDetails = {
+    phoneNumber: '+919820987654',
+    transcript: 'Caller: Hi, my name is Vikramaditya Malhotra and I am calling from Zenith Logistics. My email is vikram@zenithlog.com. We need an enterprise voice assistant. Our budget is around 1.5 Lakhs. Can we schedule a demo for tomorrow?\nAgent: Absolutely Vikramaditya! I have booked your demo for tomorrow and sent the confirmation to vikram@zenithlog.com.'
+  };
+
+  const extractedFull = wacrm.extractLeadDataFromCall(callWithFullDetails);
+  assert.equal(extractedFull.name, 'Vikramaditya Malhotra');
+  assert.equal(extractedFull.email, 'vikram@zenithlog.com');
+  assert.equal(extractedFull.company, 'Zenith Logistics');
+  assert.equal(extractedFull.dealValue, 150000);
+  assert.ok(extractedFull.tags.includes('budget-qualified'));
+  assert.ok(extractedFull.structuredNotes.includes('Estimated Deal: ₹1,50,000'));
+});
+
+test('WACRM: processVoiceCallCompletion populates real extracted data into CRM contact', async () => {
+  const db = { crmContacts: [], waConversations: [], waMessages: [], wacrmConfig: [] };
+  const tenantId = 't_voice_extract_test';
+
+  const call = {
+    phoneNumber: '+919820154321',
+    summary: 'Consultation booking for root canal treatment.',
+    transcript: 'Agent: Namaste Amit Sharma ji! Welcome to Seevora Dental Clinic.\nCaller: Hi Priya, I need a consultation for root canal treatment. What would be the price?\nAgent: Our comprehensive root canal package is ₹18,500. Can I book you for Friday 5 PM?\nCaller: Yes, Friday 5 PM is perfect. My email is amit.sharma@gmail.com.\nAgent: Booking confirmed for Friday 5:00 PM!'
+  };
+
+  const contact = await wacrm.processVoiceCallCompletion(db, tenantId, call);
+  assert.equal(contact.phone, '+919820154321');
+  assert.equal(contact.name, 'Amit Sharma');
+  assert.equal(contact.email, 'amit.sharma@gmail.com');
+  assert.equal(contact.dealValue, 18500);
+  assert.ok(contact.notes.includes('18,500'));
+  assert.ok(contact.tags.includes('appointment-booked'));
+});
+
+test('WACRM: syncCallRecordingsToCrm synchronizes completed call recordings into CRM leads', () => {
+  const db = {
+    callRecordings: [
+      {
+        id: 'rec_test_1',
+        tenantId: 't_sync_1',
+        phoneNumber: '+919820011223',
+        summary: 'Home sample collection booked for tomorrow 8:00 AM.',
+        transcript: 'Agent: Hello Deepa! Welcome to Seevora Voice.\nCaller: Book for tomorrow 8 AM.\nAgent: Confirmed Deepa!'
+      },
+      {
+        id: 'rec_test_2',
+        tenantId: 't_sync_2',
+        phoneNumber: '+919811190234',
+        summary: 'Appointment reschedule request.',
+        transcript: 'Agent: Namaste Amit ji! Welcome to Seevora Voice.\nCaller: Reschedule to Friday 5 PM.\nAgent: Done Amit!'
+      }
+    ],
+    crmContacts: [],
+    waConversations: []
+  };
+
+  // Sync for tenant 1
+  const synced1 = wacrm.syncCallRecordingsToCrm(db, 't_sync_1');
+  assert.equal(synced1.length, 1);
+  assert.equal(synced1[0].name, 'Deepa');
+  assert.equal(synced1[0].phone, '+919820011223');
+  assert.equal(db.crmContacts.filter((c) => c.tenantId === 't_sync_1').length, 1);
+
+  // Tenant isolation: tenant 2 contacts remain separate
+  assert.equal(db.crmContacts.filter((c) => c.tenantId === 't_sync_2').length, 0);
+  const synced2 = wacrm.syncCallRecordingsToCrm(db, 't_sync_2');
+  assert.equal(synced2.length, 1);
+  assert.equal(synced2[0].name, 'Amit');
+  assert.equal(db.crmContacts.filter((c) => c.tenantId === 't_sync_2').length, 1);
+});
+

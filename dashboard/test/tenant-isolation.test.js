@@ -1,18 +1,19 @@
 'use strict';
+process.env.NODE_ENV = 'test';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const core = require('../lib/core');
+const clerk = require('../lib/clerk');
 
-function makeJwt(sub, email, name) {
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
+function makeJwt(sub, email, name, metadata = {}) {
+  return clerk.signTestToken({
     sub,
     email,
     name,
+    public_metadata: metadata,
     exp: Math.floor(Date.now() / 1000) + 3600,
-  })).toString('base64url');
-  return `${header}.${payload}.fake_sig`;
+  });
 }
 
 test('strict Clerk user mapping prevents cross-account hijacking even with identical email', async () => {
@@ -90,16 +91,14 @@ test('Clerk role assignment: admins receive admin role, regular users receive cl
   const ctxRegular = await core.getSession({ headers: { authorization: 'Bearer ' + tokenRegular } });
   assert.equal(ctxRegular.user.role, 'client');
 
-  // Token with Clerk metadata role = 'admin'
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payloadAdmin = Buffer.from(JSON.stringify({
+  // Token with verified Clerk public_metadata role = 'admin'
+  const tokenAdmin = clerk.signTestToken({
     sub: subAdmin,
     email: 'admin@test.com',
     name: 'Admin Boss',
-    metadata: { role: 'admin' },
+    public_metadata: { role: 'admin' },
     exp: Math.floor(Date.now() / 1000) + 3600,
-  })).toString('base64url');
-  const tokenAdmin = `${header}.${payloadAdmin}.fake_sig`;
+  });
   const ctxAdmin = await core.getSession({ headers: { authorization: 'Bearer ' + tokenAdmin } });
   assert.equal(ctxAdmin.user.role, 'admin');
 

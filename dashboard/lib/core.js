@@ -23,6 +23,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const clerk = require('./clerk');
+const dbSupabase = require('./db-supabase');
+const logger = require('./logger');
 
 // Project root is one level up from lib/.
 const ROOT = path.join(__dirname, '..');
@@ -31,7 +33,10 @@ const ROOT = path.join(__dirname, '..');
    1. .env loader (no dotenv dependency)
    Reads ROOT/.env once. Existing process.env wins, so real shell vars override.
    ========================================================================== */
-function loadEnv() {
+function loadEnv(force = false) {
+  if (process.env.NODE_ENV === 'test' && force) {
+    return;
+  }
   const candidates = [
     path.resolve(ROOT, '..', '.env'),      // Project root .env (primary source of truth)
     path.resolve(process.cwd(), '.env'),   // Current working directory .env
@@ -43,7 +48,7 @@ function loadEnv() {
       const txt = fs.readFileSync(envFile, 'utf8');
       for (const line of txt.split('\n')) {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-        if (m && !(m[1] in process.env)) {
+        if (m && (force || !(m[1] in process.env))) {
           process.env[m[1]] = m[2].replace(/^["']|["']$/g, '').trim();
         }
       }
@@ -243,6 +248,34 @@ function flushSync() {
   fs.chmodSync(DB_FILE, 0o600);
 }
 
+let _lastSupabaseSync = 0;
+function syncMutationsToSupabase(d) {
+  if (!dbSupabase.isConfigured() || process.env.NODE_ENV === 'test') return;
+  const now = Date.now();
+  if (now - _lastSupabaseSync < 300) return; // Debounce rapid writes
+  _lastSupabaseSync = now;
+
+  try {
+    const tenants = (d.tenants || []).slice(-3);
+    for (const t of tenants) dbSupabase.persistTenant(t);
+
+    const users = (d.users || []).slice(-3);
+    for (const u of users) dbSupabase.persistUser(u);
+
+    const wallets = (d.wallets || []).slice(-3);
+    for (const w of wallets) dbSupabase.persistWallet(w);
+
+    const agents = (d.agents || []).slice(-3);
+    for (const a of agents) dbSupabase.persistAgent(a);
+
+    const recs = (d.callRecordings || []).slice(-3);
+    for (const r of recs) dbSupabase.persistRecording(r);
+
+    const ledger = (d.ledger || []).slice(-3);
+    for (const l of ledger) dbSupabase.recordLedgerEntry(l);
+  } catch (_) {}
+}
+
 /**
  * Run a mutation against the db under the serial write lock.
  * `fn(db)` receives the live in-memory db, may mutate it, and may return a value
@@ -250,16 +283,13 @@ function flushSync() {
  * atomically after fn runs. Errors inside fn reject without flushing a partial.
  */
 function mutate(fn) {
-  const run = () => new Promise((resolve, reject) => {
-    try {
-      const db = loadDb();
-      const out = fn(db);
-      flushSync();
-      resolve(out);
-    } catch (e) {
-      reject(e);
-    }
-  });
+  const run = async () => {
+    const db = loadDb();
+    const out = await fn(db);
+    flushSync();
+    syncMutationsToSupabase(db);
+    return out;
+  };
   // Chain onto the tail so writes execute one at a time, in order. We swallow
   // the previous result/error for the chain itself but surface this run's own
   // result to the caller.
@@ -307,8 +337,16 @@ async function createSession(userId, tenantId) {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   const exp = Date.now() + SESSION_TTL_MS;
   await mutate((d) => {
-    // Prune any already-expired sessions while we are here (cheap housekeeping).
+    // 1. Prune any already-expired sessions (housekeeping).
     d.sessions = d.sessions.filter((s) => s.exp > Date.now());
+    // 2. Cap active concurrent sessions per user (10 max) to prevent session table exhaustion.
+    const userSessions = d.sessions.filter((s) => s.userId === userId);
+    if (userSessions.length >= 10) {
+      const oldest = userSessions.sort((a, b) => a.exp - b.exp)[0];
+      if (oldest) {
+        d.sessions = d.sessions.filter((s) => s !== oldest);
+      }
+    }
     d.sessions.push({ tokenHash, userId, tenantId, exp });
   });
   return token;
@@ -363,30 +401,24 @@ async function getSession(req) {
   const clerkToken = clerk.extractToken(req);
   if (clerkToken && clerkToken.includes('.')) {
     try {
-      const claims = clerk.decodeJwt(clerkToken);
+      // Cryptographically verify RS256 signature, expiration, and claims
+      const verifiedResult = await clerk.verifyClerkToken(clerkToken);
+      const claims = verifiedResult.claims;
       if (claims && claims.sub) {
         const d = db();
         // Strict privacy: A user account is strictly keyed to their unique Clerk sub
         let user = d.users.find((u) => u.clerkUserId === claims.sub);
 
-        let clerkUser = null;
-        let email = claims.email;
-        let name = claims.name;
-
-        const clientHeaderName = (req.headers && req.headers['x-clerk-user-name']) ? decodeURIComponent(req.headers['x-clerk-user-name']).trim() : '';
-        const clientHeaderEmail = (req.headers && req.headers['x-clerk-user-email']) ? decodeURIComponent(req.headers['x-clerk-user-email']).trim() : '';
+        let clerkUser = verifiedResult.user || null;
+        let email = claims.email || (claims.primary_email_address) || '';
+        let name = claims.name || '';
         const clientHeaderOnboarded = req.headers && req.headers['x-clerk-onboarded'] === '1';
 
-        if (!name && clientHeaderName) name = clientHeaderName;
-        if (!email && clientHeaderEmail) email = clientHeaderEmail;
-
-        // Extract role from token claims first
-        const rawClaimRole = (claims.metadata && claims.metadata.role) ||
-                             (claims.public_metadata && claims.public_metadata.role) ||
-                             (claims.publicMetadata && claims.publicMetadata.role) ||
-                             claims.role;
-        let role = (rawClaimRole === 'super_admin' || rawClaimRole === 'admin') ? rawClaimRole : 'client';
-        let plan = (claims.metadata && claims.metadata.plan) || (claims.public_metadata && claims.public_metadata.plan) || 'starter';
+        // Extract role strictly from verified Clerk public_metadata or verified Clerk Backend API.
+        // NEVER trust client-writable unsafe_metadata, untrusted root claims, or client headers!
+        const publicMeta = claims.public_metadata || claims.publicMetadata || (clerkUser && clerkUser.publicMetadata) || {};
+        let role = (publicMeta.role === 'super_admin' || publicMeta.role === 'admin') ? publicMeta.role : 'client';
+        let plan = publicMeta.plan || 'starter';
 
         const needsClerkFetch = process.env.CLERK_SECRET_KEY && (
           !user ||
@@ -524,7 +556,7 @@ async function getSession(req) {
                 onboardingCompleted: Boolean(clerkOnboarded),
               }
             }).catch((err) => {
-              console.error('Clerk initial publicMetadata sync failed:', err.message);
+              logger.error('Clerk initial publicMetadata sync failed', { error: err.message });
             });
           }
         } else if (!tenant) {
@@ -853,4 +885,5 @@ module.exports = {
   genId,
   syncClerkMetadataForUser,
   clerk,
+  dbSupabase,
 };

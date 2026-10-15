@@ -1,7 +1,15 @@
 node_modules
 dashboard/node_modules
 .env
+.env.local
 .git
+.github
 *.log
 *.wav
 *.csv
+dashboard/data/db.json
+dashboard/data/db.json.tmp
+test/
+scratch/
+coverage/
+.kilo/

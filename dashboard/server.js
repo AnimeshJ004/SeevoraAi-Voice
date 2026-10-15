@@ -29,8 +29,15 @@ const demoLinks = require('./lib/demo-links');
 const wacrm = require('./lib/wacrm');
 const plans = require('./lib/plans');
 const demoSeeder = require('./lib/demo-seeder');
+const logger = require('./lib/logger');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
+function isDemoLoginEnabled() {
+  if (process.env.NODE_ENV !== 'test') {
+    core.loadEnv(true);
+  }
+  return process.env.ENABLE_DEMO_LOGIN === 'true';
+}
 const DEFAULT_PROVIDERS = Object.freeze({
   stt: providers.stt.id,
   tts: providers.tts.id,
@@ -235,11 +242,19 @@ async function boot() {
       for (const la of legacy) d.agents.push(migrateLegacyAgent(la, tenantId));
     });
 
-    console.log(`  Seeded env-configured test tenant "${DEMO_TENANT}" with ${legacy.length} migrated agent(s).`);
+    logger.info(`Seeded env-configured test tenant "${DEMO_TENANT}" with ${legacy.length} migrated agent(s).`);
   }
 
-  // Ensure access-based role demos: Client Demo and Admin Demo
-  if (!process.env.RAPIDX_DB_FILE) {
+  // Ensure access-based role demos: Client Demo and Admin Demo (Only when demo logins enabled)
+  if (!isDemoLoginEnabled()) {
+    await core.mutate((d) => {
+      for (const u of d.users || []) {
+        if (u.email === 'admin@demo.com' || u.email === 'client@demo.com' || u.email === 'demo@rapidx.ai') {
+          u.status = 'disabled';
+        }
+      }
+    });
+  } else if (!process.env.RAPIDX_DB_FILE) {
     await core.mutate((d) => {
       const nowIso = new Date().toISOString();
 
@@ -265,12 +280,15 @@ async function boot() {
         adminTenant.name = 'Admin Demo';
         adminTenant.slug = 'admin-demo';
         adminTenant.plan = 'agency';
+        adminTenant.status = 'active';
       }
 
       if (adminUser) {
         adminUser.email = 'admin@demo.com';
         adminUser.name = 'Admin Demo';
         adminUser.role = 'super_admin';
+        adminUser.status = 'active';
+        adminUser.passHash = core.hashPassword('admin123');
       } else {
         d.users.push({
           id: core.genId('u_'),
@@ -306,12 +324,15 @@ async function boot() {
         clientTenant.name = 'Client Demo';
         clientTenant.slug = 'client-demo';
         clientTenant.plan = 'client_starter';
+        clientTenant.status = 'active';
       }
 
       if (clientUser) {
         clientUser.email = 'client@demo.com';
         clientUser.name = 'Client Demo';
         clientUser.role = 'client';
+        clientUser.status = 'active';
+        clientUser.passHash = core.hashPassword('client123');
       } else {
         clientUser = {
           id: core.genId('u_'),
@@ -525,32 +546,63 @@ async function apiLogin(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
   const d = core.db();
+  const ip = requestRateKey(req);
 
-  const isDemoAdmin = email === 'admin@demo.com' || email === 'demo@rapidx.ai' || email === 'admin@rapidx.ai';
-  const isDemoClient = email === 'client@demo.com' || email === 'client@rapidx.ai';
-  const isDemoAnimesh = email === 'animeshj425@gmail.com';
-  const isDemoUser = isDemoAdmin || isDemoClient || isDemoAnimesh;
-  const isDemoPass = isDemoAnimesh ||
-                     (isDemoAdmin && (password === 'admin' || password === 'admin123' || password === 'admin123456' || password === 'RapidXDemo1234!')) ||
-                     (isDemoClient && (password === 'client' || password === 'client123' || password === 'client123456' || password === 'RapidXDemo1234!')) ||
-                     password === 'rapidxvoice' || password === 'RapidXDemo1234!';
-
-  let user = d.users.find((u) => u.email === email);
-  if (!user && isDemoAdmin) user = d.users.find((u) => u.role === 'super_admin' || u.email === 'admin@demo.com' || u.email === 'demo@rapidx.ai');
-  if (!user && isDemoClient) user = d.users.find((u) => u.role === 'client' || u.email === 'client@demo.com' || u.email === 'client@rapidx.ai');
-  if (!user && isDemoAnimesh) {
-    const t = d.tenants[0] || { id: 'default' };
-    user = { id: 'u_animeshj425', email: 'animeshj425@gmail.com', name: 'Animesh Jain', role: 'client', tenantId: t.id, createdAt: new Date().toISOString() };
-    await core.mutate((store) => store.users.push(user));
+  // 0. Dedicated brute-force rate limit on login endpoint (10 attempts per minute)
+  if (!core.rateOk(`login:${ip}`, 10, 10)) {
+    logger.warn('Login brute-force rate limit exceeded', { ip });
+    return core.sendJson(res, 429, {
+      error: 'Too many login attempts. Please wait a moment and try again.',
+      code: 'login_rate_limited',
+    });
   }
 
-  const passOk = user && (core.verifyPassword(password, user.passHash) || (isDemoUser && isDemoPass));
-  if (!user || !passOk) {
+  const isDemoAccount = email === 'admin@demo.com' || email === 'client@demo.com' || email === 'demo@rapidx.ai' || email === 'admin@rapidx.ai' || email === 'client@rapidx.ai';
+
+  // 1. Enforce demo access rules: strictly block demo accounts when ENABLE_DEMO_LOGIN is false
+  if (isDemoAccount && !isDemoLoginEnabled()) {
+    logger.warn('Blocked attempt to login with demo account while demo logins are disabled', { email, ip });
+    return core.sendJson(res, 403, {
+      error: 'Demo logins are disabled in production. Please sign in via Clerk or your registered account credentials.',
+      code: 'demo_disabled',
+    });
+  }
+
+  // Ensure demo accounts are active and password verified when demo login is enabled
+  if (isDemoAccount && isDemoLoginEnabled()) {
+    const demoUser = d.users.find((u) => u.email && u.email.toLowerCase() === email);
+    if (demoUser && (demoUser.status !== 'active' || !demoUser.passHash)) {
+      await core.mutate((mutDb) => {
+        const mu = (mutDb.users || []).find((u) => u.email && u.email.toLowerCase() === email);
+        if (mu) {
+          mu.status = 'active';
+          mu.passHash = core.hashPassword(email.startsWith('admin') ? 'admin123' : 'client123');
+        }
+      });
+    }
+  }
+
+  // 2. Lookup registered user
+  const user = d.users.find((u) => u.email && u.email.toLowerCase() === email);
+  if (!user || user.status !== 'active' || !user.passHash) {
+    logger.warn('Failed login attempt: user not found or inactive', { email, ip });
     return core.sendJson(res, 401, { error: 'invalid email or password', code: 'bad_creds' });
   }
-  const tenant = d.tenants.find((t) => t.id === user.tenantId);
-  if (!tenant) return core.sendJson(res, 401, { error: 'invalid email or password', code: 'bad_creds' });
 
+  // 3. Strict cryptographic scrypt hash verification (NO bypasses, NO exceptions)
+  const passOk = core.verifyPassword(password, user.passHash);
+  if (!passOk) {
+    logger.warn('Failed login attempt: incorrect password', { email, ip });
+    return core.sendJson(res, 401, { error: 'invalid email or password', code: 'bad_creds' });
+  }
+
+  const tenant = d.tenants.find((t) => t.id === user.tenantId);
+  if (!tenant || tenant.status !== 'active') {
+    logger.warn('Failed login attempt: workspace inactive or missing', { email, tenantId: user.tenantId });
+    return core.sendJson(res, 401, { error: 'account is disabled or invalid workspace', code: 'bad_tenant' });
+  }
+
+  logger.info('User successfully authenticated', { userId: user.id, tenantId: user.tenantId, role: user.role });
   const token = await core.createSession(user.id, user.tenantId);
   core.send(res, 200, JSON.stringify({ user: publicUser(user), tenant: publicTenant(tenant) }), {
     'Content-Type': 'application/json',
@@ -581,16 +633,18 @@ async function apiMe(req, res, ctx) {
     'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Pragma': 'no-cache',
   };
-  // Always synchronize session cookie with current user to prevent cross-account cookie residue
-  const token = await core.createSession(ctx.user.id, ctx.tenant.id);
-  headers['Set-Cookie'] = core.sessionCookie(token);
+  // Refresh cookie session only if near expiration (< 24h) or missing cookie session
+  if (!ctx.session || !ctx.session.exp || (ctx.session.exp - Date.now() < 24 * 60 * 60 * 1000)) {
+    const token = await core.createSession(ctx.user.id, ctx.tenant.id);
+    headers['Set-Cookie'] = core.sessionCookie(token);
+  }
 
   // Non-blocking metadata sync to Clerk if authenticated with Clerk
   const clerkUserId = ctx.user.clerkUserId || (ctx.session && ctx.session.clerkUserId);
   if (clerkUserId && process.env.CLERK_SECRET_KEY) {
     core.syncClerkMetadataForUser(ctx.user.id, { throttle: true }).catch((err) => {
       if (err && (!err.message || !err.message.includes('Too many requests'))) {
-        console.warn('apiMe Clerk metadata sync non-fatal error:', err.message);
+        logger.warn('apiMe Clerk metadata sync non-fatal error', { error: err.message });
       }
     });
   }
@@ -1035,7 +1089,7 @@ Update the agent persona, greeting, fields, guardrails, and sample transcript ac
     }
     generatedData = JSON.parse(raw);
   } catch (err) {
-    console.warn('LLM agent generation notice:', err.message);
+    logger.warn('LLM agent generation notice', { error: err.message });
   }
 
   if (generatedData && generatedData.agent && typeof generatedData.agent === 'object') {
@@ -1242,8 +1296,6 @@ function extractContactFromMessages(messages) {
   const lower = combined.toLowerCase();
   if (lower.includes('receptionist') || lower.includes('voice') || lower.includes('calling') || lower.includes('call agent')) {
     requirement = 'AI Voice Receptionist';
-  } else if (lower.includes('whatsapp') || lower.includes('wa automation')) {
-    requirement = 'WhatsApp Business Automation';
   } else if (lower.includes('crm') || lower.includes('integration')) {
     requirement = 'CRM Integration';
   } else if (lower.includes('chatbot') || lower.includes('bot')) {
@@ -1273,7 +1325,7 @@ async function apiChat(req, res, ctx) {
       selected = providers.resolveSelection('llm', { provider: b.provider, model: b.model });
       out = await selected.adapter.chat({ messages: b.messages, system, model: selected.model });
     } catch (primaryErr) {
-      console.warn('Primary LLM chat error, attempting secondary fallback:', primaryErr.message);
+      logger.warn('Primary LLM chat error, attempting secondary fallback', { error: primaryErr.message });
       if (providers.llmGemini && (!selected || selected.provider !== 'gemini')) {
         try {
           out = await providers.llmGemini.chat({ messages: b.messages, system, model: providers.llmGemini.defaultModel });
@@ -1622,7 +1674,7 @@ async function syncDograhWorkflow(workflowId) {
       'What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.',
       'Services Seevora offers:',
       '1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock',
-      '2. WhatsApp Business Automation for customer engagement and lead follow-up',
+      '2. Lead Qualification and Follow-up Automation for customer engagement',
       '3. CRM Integrations to connect AI automation with existing business tools',
       '4. Custom AI Chatbots for websites and mobile apps',
       '5. Lead Qualification through automated voice and chat conversations',
@@ -1791,6 +1843,9 @@ function apiPayuReturn(req, res, payload) {
 
 function apiBillingConfig(req, res) {
   core.sendJson(res, 200, {
+    auth: {
+      demoLoginEnabled: isDemoLoginEnabled(),
+    },
     razorpay: {
       keyId: process.env.RAZORPAY_KEY_ID || null,
       enabled: !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
@@ -2027,7 +2082,7 @@ async function apiRazorpayVerifyPayment(req, res, ctx) {
         publicMetadata: publicMeta,
       });
     } catch (clerkErr) {
-      console.error('Clerk metadata sync error:', clerkErr.message);
+      logger.error('Clerk metadata sync error', { error: clerkErr.message });
     }
   }
 
@@ -2126,15 +2181,18 @@ async function apiClerkSyncMetadata(req, res, ctx) {
 
 async function apiClerkWebhook(req, res, rawBody) {
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-  if (webhookSecret) {
-    const verified = clerk.verifySvixWebhook({
-      headers: req.headers,
-      rawBody,
-      webhookSecret,
-    });
-    if (!verified.valid) {
-      return core.sendJson(res, 400, { error: `Invalid Clerk webhook signature: ${verified.reason}`, code: 'invalid_signature' });
-    }
+  if (!webhookSecret) {
+    logger.warn('Clerk webhook received but CLERK_WEBHOOK_SECRET is not configured');
+    return core.sendJson(res, 503, { error: 'Clerk webhook secret not configured', code: 'webhook_unconfigured' });
+  }
+
+  const verified = clerk.verifySvixWebhook({
+    headers: req.headers,
+    rawBody,
+    webhookSecret,
+  });
+  if (!verified.valid) {
+    return core.sendJson(res, 400, { error: `Invalid Clerk webhook signature: ${verified.reason}`, code: 'invalid_signature' });
   }
 
   let event;
@@ -2205,7 +2263,7 @@ async function apiClerkWebhook(req, res, rawBody) {
       try {
         await core.syncClerkMetadataForUser(targetUserId);
       } catch (err) {
-        console.warn('Webhook Clerk sync failed:', err.message);
+        logger.warn('Webhook Clerk sync failed', { error: err.message });
       }
     }
   }
@@ -2700,7 +2758,23 @@ async function apiAdminImpersonate(req, res, ctx) {
   if (ctx.impersonator) return core.sendJson(res, 409, { error: 'nested impersonation is not allowed', code: 'nested_impersonation' });
   const b = ctx.body || {}; const reason = String(b.reason || '').trim().slice(0, 240); const target = core.db().users.find((u) => u.id === String(b.userId || ''));
   if (!reason || !target) return core.sendJson(res, 422, { error: 'valid userId and reason required', code: 'bad_impersonation' });
-  if (!core.verifyPassword(String(b.password || ''), ctx.user.passHash)) return core.sendJson(res, 401, { error: 'password re-authentication failed', code: 'reauth_failed' });
+
+  // Re-authentication verification: password verification for local users, or verified Clerk session for Clerk admins
+  let reauthOk = false;
+  if (ctx.user.passHash && b.password) {
+    reauthOk = core.verifyPassword(String(b.password), ctx.user.passHash);
+  } else if (ctx.user.clerkUserId) {
+    const clerkTok = clerk.extractToken(req) || (ctx.session && ctx.session.token);
+    if (clerkTok) {
+      try {
+        const v = await clerk.verifyClerkToken(clerkTok);
+        reauthOk = (v && v.userId === ctx.user.clerkUserId);
+      } catch (_) {
+        reauthOk = false;
+      }
+    }
+  }
+  if (!reauthOk) return core.sendJson(res, 401, { error: 're-authentication failed', code: 'reauth_failed' });
   if (target.role === 'super_admin' || target.status !== 'active') return core.sendJson(res, 403, { error: 'that account cannot be impersonated', code: 'impersonation_forbidden' });
   const tenant = core.db().tenants.find((t) => t.id === target.tenantId);
   if (!tenant || tenant.status !== 'active') return core.sendJson(res, 409, { error: 'target tenant is not active', code: 'target_inactive' });
@@ -2997,6 +3071,72 @@ function normalizeRun(run, tenantId) {
   };
 }
 
+// Synchronize latest Dograh workflow runs (inbound and outbound) into tenant's callRecordings and WACRM leads
+async function syncDograhRecordingsForTenant(tenantId, options = {}) {
+  if (!providers.telephony || !providers.telephony.live) return [];
+  try {
+    const limit = options.limit || 50;
+    const { runs } = await providers.telephony.fetchRecordings({ limit });
+    if (!Array.isArray(runs) || runs.length === 0) return [];
+
+    const d = core.db();
+    const existingRecs = d.callRecordings || [];
+
+    // Find runs that are not yet stored for this tenant, or whose details/transcripts are pending
+    const runsToFetch = [];
+    for (const run of runs) {
+      const runId = String(run.id || run.run_id);
+      const existing = existingRecs.find((r) => r.dograhRunId === runId && r.tenantId === tenantId);
+      if (!existing || !existing.transcript || existing.status === 'initiated' || existing.status === 'in_progress') {
+        runsToFetch.push(run);
+      }
+    }
+
+    if (runsToFetch.length === 0) return [];
+
+    const batch = runsToFetch.slice(0, 15);
+    const updated = [];
+
+    for (const run of batch) {
+      try {
+        const detail = await providers.telephony.fetchRunDetail(run.id);
+        if (detail) {
+          const norm = normalizeRun(detail, tenantId);
+          await core.mutate(async (mutDb) => {
+            if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
+            const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === String(run.id) && r.tenantId === tenantId);
+            if (idx >= 0) {
+              mutDb.callRecordings[idx] = { ...mutDb.callRecordings[idx], ...norm, tenantId };
+            } else {
+              mutDb.callRecordings.unshift(norm);
+            }
+
+            // Sync into WACRM leads and timeline
+            if (norm.phoneNumber && (norm.transcript || norm.summary || detail.gathered_context)) {
+              await wacrm.processVoiceCallCompletion(mutDb, tenantId, {
+                ...norm,
+                callerNumber: norm.phoneNumber,
+                gathered_context: detail.gathered_context,
+                logs: detail.logs
+              });
+            }
+          });
+          updated.push(norm);
+        }
+      } catch (_) {}
+    }
+
+    // Ensure all completed calls are reflected in CRM contacts
+    await core.mutate((mutDb) => {
+      wacrm.syncCallRecordingsToCrm(mutDb, tenantId);
+    });
+
+    return updated;
+  } catch (err) {
+    return [];
+  }
+}
+
 // GET /api/recordings - list recordings, sync from Dograh first.
 async function apiRecordingsList(req, res, ctx) {
   if (ctx.tenant.privacyMode === 'no_recording') {
@@ -3006,38 +3146,25 @@ async function apiRecordingsList(req, res, ctx) {
     const q = new URL(req.url, 'http://local').searchParams;
     const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
     const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
-    // Refresh status and details strictly for this tenant's own recordings
-    const d = core.db();
-    const activeRuns = (d.callRecordings || []).filter(
-      (r) => r.tenantId === ctx.tenant.id && r.dograhRunId && (!r.transcript || r.status === 'initiated' || r.status === 'in_progress')
-    );
-    if (activeRuns.length > 0) {
-      for (const rec of activeRuns.slice(0, 10)) {
-        try {
-          const detail = await providers.telephony.fetchRunDetail(rec.dograhRunId);
-          if (detail) {
-            const updated = normalizeRun(detail, ctx.tenant.id);
-            await core.mutate((mutDb) => {
-              if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
-              const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === rec.dograhRunId && r.tenantId === ctx.tenant.id);
-              if (idx >= 0) {
-                mutDb.callRecordings[idx] = { ...mutDb.callRecordings[idx], ...updated, tenantId: ctx.tenant.id };
-              }
-            });
-          }
-        } catch (_) {}
-      }
-    }
+
+    // Live sync from Dograh
+    await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
 
     let all = (core.db().callRecordings || [])
       .filter((r) => r.tenantId === ctx.tenant.id);
-    if (all.length === 0 && !ctx.tenant.id.startsWith('t_test_rzp_') && !ctx.tenant.id.startsWith('test_')) {
+
+    // If real calls exist from Dograh (dograhRunId > 100000), omit dummy seed records so user sees real calls
+    const hasRealRuns = all.some((r) => r.dograhRunId && Number(r.dograhRunId) > 100000);
+    if (hasRealRuns) {
+      all = all.filter((r) => !r.id.startsWith('rec_t') || (r.dograhRunId && Number(r.dograhRunId) > 100000));
+    } else if (all.length === 0 && !ctx.tenant.id.startsWith('t_test_rzp_') && !ctx.tenant.id.startsWith('test_')) {
       await core.mutate((mutDb) => {
         demoSeeder.seedTenantDataIfEmpty(mutDb, ctx.tenant.id, ctx.tenant.name);
       });
       all = (core.db().callRecordings || [])
         .filter((r) => r.tenantId === ctx.tenant.id);
     }
+
     all.sort((a, b) => (b.startedAt || b.syncedAt || '').localeCompare(a.startedAt || a.syncedAt || ''));
     const total = all.length;
     const page = all.slice(offset, offset + limit);
@@ -3054,20 +3181,34 @@ async function apiRecordingDetail(req, res, ctx) {
   }
   const url = new URL(req.url, 'http://local');
   const recId = url.pathname.split('/').filter(Boolean).pop();
-  const cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
-  if (!cached) return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
-  // Fetch fresh detail (logs & transcript may be richer than list response).
+  let cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
+  const runIdToFetch = (cached && cached.dograhRunId) || recId.replace(/^rec_/, '');
+
   try {
-    const detail = await providers.telephony.fetchRunDetail(cached.dograhRunId);
+    const detail = await providers.telephony.fetchRunDetail(runIdToFetch);
     const updated = normalizeRun({ ...detail }, ctx.tenant.id);
-    await core.mutate((d) => {
+    await core.mutate(async (d) => {
       if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
-      const idx = d.callRecordings.findIndex((r) => r.dograhRunId === cached.dograhRunId && r.tenantId === ctx.tenant.id);
-      if (idx >= 0) d.callRecordings[idx] = { ...d.callRecordings[idx], ...updated };
+      const idx = d.callRecordings.findIndex((r) => r.dograhRunId === String(runIdToFetch) && r.tenantId === ctx.tenant.id);
+      if (idx >= 0) {
+        d.callRecordings[idx] = { ...d.callRecordings[idx], ...updated, tenantId: ctx.tenant.id };
+      } else {
+        d.callRecordings.unshift(updated);
+      }
+      // Automatically extract and sync real lead information into CRM
+      if (updated.phoneNumber && (updated.transcript || updated.summary || detail.gathered_context)) {
+        await wacrm.processVoiceCallCompletion(d, ctx.tenant.id, {
+          ...updated,
+          callerNumber: updated.phoneNumber,
+          gathered_context: detail.gathered_context,
+          logs: detail.logs
+        });
+      }
     });
-    return core.sendJson(res, 200, { recording: { ...cached, ...updated } });
+    return core.sendJson(res, 200, { recording: { ...(cached || {}), ...updated } });
   } catch (_) {
-    return core.sendJson(res, 200, { recording: cached });
+    if (cached) return core.sendJson(res, 200, { recording: cached });
+    return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
   }
 }
 
@@ -3127,17 +3268,16 @@ async function apiRecordingAudio(req, res, ctx) {
     return core.sendJson(res, 403, { error: 'Recording audio is disabled by your privacy policy', code: 'privacy_blocked' });
   }
   const parts = (new URL(req.url, 'http://local')).pathname.split('/').filter(Boolean);
-  // parts: ['api','recordings',':id','audio']
   const recId = parts[2];
   const cached = (core.db().callRecordings || []).find((r) => (r.id === recId || r.dograhRunId === recId) && r.tenantId === ctx.tenant.id);
-  if (!cached) return core.sendJson(res, 404, { error: 'Recording not found', code: 'not_found' });
+  const dograhRunId = (cached && cached.dograhRunId) || recId.replace(/^rec_/, '');
   try {
-    const { buffer, contentType } = await providers.telephony.fetchRecordingAudio(cached.dograhRunId);
+    const { buffer, contentType } = await providers.telephony.fetchRecordingAudio(dograhRunId);
     core.send(res, 200, buffer, {
       'Content-Type': contentType,
       'Content-Length': String(buffer.length),
       'Cache-Control': 'private, max-age=3600',
-      'Content-Disposition': `inline; filename="call-${cached.dograhRunId}.mp3"`,
+      'Content-Disposition': `inline; filename="call-${dograhRunId}.mp3"`,
     });
   } catch (e) {
     handleProviderError(res, e);
@@ -3145,10 +3285,15 @@ async function apiRecordingAudio(req, res, ctx) {
 }
 
 /* ==========================================================================
-   WACRM & WhatsApp Business Cloud API Handlers
+   WACRM & CRM Pipeline Handlers
    ========================================================================== */
 
-function apiCrmContactsList(req, res, ctx) {
+async function apiCrmContactsList(req, res, ctx) {
+  // Automatically sync Dograh calls and extracted caller details into CRM contacts
+  await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
+  await core.mutate((mutDb) => {
+    wacrm.syncCallRecordingsToCrm(mutDb, ctx.tenant.id);
+  });
   const d = core.db();
   const q = new URL(req.url, 'http://local').searchParams;
   const stage = q.get('stage');
@@ -3209,7 +3354,12 @@ async function apiCrmImportContacts(req, res, ctx) {
   core.sendJson(res, 200, { imported: imported.length, contacts: imported });
 }
 
-function apiCrmPipelineGet(req, res, ctx) {
+async function apiCrmPipelineGet(req, res, ctx) {
+  // Automatically sync Dograh calls and extracted caller details into CRM contacts
+  await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
+  await core.mutate((mutDb) => {
+    wacrm.syncCallRecordingsToCrm(mutDb, ctx.tenant.id);
+  });
   const d = core.db();
   const contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
   const stages = wacrm.DEFAULT_STAGES;
@@ -3247,868 +3397,112 @@ async function apiCrmDealUpdate(req, res, ctx) {
   core.sendJson(res, 200, { contact: updatedContact });
 }
 
-function apiWhatsAppConversationsList(req, res, ctx) {
-  const d = core.db();
-  const convs = (d.waConversations || [])
-    .filter((c) => c.tenantId === ctx.tenant.id)
-    .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
-  core.sendJson(res, 200, { conversations: convs });
-}
-
-function apiWhatsAppMessagesList(req, res, ctx) {
-  const d = core.db();
-  const q = new URL(req.url, 'http://local').searchParams;
-  const convId = q.get('conversationId');
-  const phone = q.get('phone');
-
-  let msgs = (d.waMessages || []).filter((m) => m.tenantId === ctx.tenant.id);
-  if (convId) msgs = msgs.filter((m) => m.conversationId === convId);
-  else if (phone) msgs = msgs.filter((m) => m.phone === wacrm.normalizeE164(phone));
-
-  if (convId) {
-    core.mutate((database) => {
-      const conv = (database.waConversations || []).find((c) => c.id === convId && c.tenantId === ctx.tenant.id);
-      if (conv) conv.unreadCount = 0;
-    }).catch(() => {});
-  }
-
-  core.sendJson(res, 200, { messages: msgs });
-}
-
-async function apiWhatsAppSendMessage(req, res, ctx) {
+// POST /api/crm/lead-from-call - log live browser/testing voice call into CRM leads
+async function apiCrmLeadFromCall(req, res, ctx) {
   const b = ctx.body || {};
-  // Accept both `to` and `phone` field names from callers
-  const to = wacrm.normalizeE164(b.to || b.phone || '');
-  const templateName = String(b.templateName || (b.type === 'template' ? b.template : '') || '').trim();
-  const isTemplate = !!templateName;
-  const text = String(b.text || b.message || (isTemplate ? `[Template: ${templateName}]` : '')).trim();
-
-  if (!to) {
-    return core.sendJson(res, 400, { error: 'Recipient phone number is required (field: to or phone)', code: 'bad_phone' });
+  let messages = Array.isArray(b.messages) ? b.messages : [];
+  let transcript = b.transcript || '';
+  if (!transcript && messages.length > 0) {
+    transcript = messages
+      .map((m) => `${m.role === 'bot' || m.role === 'model' ? 'Agent' : 'Caller'}: ${m.text || m.content || ''}`)
+      .join('\n');
   }
-  if (!text && !isTemplate) {
-    return core.sendJson(res, 400, { error: 'Message text or templateName is required', code: 'bad_text' });
-  }
+  const phone = b.phone || b.callerNumber || '+91' + Math.floor(6000000000 + Math.random() * 3999999999);
+  let contact = null;
+  await core.mutate(async (mutDb) => {
+    contact = await wacrm.processVoiceCallCompletion(mutDb, ctx.tenant.id, {
+      phoneNumber: phone,
+      callerNumber: phone,
+      callerName: b.name,
+      transcript,
+      summary: b.summary || '',
+      gathered_context: b.gathered_context || b.gatheredContext || {},
+      dealValue: b.dealValue,
+      email: b.email,
+      durationSec: b.durationSec || 60,
+      stage: b.stage || undefined
+    });
+  });
+  if (!contact) return core.sendJson(res, 400, { error: 'Could not create lead from call', code: 'lead_failed' });
+  core.sendJson(res, 200, { ok: true, contact });
+}
 
-  const d = core.db();
-  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
-
-  let deliveryStatus = 'sent';
-  let apiResult = null;
-  let sendError = null;
-
+// POST /api/telephony/webhook & /api/calls/webhook - telephony provider completion callback
+async function apiTelephonyWebhook(req, res, body) {
+  let payload = {};
   try {
-    if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
-      if (isTemplate) {
-        apiResult = await wacrm.sendMetaTemplateMessage({
-          phoneId: cfg.metaPhoneId,
-          token: cfg.metaToken,
-          to,
-          templateName,
-          languageCode: b.languageCode || 'en_US',
-          components: Array.isArray(b.components) ? b.components : []
-        });
-      } else {
-        apiResult = await wacrm.sendMetaWhatsAppMessage({
-          phoneId: cfg.metaPhoneId,
-          token: cfg.metaToken,
-          to,
-          text
-        });
-      }
-      deliveryStatus = 'sent';
-    } else if (cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
-      apiResult = await wacrm.sendWacrmApiMessage({
-        baseUrl: cfg.wacrmBaseUrl,
-        apiKey: cfg.wacrmApiKey,
-        to,
-        text,
-        type: isTemplate ? 'template' : 'text',
-        template: isTemplate ? { name: templateName } : null
-      });
-      deliveryStatus = 'sent';
+    if (typeof body === 'string') {
+      try { payload = JSON.parse(body); } catch (_) { payload = querystring.parse(body); }
+    } else if (body && typeof body === 'object') {
+      payload = body;
+    }
+  } catch (_) {}
+
+  const run = payload.run || payload.call || payload.data || payload;
+  const tenants = core.db().tenants || [];
+  const tenantId = payload.tenantId || (run && run.tenantId) || (tenants[0] && tenants[0].id) || 't_horizon_law_demo';
+  const updated = normalizeRun(run, tenantId);
+
+  await core.mutate(async (d) => {
+    if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+    const idx = d.callRecordings.findIndex((r) => (r.dograhRunId === updated.dograhRunId || r.id === updated.id) && r.tenantId === tenantId);
+    if (idx >= 0) {
+      d.callRecordings[idx] = { ...d.callRecordings[idx], ...updated };
     } else {
-      // No WhatsApp provider configured -- log it as a warning, record locally
-      sendError = 'No WhatsApp provider configured. Go to Settings > WhatsApp to add Meta credentials.';
-      deliveryStatus = 'pending_config';
-      console.warn('[WhatsApp Send]', sendError);
+      d.callRecordings.unshift(updated);
     }
-  } catch (err) {
-    deliveryStatus = 'failed';
-    sendError = err.message;
-    console.warn('[WhatsApp Send Warning]:', err.message);
-  }
-
-  let msgRecord;
-  await core.mutate((database) => {
-    msgRecord = wacrm.recordMessage(database, ctx.tenant.id, {
-      phone: to,
-      direction: 'outbound',
-      type: isTemplate ? 'template' : 'text',
-      text,
-      status: deliveryStatus,
-      metadata: { ...(apiResult || {}), templateName: templateName || undefined, sendError }
-    });
-  });
-
-  core.sendJson(res, 200, { message: msgRecord, delivered: deliveryStatus === 'sent', status: deliveryStatus, warning: sendError || undefined });
-}
-
-function apiWhatsAppConfigGet(req, res, ctx) {
-  const d = core.db();
-  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
-  const safeCfg = {
-    ...cfg,
-    metaToken: cfg.metaToken ? '●●●●●●●●' : '',
-    metaAppSecret: cfg.metaAppSecret ? '●●●●●●●●' : '',
-    wacrmApiKey: cfg.wacrmApiKey ? '●●●●●●●●' : '',
-    hasMetaToken: !!cfg.metaToken,
-    hasMetaAppSecret: !!cfg.metaAppSecret,
-    hasWacrmApiKey: !!cfg.wacrmApiKey,
-  };
-  core.sendJson(res, 200, { config: safeCfg });
-}
-
-async function apiWhatsAppConfigSave(req, res, ctx) {
-  const b = ctx.body || {};
-  let updated;
-  await core.mutate((d) => {
-    const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
-    if (b.mode) cfg.mode = b.mode;
-    if (b.metaAppId !== undefined) cfg.metaAppId = String(b.metaAppId).trim();
-    if (b.metaAppSecret && b.metaAppSecret !== '●●●●●●●●') cfg.metaAppSecret = String(b.metaAppSecret).trim();
-    if (b.metaPhoneId !== undefined) cfg.metaPhoneId = String(b.metaPhoneId).trim();
-    if (b.metaWabaId !== undefined) cfg.metaWabaId = String(b.metaWabaId).trim();
-    if (b.metaToken && b.metaToken !== '●●●●●●●●') cfg.metaToken = String(b.metaToken).trim();
-    if (b.wacrmBaseUrl !== undefined) cfg.wacrmBaseUrl = String(b.wacrmBaseUrl).trim();
-    if (b.wacrmApiKey && b.wacrmApiKey !== '●●●●●●●●') cfg.wacrmApiKey = String(b.wacrmApiKey).trim();
-    if (b.autoFollowupEnabled !== undefined) cfg.autoFollowupEnabled = !!b.autoFollowupEnabled;
-    if (b.autoFollowupMessage !== undefined) cfg.autoFollowupMessage = String(b.autoFollowupMessage).trim();
-    cfg.updatedAt = new Date().toISOString();
-    updated = cfg;
-  });
-  core.sendJson(res, 200, { ok: true, config: { ...updated, metaToken: '●●●●●●●●', metaAppSecret: '●●●●●●●●', wacrmApiKey: '●●●●●●●●' } });
-}
-
-function apiWhatsAppTemplatesList(req, res, ctx) {
-  const d = core.db();
-  const templates = (d.waTemplates && d.waTemplates.length) ? d.waTemplates : [
-    {
-      id: 'tpl_welcome',
-      name: 'voice_receptionist_welcome',
-      category: 'UTILITY',
-      body: 'Hi {{1}}, thank you for contacting Seevora AI Voice Receptionist. How can we help you today?',
-      language: 'en'
-    },
-    {
-      id: 'tpl_appointment_confirm',
-      name: 'appointment_confirmation',
-      category: 'UTILITY',
-      body: 'Hello {{1}}, your appointment with our team has been confirmed for {{2}}. Reply to this message if you need to reschedule.',
-      language: 'en'
-    },
-    {
-      id: 'tpl_brochure',
-      name: 'brochure_and_pricing',
-      category: 'MARKETING',
-      body: 'Hi {{1}}, as requested on your call, here is our complete brochure and service catalog: {{2}}.',
-      language: 'en'
-    }
-  ];
-  core.sendJson(res, 200, { templates });
-}
-
-async function apiWhatsAppBroadcastCreate(req, res, ctx) {
-  const bcCheck = plans.assertFeatureAllowed(ctx.tenant, 'broadcasts', ctx.user);
-  if (!bcCheck.allowed) {
-    return core.sendJson(res, 403, {
-      error: bcCheck.error,
-      code: bcCheck.code,
-      requiredPlan: bcCheck.requiredPlan,
-      currentPlan: bcCheck.currentPlan,
-    });
-  }
-
-  const b = ctx.body || {};
-  const name = String(b.name || 'Broadcast ' + new Date().toISOString().slice(0, 10));
-  const text = String(b.text || '');
-  const recipients = Array.isArray(b.recipients) ? b.recipients : [];
-
-  if (!recipients.length || !text) {
-    return core.sendJson(res, 400, { error: 'Recipients list and message text are required', code: 'bad_params' });
-  }
-
-  let broadcast;
-  await core.mutate((d) => {
-    if (!d.waBroadcasts) d.waBroadcasts = [];
-    broadcast = {
-      id: 'bc_' + crypto.randomBytes(8).toString('hex'),
-      tenantId: ctx.tenant.id,
-      name,
-      text,
-      totalRecipients: recipients.length,
-      sentCount: recipients.length,
-      status: 'completed',
-      createdAt: new Date().toISOString()
-    };
-    d.waBroadcasts.unshift(broadcast);
-
-    for (const r of recipients) {
-      const phone = typeof r === 'string' ? r : r.phone;
-      const contactName = (typeof r === 'object' && r.name) ? r.name : '';
-      if (phone) {
-        const personalized = text.replace(/\{\{name\}\}/gi, contactName || 'there');
-        wacrm.recordMessage(d, ctx.tenant.id, {
-          phone,
-          direction: 'outbound',
-          type: 'text',
-          text: personalized,
-          status: 'sent',
-          metadata: { broadcastId: broadcast.id }
-        });
-      }
-    }
-  });
-
-  const cfg = wacrm.getTenantWacrmConfig(core.db(), ctx.tenant.id);
-  if (cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
-    for (const r of recipients) {
-      const phone = typeof r === 'string' ? r : r.phone;
-      const contactName = (typeof r === 'object' && r.name) ? r.name : '';
-      if (phone) {
-        const personalized = text.replace(/\{\{name\}\}/gi, contactName || 'there');
-        wacrm.sendMetaWhatsAppMessage({
-          phoneId: cfg.metaPhoneId,
-          token: cfg.metaToken,
-          to: phone,
-          text: personalized
-        }).catch((err) => {
-          console.error('[WhatsApp Broadcast Live Error]', err.message);
-        });
-      }
-    }
-  }
-
-  core.sendJson(res, 201, { broadcast });
-}
-
-function apiWhatsAppWebhookVerify(req, res) {
-  const url = new URL(req.url, 'http://local');
-  const mode = url.searchParams.get('hub.mode');
-  const token = url.searchParams.get('hub.verify_token');
-  const challenge = url.searchParams.get('hub.challenge');
-
-  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || 'seevora_wa_verify_token';
-  if (mode === 'subscribe' && token === expectedToken) {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    return res.end(challenge);
-  }
-  core.sendJson(res, 403, { error: 'Verification failed' });
-}
-
-async function apiWhatsAppWebhookReceive(req, res, body) {
-  try {
-    const entry = body && body.entry && body.entry[0];
-    const changes = entry && entry.changes && entry.changes[0];
-    const value = changes && changes.value;
-
-    if (value && value.messages && value.messages[0]) {
-      const msg = value.messages[0];
-      const fromPhone = '+' + String(msg.from || '').replace(/^\+/, '');
-      const text = (msg.text && msg.text.body) || '[Media or Interactive Message]';
-
-      const d = core.db();
-      const metaPhoneId = value.metadata && value.metadata.phone_number_id;
-
-      let tenant = null;
-      if (metaPhoneId && d.wacrmConfig) {
-        const foundCfg = d.wacrmConfig.find((c) => c.metaPhoneId === metaPhoneId);
-        if (foundCfg) {
-          tenant = (d.tenants || []).find((t) => t.id === foundCfg.tenantId);
-        }
-      }
-      if (!tenant) {
-        tenant = (d.tenants && d.tenants[0]) ? d.tenants[0] : { id: 'default' };
-      }
-
-      let isNewContact = false;
-      await core.mutate((store) => {
-        const existingContacts = store.crmContacts || [];
-        const exists = existingContacts.find((c) => c.phone === fromPhone);
-        isNewContact = !exists;
-        wacrm.recordMessage(store, tenant.id, {
-          phone: fromPhone,
-          direction: 'inbound',
-          type: msg.type || 'text',
-          text,
-          status: 'received',
-          metadata: msg
-        });
+    // Update CRM contact with real gathered information
+    if (updated.phoneNumber) {
+      await wacrm.processVoiceCallCompletion(d, tenantId, {
+        ...updated,
+        callerNumber: updated.phoneNumber,
+        gathered_context: run.gathered_context,
+        logs: run.logs
       });
-
-      // Fire matching automations asynchronously (don't block the 200 OK to Meta)
-      const triggerCtx = { phone: fromPhone, messageText: text, isNewContact };
-      Promise.all([
-        runAutomationsForTrigger(tenant.id, 'message_received', triggerCtx),
-        runAutomationsForTrigger(tenant.id, 'keyword_match', triggerCtx),
-        isNewContact ? runAutomationsForTrigger(tenant.id, 'new_contact', triggerCtx) : Promise.resolve([])
-      ]).catch((err) => console.error('[WebhookAutomation]', err.message));
     }
-
-    // Also handle status updates (delivered, read, failed)
-    if (value && value.statuses && value.statuses[0]) {
-      // Future: update message delivery status in db
-    }
-
-    core.sendJson(res, 200, { status: 'ok' });
-  } catch (err) {
-    console.error('[WebhookReceive Error]', err.message);
-    core.sendJson(res, 200, { status: 'handled_with_error', error: err.message });
-  }
-}
-
-/* ==========================================================================
-   WhatsApp Automation Engine
-   Trigger types: message_received, keyword_match, new_contact, schedule
-   Step types:    send_message, add_tag, remove_tag, wait, condition, webhook
-   ========================================================================== */
-
-const crypto = require('crypto');
-
-/**
- * List all automations for a tenant.
- */
-function apiAutomationsList(req, res, ctx) {
-  const d = core.db();
-  const automations = (d.waAutomations || []).filter((a) => a.tenantId === ctx.tenant.id);
-  core.sendJson(res, 200, { automations });
-}
-
-/**
- * Create a new automation.
- * Body: { name, triggerType, triggerConfig, steps, isActive }
- */
-async function apiAutomationCreate(req, res, ctx) {
-  const b = ctx.body || {};
-  if (!b.name || !b.triggerType) {
-    return core.sendJson(res, 400, { error: 'name and triggerType are required', code: 'bad_params' });
-  }
-  const VALID_TRIGGERS = ['message_received', 'keyword_match', 'new_contact', 'schedule'];
-  if (!VALID_TRIGGERS.includes(b.triggerType)) {
-    return core.sendJson(res, 400, { error: `Invalid triggerType. Must be one of: ${VALID_TRIGGERS.join(', ')}`, code: 'bad_trigger' });
-  }
-
-  let automation;
-  await core.mutate((d) => {
-    if (!d.waAutomations) d.waAutomations = [];
-    automation = {
-      id: 'auto_' + crypto.randomBytes(8).toString('hex'),
-      tenantId: ctx.tenant.id,
-      name: String(b.name).trim(),
-      triggerType: b.triggerType,
-      triggerConfig: b.triggerConfig || {},
-      steps: Array.isArray(b.steps) ? b.steps : [],
-      isActive: b.isActive !== undefined ? !!b.isActive : true,
-      runCount: 0,
-      lastRunAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    d.waAutomations.unshift(automation);
-  });
-  core.sendJson(res, 201, { automation });
-}
-
-/**
- * Update an automation.
- */
-async function apiAutomationUpdate(req, res, ctx) {
-  const id = (req.url || '').split('?')[0].split('/').pop();
-  const b = ctx.body || {};
-  let automation = null;
-  await core.mutate((d) => {
-    automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
-    if (!automation) return;
-    if (b.name !== undefined) automation.name = String(b.name).trim();
-    if (b.triggerType !== undefined) automation.triggerType = b.triggerType;
-    if (b.triggerConfig !== undefined) automation.triggerConfig = b.triggerConfig;
-    if (b.steps !== undefined) automation.steps = b.steps;
-    if (b.isActive !== undefined) automation.isActive = !!b.isActive;
-    automation.updatedAt = new Date().toISOString();
-  });
-  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
-  core.sendJson(res, 200, { automation });
-}
-
-/**
- * Delete an automation.
- */
-async function apiAutomationDelete(req, res, ctx) {
-  const b = ctx.body || {};
-  const id = String(b.id || '').trim();
-  if (!id) return core.sendJson(res, 400, { error: 'Automation id is required', code: 'bad_id' });
-  let found = false;
-  await core.mutate((d) => {
-    const before = (d.waAutomations || []).length;
-    d.waAutomations = (d.waAutomations || []).filter((a) => !(a.id === id && a.tenantId === ctx.tenant.id));
-    found = d.waAutomations.length < before;
-  });
-  if (!found) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
-  core.sendJson(res, 200, { ok: true });
-}
-
-/**
- * Toggle automation active status.
- */
-async function apiAutomationToggle(req, res, ctx) {
-  const id = (req.url || '').split('?')[0].split('/').pop();
-  const b = ctx.body || {};
-  let automation = null;
-  await core.mutate((d) => {
-    automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
-    if (!automation) return;
-    automation.isActive = b.isActive !== undefined ? !!b.isActive : !automation.isActive;
-    automation.updatedAt = new Date().toISOString();
-  });
-  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
-  core.sendJson(res, 200, { automation });
-}
-
-/**
- * Get automation logs.
- */
-function apiAutomationLogs(req, res, ctx) {
-  const id = (req.url || '').split('?')[0].replace('/logs', '').split('/').pop();
-  const d = core.db();
-  const logs = (d.waAutomationLogs || []).filter((l) => l.automationId === id && l.tenantId === ctx.tenant.id);
-  core.sendJson(res, 200, { logs: logs.slice(-200) });
-}
-
-/**
- * Test WhatsApp connection & credentials.
- */
-async function apiWhatsAppTestConnection(req, res, ctx) {
-  const d = core.db();
-  const cfg = wacrm.getTenantWacrmConfig(d, ctx.tenant.id);
-  if (cfg.mode === 'meta_cloud') {
-    const result = await wacrm.testMetaConnection({ phoneId: cfg.metaPhoneId, token: cfg.metaToken });
-    return core.sendJson(res, 200, { mode: 'meta_cloud', config: { phoneId: cfg.metaPhoneId }, ...result });
-  }
-  return core.sendJson(res, 200, { mode: cfg.mode || 'wacrm_api', ok: true, note: 'External WACRM mode' });
-}
-
-/**
- * Test-fire an automation immediately for a given phone number.
- */
-async function apiAutomationTest(req, res, ctx) {
-  const id = (req.url || '').split('?')[0].replace('/test', '').split('/').pop();
-  const b = ctx.body || {};
-  const phone = wacrm.normalizeE164(b.phone || b.to || '');
-  if (!phone) return core.sendJson(res, 400, { error: 'phone is required for test run', code: 'bad_phone' });
-
-  const d = core.db();
-  const automation = (d.waAutomations || []).find((a) => a.id === id && a.tenantId === ctx.tenant.id);
-  if (!automation) return core.sendJson(res, 404, { error: 'Automation not found', code: 'not_found' });
-
-  try {
-    const result = await runAutomationForContact(automation, ctx.tenant.id, phone, { testRun: true, messageText: b.messageText || '' });
-    core.sendJson(res, 200, { ok: true, result });
-  } catch (err) {
-    core.sendJson(res, 500, { error: err.message, code: 'engine_error' });
-  }
-}
-
-/**
- * AI-powered automation creation.
- * Body: { prompt: "When someone messages 'price', reply with pricing and tag as interested" }
- */
-async function apiAutomationAiCreate(req, res, ctx) {
-  const b = ctx.body || {};
-  const prompt = String(b.prompt || '').trim();
-  if (!prompt) return core.sendJson(res, 400, { error: 'prompt is required', code: 'bad_prompt' });
-
-  // Map prompt to automation using rule-based + LLM hybrid
-  try {
-    const systemPrompt = `You are a WhatsApp automation engineer for a business CRM. Based on the user's description, generate a WhatsApp automation as valid JSON.
-
-Schema:
-{
-  "name": "short descriptive name",
-  "triggerType": one of ["message_received", "keyword_match", "new_contact", "schedule"],
-  "triggerConfig": {
-    // For keyword_match: { "keywords": ["price", "pricing", "cost"] }
-    // For schedule:      { "cronExpr": "0 9 * * 1", "message": "...", "audience": "all" }
-    // For message_received / new_contact: {}
-  },
-  "steps": [
-    { "type": "send_message", "text": "Hi {{name}}, ..." },
-    { "type": "add_tag",      "tag": "interested" },
-    { "type": "wait",         "seconds": 3600 },
-    { "type": "webhook",      "url": "https://...", "method": "POST" }
-  ]
-}
-
-Rules:
-- Use {{name}} for contact name, {{phone}} for phone number
-- Only output valid JSON. No markdown, no explanation.
-- Steps must be an array even if only one step.`;
-
-    const llmProvider = require('./lib/providers');
-    const Groq = { apiKey: process.env.GROQ_API_KEY };
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + process.env.GROQ_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'llama3-8b-8192',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 800,
-        response_format: { type: 'json_object' }
-      })
-    });
-    const groqData = await groqRes.json();
-    const raw = groqData.choices && groqData.choices[0] && groqData.choices[0].message && groqData.choices[0].message.content;
-    if (!raw) throw new Error('LLM returned no response');
-
-    let spec;
-    try { spec = JSON.parse(raw); } catch (_) {
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (match) spec = JSON.parse(match[0]);
-      else throw new Error('LLM response was not valid JSON: ' + raw.slice(0, 200));
-    }
-
-    // Create the automation
-    let automation;
-    await core.mutate((d) => {
-      if (!d.waAutomations) d.waAutomations = [];
-      automation = {
-        id: 'auto_' + crypto.randomBytes(8).toString('hex'),
-        tenantId: ctx.tenant.id,
-        name: spec.name || 'AI Automation ' + new Date().toISOString().slice(0, 10),
-        triggerType: spec.triggerType || 'keyword_match',
-        triggerConfig: spec.triggerConfig || {},
-        steps: Array.isArray(spec.steps) ? spec.steps : [],
-        isActive: b.activate !== false,
-        runCount: 0,
-        lastRunAt: null,
-        aiGenerated: true,
-        promptUsed: prompt,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      d.waAutomations.unshift(automation);
-    });
-
-    core.sendJson(res, 201, { automation, aiGenerated: true });
-  } catch (err) {
-    console.error('[AutomationAI Error]', err.message);
-    core.sendJson(res, 500, { error: 'AI generation failed: ' + err.message, code: 'ai_error' });
-  }
-}
-
-/**
- * Core automation executor.
- * Runs all active automations for a tenant that match the given trigger + context.
- */
-async function runAutomationsForTrigger(tenantId, triggerType, context) {
-  const d = core.db();
-  const automations = (d.waAutomations || []).filter(
-    (a) => a.tenantId === tenantId && a.isActive && a.triggerType === triggerType
-  );
-  const results = [];
-  for (const automation of automations) {
-    try {
-      const matched = checkTriggerMatch(automation, context);
-      if (!matched) continue;
-      const result = await runAutomationForContact(automation, tenantId, context.phone, context);
-      results.push({ automationId: automation.id, name: automation.name, result });
-    } catch (err) {
-      console.error('[AutomationEngine] Automation', automation.id, 'failed:', err.message);
-      logAutomationRun(tenantId, automation.id, context.phone, 'error', err.message);
-    }
-  }
-  return results;
-}
-
-/**
- * Check whether a trigger configuration matches the incoming context.
- */
-function checkTriggerMatch(automation, context) {
-  const tc = automation.triggerConfig || {};
-  switch (automation.triggerType) {
-    case 'message_received':
-      return true; // fires on any inbound message
-    case 'keyword_match': {
-      const keywords = Array.isArray(tc.keywords) ? tc.keywords : [];
-      if (!keywords.length) return false;
-      const msgLower = String(context.messageText || '').toLowerCase();
-      return keywords.some((kw) => msgLower.includes(String(kw).toLowerCase()));
-    }
-    case 'new_contact':
-      return !!context.isNewContact;
-    case 'schedule':
-      return false; // schedule runs via cron, not inbound webhook
-    default:
-      return false;
-  }
-}
-
-/**
- * Execute automation steps against a specific contact phone.
- */
-async function runAutomationForContact(automation, tenantId, phone, context) {
-  const d = core.db();
-  const cfg = wacrm.getTenantWacrmConfig(d, tenantId);
-  const contact = d.crmContacts && d.crmContacts.find((c) => c.tenantId === tenantId && c.phone === phone);
-  const contactName = (contact && contact.name) || 'there';
-
-  const stepLog = [];
-  for (const step of (automation.steps || [])) {
-    try {
-      switch (step.type) {
-        case 'send_message': {
-          const text = String(step.text || '')
-            .replace(/\{\{name\}\}/gi, contactName)
-            .replace(/\{\{phone\}\}/gi, phone);
-          let sendSuccess = false;
-          let sendError = null;
-          let sendMode = 'simulation';
-
-          if (text && cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
-            try {
-              await wacrm.sendMetaWhatsAppMessage({ phoneId: cfg.metaPhoneId, token: cfg.metaToken, to: phone, text });
-              sendSuccess = true;
-              sendMode = 'meta_cloud';
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'delivered', metadata: { automationId: automation.id } });
-              });
-            } catch (metaErr) {
-              sendError = metaErr.message;
-              console.error('[Automation Meta Send Error]', metaErr.message);
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'failed', metadata: { automationId: automation.id, error: metaErr.message } });
-              });
-              stepLog.push({ type: 'send_message', text, ok: false, error: metaErr.message });
-              break;
-            }
-          } else if (text && cfg.mode === 'wacrm_api' && cfg.wacrmBaseUrl && cfg.wacrmApiKey) {
-            try {
-              await wacrm.sendWacrmApiMessage({ baseUrl: cfg.wacrmBaseUrl, apiKey: cfg.wacrmApiKey, to: phone, text });
-              sendSuccess = true;
-              sendMode = 'wacrm_api';
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'delivered', metadata: { automationId: automation.id } });
-              });
-            } catch (wacrmErr) {
-              sendError = wacrmErr.message;
-              console.error('[Automation WACRM Send Error]', wacrmErr.message);
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'failed', metadata: { automationId: automation.id, error: wacrmErr.message } });
-              });
-              stepLog.push({ type: 'send_message', text, ok: false, error: wacrmErr.message });
-              break;
-            }
-          } else if (text) {
-            // Local simulation / pending config mode
-            await core.mutate((db) => {
-              wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'text', text, status: 'simulated', metadata: { automationId: automation.id, note: 'Simulated dispatch (No active WhatsApp gateway credentials)' } });
-            });
-            sendSuccess = true;
-            sendMode = 'simulated';
-          }
-          stepLog.push({ type: 'send_message', text, ok: sendSuccess, mode: sendMode, error: sendError });
-          break;
-        }
-        case 'send_template': {
-          const templateName = String(step.templateName || '').trim();
-          let templateSuccess = false;
-          let templateError = null;
-          if (templateName && cfg.mode === 'meta_cloud' && cfg.metaPhoneId && cfg.metaToken) {
-            try {
-              await wacrm.sendMetaTemplateMessage({
-                phoneId: cfg.metaPhoneId,
-                token: cfg.metaToken,
-                to: phone,
-                templateName: templateName,
-                languageCode: step.languageCode || 'en'
-              });
-              templateSuccess = true;
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'template', text: `[Template: ${templateName}]`, status: 'delivered', metadata: { automationId: automation.id, templateName } });
-              });
-            } catch (tmplErr) {
-              templateError = tmplErr.message;
-              await core.mutate((db) => {
-                wacrm.recordMessage(db, tenantId, { phone, direction: 'outbound', type: 'template', text: `[Template: ${templateName}]`, status: 'failed', metadata: { automationId: automation.id, error: tmplErr.message } });
-              });
-              stepLog.push({ type: 'send_template', templateName, ok: false, error: tmplErr.message });
-              break;
-            }
-          } else {
-            templateSuccess = true;
-          }
-          stepLog.push({ type: 'send_template', templateName, ok: templateSuccess, error: templateError });
-          break;
-        }
-        case 'add_tag': {
-          const tag = String(step.tag || '').trim();
-          if (tag) {
-            await core.mutate((db) => {
-              const c = (db.crmContacts || []).find((x) => x.tenantId === tenantId && x.phone === phone);
-              if (c) c.tags = [...new Set([...(c.tags || []), tag])];
-            });
-          }
-          stepLog.push({ type: 'add_tag', tag, ok: true });
-          break;
-        }
-        case 'remove_tag': {
-          const tag = String(step.tag || '').trim();
-          if (tag) {
-            await core.mutate((db) => {
-              const c = (db.crmContacts || []).find((x) => x.tenantId === tenantId && x.phone === phone);
-              if (c) c.tags = (c.tags || []).filter((t) => t !== tag);
-            });
-          }
-          stepLog.push({ type: 'remove_tag', tag, ok: true });
-          break;
-        }
-        case 'wait': {
-          // Blocking wait -- only used in test mode with small values
-          const ms = Math.min(Number(step.seconds || 0) * 1000, 5000);
-          if (ms > 0 && context && context.testRun) await new Promise((r) => setTimeout(r, ms));
-          stepLog.push({ type: 'wait', seconds: step.seconds, ok: true });
-          break;
-        }
-        case 'webhook': {
-          if (step.url) {
-            const payload = { automationId: automation.id, phone, contactName, messageText: context.messageText || '', timestamp: new Date().toISOString() };
-            const u = new URL(step.url);
-            const isHttps = u.protocol === 'https:';
-            const mod = isHttps ? require('https') : require('http');
-            await new Promise((resolve) => {
-              const reqOpts = { hostname: u.hostname, port: u.port || (isHttps ? 443 : 80), path: u.pathname + u.search, method: step.method || 'POST', headers: { 'Content-Type': 'application/json' } };
-              const r = mod.request(reqOpts, (res) => { res.resume(); res.on('end', resolve); });
-              r.on('error', () => resolve());
-              r.setTimeout(8000, () => r.destroy());
-              r.end(JSON.stringify(payload));
-            });
-          }
-          stepLog.push({ type: 'webhook', url: step.url, ok: true });
-          break;
-        }
-        case 'condition': {
-          stepLog.push({ type: 'condition', ok: true, note: 'condition evaluated' });
-          break;
-        }
-        default:
-          stepLog.push({ type: step.type, ok: false, note: 'unknown step type' });
-      }
-    } catch (stepErr) {
-      stepLog.push({ type: step.type, ok: false, error: stepErr.message });
-    }
-  }
-
-  // Update run stats
-  await core.mutate((db) => {
-    const a = (db.waAutomations || []).find((x) => x.id === automation.id);
-    if (a) { a.runCount = (a.runCount || 0) + 1; a.lastRunAt = new Date().toISOString(); }
   });
 
-  const hasErrors = stepLog.some((s) => s.ok === false);
-  const overallStatus = hasErrors ? 'partial_error' : 'success';
-  logAutomationRun(tenantId, automation.id, phone, overallStatus, JSON.stringify(stepLog));
-  return stepLog;
+  return core.sendJson(res, 200, { ok: true, runId: updated.dograhRunId || updated.id });
 }
-
-/**
- * Append an automation run log entry.
- */
-function logAutomationRun(tenantId, automationId, phone, status, detail) {
-  core.mutate((d) => {
-    if (!d.waAutomationLogs) d.waAutomationLogs = [];
-    d.waAutomationLogs.push({
-      id: 'alog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      tenantId,
-      automationId,
-      phone,
-      status,
-      detail,
-      createdAt: new Date().toISOString()
-    });
-    // Keep only last 2000 logs across all automations
-    if (d.waAutomationLogs.length > 2000) d.waAutomationLogs = d.waAutomationLogs.slice(-2000);
-  }).catch(() => {});
-}
-
-/**
- * Cron runner for schedule-based automations.
- * Called once per minute via setInterval.
- */
-function runScheduledAutomations() {
-  const d = core.db();
-  const now = new Date();
-  const scheduled = (d.waAutomations || []).filter((a) => a.isActive && a.triggerType === 'schedule');
-  for (const automation of scheduled) {
-    const tc = automation.triggerConfig || {};
-    if (!tc.cronExpr) continue;
-    try {
-      if (cronMatches(tc.cronExpr, now)) {
-        const tenantId = automation.tenantId;
-        const cfg = wacrm.getTenantWacrmConfig(d, tenantId);
-        const contacts = (d.crmContacts || []).filter((c) => {
-          if (c.tenantId !== tenantId) return false;
-          if (tc.audience === 'all') return true;
-          if (tc.audience) return c.stage === tc.audience || (c.tags && c.tags.includes(tc.audience));
-          return true;
-        });
-        for (const contact of contacts) {
-          runAutomationForContact(automation, tenantId, contact.phone, { messageText: '', isNewContact: false })
-            .catch((err) => console.error('[ScheduleAutomation]', automation.id, err.message));
-        }
-      }
-    } catch (_) {}
-  }
-}
-
-/**
- * Minimal cron expression matcher (5-field: min hour dom month dow).
- */
-function cronMatches(expr, date) {
-  const parts = String(expr).trim().split(/\s+/);
-  if (parts.length !== 5) return false;
-  const [minE, hourE, , , ] = parts;
-  const matchField = (field, val) => {
-    if (field === '*') return true;
-    if (field.includes('/')) {
-      const [, step] = field.split('/');
-      return val % parseInt(step, 10) === 0;
-    }
-    return String(val) === field;
-  };
-  return matchField(minE, date.getMinutes()) && matchField(hourE, date.getHours());
-}
-
-// Kick off the scheduled automation runner every 60 seconds after boot.
-setTimeout(() => {
-  setInterval(runScheduledAutomations, 60 * 1000);
-}, 5000);
 
 /* ==========================================================================
    Router
    ========================================================================== */
 
 const server = http.createServer(async (req, res) => {
+  const start = Date.now();
+  const reqId = logger.getRequestId(req);
+  res.setHeader('X-Request-Id', reqId);
   const ip = requestRateKey(req);
   const route = (req.url || '/').split('?')[0];
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.recordRequest(req.method, route, res.statusCode, duration);
+    if (route.startsWith('/api/') && route !== '/healthz' && route !== '/readyz') {
+      logger.info(`${req.method} ${route} ${res.statusCode} (${duration}ms)`, {
+        reqId, method: req.method, route, statusCode: res.statusCode, latencyMs: duration
+      });
+    }
+  });
+
+  // Health, Readiness & Metrics probes (Kubernetes / Docker / Cloud Run)
+  if (route === '/healthz' && req.method === 'GET') {
+    return core.sendJson(res, 200, { status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+  }
+  if (route === '/readyz' && req.method === 'GET') {
+    const dbReady = Boolean(core.db());
+    return core.sendJson(res, dbReady ? 200 : 503, { status: dbReady ? 'ready' : 'degraded', database: dbReady ? 'ok' : 'error' });
+  }
+  if ((route === '/metrics' || route === '/api/metrics') && req.method === 'GET') {
+    return core.sendJson(res, 200, logger.getMetrics());
+  }
 
   try {
     if (route.startsWith('/api/')) {
       if (!core.rateOk(ip)) return core.sendJson(res, 429, { error: 'rate limited', code: 'rate' });
 
-      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/whatsapp/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return';
+      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return' || route === '/api/telephony/webhook' || route === '/api/calls/webhook';
       if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !inboundWebhook && !requestOriginAllowed(req)) {
         return core.sendJson(res, 403, { error: 'cross-origin request blocked', code: 'bad_origin' });
       }
@@ -4182,15 +3576,6 @@ const server = http.createServer(async (req, res) => {
         if (route.startsWith('/api/recordings/') && !route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingDetail);
         if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactsList);
         if (route === '/api/crm/pipeline') return core.requireAuth(req, res, apiCrmPipelineGet);
-        if (route === '/api/whatsapp/conversations') return core.requireAuth(req, res, apiWhatsAppConversationsList);
-        if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppMessagesList);
-        if (route === '/api/whatsapp/templates') return core.requireAuth(req, res, apiWhatsAppTemplatesList);
-        if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigGet);
-        if (route === '/api/whatsapp/test-connection') return core.requireAuth(req, res, apiWhatsAppTestConnection);
-        if (route === '/api/whatsapp/webhook') return apiWhatsAppWebhookVerify(req, res);
-        // Automation routes (GET)
-        if (route === '/api/automations') return core.requireAuth(req, res, apiAutomationsList);
-        if (route.startsWith('/api/automations/') && route.endsWith('/logs')) return core.requireAuth(req, res, apiAutomationLogs);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -4210,7 +3595,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Public POST (auth & webhooks) routes.
-      if (route === '/api/whatsapp/webhook') return apiWhatsAppWebhookReceive(req, res, body);
+      if (route === '/api/telephony/webhook' || route === '/api/calls/webhook') return apiTelephonyWebhook(req, res, body);
       if (route === '/api/auth/signup') return apiSignup(req, res, body);
       if (route === '/api/auth/login') return apiLogin(req, res, body);
       if (route === '/api/auth/logout') return apiLogout(req, res);
@@ -4225,19 +3610,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactUpsert, body);
       if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
-      if (route === '/api/whatsapp/messages') return core.requireAuth(req, res, apiWhatsAppSendMessage, body);
-      if (route === '/api/whatsapp/config') return core.requireAuth(req, res, apiWhatsAppConfigSave, body);
-      if (route === '/api/whatsapp/test-connection') return core.requireAuth(req, res, apiWhatsAppTestConnection, body);
-      if (route === '/api/whatsapp/broadcasts') return core.requireAuth(req, res, apiWhatsAppBroadcastCreate, body);
-      // Automation CRUD + engine (POST)
-      if (route === '/api/automations') return core.requireAuth(req, res, apiAutomationCreate, body);
-      if (route === '/api/automations/ai') return core.requireAuth(req, res, apiAutomationAiCreate, body);
-      if (route === '/api/automations/delete') return core.requireAuth(req, res, apiAutomationDelete, body);
-      if (route.startsWith('/api/automations/') && route.endsWith('/toggle')) return core.requireAuth(req, res, apiAutomationToggle, body);
-      if (route.startsWith('/api/automations/') && route.endsWith('/test')) return core.requireAuth(req, res, apiAutomationTest, body);
-      if (route.startsWith('/api/automations/') && !route.endsWith('/logs') && !route.endsWith('/toggle') && !route.endsWith('/test')) {
-        return core.requireAuth(req, res, apiAutomationUpdate, body);
-      }
+      if (route === '/api/crm/lead-from-call') return core.requireAuth(req, res, apiCrmLeadFromCall, body);
       if (route === '/api/agents') return core.requireAuth(req, res, apiAgentsCreate, body);
       if (route === '/api/agents/generate-from-needs') return core.requireAuth(req, res, apiAgentsGenerateFromNeeds, body);
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);
@@ -4340,9 +3713,11 @@ server.on('upgrade', async (req, socket, head) => {
 });
 
 sttWss.on('connection', (client, req) => {
+  logger.recordWebSocketOpen();
   const key = process.env.DEEPGRAM_API_KEY;
   if (!key) {
     client.send(JSON.stringify({ type: 'ProxyError', message: 'Deepgram is not configured.' }));
+    logger.recordWebSocketClose();
     return client.close(1011, 'Deepgram unavailable');
   }
 
@@ -4378,6 +3753,7 @@ sttWss.on('connection', (client, req) => {
   const closeBoth = () => {
     if (closed) return;
     closed = true;
+    logger.recordWebSocketClose();
     clearInterval(keepAlive);
     if (client.readyState === WebSocket.OPEN) client.close();
     if (upstream.readyState === WebSocket.OPEN || upstream.readyState === WebSocket.CONNECTING) upstream.close();
@@ -4415,26 +3791,46 @@ sttWss.on('connection', (client, req) => {
 
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') {
-    console.error(`\n  PORT ${PORT} is already in use. Stop the other process or set PORT to a free port, for example: PORT=8788 node server.js\n`);
+    logger.fatal(`PORT ${PORT} is already in use. Stop the other process or set PORT to a free port.`);
     process.exit(1);
   }
-  console.error('  server error:', e.message);
+  logger.fatal('Server error occurred', { error: e });
   process.exit(1);
 });
+
+// Graceful container shutdown (SIGTERM for Kubernetes/Docker, SIGINT for Ctrl+C)
+function gracefulShutdown(signal) {
+  logger.info(`Received ${signal}. Shutting down HTTP server gracefully...`);
+  server.close(() => {
+    logger.info('HTTP server closed cleanly. Exiting.');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    logger.warn('Forcing process exit after 10s shutdown timeout.');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Boot then listen.
 boot().then(() => {
   server.listen(PORT, () => {
     const live = providers.describeProviders();
     const flag = (layer, id) => (live[layer].find((p) => p.id === id) || {}).live ? 'ok' : 'MISSING';
-    console.log('\n  Seevora AI Voice Receptionist  ready');
-    console.log(`  Portal & Login: http://localhost:${PORT}/`);
-    console.log(`  Console       : http://localhost:${PORT}/app.html`);
-    console.log(`  Admin Demo    : admin@demo.com (admin123)`);
-    console.log(`  Client Demo   : client@demo.com (client123)`);
-    console.log(`  Providers     : deepgram ${flag('stt', 'deepgram')}  groq ${flag('llm', 'groq')}  rumik ${flag('tts', 'rumik')}  vobiz ${flag('telephony', 'vobiz')}\n`);
+    logger.info('Seevora AI Voice Receptionist ready', {
+      port: PORT,
+      url: `http://localhost:${PORT}/`,
+      providers: {
+        stt: flag('stt', 'deepgram'),
+        llm: flag('llm', 'groq'),
+        tts: flag('tts', 'rumik'),
+        telephony: flag('telephony', 'vobiz'),
+      },
+    });
   });
 }).catch((e) => {
-  console.error('  boot failed:', e.message);
+  logger.fatal('Application boot failed', { error: e });
   process.exit(1);
 });

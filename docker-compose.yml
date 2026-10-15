@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  seevora-voice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seevora-voice-prod
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8787}:8080"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

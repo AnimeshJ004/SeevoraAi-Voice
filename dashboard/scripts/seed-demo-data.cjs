@@ -385,123 +385,6 @@ targetTenants.forEach((tenant) => {
     });
   }
 
-  // 7. Ensure WhatsApp Conversations & Messages
-  const tenantConvs = db.waConversations.filter((c) => c.tenantId === tid);
-  if (tenantConvs.length < 3) {
-    const waThreads = [
-      {
-        phone: '+919820154321',
-        name: 'Rohan Sharma',
-        preview: 'Aapka consultation 4:30 PM confirm ho gaya hai.',
-        messages: [
-          { from: 'user', text: 'Hi, kya aaj 4:30 PM ka slot confirm hai?' },
-          { from: 'agent', text: 'Namaste Rohan ji! Haan, aapka appointment aaj 4:30 PM par Dr. Sharma ke sath confirmed hai.' },
-          { from: 'user', text: 'Thank you! Main time par aa jaunga.' }
-        ]
-      },
-      {
-        phone: '+919811234567',
-        name: 'Ananya Roy',
-        preview: 'Comprehensive brochure and pricing tiers dispatched.',
-        messages: [
-          { from: 'user', text: 'Hi Priya, can you send the price breakdown?' },
-          { from: 'agent', text: 'Hello Ananya! Here is our complete service catalog and pricing package tiers: https://seevora.ai/catalog' },
-          { from: 'user', text: 'Thanks! Reviewing now.' }
-        ]
-      },
-      {
-        phone: '+919833456789',
-        name: 'Dr. Sameer Verma',
-        preview: 'Clinic Google Maps directions link shared.',
-        messages: [
-          { from: 'user', text: 'Please send clinic location on Google Maps.' },
-          { from: 'agent', text: 'Here is our central clinic location: https://maps.google.com/?q=SeevoraClinic' },
-          { from: 'user', text: 'Got it, thank you!' }
-        ]
-      },
-      {
-        phone: '+919987654321',
-        name: 'Sneha Patel',
-        preview: 'Diagnostic report PDF uploaded.',
-        messages: [
-          { from: 'agent', text: 'Hello Sneha ji! Your diagnostic health report is ready: https://seevora.ai/reports/s_9021.pdf' },
-          { from: 'user', text: 'Received the PDF, thank you so much Priya!' }
-        ]
-      }
-    ];
-
-    waThreads.forEach((th, idx) => {
-      const convId = 'wac_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
-      if (!db.waConversations.some((c) => c.id === convId)) {
-        db.waConversations.push({
-          id: convId,
-          tenantId: tid,
-          phoneNumber: th.phone,
-          customerName: th.name,
-          lastMessageText: th.preview,
-          lastMessageAt: new Date(Date.now() - (idx * 3600000 + 1800000)).toISOString(),
-          unreadCount: 0,
-          createdAt: new Date(Date.now() - 5 * 86400000).toISOString()
-        });
-
-        th.messages.forEach((msg, mIdx) => {
-          db.waMessages.push({
-            id: genId('wam_'),
-            conversationId: convId,
-            tenantId: tid,
-            sender: msg.from,
-            text: msg.text,
-            timestamp: new Date(Date.now() - (idx * 3600000 + (3 - mIdx) * 600000)).toISOString()
-          });
-        });
-      }
-    });
-  }
-
-  // 8. Ensure WhatsApp Automations (3 pre-built workflows)
-  const tenantAutos = db.waAutomations.filter((a) => a.tenantId === tid);
-  if (tenantAutos.length < 2) {
-    const sampleAutomations = [
-      {
-        name: 'Post-Call WhatsApp Brochure & Location Follow-up',
-        triggerType: 'call_completed',
-        isActive: true,
-        steps: [
-          { type: 'send_whatsapp_template', template: 'appointment_confirmation' },
-          { type: 'tag_contact', tag: 'called_lead' }
-        ]
-      },
-      {
-        name: 'Instant Inbound Greeting & Booking Auto-Responder',
-        triggerType: 'message_received',
-        isActive: true,
-        steps: [
-          { type: 'send_whatsapp_message', text: 'Namaste! Seevora AI Voice me aapka swagat hai. How can we assist you today?' }
-        ]
-      },
-      {
-        name: 'Missed Call WhatsApp Alert & Priority Callback',
-        triggerType: 'call_missed',
-        isActive: true,
-        steps: [
-          { type: 'send_whatsapp_message', text: 'Sorry we missed your voice call! Our AI receptionist will call you back in 5 minutes.' }
-        ]
-      }
-    ];
-
-    sampleAutomations.forEach((auto) => {
-      db.waAutomations.push({
-        id: genId('auto_'),
-        tenantId: tid,
-        name: auto.name,
-        triggerType: auto.triggerType,
-        isActive: auto.isActive,
-        steps: auto.steps,
-        createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
-      });
-    });
-  }
-
   // 9. Ensure Invoices (2 invoices: 1 Paid, 1 Issued)
   const tenantInvoices = db.invoices.filter((inv) => inv.tenantId === tid);
   if (tenantInvoices.length < 2) {
@@ -514,7 +397,7 @@ targetTenants.forEach((tenant) => {
         invoiceNumber: 'SV-2026-' + Math.floor(1000 + Math.random() * 9000),
         clientName: tenant.name || 'Workspace Client',
         clientEmail: 'billing@' + (tenant.slug || 'workspace') + '.in',
-        description: 'Growth Plan Subscription (Quarterly AI Voice Receptionist + WhatsApp Suite)',
+        description: 'Growth Plan Subscription (Quarterly AI Voice Receptionist)',
         amountPaise: 899700,
         currency: 'INR',
         issueDate: '2026-10-01',
@@ -533,7 +416,7 @@ targetTenants.forEach((tenant) => {
         invoiceNumber: 'SV-2026-' + Math.floor(1000 + Math.random() * 9000),
         clientName: tenant.name || 'Workspace Client',
         clientEmail: 'billing@' + (tenant.slug || 'workspace') + '.in',
-        description: 'Outbound Telephony Minutes Pack & WhatsApp Cloud Add-on',
+        description: 'Outbound Telephony Minutes Pack & Priority Support',
         amountPaise: 250000,
         currency: 'INR',
         issueDate: '2026-10-10',
@@ -549,9 +432,9 @@ targetTenants.forEach((tenant) => {
 
   // 10. Ensure Support Tickets (2 tickets)
   const tenantTickets = db.supportTickets.filter((st) => st.tenantId === tid);
-  if (tenantTickets.length < 2) {
+  if (tenantTickets.length < 1) {
     const t1Id = 'tick_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_01';
-    const t2Id = 'tick_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_02';
+    
     if (!db.supportTickets.some((x) => x.id === t1Id)) {
       db.supportTickets.push({
         id: t1Id,
@@ -564,18 +447,7 @@ targetTenants.forEach((tenant) => {
         updatedAt: new Date(Date.now() - 6 * 86400000).toISOString()
       });
     }
-    if (!db.supportTickets.some((x) => x.id === t2Id)) {
-      db.supportTickets.push({
-        id: t2Id,
-        tenantId: tid,
-        subject: 'WhatsApp Official Green Tick Verification Guidance',
-        status: 'open',
-        priority: 'high',
-        category: 'whatsapp',
-        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 86400000).toISOString()
-      });
-    }
+    
   }
 });
 

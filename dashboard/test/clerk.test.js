@@ -1,4 +1,5 @@
 'use strict';
+process.env.NODE_ENV = 'test';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -149,4 +150,108 @@ test('core.syncClerkMetadataForUser populates Clerk publicMetadata with plan, ro
     process.env.CLERK_SECRET_KEY = prevKey;
   }
 });
+
+test('verifyClerkToken cryptographically accepts authentic RS256 signed tokens and validates claims', async () => {
+  const token = clerk.signTestToken({
+    sub: 'user_authentic_123',
+    email: 'animesh@seevora.ai',
+    public_metadata: { role: 'admin', plan: 'growth' },
+  });
+
+  const verified = await clerk.verifyClerkToken(token);
+  assert.equal(verified.verified, true);
+  assert.equal(verified.userId, 'user_authentic_123');
+  assert.equal(verified.claims.email, 'animesh@seevora.ai');
+  assert.equal(verified.claims.public_metadata.role, 'admin');
+});
+
+test('verifyClerkToken rejects unsigned or forged tokens (.fake_sig, tampered payload)', async () => {
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: 'user_hacker',
+    public_metadata: { role: 'super_admin' },
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  })).toString('base64url');
+  const forgedToken = `${header}.${payload}.fake_signature_bytes`;
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(forgedToken),
+    /Invalid JWT cryptographic signature|Clerk token cannot be verified/i
+  );
+
+  // Tampered payload with valid signature from another token
+  const validToken = clerk.signTestToken({ sub: 'user_real' });
+  const parts = validToken.split('.');
+  const tamperedPayload = Buffer.from(JSON.stringify({ sub: 'user_hijacked', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+  const tamperedToken = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(tamperedToken),
+    /Invalid JWT cryptographic signature/i
+  );
+});
+
+test('verifyClerkToken rejects expired tokens', async () => {
+  const expiredToken = clerk.signTestToken({
+    sub: 'user_expired',
+    exp: Math.floor(Date.now() / 1000) - 100, // expired 100s ago
+  });
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(expiredToken),
+    /Clerk session token has expired/i
+  );
+});
+
+test('verifyClerkToken rejects algorithm confusion (e.g. "none" or "HS256")', async () => {
+  const noneHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub: 'user_none', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+  const noneToken = `${noneHeader}.${payload}.`;
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(noneToken),
+    /Unsupported JWT algorithm/i
+  );
+
+  const hsHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const hsToken = `${hsHeader}.${payload}.dummy_hmac`;
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(hsToken),
+    /Unsupported JWT algorithm/i
+  );
+});
+
+test('verifyClerkToken rejects tokens missing sub claim', async () => {
+  const noSubToken = clerk.signTestToken({
+    sub: '',
+    email: 'nosub@test.com',
+  });
+
+  await assert.rejects(
+    async () => clerk.verifyClerkToken(noSubToken),
+    /missing subject \(sub\) claim/i
+  );
+});
+
+test('verifyClerkToken supports local CLERK_JWT_KEY PEM verification', async () => {
+  // Generate dedicated test keypair
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const pem = publicKey.export({ type: 'spki', format: 'pem' });
+
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'custom_pem_1' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: 'user_pem_custom',
+    email: 'pem@custom.com',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  })).toString('base64url');
+  const data = Buffer.from(`${header}.${payload}`, 'utf8');
+  const sig = crypto.sign('sha256', data, privateKey).toString('base64url');
+  const token = `${header}.${payload}.${sig}`;
+
+  const verified = await clerk.verifyClerkToken(token, { jwtKey: pem });
+  assert.equal(verified.verified, true);
+  assert.equal(verified.userId, 'user_pem_custom');
+});
+
 

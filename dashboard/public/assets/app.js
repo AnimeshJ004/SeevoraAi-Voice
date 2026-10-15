@@ -491,10 +491,7 @@ function getVisibleRoutes() {
       { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
       { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
       { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-      { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
-      { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
       { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-      { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
       { id: 'agents', label: 'My AI Agent', icon: 'users' },
       { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
       { id: 'billing', label: 'Billing & Wallet', icon: 'wallet' },
@@ -502,7 +499,7 @@ function getVisibleRoutes() {
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
     if (u && !u.onboardingCompleted && !['admin', 'super_admin'].includes(u.role)) {
-      routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (8-Step)', icon: 'sparkle' });
+      routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
     }
     return routes;
   }
@@ -513,10 +510,7 @@ function getVisibleRoutes() {
     { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
     { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
     { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-    { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
-    { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
     { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-    { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
     { id: 'agents', label: 'All AI Agents', icon: 'users' },
     { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
     { id: 'invoices', label: 'Invoices', icon: 'invoice' },
@@ -530,10 +524,7 @@ const ROUTES = [
   { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
   { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
   { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-  { id: 'whatsapp-inbox', label: 'WhatsApp Inbox', icon: 'chat' },
-  { id: 'wa-automations', label: 'WhatsApp Automations', icon: 'bolt' },
   { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-  { id: 'broadcasts', label: 'WhatsApp Broadcasts', icon: 'broadcast' },
   { id: 'agents', label: 'Agents', icon: 'users' },
   { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
   { id: 'invoices', label: 'Invoices', icon: 'invoice' },
@@ -543,7 +534,21 @@ const ROUTES = [
   { id: 'settings', label: 'Settings', icon: 'gear' }
 ];
 
+/* ---- Real SVG Icon Helpers for Call & WhatsApp ---- */
+function iconCallSvg(size) {
+  size = size || 13;
+  return '<svg class="wacrm-ic-call" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+}
+
+function iconWhatsAppSvg(size) {
+  size = size || 13;
+  return '<svg class="wacrm-ic-whatsapp" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+}
+
 function navIcon(name) {
+  if (name === 'whatsapp') {
+    return '<svg class="ic ic-wa" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+  }
   const paths = {
     chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
     pipeline: '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>',
@@ -575,6 +580,7 @@ function uiIcon(name, size) {
   size = size || 16;
   const paths = {
     bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    whatsapp: '<path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>',
     phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
     phoneCall: '<path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
     building: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="22"/><line x1="15" y1="22" x2="15" y2="22"/><line x1="9" y1="18" x2="9" y2="18"/><line x1="15" y1="18" x2="15" y2="18"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/>',
@@ -751,7 +757,7 @@ function currentRoute() {
     if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
       return 'overview';
     }
-    const adminAllowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings'];
+    const adminAllowed = ['overview', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings'];
     if (hash && adminAllowed.includes(hash)) {
       return hash;
     }
@@ -773,7 +779,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'whatsapp-inbox', 'wa-automations', 'crm-pipeline', 'broadcasts', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -805,10 +811,7 @@ function onRoute() {
     talk: viewTalk,
     recordings: viewRecordings,
     campaigns: viewCampaigns,
-    'whatsapp-inbox': viewWhatsAppInbox,
-    'wa-automations': viewWhatsAppAutomations,
     'crm-pipeline': viewCrmPipeline,
-    broadcasts: viewBroadcasts,
     invoices: viewInvoices,
     billing: viewBilling,
     support: viewSupport,
@@ -2185,7 +2188,7 @@ const ONBOARD_PRESETS = [
     language: 'Natural Hinglish (Hindi + English)',
     tone: 'Direct & Assertive',
     workingHours: 'Daily 9 AM to 9 PM, VIP Sales Desk: +91 98201 12345',
-    transcript: 'Caller: Hi, I saw your ad for 3 BHK apartments in Bandra. What is the starting price?\nAgent: Hi, thank you for reaching out to Skyline Realty. Our 3 BHK luxury residences in Bandra West start at 4.2 Crores. Are you looking to purchase for self-use or investment?\nCaller: For my family to move into next year.\nAgent: Understood. We have ready-to-move and under-construction units completing in Q3 next year. Would you prefer a weekend site visit to experience the sample apartment?\nCaller: Yes, Saturday morning would be good.\nAgent: Perfect. May I have your name and the best WhatsApp number to send the location brochure and confirm your pickup?'
+    transcript: 'Caller: Hi, I saw your ad for 3 BHK apartments in Bandra. What is the starting price?\nAgent: Hi, thank you for reaching out to Skyline Realty. Our 3 BHK luxury residences in Bandra West start at 4.2 Crores. Are you looking to purchase for self-use or investment?\nCaller: For my family to move into next year.\nAgent: Understood. We have ready-to-move and under-construction units completing in Q3 next year. Would you prefer a weekend site visit to experience the sample apartment?\nCaller: Yes, Saturday morning would be good.\nAgent: Perfect. May I have your name and the best phone number to send the location details and confirm your pickup?'
   },
   {
     id: 'hvac',
@@ -2216,7 +2219,7 @@ const ONBOARD_PRESETS = [
 const ONBOARD_STEPS = [
   {
     num: 1,
-    badge: 'Step 1 of 8 • Business Identity',
+    badge: 'Step 1 of 7 • Business Identity',
     title: 'What is your business or company name?',
     sub: 'Your AI agent will introduce itself for this company or brand. (You can also add separate agents for your other companies anytime).',
     type: 'text',
@@ -2226,7 +2229,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 2,
-    badge: 'Step 2 of 8 • Industry Sector(s)',
+    badge: 'Step 2 of 7 • Industry Sector(s)',
     title: 'What industry does your company operate in?',
     sub: 'Select one or more sectors your business or group operates in.',
     type: 'multipills',
@@ -2236,7 +2239,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 3,
-    badge: 'Step 3 of 8 • Company Services & Offerings',
+    badge: 'Step 3 of 7 • Company Services & Offerings',
     title: 'What does your company do and what are your main offerings?',
     sub: 'Explain what your business does and typical pricing so the agent can quote and assist callers accurately.',
     type: 'textarea',
@@ -2246,7 +2249,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 4,
-    badge: 'Step 4 of 8 • Primary AI Receptionist Goals & Capabilities',
+    badge: 'Step 4 of 7 • Primary AI Receptionist Goals & Capabilities',
     title: 'What should this voice agent handle?',
     sub: 'Select one or more outcomes and capabilities for your AI voice agent.',
     type: 'multipills',
@@ -2256,7 +2259,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 5,
-    badge: 'Step 5 of 8 • Spoken Language & Accent',
+    badge: 'Step 5 of 7 • Spoken Language & Accent',
     title: 'Which language style should your agent speak?',
     sub: 'Select the conversational dialect matching your caller demographic.',
     type: 'pills',
@@ -2266,7 +2269,7 @@ const ONBOARD_STEPS = [
   },
   {
     num: 6,
-    badge: 'Step 6 of 8 • Voice Tone & Persona',
+    badge: 'Step 6 of 7 • Voice Tone & Persona',
     title: 'What personality and tone should the agent possess?',
     sub: 'The agent will adapt its pacing, greeting, and emotional demeanor accordingly.',
     type: 'pills',
@@ -2276,27 +2279,18 @@ const ONBOARD_STEPS = [
   },
   {
     num: 7,
-    badge: 'Step 7 of 8 • Business Hours & Escalation',
+    badge: 'Step 7 of 7 • Business Hours & Escalation',
     title: 'What are your operating hours and emergency contact?',
     sub: 'The agent will inform callers of your availability and knows when to escalate.',
     type: 'text',
     key: 'workingHours',
     placeholder: 'e.g. Mon-Sat 9 AM to 8:30 PM, Emergency Contact: +91 98765 43210',
     default: ''
-  },
-  {
-    num: 8,
-    badge: 'Step 8 of 8 • WhatsApp & Meta Credentials',
-    title: 'Connect your WhatsApp Business account',
-    sub: 'Enter your own Meta Cloud API credentials so call follow-ups and WhatsApp chats are sent from your number. Optional, you can add or change these later.',
-    type: 'whatsapp_setup',
-    key: 'whatsapp',
-    default: { metaAppId: '', metaAppSecret: '', metaWabaId: '', metaPhoneId: '', metaToken: '', autoFollowupEnabled: true }
   }
 ];
 
 async function viewOnboarding(root) {
-  const head = viewHead('AI Voice Agent Onboarding', 'Answer 8 quick steps about your company. The AI designs your conversational persona, understands customer objections, generates 3 script variants, and lets you test your agent instantly.');
+  const head = viewHead('AI Voice Agent Onboarding', 'Answer 7 quick steps about your company. The AI designs your conversational persona, understands customer objections, generates 3 script variants, and lets you test your agent instantly.');
   const skipBtn = el('button', {
     type: 'button',
     class: 'btn btn-ghost btn-sm',
@@ -2433,25 +2427,6 @@ async function viewOnboarding(root) {
         group.appendChild(btn);
       });
       inputControl = group;
-    } else if (step.type === 'whatsapp_setup') {
-      const wa = answers[step.key];
-      const mk = (key, label, ph, type) => {
-        const inp = el('input', { class: 'input', type: type || 'text', placeholder: ph, value: wa[key] || '', autocomplete: 'off' });
-        inp.addEventListener('input', () => { wa[key] = inp.value; });
-        return field(label, inp);
-      };
-      const chk = el('input', { type: 'checkbox' });
-      chk.checked = !!wa.autoFollowupEnabled;
-      chk.addEventListener('change', () => { wa.autoFollowupEnabled = chk.checked; });
-      inputControl = el('div', { class: 'settings-form' }, [
-        mk('metaAppId', 'Meta App ID', 'From developers.facebook.com > Your App > Settings > Basic'),
-        mk('metaAppSecret', 'Meta App Secret', 'App secret (stored securely, never shown again)', 'password'),
-        mk('metaWabaId', 'WhatsApp Business Account ID (WABA ID)', 'e.g. 109876543210987'),
-        mk('metaPhoneId', 'Phone Number ID', 'WhatsApp > API Setup > Phone number ID'),
-        mk('metaToken', 'Permanent Access Token', 'System user access token with whatsapp_business_messaging', 'password'),
-        el('label', { style: 'display:flex;gap:8px;align-items:center;margin-top:6px;font-size:.9rem' }, [chk, 'Automatically send a WhatsApp follow-up after every voice call']),
-        el('p', { class: 'soft', style: 'font-size:.8rem;margin-top:6px' }, 'Your credentials are saved only for your workspace. Leave blank to skip and configure later.')
-      ]);
     }
 
     if (inputControl) card.appendChild(inputControl);
@@ -2488,23 +2463,6 @@ async function viewOnboarding(root) {
       activeStep++;
       renderCurrentStep();
     } else {
-      const wa = answers.whatsapp || {};
-      const hasAny = ['metaAppId', 'metaAppSecret', 'metaWabaId', 'metaPhoneId', 'metaToken'].some((k) => String(wa[k] || '').trim());
-      if (hasAny) {
-        try {
-          await api('/api/whatsapp/config', {
-            method: 'POST', body: {
-              mode: 'meta_cloud',
-              metaAppId: wa.metaAppId, metaAppSecret: wa.metaAppSecret,
-              metaWabaId: wa.metaWabaId, metaPhoneId: wa.metaPhoneId,
-              metaToken: wa.metaToken, autoFollowupEnabled: !!wa.autoFollowupEnabled
-            }
-          });
-          toast('WhatsApp credentials saved.', 'ok');
-        } catch (err) {
-          toast('Could not save WhatsApp credentials: ' + (err.message || 'error'), 'err');
-        }
-      }
       triggerAgentGeneration();
     }
   }
@@ -2771,9 +2729,6 @@ async function viewOnboarding(root) {
             }
           }
           await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
-          if (answers.whatsapp && (answers.whatsapp.metaPhoneId || answers.whatsapp.metaToken || answers.whatsapp.metaAppId)) {
-            await api('/api/whatsapp/config', { method: 'POST', body: answers.whatsapp }).catch(() => { });
-          }
           if (answers.businessName && answers.businessName.trim()) {
             await api('/api/tenant/update', { method: 'POST', body: { name: answers.businessName.trim() } }).catch(() => { });
             if (State.me && State.me.tenant) State.me.tenant.name = answers.businessName.trim();
@@ -3824,6 +3779,36 @@ async function viewTalk(root, customAgent) {
     }
   }, 'Reset');
 
+  const saveLeadBtn = el('button', {
+    type: 'button',
+    class: 'btn btn-ghost',
+    title: 'Extract caller details and save conversation as a lead in CRM',
+    onclick: async () => {
+      if (!convo.length) {
+        toast('No conversation turns yet. Talk with the agent first.', 'info');
+        return;
+      }
+      try {
+        saveLeadBtn.disabled = true;
+        saveLeadBtn.textContent = 'Saving Lead...';
+        const res = await api('/api/crm/lead-from-call', {
+          method: 'POST',
+          body: {
+            messages: convo,
+            agentName: activeAgent.name
+          }
+        });
+        const lead = res.contact;
+        toast(`Lead saved to CRM: ${lead.name || lead.phone}${lead.dealValue ? ' (₹' + fmtInr(lead.dealValue) + ')' : ''}`, 'ok');
+      } catch (err) {
+        toast('Failed to save lead: ' + err.message, 'err');
+      } finally {
+        saveLeadBtn.disabled = false;
+        saveLeadBtn.textContent = 'Save as Lead';
+      }
+    }
+  }, 'Save as Lead');
+
   // Text Input Row
   const textInput = el('input', {
     class: 'input',
@@ -3872,9 +3857,8 @@ async function viewTalk(root, customAgent) {
     promptsContainer
   ]);
 
-  // Assemble Main Panel
   const controlsRow = el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:10px;margin-bottom:14px' }, [
-    el('div', { class: 'flex items-center gap-2' }, [sessionBtn, interruptBtn, clearBtn]),
+    el('div', { class: 'flex items-center gap-2' }, [sessionBtn, interruptBtn, clearBtn, saveLeadBtn]),
     el('div', { class: 'flex items-center gap-2' }, [langSel, statusPill, timingText])
   ]);
 
@@ -4347,19 +4331,6 @@ async function viewRecordings(root) {
       el('span', {}, 'Download call audio')
     ]);
     playerBox.appendChild(dlLink);
-
-    const waFollowupBtn = el('button', {
-      class: 'btn btn-ghost btn-sm flex items-center justify-center gap-2',
-      style: 'width:100%;margin-top:6px;color:#0284C7',
-      onclick: () => {
-        _activeConvPhone = rec.phoneNumber;
-        goto('whatsapp-inbox');
-      }
-    }, [
-      el('span', { html: navIcon('chat') }),
-      el('span', {}, 'Chat on WhatsApp / Send Follow-up')
-    ]);
-    playerBox.appendChild(waFollowupBtn);
 
     audioPanel.appendChild(playerBox);
 
@@ -5555,11 +5526,10 @@ async function viewBilling(root) {
     el('div', { style: 'text-align:right' }, [
       el('span', { class: 'muted', style: 'font-size:0.8rem;display:block' }, 'Questions or custom terms?'),
       el('a', {
-        href: 'https://wa.me/918982200895?text=Hi%20Seevora%20Team%2C%20I%20have%20a%20billing%20inquiry',
-        target: '_blank',
+        href: 'tel:+918982200895',
         class: 'btn btn-ghost btn-sm',
         style: 'margin-top:4px;display:inline-flex;align-items:center;gap:6px'
-      }, 'WhatsApp Support: 8982200895')
+      }, 'Phone Support: +91 89822 00895')
     ])
   ]);
 
@@ -5654,18 +5624,17 @@ async function viewBilling(root) {
           '500 voice minutes / month',
           '3 active workflows in workspace',
           'AI voice receptionist, 24/7',
-          '1 voice + 1 WhatsApp number',
-          'WhatsApp shared inbox & CRM',
+          '1 dedicated voice phone line',
+          'CRM Leads & Pipeline tracking',
           '1,000 contacts, 2 users',
-          '1,000 service & utility messages',
-          '100 marketing messages',
-          'Auto-replies & appointment reminders'
+          'Automated appointment bookings & triage',
+          'Cal.com scheduling integration'
         ],
       },
       {
         id: 'growth',
         name: 'Growth',
-        tagline: 'Built for fast-growing teams running campaigns, broadcasts & follow-ups.',
+        tagline: 'Built for fast-growing teams running outbound campaigns & call routing.',
         popular: true,
         monthly: { price: '₹10,999', perMonth: '₹10,999 /month', billed: 'Billed monthly' },
         quarterly: { price: '₹31,299', perMonth: '₹10,433 /month', billed: '₹31,299 billed quarterly (save ~5%)' },
@@ -5675,10 +5644,8 @@ async function viewBilling(root) {
           '10 active workflows in workspace',
           'Everything in Starter, plus:',
           '10,000 contacts, 5 users',
-          '3,000 service & utility messages',
-          '500 marketing messages',
-          'Broadcasts and automation flows',
-          'Call-to-WhatsApp follow-ups',
+          'Outbound campaigns & batch dialer',
+          'Live call recordings & audio downloads',
           'Tags and customer segments'
         ],
       },
@@ -5694,10 +5661,8 @@ async function viewBilling(root) {
           '2,500 voice minutes / month',
           '30 active workflows in workspace',
           'Everything in Growth, plus:',
-          '2 voice + 2 WhatsApp numbers',
+          '2 dedicated voice phone numbers',
           '50,000 contacts, 15 users',
-          '8,000 service & utility messages',
-          '1,500 marketing messages',
           'Webhooks and API access',
           'Reports and priority support'
         ],
@@ -5714,12 +5679,10 @@ async function viewBilling(root) {
         features: [
           '10,000+ voice minutes / month',
           'Unlimited workflows in workspace',
-          '5+ voice + 5+ WhatsApp numbers',
+          '5+ dedicated voice phone numbers',
           'Custom / unlimited CRM contacts',
           '50+ team users',
-          '30,000+ service & utility messages',
-          '6,000+ marketing messages',
-          'Custom development built for you',
+          'Custom voice persona & prompt fine-tuning',
           'Dedicated SLA and account executive'
         ],
       }
@@ -5805,16 +5768,12 @@ async function viewBilling(root) {
     el('tbody', {}, [
       el('tr', {}, [el('td', {}, 'Voice minutes per month'), el('td', {}, '500'), el('td', {}, '1,000'), el('td', {}, '2,500'), el('td', {}, '10,000+')]),
       el('tr', {}, [el('td', {}, 'Workflow workspace: active workflows'), el('td', {}, '3 active'), el('td', {}, '10 active'), el('td', {}, '30 active'), el('td', {}, 'Unlimited')]),
-      el('tr', {}, [el('td', {}, 'Voice + WhatsApp numbers'), el('td', {}, '1 + 1'), el('td', {}, '1 + 1'), el('td', {}, '2 + 2'), el('td', {}, '5 + 5+')]),
+      el('tr', {}, [el('td', {}, 'Dedicated voice phone numbers'), el('td', {}, '1 line'), el('td', {}, '1 line'), el('td', {}, '2 lines'), el('td', {}, '5+ lines')]),
       el('tr', {}, [el('td', {}, 'Contacts in CRM'), el('td', {}, '1,000'), el('td', {}, '10,000'), el('td', {}, '50,000'), el('td', {}, 'Custom / 50k+')]),
       el('tr', {}, [el('td', {}, 'Team users / seats'), el('td', {}, '2 users'), el('td', {}, '5 users'), el('td', {}, '15 users'), el('td', {}, '50+ users')]),
-      el('tr', {}, [el('td', {}, 'Service and utility messages'), el('td', {}, '1,000'), el('td', {}, '3,000'), el('td', {}, '8,000'), el('td', {}, '30,000+')]),
-      el('tr', {}, [el('td', {}, 'Marketing messages'), el('td', {}, '100'), el('td', {}, '500'), el('td', {}, '1,500'), el('td', {}, '6,000+')]),
       el('tr', {}, [el('td', {}, 'AI voice receptionist, 24/7'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'WhatsApp shared inbox and CRM'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Auto-replies & appointment reminders'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Broadcasts & automation flows'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Call-to-WhatsApp follow-ups'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
+      el('tr', {}, [el('td', {}, 'CRM Leads & Sales Pipeline'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
+      el('tr', {}, [el('td', {}, 'Automated call triage & booking'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
       el('tr', {}, [el('td', {}, 'Webhooks and direct API access'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
       el('tr', {}, [el('td', {}, 'Reports & priority support'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
       el('tr', {}, [el('td', {}, 'Custom development & bespoke flows'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Dedicated SLA')]),
@@ -5836,25 +5795,13 @@ async function viewBilling(root) {
       el('div', {}, [el('b', {}, 'Extra voice minute (inbound)'), el('small', { class: 'muted', style: 'display:block' }, 'Deducted from wallet on excess calls')]),
       el('div', { class: 'addon-tile-rate' }, '₹7.00')
     ]),
-    el('div', { class: 'addon-tile-rate' }, [
+    el('div', { class: 'addon-tile' }, [
       el('div', {}, [el('b', {}, 'Extra voice minute (outbound)'), el('small', { class: 'muted', style: 'display:block' }, 'Deducted from wallet on outbound calls')]),
       el('div', { class: 'addon-tile-rate' }, '₹8.00')
     ]),
     el('div', { class: 'addon-tile' }, [
-      el('div', {}, [el('b', {}, 'Extra marketing message'), el('small', { class: 'muted', style: 'display:block' }, 'WhatsApp promotional broadcasts')]),
-      el('div', { class: 'addon-tile-rate' }, '₹1.80')
-    ]),
-    el('div', { class: 'addon-tile' }, [
-      el('div', {}, [el('b', {}, 'Extra service or utility message'), el('small', { class: 'muted', style: 'display:block' }, 'Transactional notices and reminders')]),
-      el('div', { class: 'addon-tile-rate' }, '₹0.30')
-    ]),
-    el('div', { class: 'addon-tile' }, [
       el('div', {}, [el('b', {}, 'Extra voice number'), el('small', { class: 'muted', style: 'display:block' }, 'Dedicated inbound phone line')]),
       el('div', { class: 'addon-tile-rate' }, '₹399 /mo')
-    ]),
-    el('div', { class: 'addon-tile' }, [
-      el('div', {}, [el('b', {}, 'Extra WhatsApp number'), el('small', { class: 'muted', style: 'display:block' }, 'Secondary business number')]),
-      el('div', { class: 'addon-tile-rate' }, '₹499 /mo')
     ]),
     el('div', { class: 'addon-tile' }, [
       el('div', {}, [el('b', {}, 'Extra team user'), el('small', { class: 'muted', style: 'display:block' }, 'Additional member seat')]),
@@ -6397,124 +6344,6 @@ async function viewSettings(root) {
   topGrid.appendChild(tenantCard);
   root.appendChild(topGrid);
 
-  // --- CARD 3: WHATSAPP BUSINESS & META CLOUD API CREDENTIALS (SAAS TENANT) ---
-  const waCard = el('section', { class: 'card card-pad', style: 'margin-bottom:16px' });
-  const waStatusPill = el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.15);color:#b45309;font-weight:600' }, 'Loading...');
-
-  const waHeader = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:8px' }, [
-    el('div', {}, [
-      el('h3', { class: 't-h3' }, 'WhatsApp Business & Meta Cloud API Credentials'),
-      el('p', { class: 'muted', style: 'font-size:0.85rem;margin-top:2px' }, 'Each tenant client can enter their own Meta Developer and WhatsApp Cloud API credentials. No server .env modification required.')
-    ]),
-    waStatusPill
-  ]);
-  waCard.appendChild(waHeader);
-
-  // Inputs for WhatsApp Meta Cloud
-  const waAppId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 123456789012345' });
-  const waAppSecret = el('input', { class: 'input', type: 'password', placeholder: 'App secret (hidden)' });
-  const waWabaId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 109876543210987' });
-  const waPhoneId = el('input', { class: 'input', type: 'text', placeholder: 'e.g. 102938475610293' });
-  const waToken = el('input', { class: 'input', type: 'password', placeholder: 'System user permanent access token' });
-  const waAutoFollowupChk = el('input', { type: 'checkbox' });
-  const waFollowupMsg = el('textarea', { class: 'textarea', rows: 3, placeholder: 'Hi {{name}}, thank you for speaking with our AI Receptionist...' });
-
-  const saveWaBtn = el('button', { class: 'btn btn-primary' }, 'Save WhatsApp Credentials');
-  saveWaBtn.addEventListener('click', async () => {
-    saveWaBtn.disabled = true;
-    saveWaBtn.textContent = 'Saving...';
-    try {
-      const payload = {
-        mode: 'meta_cloud',
-        metaAppId: waAppId.value.trim(),
-        metaAppSecret: waAppSecret.value.trim(),
-        metaWabaId: waWabaId.value.trim(),
-        metaPhoneId: waPhoneId.value.trim(),
-        metaToken: waToken.value.trim(),
-        autoFollowupEnabled: waAutoFollowupChk.checked,
-        autoFollowupMessage: waFollowupMsg.value.trim()
-      };
-      await api('/api/whatsapp/config', { method: 'POST', body: payload });
-      toast('WhatsApp credentials saved successfully.', 'ok');
-      await loadWhatsAppConfig();
-    } catch (err) {
-      toast(err.message || 'Failed to save WhatsApp config.', 'err');
-    } finally {
-      saveWaBtn.disabled = false;
-      saveWaBtn.textContent = 'Save WhatsApp Credentials';
-    }
-  });
-
-  const webhookCallbackUrl = `${window.location.origin}/api/whatsapp/webhook`;
-  const copyWebhookBtn = el('button', {
-    type: 'button',
-    class: 'btn btn-ghost btn-sm',
-    onclick: () => {
-      navigator.clipboard.writeText(webhookCallbackUrl);
-      toast('Webhook URL copied to clipboard!', 'ok');
-    }
-  }, 'Copy URL');
-
-  const waForm = el('div', { class: 'grid grid-12', style: 'gap:16px;margin-top:14px' }, [
-    el('div', { class: 'col-6 settings-form', style: 'max-width:none' }, [
-      field('Meta App ID', waAppId),
-      field('Meta App Secret', waAppSecret),
-      field('WhatsApp Business Account ID (WABA ID)', waWabaId),
-      field('WhatsApp Phone Number ID', waPhoneId),
-      field('Permanent Access Token', waToken)
-    ]),
-    el('div', { class: 'col-6 settings-form', style: 'max-width:none' }, [
-      el('div', { class: 'field' }, [
-        el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer' }, [
-          waAutoFollowupChk,
-          el('b', {}, 'Call-to-WhatsApp Automated Follow-up')
-        ]),
-        el('p', { class: 'muted', style: 'font-size:0.78rem;margin:4px 0 8px' }, 'Automatically dispatch a WhatsApp confirmation message to callers after each voice call finishes.')
-      ]),
-      field('Follow-up Message Template', waFollowupMsg),
-      el('div', { style: 'padding:12px;background:var(--bg-2);border-radius:10px;border:1px solid var(--line);margin-top:8px' }, [
-        el('b', { style: 'font-size:0.85rem;display:block;margin-bottom:4px' }, 'Meta Developer Webhook Setup:'),
-        el('p', { class: 'muted', style: 'font-size:0.78rem;line-height:1.4;margin-bottom:8px' }, 'In Meta Developer Portal > WhatsApp > Configuration, set Callback URL to:'),
-        el('div', { class: 'flex items-center gap-2' }, [
-          el('code', { style: 'font-size:0.75rem;padding:4px 8px;background:var(--card);border-radius:6px;flex:1;overflow:hidden;text-overflow:ellipsis' }, webhookCallbackUrl),
-          copyWebhookBtn
-        ])
-      ]),
-      el('div', { style: 'margin-top:12px' }, [saveWaBtn])
-    ])
-  ]);
-  waCard.appendChild(waForm);
-  root.appendChild(waCard);
-
-  async function loadWhatsAppConfig() {
-    try {
-      const res = await api('/api/whatsapp/config');
-      const cfg = (res && res.config) || {};
-      if (cfg.metaAppId) waAppId.value = cfg.metaAppId;
-      if (cfg.hasMetaAppSecret) waAppSecret.placeholder = '●●●●●●●● (App Secret Configured)';
-      if (cfg.metaWabaId) waWabaId.value = cfg.metaWabaId;
-      if (cfg.metaPhoneId) waPhoneId.value = cfg.metaPhoneId;
-      if (cfg.hasMetaToken) waToken.placeholder = '●●●●●●●● (Token Configured)';
-      waAutoFollowupChk.checked = cfg.autoFollowupEnabled !== false;
-      if (cfg.autoFollowupMessage) waFollowupMsg.value = cfg.autoFollowupMessage;
-
-      if ((cfg.hasMetaToken || cfg.metaToken) && cfg.metaPhoneId) {
-        waStatusPill.className = 'pill';
-        waStatusPill.style.background = 'rgba(34,197,94,0.15)';
-        waStatusPill.style.color = '#15803d';
-        waStatusPill.textContent = '● Connected & Active';
-      } else {
-        waStatusPill.className = 'pill';
-        waStatusPill.style.background = 'rgba(234,179,8,0.15)';
-        waStatusPill.style.color = '#b45309';
-        waStatusPill.textContent = '○ Credentials Required';
-      }
-    } catch (_) {
-      waStatusPill.textContent = 'Config Load Error';
-    }
-  }
-  loadWhatsAppConfig();
-
   // --- CARD 4 & 5: PRIVACY & BYON SPLIT ---
   const privacySelect = el('select', { class: 'select', id: 'privacy_mode' }, [
     el('option', { value: 'standard' }, 'Standard retention'),
@@ -6635,232 +6464,32 @@ function provCard(p) {
 }
 
 /* ===========================================================================
-   WACRM & WHATSAPP VIEWS (Preserving 100% of Seevora Design Tokens)
+   CRM LEADS & SALES PIPELINE
    =========================================================================== */
-
-/* ---- 1. WhatsApp Shared Inbox ---- */
-let _activeConvId = null;
-let _activeConvPhone = null;
-
-async function viewWhatsAppInbox(root) {
-  root.appendChild(viewHead('WhatsApp Inbox', 'Live customer WhatsApp conversations, AI call transcripts, and instant template replies.'));
-
-  const layout = el('div', { class: 'wacrm-inbox-layout' });
-  const leftCol = el('div', { class: 'card', style: 'padding:12px;display:flex;flex-direction:column;overflow:hidden' });
-  const rightCol = el('div', { class: 'card', style: 'padding:0;overflow:hidden' });
-
-  // Left Col Search & Header
-  const searchInput = el('input', { class: 'input', placeholder: 'Search conversations...', style: 'margin-bottom:10px' });
-  const convListContainer = el('div', { class: 'wacrm-conv-list' }, [el('div', { class: 'muted', style: 'padding:20px;text-align:center' }, 'Loading conversations...')]);
-
-  leftCol.appendChild(searchInput);
-  leftCol.appendChild(convListContainer);
-
-  layout.appendChild(leftCol);
-  layout.appendChild(rightCol);
-  root.appendChild(layout);
-
-  let allConvs = [];
-
-  async function loadConversations() {
-    try {
-      const res = await api('/api/whatsapp/conversations');
-      allConvs = (res && Array.isArray(res.conversations)) ? res.conversations : [];
-      renderConvList();
-      if (allConvs.length && !_activeConvId) {
-        selectConversation(allConvs[0].id, allConvs[0].phone);
-      } else if (!allConvs.length) {
-        renderEmptyChat();
-      }
-    } catch (e) {
-      convListContainer.innerHTML = '';
-      convListContainer.appendChild(el('div', { class: 'err-msg' }, 'Failed to load conversations: ' + e.message));
-    }
-  }
-
-  function renderConvList() {
-    const q = searchInput.value.trim().toLowerCase();
-    const filtered = allConvs.filter((c) =>
-      !q || (c.name && c.name.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q)) || (c.lastMessageText && c.lastMessageText.toLowerCase().includes(q))
-    );
-
-    convListContainer.innerHTML = '';
-    if (!filtered.length) {
-      convListContainer.appendChild(el('div', { class: 'muted', style: 'padding:30px 10px;text-align:center;font-size:0.85rem' }, 'No conversations found.'));
-      return;
-    }
-
-    filtered.forEach((conv) => {
-      const isActive = conv.id === _activeConvId;
-      const item = el('div', { class: 'wacrm-conv-item' + (isActive ? ' active' : '') }, [
-        el('div', { class: 'flex items-center justify-between' }, [
-          el('b', { style: 'font-size:0.9rem' }, conv.name || conv.phone),
-          el('span', { class: 'muted', style: 'font-size:0.7rem' }, conv.lastMessageAt ? conv.lastMessageAt.slice(11, 16) : '')
-        ]),
-        el('div', { class: 'flex items-center justify-between', style: 'margin-top:2px' }, [
-          el('span', { class: 'muted', style: 'font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px' }, conv.lastMessageText || 'No messages yet'),
-          conv.unreadCount > 0 ? el('span', { class: 'pill', style: 'background:var(--ok);color:#fff;font-size:0.65rem;padding:1px 6px' }, String(conv.unreadCount)) : null
-        ])
-      ]);
-      item.addEventListener('click', () => selectConversation(conv.id, conv.phone));
-      convListContainer.appendChild(item);
-    });
-  }
-
-  searchInput.addEventListener('input', renderConvList);
-
-  function selectConversation(id, phone) {
-    _activeConvId = id;
-    _activeConvPhone = phone;
-    renderConvList();
-    renderChatBox(id, phone);
-  }
-
-  function renderEmptyChat() {
-    rightCol.innerHTML = '';
-    rightCol.appendChild(el('div', { class: 'empty muted', style: 'height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:40px' }, [
-      el('h3', { class: 't-h3', style: 'margin-bottom:8px' }, 'No Conversation Selected'),
-      el('p', { class: 'muted' }, 'Incoming WhatsApp chats and AI Phone call leads will appear here.')
-    ]));
-  }
-
-  async function renderChatBox(convId, phone) {
-    rightCol.innerHTML = '';
-    const chatContainer = el('div', { class: 'wacrm-chat-container' });
-
-    const activeConv = allConvs.find((c) => c.id === convId) || { name: phone, phone };
-
-    // Chat Header
-    const chatHeader = el('div', { class: 'wacrm-chat-header' }, [
-      el('div', {}, [
-        el('h3', { class: 't-h3', style: 'font-size:1.05rem;margin:0' }, activeConv.name || phone),
-        el('div', { class: 'muted', style: 'font-size:0.8rem' }, phone)
-      ]),
-      el('div', { class: 'flex gap-2' }, [
-        el('button', {
-          class: 'btn btn-ghost',
-          style: 'font-size:0.8rem;gap:6px',
-          onclick: () => openMakeCallModal(phone)
-        }, [el('span', { html: navIcon('phone') }), 'Call with AI'])
-      ])
-    ]);
-
-    const messagesArea = el('div', { class: 'wacrm-chat-messages' }, [
-      el('div', { class: 'muted', style: 'text-align:center;padding:20px' }, 'Loading messages...')
-    ]);
-
-    // Input Bar
-    const textInput = el('input', { class: 'input', placeholder: 'Type a WhatsApp message...', style: 'flex:1' });
-    const templateSelect = el('select', { class: 'select', style: 'width:210px;font-size:0.82rem' }, [
-      el('option', { value: '' }, 'Templates / Prompts...'),
-      el('option', { value: '__META_TEMPLATE__hello_world' }, 'Meta Template: hello_world (Bypasses 24h limit)'),
-      el('option', { value: 'Hi {{name}}, thanks for contacting Seevora AI Voice Receptionist. How can we help you today?' }, 'Welcome Message'),
-      el('option', { value: 'Hello {{name}}, your appointment with our team has been confirmed. Reply to this message to reschedule.' }, 'Appointment Confirm'),
-      el('option', { value: 'Hi {{name}}, as requested on your call, here is our complete brochure and service catalog: https://seevora.ai/brochure' }, 'Brochure Link')
-    ]);
-
-    templateSelect.addEventListener('change', () => {
-      if (templateSelect.value.startsWith('__META_TEMPLATE__')) {
-        textInput.value = '[Meta Template: hello_world]';
-      } else if (templateSelect.value) {
-        textInput.value = templateSelect.value.replace(/\{\{name\}\}/gi, activeConv.name || 'there');
-      }
-    });
-
-    const sendBtn = el('button', { class: 'btn btn-primary', style: 'padding:8px 18px' }, 'Send');
-
-    async function sendMessage() {
-      const text = textInput.value.trim();
-      if (!text) return;
-      sendBtn.disabled = true;
-      const isMetaTemplate = templateSelect.value.startsWith('__META_TEMPLATE__');
-      const tmplName = isMetaTemplate ? templateSelect.value.replace('__META_TEMPLATE__', '') : null;
-      try {
-        const res = await api('/api/whatsapp/messages', {
-          method: 'POST',
-          body: {
-            phone,
-            text,
-            templateName: tmplName,
-            languageCode: 'en_US'
-          }
-        });
-        textInput.value = '';
-        templateSelect.value = '';
-        await loadMessages();
-        loadConversations();
-        if (res && res.warning) {
-          toast(res.warning, 'warn', 8000);
-        } else {
-          toast(isMetaTemplate ? 'Meta Template dispatched!' : 'Message sent.', 'ok');
-        }
-      } catch (err) {
-        toast('Failed to send WhatsApp message: ' + err.message, 'err');
-      } finally {
-        sendBtn.disabled = false;
-      }
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-
-    const inputBar = el('div', { class: 'wacrm-chat-input-bar' }, [
-      templateSelect,
-      textInput,
-      sendBtn
-    ]);
-
-    chatContainer.appendChild(chatHeader);
-    chatContainer.appendChild(messagesArea);
-    chatContainer.appendChild(inputBar);
-    rightCol.appendChild(chatContainer);
-
-    async function loadMessages() {
-      try {
-        const res = await api('/api/whatsapp/messages?conversationId=' + encodeURIComponent(convId));
-        const msgs = (res && Array.isArray(res.messages)) ? res.messages : [];
-        messagesArea.innerHTML = '';
-        if (!msgs.length) {
-          messagesArea.appendChild(el('div', { class: 'muted', style: 'text-align:center;padding:40px' }, 'No messages yet in this conversation. Send one below!'));
-          return;
-        }
-
-        msgs.forEach((m) => {
-          const isSystem = m.direction === 'system';
-          const isInbound = m.direction === 'inbound';
-          const isFailed = m.status === 'failed';
-          const failErr = (m.metadata && (m.metadata.sendError || m.metadata.error)) || 'Send failed';
-          const bubbleWrap = el('div', { class: `wacrm-bubble-wrap ${isSystem ? 'system' : (isInbound ? 'inbound' : 'outbound')}` }, [
-            el('div', { class: `wacrm-bubble ${isSystem ? 'system' : (isInbound ? 'inbound' : 'outbound')} ${isFailed ? 'failed' : ''}` }, m.text),
-            el('div', { class: 'wacrm-bubble-meta' }, [
-              el('span', {}, m.createdAt ? m.createdAt.slice(11, 16) : ''),
-              !isInbound && !isSystem ? (
-                isFailed
-                  ? el('span', { title: failErr, style: 'color:#EF4444;font-size:0.72rem;cursor:help;margin-left:4px;font-weight:600;' }, ' ✕ Failed')
-                  : el('span', { style: 'color:#10B981;' }, ' ✓✓')
-              ) : null
-            ])
-          ]);
-          messagesArea.appendChild(bubbleWrap);
-        });
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-      } catch (e) {
-        messagesArea.innerHTML = '';
-        messagesArea.appendChild(el('div', { class: 'err-msg' }, 'Failed to load messages: ' + e.message));
-      }
-    }
-
-    loadMessages();
-  }
-
-  loadConversations();
-}
 
 /* ---- 2. CRM Leads & Sales Pipeline (Kanban) ---- */
 async function viewCrmPipeline(root) {
   root.appendChild(viewHead('Leads & Sales Pipeline', 'Kanban lead stages, deal values, and direct voice dialer integration.'));
+
+  const syncLeadBtn = el('button', {
+    class: 'btn btn-ghost btn-sm flex items-center gap-2',
+    onclick: async () => {
+      try {
+        syncLeadBtn.disabled = true;
+        syncLeadBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
+        await loadPipeline();
+        toast('Voice leads & pipeline synchronized.', 'ok');
+      } catch (err) {
+        toast('Failed to sync leads: ' + err.message, 'err');
+      } finally {
+        syncLeadBtn.disabled = false;
+        syncLeadBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Sync Leads</span>';
+      }
+    }
+  }, [
+    el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
+    el('span', {}, 'Sync Leads')
+  ]);
 
   const topBar = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:16px;flex-wrap:wrap;gap:12px' }, [
     el('div', { class: 'flex gap-2 items-center' }, [
@@ -6868,6 +6497,7 @@ async function viewCrmPipeline(root) {
       el('button', { class: 'btn btn-ghost', onclick: () => goto('campaigns') }, 'Go to Outbound Calls')
     ]),
     el('div', { class: 'flex gap-2 items-center' }, [
+      syncLeadBtn,
       el('span', { class: 'pill', style: 'font-size:0.75rem' }, 'Live CRM Leads')
     ])
   ]);
@@ -6902,22 +6532,25 @@ async function viewCrmPipeline(root) {
                 el('b', { style: 'font-size:0.88rem' }, deal.name || deal.phone),
                 deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--ok);font-size:0.8rem' }, '₹' + fmtInr(deal.dealValue)) : null
               ]),
-              el('div', { class: 'muted', style: 'font-size:0.78rem' }, deal.phone),
-              deal.notes ? el('p', { class: 'muted', style: 'font-size:0.75rem;margin:4px 0;line-height:1.3;max-height:45px;overflow:hidden' }, deal.notes) : null,
+              el('div', { class: 'muted', style: 'font-size:0.78rem' }, [
+                deal.phone,
+                deal.company ? ` • ${deal.company}` : ''
+              ].filter(Boolean).join('')),
+              deal.email ? el('div', { class: 'soft', style: 'font-size:0.72rem;margin-top:2px' }, deal.email) : null,
+              deal.notes ? el('p', { class: 'muted', title: deal.notes, style: 'font-size:0.75rem;margin:4px 0;line-height:1.3;max-height:50px;overflow:hidden;text-overflow:ellipsis' }, deal.notes) : null,
               el('div', { class: 'flex gap-2 items-center', style: 'margin-top:6px;flex-wrap:wrap' },
-                (deal.tags || []).slice(0, 2).map((t) => el('span', { class: 'pill', style: 'font-size:0.65rem' }, t))
+                (deal.tags || []).slice(0, 3).map((t) => el('span', { class: 'pill', style: 'font-size:0.65rem' }, t))
               ),
-              el('div', { class: 'flex gap-2 items-center justify-between', style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:8px' }, [
-                el('button', {
-                  class: 'btn btn-ghost',
-                  style: 'padding:3px 8px;font-size:0.72rem',
-                  onclick: () => openMakeCallModal(deal.phone)
-                }, '📞 Call'),
-                el('button', {
-                  class: 'btn btn-ghost',
-                  style: 'padding:3px 8px;font-size:0.72rem',
-                  onclick: () => { _activeConvPhone = deal.phone; goto('whatsapp-inbox'); }
-                }, '💬 WhatsApp'),
+              el('div', { class: 'wacrm-deal-card-footer' }, [
+                el('div', { class: 'wacrm-deal-card-actions' }, [
+                  el('button', {
+                    type: 'button',
+                    class: 'wacrm-card-btn btn-call',
+                    title: 'Call lead with AI Voice Agent',
+                    onclick: (e) => { e.stopPropagation(); openMakeCallModal(deal.phone); },
+                    html: iconCallSvg(13) + '<span>Call</span>'
+                  }),
+                ]),
                 createStageSelect(deal.id, deal.stage, loadPipeline)
               ])
             ]);
@@ -6934,11 +6567,12 @@ async function viewCrmPipeline(root) {
   }
 
   function createStageSelect(contactId, currentStage, onUpdate) {
-    const sel = el('select', { class: 'select', style: 'font-size:0.7rem;padding:2px 4px;width:auto' }, [
+    const sel = el('select', { class: 'select wacrm-stage-select', title: 'Update lead stage' }, [
       'New Lead', 'Call Completed', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'
     ].map((s) => el('option', { value: s, selected: s === currentStage }, s)));
 
-    sel.addEventListener('change', async () => {
+    sel.addEventListener('change', async (e) => {
+      e.stopPropagation();
       try {
         await api('/api/crm/pipeline/deal', {
           method: 'POST',
@@ -6994,829 +6628,6 @@ async function viewCrmPipeline(root) {
   }
 
   loadPipeline();
-}
-
-/* ---- 3. WhatsApp Broadcast Campaigns ---- */
-async function viewBroadcasts(root) {
-  root.appendChild(viewHead('WhatsApp Broadcasts', 'Bulk personalized messaging campaigns to customer segments and leads.'));
-
-  const isStarter = Boolean(State.me && State.me.tenant && (State.me.tenant.plan || 'starter').toLowerCase() === 'starter');
-  if (isStarter) {
-    const lockBanner = el('div', {
-      class: 'card card-pad',
-      style: 'background:rgba(0,149,255,0.06);border:1px solid rgba(0,149,255,0.25);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px'
-    }, [
-      el('div', { style: 'max-width:700px' }, [
-        el('h4', { style: 'margin:0 0 4px 0;font-weight:800;color:var(--ink)' }, '⚡ Broadcasts & Automation Flows require Growth or Business plan'),
-        el('p', { class: 'muted', style: 'margin:0;font-size:0.86rem;line-height:1.45' }, 'Your workspace is currently on the Starter plan. Growth and Business plans unlock unlimited campaign broadcasts, segmentation, call-to-WhatsApp follow-ups, and up to 10,000+ CRM contacts.')
-      ]),
-      el('button', { class: 'btn btn-primary', onclick: () => goto('billing') }, 'Upgrade to Growth Plan')
-    ]);
-    root.appendChild(lockBanner);
-  }
-
-  const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;' });
-  if (window.innerWidth < 850) grid.style.gridTemplateColumns = '1fr';
-
-  const nameInput = el('input', { class: 'input', placeholder: 'e.g. Diwali Festive Offer 2026' });
-  const audienceSelect = el('select', { class: 'select' }, [
-    el('option', { value: 'all' }, 'All CRM Contacts'),
-    el('option', { value: 'Call Completed' }, 'Stage: Call Completed'),
-    el('option', { value: 'Qualified' }, 'Stage: Qualified'),
-    el('option', { value: 'New Lead' }, 'Stage: New Lead')
-  ]);
-  const msgTextarea = el('textarea', {
-    class: 'textarea',
-    rows: 5,
-    placeholder: 'Hi {{name}}, we have a special service update from Seevora. Call or message us back for exclusive pricing!'
-  });
-  const previewDiv = el('div', {
-    style: 'background:var(--bg-2);border:1px dashed var(--line-2);padding:14px 16px;border-radius:14px;font-size:0.86rem;line-height:1.45;color:var(--ink-soft);'
-  }, 'Preview: Type a message above.');
-
-  msgTextarea.addEventListener('input', () => {
-    previewDiv.textContent = 'Preview: ' + (msgTextarea.value.replace(/\{\{name\}\}/gi, 'Ramesh') || 'Type a message above.');
-  });
-
-  const launchBtn = el('button', { class: 'btn btn-primary', style: 'align-self:flex-start;padding:10px 24px;margin-top:4px;' }, 'Send Broadcast Now');
-
-  const createCard = el('div', { class: 'card card-pad', style: 'display:flex;flex-direction:column;gap:18px;' }, [
-    el('div', { style: 'margin-bottom:2px;' }, [
-      el('h3', { class: 't-h3', style: 'margin:0 0 4px 0;' }, 'Launch New WhatsApp Broadcast'),
-      el('p', { class: 'muted', style: 'font-size:0.86rem;margin:0;' }, 'Send targeted WhatsApp bulk updates and campaign notifications to contacts.')
-    ]),
-    field('Broadcast Campaign Name', nameInput),
-    field('Target Audience Segment', audienceSelect),
-    field('Message Template (Supports {{name}} variable)', msgTextarea),
-    previewDiv,
-    launchBtn
-  ]);
-
-  const historyList = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
-    el('div', { class: 'muted', style: 'padding:24px;text-align:center;' }, 'Loading past broadcasts...')
-  ]);
-
-  const historyCard = el('div', { class: 'card card-pad', style: 'display:flex;flex-direction:column;gap:18px;' }, [
-    el('div', { style: 'margin-bottom:2px;' }, [
-      el('h3', { class: 't-h3', style: 'margin:0 0 4px 0;' }, 'Broadcast Activity'),
-      el('p', { class: 'muted', style: 'font-size:0.86rem;margin:0;' }, 'Track transmission statuses, delivery rates, and active contact pools.')
-    ]),
-    historyList
-  ]);
-
-  grid.appendChild(createCard);
-  grid.appendChild(historyCard);
-  root.appendChild(grid);
-
-  async function loadHistory() {
-    historyList.innerHTML = '';
-    try {
-      const res = await api('/api/crm/contacts');
-      const contacts = (res && Array.isArray(res.contacts)) ? res.contacts : [];
-      historyList.innerHTML = '';
-      if (!contacts.length) {
-        historyList.appendChild(el('div', { class: 'muted', style: 'padding:32px 20px;text-align:center;font-size:0.9rem;' }, 'No broadcasts sent yet. Select an audience and compose a message to start.'));
-        return;
-      }
-
-      // 1. Audience Pool Card
-      const poolItem = el('div', {
-        style: 'padding:14px 16px;background:var(--bg-2);border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;justify-content:space-between;'
-      }, [
-        el('div', {}, [
-          el('div', { style: 'font-weight:600;font-size:0.95rem;color:var(--ink);' }, 'System Broadcast Pool'),
-          el('div', { class: 'muted', style: 'font-size:0.8rem;margin-top:2px;' }, `${contacts.length} total verified recipients ready`)
-        ]),
-        el('span', { class: 'pill badge-gold', style: 'font-size:0.75rem;padding:3px 10px;' }, '● Active Pool')
-      ]);
-
-      // 2. Broadcast Campaign History entries
-      const recentCampaigns = [
-        { title: 'Welcome Follow-up & Greeting', time: 'Yesterday, 4:30 PM', sent: contacts.length, status: 'Delivered' },
-        { title: 'Appointment Booking Prompt', time: '3 days ago', sent: Math.min(contacts.length, 8), status: 'Delivered' }
-      ];
-
-      const historyEntries = recentCampaigns.map((c) => el('div', {
-        style: 'padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;'
-      }, [
-        el('div', {}, [
-          el('div', { style: 'font-weight:550;font-size:0.9rem;color:var(--ink);' }, c.title),
-          el('div', { class: 'muted', style: 'font-size:0.78rem;margin-top:2px;' }, `${c.sent} recipients • Delivered ${c.time}`)
-        ]),
-        el('span', { class: 'pill', style: 'background:rgba(14,143,99,0.12);color:#0E8F63;border:1px solid rgba(14,143,99,0.25);font-size:0.75rem;padding:2px 8px;font-weight:600;' }, 'Delivered')
-      ]));
-
-      historyList.appendChild(poolItem);
-      historyEntries.forEach((entry) => historyList.appendChild(entry));
-    } catch (_) {
-      historyList.innerHTML = '<div class="muted" style="padding:20px;text-align:center;">Past history loaded.</div>';
-    }
-  }
-
-  launchBtn.addEventListener('click', async () => {
-    if (isStarter) {
-      toast('Broadcasts require Growth or Business plan. Please upgrade in Billing.', 'err');
-      goto('billing');
-      return;
-    }
-    const text = msgTextarea.value.trim();
-    if (!text) { toast('Please enter a broadcast message.', 'err'); return; }
-    launchBtn.disabled = true;
-    try {
-      const res = await api('/api/crm/contacts');
-      const contacts = (res && Array.isArray(res.contacts)) ? res.contacts : [];
-      let target = contacts;
-      if (audienceSelect.value !== 'all') {
-        target = contacts.filter((c) => c.stage === audienceSelect.value);
-      }
-      if (!target.length) {
-        toast('No contacts found matching the chosen audience.', 'info');
-        launchBtn.disabled = false;
-        return;
-      }
-      await api('/api/whatsapp/broadcasts', {
-        method: 'POST',
-        body: {
-          name: nameInput.value.trim() || 'WhatsApp Campaign',
-          text,
-          recipients: target.map((c) => ({ phone: c.phone, name: c.name }))
-        }
-      });
-      toast(`Broadcast successfully dispatched to ${target.length} contacts!`, 'ok');
-      nameInput.value = '';
-      msgTextarea.value = '';
-      loadHistory();
-    } catch (e) {
-      toast('Broadcast failed: ' + e.message, 'err');
-    } finally {
-      launchBtn.disabled = false;
-    }
-  });
-
-  loadHistory();
-}
-
-/* ===========================================================================
-   WhatsApp Automations & Workflows (Visual Builder & AI Engineer)
-   =========================================================================== */
-async function viewWhatsAppAutomations(root) {
-  root.appendChild(viewHead('WhatsApp Automations', 'Visual trigger-action workflows, smart auto-responders, and AI automation engineer for customer journeys.'));
-
-  // Main container
-  const container = el('div', { class: 'wa-auto-container', style: 'display:flex;flex-direction:column;gap:20px;' });
-  root.appendChild(container);
-
-  // 1. Action Toolbar & Pre-built Templates Header
-  const actionRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
-    el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      el('button', { class: 'btn btn-primary', id: 'btnNewAuto', html: '<span style="font-weight:700;font-size:1rem;margin-right:4px;">+</span> Create Workflow' }),
-      el('button', { class: 'btn btn-secondary', id: 'btnAiAuto', style: 'background:linear-gradient(135deg,#FFE27A,#FFD84D);color:#141414;border:none;font-weight:600;', html: 'AI Flow Generator' }),
-      el('button', { class: 'btn btn-ghost', id: 'btnRefreshAuto', html: 'Refresh' })
-    ]),
-    el('div', { class: 'flex items-center gap-2', id: 'filterTabs' }, [
-      el('button', { class: 'btn btn-sm btn-ghost active', 'data-filter': 'all' }, 'All'),
-      el('button', { class: 'btn btn-sm btn-ghost', 'data-filter': 'active' }, 'Active'),
-      el('button', { class: 'btn btn-sm btn-ghost', 'data-filter': 'paused' }, 'Paused')
-    ])
-  ]);
-  container.appendChild(actionRow);
-
-  // 3. Quick Starter Presets Section
-  const presetsSection = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
-    el('div', { style: 'font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-dim);' }, 'Quick Launch Presets (1-Click)'),
-    el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;' }, [
-      createPresetCard('Welcome Auto-Reply', 'Inbound Message', 'Sends instant personalized greeting when someone texts.', {
-        name: 'Instant Welcome Auto-Reply',
-        triggerType: 'message_received',
-        triggerConfig: {},
-        steps: [
-          { type: 'send_message', text: 'Hi {{name}}! Thank you for reaching out to us. How can we assist you today?' },
-          { type: 'add_tag', tag: 'new-lead' }
-        ]
-      }),
-      createPresetCard('Pricing Auto-Responder', 'Keyword: price, cost, rates', 'Instantly sends pricing details when keywords are matched.', {
-        name: 'Pricing & Packages Auto-Reply',
-        triggerType: 'keyword_match',
-        triggerConfig: { keywords: ['price', 'pricing', 'cost', 'package', 'rate'] },
-        steps: [
-          { type: 'send_message', text: 'Hi {{name}}, our packages start at just ₹2,999/month including AI Voice Receptionist + WhatsApp CRM! Reply "DEMO" to schedule a live walkthrough.' },
-          { type: 'add_tag', tag: 'pricing-inquiry' }
-        ]
-      }),
-      createPresetCard('Meeting / Demo Link', 'Keyword: demo, meeting, call', 'Sends calendar booking link automatically.', {
-        name: 'Instant Demo Booking Link',
-        triggerType: 'keyword_match',
-        triggerConfig: { keywords: ['demo', 'meeting', 'book', 'appointment', 'talk'] },
-        steps: [
-          { type: 'send_message', text: 'Great to connect {{name}}! Pick a convenient slot on our calendar here: https://cal.com/seevora-demo/15min' },
-          { type: 'add_tag', tag: 'demo-requested' }
-        ]
-      }),
-      createPresetCard('New Contact Nurture', 'New Lead Added', 'Sends onboarding message and pushes webhook.', {
-        name: 'New Lead Onboarding Flow',
-        triggerType: 'new_contact',
-        triggerConfig: {},
-        steps: [
-          { type: 'send_message', text: 'Welcome {{name}}! Your account has been setup. Save this number for 24/7 AI Voice & WhatsApp support.' },
-          { type: 'add_tag', tag: 'onboarded' }
-        ]
-      })
-    ])
-  ]);
-  container.appendChild(presetsSection);
-
-  // 4. Automations Grid
-  const grid = el('div', { class: 'wa-auto-grid', id: 'automationsGrid' });
-  container.appendChild(grid);
-
-  let currentFilter = 'all';
-  let automationsList = [];
-
-  actionRow.querySelectorAll('#filterTabs button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      actionRow.querySelectorAll('#filterTabs button').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.getAttribute('data-filter');
-      renderAutomations();
-    });
-  });
-
-  actionRow.querySelector('#btnNewAuto').addEventListener('click', () => openAutomationEditor());
-  actionRow.querySelector('#btnAiAuto').addEventListener('click', () => openAiAutomationModal());
-  actionRow.querySelector('#btnRefreshAuto').addEventListener('click', () => loadAutomations());
-
-  function createPresetCard(title, triggerDesc, desc, templateData) {
-    const card = el('div', { class: 'wa-preset-card' }, [
-      el('div', { style: 'font-weight:600;font-size:0.88rem;color:var(--ink);' }, title),
-      el('div', { class: 'wa-trigger-chip', style: 'align-self:flex-start;font-size:0.7rem;padding:2px 8px;' }, triggerDesc),
-      el('div', { class: 'muted', style: 'font-size:0.78rem;line-height:1.35;' }, desc),
-      el('button', { class: 'btn btn-sm btn-ghost', style: 'margin-top:6px;align-self:flex-start;font-size:0.76rem;color:var(--gold-deep);' }, '+ Use This Template')
-    ]);
-    card.querySelector('button').addEventListener('click', () => openAutomationEditor(templateData));
-    return card;
-  }
-
-  async function loadAutomations() {
-    grid.innerHTML = '<div class="muted" style="grid-column:1/-1;text-align:center;padding:40px;">Loading automations...</div>';
-    try {
-      const res = await api('/api/automations');
-      automationsList = res.automations || [];
-      renderAutomations();
-    } catch (e) {
-      grid.innerHTML = `<div class="card" style="grid-column:1/-1;padding:30px;text-align:center;color:#EF4444;">Failed to load automations: ${e.message}</div>`;
-    }
-  }
-
-  function renderAutomations() {
-    grid.innerHTML = '';
-    const filtered = automationsList.filter((a) => {
-      if (currentFilter === 'active') return a.isActive;
-      if (currentFilter === 'paused') return !a.isActive;
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      grid.innerHTML = `
-        <div class="card" style="grid-column:1/-1;padding:50px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
-          <div style="width:54px;height:54px;border-radius:50%;background:rgba(224,174,0,0.15);display:flex;align-items:center;justify-content:center;color:#8C6200;">
-            ${navIcon('sparkle')}
-          </div>
-          <h3 style="margin:0;font-size:1.15rem;">No Automations Found</h3>
-          <p class="muted" style="max-width:420px;margin:0;font-size:0.86rem;">
-            ${currentFilter === 'all' ? 'Create your first WhatsApp workflow or pick a starter template above to automate client replies, tags, and follow-ups.' : 'No ' + currentFilter + ' automations.'}
-          </p>
-          <button class="btn btn-primary" id="btnEmptyCreate" style="margin-top:8px;">+ Create Workflow</button>
-        </div>
-      `;
-      const btn = grid.querySelector('#btnEmptyCreate');
-      if (btn) btn.addEventListener('click', () => openAutomationEditor());
-      return;
-    }
-
-    filtered.forEach((auto) => {
-      grid.appendChild(renderAutomationCard(auto));
-    });
-  }
-
-  function renderAutomationCard(auto) {
-    const card = el('div', { class: 'wa-card' });
-
-    // Trigger label
-    let triggerLabel = 'Inbound Message';
-    if (auto.triggerType === 'keyword_match') {
-      const kws = (auto.triggerConfig && auto.triggerConfig.keywords) || [];
-      triggerLabel = 'Keywords: ' + (kws.length ? kws.slice(0, 3).join(', ') + (kws.length > 3 ? '...' : '') : 'none');
-    } else if (auto.triggerType === 'new_contact') {
-      triggerLabel = 'New Contact Added';
-    } else if (auto.triggerType === 'schedule') {
-      triggerLabel = 'Schedule: ' + ((auto.triggerConfig && auto.triggerConfig.cronExpr) || 'Daily');
-    }
-
-    // Header
-    const toggleBtn = el('button', {
-      class: 'wa-toggle-btn ' + (auto.isActive ? 'active' : 'paused'),
-      html: auto.isActive ? '● Active' : '○ Paused'
-    });
-    toggleBtn.addEventListener('click', async () => {
-      try {
-        const res = await api(`/api/automations/${auto.id}/toggle`, { method: 'POST' });
-        auto.isActive = res.isActive;
-        toggleBtn.className = 'wa-toggle-btn ' + (auto.isActive ? 'active' : 'paused');
-        toggleBtn.textContent = auto.isActive ? '● Active' : '○ Paused';
-        toast(`Automation "${auto.name}" is now ${auto.isActive ? 'Active' : 'Paused'}.`, 'ok');
-      } catch (e) {
-        toast(e.message, 'err');
-      }
-    });
-
-    const header = el('div', { class: 'wa-card-header' }, [
-      el('div', { style: 'flex:1;min-width:0;' }, [
-        el('h4', { class: 'wa-card-title' }, auto.name),
-        el('span', { class: 'wa-trigger-chip' }, [el('span', { html: uiIcon('bolt', 12) }), triggerLabel])
-      ]),
-      toggleBtn
-    ]);
-    card.appendChild(header);
-
-    // Steps flow visualizer
-    const stepsFlow = el('div', { class: 'wa-steps-flow' });
-    const steps = auto.steps || [];
-    if (steps.length === 0) {
-      stepsFlow.appendChild(el('div', { class: 'muted', style: 'font-size:0.8rem;' }, 'No steps defined yet.'));
-    } else {
-      steps.forEach((step, idx) => {
-        let label = '';
-        if (step.type === 'send_message') {
-          label = `Send: "${(step.text || '').slice(0, 42)}${(step.text || '').length > 42 ? '...' : ''}"`;
-        } else if (step.type === 'send_template') {
-          label = `Template: ${step.templateName || 'Unnamed'}`;
-        } else if (step.type === 'add_tag') {
-          label = `Add Tag: ${step.tag || ''}`;
-        } else if (step.type === 'remove_tag') {
-          label = `Remove Tag: ${step.tag || ''}`;
-        } else if (step.type === 'wait') {
-          label = `Wait ${step.seconds || 60}s`;
-        } else if (step.type === 'webhook') {
-          label = `Webhook ${step.method || 'POST'} ${step.url ? new URL(step.url, 'http://x').pathname : ''}`;
-        } else {
-          label = step.type;
-        }
-
-        const stepRow = el('div', { class: 'wa-step-item' }, [
-          el('span', { class: 'wa-step-badge' }, String(idx + 1)),
-          el('span', { class: 'wa-step-detail' }, label)
-        ]);
-        stepsFlow.appendChild(stepRow);
-      });
-    }
-    card.appendChild(stepsFlow);
-
-    // Footer stats & actions
-    const footer = el('div', { class: 'wa-card-footer' }, [
-      el('div', { class: 'wa-stats-text' }, [
-        el('div', {}, `Runs: ${auto.runCount || 0}`),
-        el('div', { class: 'muted', style: 'font-size:0.72rem;' }, auto.lastRunAt ? `Last: ${new Date(auto.lastRunAt).toLocaleTimeString()}` : 'Never fired')
-      ]),
-      el('div', { class: 'flex items-center gap-1' }, [
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'Test Run', html: 'Test' }),
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'View Execution Logs', html: 'Logs' }),
-        el('button', { class: 'btn btn-sm btn-ghost', title: 'Edit Automation', html: 'Edit' }),
-        el('button', { class: 'btn btn-sm btn-ghost', style: 'color:#EF4444;', title: 'Delete', html: '✕' })
-      ])
-    ]);
-
-    const btns = footer.querySelectorAll('button');
-    // Test button
-    btns[0].addEventListener('click', () => openTestAutomationModal(auto));
-    // Logs button
-    btns[1].addEventListener('click', () => openLogsModal(auto));
-    // Edit button
-    btns[2].addEventListener('click', () => openAutomationEditor(auto));
-    // Delete button
-    btns[3].addEventListener('click', () => {
-      modal({
-        title: `Delete "${auto.name}"?`,
-        body: el('p', { class: 'muted' }, 'Are you sure you want to delete this automation? This action cannot be undone.'),
-        confirmText: 'Delete',
-        confirmKind: 'danger',
-        onConfirm: async () => {
-          await api('/api/automations/delete', { method: 'POST', body: { id: auto.id } });
-          toast('Automation deleted.', 'ok');
-          loadAutomations();
-        }
-      });
-    });
-
-    card.appendChild(footer);
-    return card;
-  }
-
-  // 5. Visual Automation Builder Modal
-  function openAutomationEditor(existing) {
-    const isEdit = existing && existing.id;
-    let stepsData = existing && existing.steps ? JSON.parse(JSON.stringify(existing.steps)) : [
-      { type: 'send_message', text: 'Hi {{name}}, thanks for messaging us! How can we help you today?' },
-      { type: 'add_tag', tag: 'lead' }
-    ];
-
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;max-height:68vh;overflow-y:auto;padding-right:4px;' });
-
-    // Name
-    const nameInput = el('input', { class: 'input', placeholder: 'e.g. Lead Qualification Auto-Responder', value: (existing && existing.name) || '' });
-    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Automation Name'), nameInput]));
-
-    // Trigger Type
-    const triggerSelect = el('select', { class: 'select' }, [
-      el('option', { value: 'message_received' }, 'Inbound Message (Any WhatsApp message received)'),
-      el('option', { value: 'keyword_match' }, 'Keyword Match (When message contains specific words)'),
-      el('option', { value: 'new_contact' }, 'New Contact Created (Lead captured via voice or form)'),
-      el('option', { value: 'schedule' }, 'Scheduled / Recurring Broadcast (Cron expression)')
-    ]);
-    if (existing && existing.triggerType) triggerSelect.value = existing.triggerType;
-    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Trigger Event'), triggerSelect]));
-
-    // Trigger Config Box
-    const triggerConfigBox = el('div', { style: 'padding:12px;background:rgba(255,255,255,0.6);border:1px solid var(--line);border-radius:var(--r-sm);' });
-    const keywordInput = el('input', {
-      class: 'input',
-      placeholder: 'e.g. price, pricing, cost, demo, help (comma separated)',
-      value: (existing && existing.triggerConfig && existing.triggerConfig.keywords) ? existing.triggerConfig.keywords.join(', ') : ''
-    });
-    const cronInput = el('input', {
-      class: 'input',
-      placeholder: 'e.g. 0 9 * * 1 (Every Monday at 9:00 AM)',
-      value: (existing && existing.triggerConfig && existing.triggerConfig.cronExpr) || '0 9 * * *'
-    });
-
-    function updateTriggerConfigUI() {
-      triggerConfigBox.innerHTML = '';
-      const val = triggerSelect.value;
-      if (val === 'keyword_match') {
-        triggerConfigBox.appendChild(el('div', { class: 'form-group' }, [
-          el('label', {}, 'Keywords to match (comma separated)'),
-          keywordInput,
-          el('div', { class: 'muted', style: 'font-size:0.75rem;margin-top:4px;' }, 'Case-insensitive. If incoming WhatsApp message contains any of these words, this flow triggers.')
-        ]));
-      } else if (val === 'schedule') {
-        triggerConfigBox.appendChild(el('div', { class: 'form-group' }, [
-          el('label', {}, 'Cron Schedule (5-field: min hour dom mon dow)'),
-          cronInput,
-          el('div', { class: 'muted', style: 'font-size:0.75rem;margin-top:4px;' }, 'Example: "0 9 * * *" for daily at 9am, or "*/30 * * * *" for every 30 minutes.')
-        ]));
-      } else {
-        triggerConfigBox.appendChild(el('div', { class: 'muted', style: 'font-size:0.8rem;' },
-          val === 'message_received' ? 'Fires on every new inbound WhatsApp message received from a customer.' : 'Fires whenever a new contact is added to your CRM.'
-        ));
-      }
-    }
-    triggerSelect.addEventListener('change', updateTriggerConfigUI);
-    updateTriggerConfigUI();
-    body.appendChild(triggerConfigBox);
-
-    // Steps list editor
-    const stepsContainer = el('div', { style: 'display:flex;flex-direction:column;gap:8px;' });
-    const stepsWrapper = el('div', { class: 'form-group' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
-        el('label', { style: 'margin:0;font-weight:600;' }, 'Workflow Actions / Steps'),
-        el('button', { type: 'button', class: 'btn btn-sm btn-secondary', id: 'btnAddStep', html: '+ Add Step' })
-      ]),
-      stepsContainer
-    ]);
-    body.appendChild(stepsWrapper);
-
-    function renderStepsEditor() {
-      stepsContainer.innerHTML = '';
-      stepsData.forEach((st, idx) => {
-        const stepRow = el('div', { class: 'wa-step-editor-row' });
-
-        const top = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:8px;' }, [
-          el('div', { class: 'flex items-center gap-2' }, [
-            el('span', { class: 'wa-step-badge' }, String(idx + 1)),
-            el('b', { style: 'font-size:0.82rem;' }, `Step ${idx + 1}`)
-          ]),
-          el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'color:#EF4444;font-size:0.76rem;', html: 'Remove Step' })
-        ]);
-        top.querySelector('button').addEventListener('click', () => {
-          stepsData.splice(idx, 1);
-          renderStepsEditor();
-        });
-        stepRow.appendChild(top);
-
-        const typeSelect = el('select', { class: 'select', style: 'font-size:0.82rem;' }, [
-          el('option', { value: 'send_message' }, 'Send WhatsApp Text Message'),
-          el('option', { value: 'send_template' }, 'Send WhatsApp Approved Template'),
-          el('option', { value: 'add_tag' }, 'Add CRM Tag'),
-          el('option', { value: 'remove_tag' }, 'Remove CRM Tag'),
-          el('option', { value: 'wait' }, 'Delay / Wait'),
-          el('option', { value: 'webhook' }, 'Call External Webhook')
-        ]);
-        typeSelect.value = st.type || 'send_message';
-        stepRow.appendChild(typeSelect);
-
-        const configArea = el('div', { style: 'display:flex;flex-direction:column;gap:6px;' });
-
-        function updateStepConfigFields() {
-          configArea.innerHTML = '';
-          const t = typeSelect.value;
-          st.type = t;
-
-          if (t === 'send_message') {
-            const txt = el('textarea', { class: 'textarea', rows: 3, placeholder: 'Hi {{name}}, your request has been received.' });
-            txt.value = st.text || '';
-            txt.addEventListener('input', () => { st.text = txt.value; });
-
-            const varsRow = el('div', { class: 'flex items-center gap-2', style: 'font-size:0.75rem;' }, [
-              el('span', { class: 'muted' }, 'Insert:'),
-              el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'padding:2px 6px;font-size:0.72rem;' }, '{{name}}'),
-              el('button', { type: 'button', class: 'btn btn-sm btn-ghost', style: 'padding:2px 6px;font-size:0.72rem;' }, '{{phone}}')
-            ]);
-            varsRow.querySelectorAll('button')[0].addEventListener('click', () => { txt.value += '{{name}}'; st.text = txt.value; });
-            varsRow.querySelectorAll('button')[1].addEventListener('click', () => { txt.value += '{{phone}}'; st.text = txt.value; });
-
-            configArea.appendChild(txt);
-            configArea.appendChild(varsRow);
-          } else if (t === 'send_template') {
-            const tmplInput = el('input', { class: 'input', placeholder: 'Template name in Meta (e.g. hello_world)' });
-            tmplInput.value = st.templateName || '';
-            tmplInput.addEventListener('input', () => { st.templateName = tmplInput.value; });
-            configArea.appendChild(tmplInput);
-          } else if (t === 'add_tag' || t === 'remove_tag') {
-            const tagInput = el('input', { class: 'input', placeholder: 'e.g. interested, hot-lead, vip' });
-            tagInput.value = st.tag || '';
-            tagInput.addEventListener('input', () => { st.tag = tagInput.value; });
-            configArea.appendChild(tagInput);
-          } else if (t === 'wait') {
-            const secInput = el('input', { type: 'number', class: 'input', placeholder: 'Seconds to wait (e.g. 300 for 5m)' });
-            secInput.value = st.seconds || 60;
-            secInput.addEventListener('input', () => { st.seconds = parseInt(secInput.value, 10) || 60; });
-            configArea.appendChild(secInput);
-          } else if (t === 'webhook') {
-            const urlInput = el('input', { class: 'input', placeholder: 'https://api.yourdomain.com/lead-webhook' });
-            urlInput.value = st.url || '';
-            urlInput.addEventListener('input', () => { st.url = urlInput.value; });
-            configArea.appendChild(urlInput);
-          }
-        }
-
-        typeSelect.addEventListener('change', updateStepConfigFields);
-        updateStepConfigFields();
-        stepRow.appendChild(configArea);
-        stepsContainer.appendChild(stepRow);
-      });
-    }
-
-    stepsWrapper.querySelector('#btnAddStep').addEventListener('click', () => {
-      stepsData.push({ type: 'send_message', text: 'Hi {{name}}, thanks for contacting us!' });
-      renderStepsEditor();
-    });
-    renderStepsEditor();
-
-    modal({
-      title: isEdit ? `Edit Automation: ${existing.name}` : 'Create WhatsApp Automation',
-      body,
-      confirmText: isEdit ? 'Save Changes' : 'Create Automation',
-      onConfirm: async () => {
-        const name = nameInput.value.trim();
-        if (!name) throw new Error('Please provide an automation name.');
-        if (stepsData.length === 0) throw new Error('Please add at least one step to the automation.');
-
-        const triggerType = triggerSelect.value;
-        const triggerConfig = {};
-        if (triggerType === 'keyword_match') {
-          triggerConfig.keywords = keywordInput.value.split(',').map((s) => s.trim()).filter(Boolean);
-        } else if (triggerType === 'schedule') {
-          triggerConfig.cronExpr = cronInput.value.trim();
-        }
-
-        const payload = {
-          name,
-          triggerType,
-          triggerConfig,
-          steps: stepsData,
-          isActive: isEdit ? existing.isActive : true
-        };
-
-        if (isEdit) {
-          await api(`/api/automations/${existing.id}`, { method: 'POST', body: payload });
-          toast('Automation updated successfully.', 'ok');
-        } else {
-          await api('/api/automations', { method: 'POST', body: payload });
-          toast('Automation created successfully.', 'ok');
-        }
-        loadAutomations();
-      }
-    });
-  }
-
-  // 6. AI Automation Engineer Modal
-  function openAiAutomationModal() {
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
-      el('p', { class: 'muted', style: 'margin:0;font-size:0.85rem;' },
-        'Describe your automation workflow in plain English. The AI Engineer will structure triggers, keyword matchers, messages, tags, and delays automatically.'
-      ),
-      el('textarea', {
-        class: 'textarea',
-        id: 'aiPromptInput',
-        rows: 4,
-        placeholder: 'e.g. When a client texts asking about price or cost, reply with our basic ₹2,999 package details and tag them as "pricing-lead", then wait 5 minutes and ask if they would like to talk to an agent.'
-      }),
-      el('div', { class: 'flex items-center gap-2 flex-wrap', style: 'font-size:0.75rem;' }, [
-        el('span', { class: 'muted' }, 'Try:'),
-        el('button', { type: 'button', class: 'btn btn-sm btn-ghost prompt-chip', style: 'font-size:0.72rem;padding:2px 8px;' }, 'Auto-reply to greetings & tag new lead'),
-        el('button', { type: 'button', class: 'btn btn-sm btn-ghost prompt-chip', style: 'font-size:0.72rem;padding:2px 8px;' }, 'Booking link on "demo" keyword')
-      ])
-    ]);
-
-    body.querySelectorAll('.prompt-chip')[0].addEventListener('click', () => {
-      body.querySelector('#aiPromptInput').value = 'When someone texts "hello", "hi", or "namaste", reply with a warm welcome and tag them as "new-inquiry".';
-    });
-    body.querySelectorAll('.prompt-chip')[1].addEventListener('click', () => {
-      body.querySelector('#aiPromptInput').value = 'When someone asks to "book" or "demo", reply with our calendar link and tag them as "ready-to-close".';
-    });
-
-    modal({
-      title: 'AI WhatsApp Automation Engineer',
-      body,
-      confirmText: 'Generate & Create Workflow',
-      onConfirm: async () => {
-        const prompt = body.querySelector('#aiPromptInput').value.trim();
-        if (!prompt) throw new Error('Please enter a description for the AI.');
-        toast('Generating automation flow with AI...', 'info');
-        const res = await api('/api/automations/ai', { method: 'POST', body: { prompt } });
-        if (res.automation) {
-          toast(`Automation "${res.automation.name}" created by AI Engineer!`, 'ok');
-          loadAutomations();
-        }
-      }
-    });
-  }
-
-  // 7. Test Fire Modal (Live execution with diagnostic output)
-  function openTestAutomationModal(auto) {
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
-      el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' },
-        `Simulate or execute this automation against a test phone number. Real-time step logs will display below.`
-      ),
-      el('div', { class: 'form-group' }, [
-        el('label', {}, 'Recipient Phone Number'),
-        el('input', { class: 'input', id: 'testPhoneInput', placeholder: 'e.g. +918120590466', value: '+918120590466' }),
-        el('p', { style: 'font-size:0.75rem;margin:5px 0 0 0;color:#B45309;line-height:1.4;' },
-          'Meta Sandbox Mode: Messages can only be delivered to numbers verified in your Meta Developer Console "To" recipient list (such as +918120590466). Unregistered numbers will be rejected by Meta until a real WhatsApp Business SIM number is connected.'
-        )
-      ]),
-      el('div', { class: 'form-group' }, [
-        el('label', {}, 'Simulated Inbound Message Text'),
-        el('input', { class: 'input', id: 'testMsgInput', placeholder: 'e.g. What is the price?', value: 'Hello, what is the price?' })
-      ]),
-      el('div', { id: 'testResultsArea', style: 'padding:12px;background:#F8FAFC;border:1px solid var(--line);border-radius:var(--r-sm);max-height:240px;overflow-y:auto;display:none;' })
-    ]);
-
-    modal({
-      title: `Test Fire: ${auto.name}`,
-      body,
-      confirmText: 'Execute Test Run',
-      cancelText: 'Close',
-      onConfirm: async () => {
-        const phone = body.querySelector('#testPhoneInput').value.trim();
-        const msg = body.querySelector('#testMsgInput').value.trim();
-        if (!phone) throw new Error('Please provide a phone number.');
-
-        const resultsArea = body.querySelector('#testResultsArea');
-        resultsArea.style.display = 'block';
-        resultsArea.innerHTML = '<div class="muted" style="font-size:0.8rem;">Running automation steps...</div>';
-
-        try {
-          const res = await api(`/api/automations/${auto.id}/test`, {
-            method: 'POST',
-            body: { phone, messageText: msg }
-          });
-          resultsArea.innerHTML = '';
-          const steps = res.result || [];
-          let hasSandboxError = false;
-          steps.forEach((s, idx) => {
-            const isOk = s.ok;
-            if (!isOk && String(s.error || '').includes('131030')) hasSandboxError = true;
-            const item = el('div', { style: `font-size:0.8rem;margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${isOk ? '#ECFDF5' : '#FEF2F2'};border:1px solid ${isOk ? '#A7F3D0' : '#FECACA'};` }, [
-              el('b', {}, `Step ${idx + 1} (${s.type}): `),
-              el('span', {}, isOk ? (s.mode === 'simulated' ? '✓ Simulated delivery' : '✓ Delivered successfully') : `✕ Failed: ${s.error || 'Step error'}`)
-            ]);
-            if (s.note) item.appendChild(el('div', { class: 'muted', style: 'font-size:0.74rem;margin-top:2px;' }, s.note));
-            resultsArea.appendChild(item);
-          });
-          if (hasSandboxError) {
-            resultsArea.appendChild(el('div', { style: 'margin-top:8px;padding:8px 10px;border-radius:6px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;font-size:0.76rem;line-height:1.4;' },
-              'Meta Sandbox Whitelist Restriction: Meta Developer sandbox test numbers can only send to verified numbers added under Meta Developer Portal -> WhatsApp -> API Setup -> "To" recipient list. To send to any real customer, register a live WhatsApp Business SIM number.'
-            ));
-          }
-          toast('Automation test completed.', 'ok');
-        } catch (err) {
-          resultsArea.innerHTML = `<div style="color:#EF4444;font-size:0.82rem;">Test execution failed: ${err.message}</div>`;
-          throw err;
-        }
-      }
-    });
-  }
-
-  // 8. Execution Logs Modal
-  async function openLogsModal(auto) {
-    const body = el('div', { style: 'max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;' });
-    body.innerHTML = '<div class="muted" style="text-align:center;padding:20px;">Loading logs...</div>';
-
-    modal({
-      title: `Execution History: ${auto.name}`,
-      body,
-      confirmText: 'Done',
-      cancelText: 'Close',
-      onConfirm: () => {}
-    });
-
-    try {
-      const res = await api(`/api/automations/${auto.id}/logs`);
-      const logs = (res.logs || []).reverse();
-      body.innerHTML = '';
-      if (logs.length === 0) {
-        body.innerHTML = '<div class="muted" style="text-align:center;padding:30px;">No execution logs recorded yet.</div>';
-        return;
-      }
-      logs.forEach((log) => {
-        const isSuccess = log.status === 'success';
-        const row = el('div', { style: `padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:rgba(255,255,255,0.7);display:flex;flex-direction:column;gap:4px;font-size:0.8rem;` }, [
-          el('div', { style: 'display:flex;align-items:center;justify-content:space-between;' }, [
-            el('b', {}, log.phone || 'Unknown Contact'),
-            el('span', { class: `badge badge-${isSuccess ? 'success' : 'danger'}`, style: 'font-size:0.7rem;' }, log.status)
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.72rem;' }, new Date(log.createdAt).toLocaleString()),
-          el('pre', { style: 'margin:4px 0 0;font-size:0.72rem;background:#F1F5F9;padding:6px;border-radius:4px;overflow-x:auto;max-height:100px;' }, log.detail || 'No details')
-        ]);
-        body.appendChild(row);
-      });
-    } catch (e) {
-      body.innerHTML = `<div style="color:#EF4444;">Failed to load logs: ${e.message}</div>`;
-    }
-  }
-
-  // 9. WhatsApp Credentials Modal (Directly fixes why messages are not going)
-  async function openWhatsAppConfigModal() {
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' });
-    body.innerHTML = '<div class="muted">Loading WhatsApp configuration...</div>';
-
-    let currentCfg = {};
-    try {
-      currentCfg = await api('/api/whatsapp/config');
-    } catch (_) {}
-
-    body.innerHTML = '';
-    const phoneIdInput = el('input', { class: 'input', placeholder: 'e.g. 1305746365962870', value: currentCfg.metaPhoneId || '' });
-    const wabaIdInput = el('input', { class: 'input', placeholder: 'e.g. 1071250892416905', value: currentCfg.metaWabaId || '' });
-    const tokenInput = el('textarea', { class: 'textarea', rows: 3, placeholder: 'EAAXsGpMcdxgBS...', value: currentCfg.metaToken || '' });
-
-    body.appendChild(el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' },
-      'Messages will fail if your Meta Access Token has expired (Meta temporary tokens expire after 24h). Renew your token from Meta Developer Portal -> WhatsApp -> API Setup or create a permanent System User Token.'
-    ));
-    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'WhatsApp Phone Number ID'), phoneIdInput]));
-    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'WhatsApp Business Account ID (WABA ID)'), wabaIdInput]));
-    body.appendChild(el('div', { class: 'form-group' }, [el('label', {}, 'Meta Access Token (Temporary or Permanent)'), tokenInput]));
-
-    const testBtn = el('button', { type: 'button', class: 'btn btn-secondary', style: 'align-self:flex-start;font-size:0.8rem;' }, 'Verify Token with Meta API');
-    const testResult = el('div', { style: 'font-size:0.8rem;display:none;' });
-    testBtn.addEventListener('click', async () => {
-      testResult.style.display = 'block';
-      testResult.textContent = 'Verifying with Meta Graph API...';
-      try {
-        const res = await api('/api/whatsapp/test-connection', { allow401: true });
-        if (res.ok) {
-          testResult.innerHTML = `<span style="color:#10B981;font-weight:600;">✓ Valid Token! Connected to +${res.displayPhoneNumber || res.phoneId}.</span>`;
-        } else {
-          testResult.innerHTML = `<span style="color:#EF4444;font-weight:600;">✕ Invalid/Expired Token: ${res.error || 'Check token'}.</span>`;
-        }
-      } catch (e) {
-        testResult.innerHTML = `<span style="color:#EF4444;">✕ Check failed: ${e.message}</span>`;
-      }
-    });
-    body.appendChild(testBtn);
-    body.appendChild(testResult);
-
-    modal({
-      title: 'WhatsApp Gateway & Meta Token Manager',
-      body,
-      confirmText: 'Save Credentials',
-      onConfirm: async () => {
-        await api('/api/whatsapp/config', {
-          method: 'POST',
-          body: {
-            mode: 'meta_cloud',
-            metaPhoneId: phoneIdInput.value.trim(),
-            metaWabaId: wabaIdInput.value.trim(),
-            metaToken: tokenInput.value.trim()
-          }
-        });
-        toast('WhatsApp credentials saved.', 'ok');
-      }
-    });
-  }
-
-  // Initial load
-  loadAutomations();
 }
 
 /* ===========================================================================

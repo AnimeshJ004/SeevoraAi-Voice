@@ -283,26 +283,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 10px 14px;
+      gap: 8px;
+      padding: 11px 16px;
       border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--ink);
+      border: 1.5px solid #CBD5E1;
+      background: #FFFFFF;
+      color: #0F172A;
       font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.18s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .btn-demo-sub:hover {
-      background: #FFFFFF !important;
-      border-color: rgba(0, 0, 0, 0.18) !important;
-      color: var(--ink) !important;
+      background: #F8FAFC !important;
+      border-color: #0095FF !important;
+      color: #0095FF !important;
       transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 12px rgba(0, 149, 255, 0.12);
     }
     @media (max-width: 420px) {
       .demo-buttons-row {
@@ -449,16 +449,22 @@
           <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
         </div>
 
-        <!-- Quick Demo Login Access -->
-        <div class="demo-access-wrap">
+        <!-- Quick Demo Login Access (Hidden by default, displayed only in dev when demoLoginEnabled is true) -->
+        <div id="demoAccessWrap" class="demo-access-wrap" style="display: none;">
           <div class="demo-divider-row">
             <div class="demo-line"></div>
-            <span>Quick Demo Access</span>
+            <span>⚡ Quick Demo Logins</span>
             <div class="demo-line"></div>
           </div>
           <div class="demo-buttons-row">
-            <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
-            <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
+            <button id="btnQuickDemoAdmin" type="button" class="btn-demo-sub" title="Login as Admin Demo (Agency Operator)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Admin Demo</span>
+            </button>
+            <button id="btnQuickDemoClient" type="button" class="btn-demo-sub" title="Login as Client Demo (Business Client)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Client Demo</span>
+            </button>
           </div>
         </div>
       </div>
@@ -723,6 +729,17 @@
           btnElement.innerHTML = originalHtml;
         }
       }
+
+      // Check server configuration for demo login permission
+      fetch('/api/billing/config')
+        .then((res) => res.json())
+        .then((cfg) => {
+          if (cfg && cfg.auth && cfg.auth.demoLoginEnabled) {
+            const demoWrap = document.getElementById('demoAccessWrap');
+            if (demoWrap) demoWrap.style.display = 'flex';
+          }
+        })
+        .catch(() => {});
 
       const btnAdmin = document.getElementById('btnQuickDemoAdmin');
       if (btnAdmin) {

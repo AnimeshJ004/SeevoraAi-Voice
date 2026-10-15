@@ -125,6 +125,230 @@ function decodeJwt(token) {
 }
 
 /**
+ * Full JWT parser that splits into header, payload, signingInput, and raw signature buffer.
+ */
+function parseJwt(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const headerJson = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const header = JSON.parse(headerJson);
+    const payload = JSON.parse(payloadJson);
+    const signature = Buffer.from(parts[2], 'base64url');
+    return {
+      header,
+      payload,
+      signingInput: `${parts[0]}.${parts[1]}`,
+      signature,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Normalizes PEM public key format from raw base64 or string.
+ */
+function formatPemPublicKey(keyStr) {
+  if (!keyStr || typeof keyStr !== 'string') return null;
+  const cleaned = keyStr.trim();
+  if (cleaned.includes('-----BEGIN PUBLIC KEY-----')) return cleaned;
+  if (cleaned.includes('-----BEGIN RSA PUBLIC KEY-----')) return cleaned;
+  const chunks = cleaned.match(/.{1,64}/g);
+  const formatted = chunks ? chunks.join('\n') : cleaned;
+  return `-----BEGIN PUBLIC KEY-----\n${formatted}\n-----END PUBLIC KEY-----`;
+}
+
+// In-memory test RSA key pair for cryptographic verification in test mode
+let _testKeyPair = null;
+function getTestKeyPair() {
+  if (!_testKeyPair) {
+    _testKeyPair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  }
+  return _testKeyPair;
+}
+
+/**
+ * Signs a real RS256 JWT using the test key pair (for hermetic test execution).
+ */
+function signTestToken(payload, headerOverrides = {}) {
+  const { privateKey } = getTestKeyPair();
+  const header = { alg: 'RS256', typ: 'JWT', kid: 'test_key_1', ...headerOverrides };
+  const h64 = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const p64 = Buffer.from(JSON.stringify({
+    sub: 'user_test_default',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...payload,
+  })).toString('base64url');
+  const data = Buffer.from(`${h64}.${p64}`, 'utf8');
+  const sig = crypto.sign('sha256', data, privateKey);
+  return `${h64}.${p64}.${sig.toString('base64url')}`;
+}
+
+let _jwksCache = {
+  keys: new Map(),
+  fetchedAt: 0,
+};
+let _jwksInFlight = null;
+
+function clearJwksCache() {
+  _jwksCache = { keys: new Map(), fetchedAt: 0 };
+}
+
+/**
+ * Fetches JWKS from Clerk REST API (GET /v1/jwks) and caches imported KeyObjects.
+ */
+async function fetchClerkJwks(secretKey) {
+  if (!secretKey) return new Map();
+  const now = Date.now();
+  // 1-hour cache
+  if (_jwksCache.keys.size > 0 && (now - _jwksCache.fetchedAt < 3600000)) {
+    return _jwksCache.keys;
+  }
+  if (_jwksInFlight) return _jwksInFlight;
+
+  _jwksInFlight = (async () => {
+    try {
+      const res = await clerkRequest({
+        method: 'GET',
+        path: '/v1/jwks',
+        secretKey,
+      });
+      const keysMap = new Map();
+      if (res && Array.isArray(res.keys)) {
+        for (const jwk of res.keys) {
+          try {
+            if (jwk.kty === 'RSA' && jwk.n && jwk.e) {
+              const keyObj = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+              const kid = jwk.kid || 'default';
+              keysMap.set(kid, keyObj);
+            }
+          } catch (_) {}
+        }
+      }
+      _jwksCache = { keys: keysMap, fetchedAt: Date.now() };
+      return keysMap;
+    } catch (err) {
+      if (_jwksCache.keys.size > 0) return _jwksCache.keys;
+      throw err;
+    } finally {
+      _jwksInFlight = null;
+    }
+  })();
+
+  return _jwksInFlight;
+}
+
+/**
+ * Production-Grade Zero-Trust Clerk Token Verification:
+ * 1. Validates JWT structure (3 parts)
+ * 2. Enforces RS256 algorithm (strictly rejects "none", HMAC, or unexpected algos)
+ * 3. Enforces token expiration (exp) and not-before (nbf) with 30s clock skew tolerance
+ * 4. Checks subject (sub) claim is non-empty string
+ * 5. Cryptographically verifies signature using:
+ *    a) Local CLERK_JWT_KEY if configured (fastest, zero-network)
+ *    b) Clerk JWKS from api.clerk.com/v1/jwks (matching kid)
+ *    c) Test RSA keypair when NODE_ENV === 'test'
+ *    d) Fallback verification via Clerk REST API
+ * 6. Strictly rejects any unverified or tampered tokens.
+ */
+async function verifyClerkToken(token, config) {
+  const parsed = parseJwt(token);
+  if (!parsed) {
+    throw new Error('Malformed or non-decodable JWT token');
+  }
+  const { header, payload, signingInput, signature } = parsed;
+
+  // 1. Strict algorithm check
+  if (header.alg !== 'RS256') {
+    throw new Error(`Unsupported JWT algorithm "${header.alg}". Only RS256 is permitted.`);
+  }
+
+  // 2. Token lifetime checks
+  const now = Math.floor(Date.now() / 1000);
+  const CLOCK_SKEW_SEC = 30;
+  if (payload.exp && (payload.exp + CLOCK_SKEW_SEC < now)) {
+    throw new Error('Clerk session token has expired');
+  }
+  if (payload.nbf && (payload.nbf - CLOCK_SKEW_SEC > now)) {
+    throw new Error('Clerk session token is not active yet');
+  }
+  if (!payload.sub || typeof payload.sub !== 'string') {
+    throw new Error('Clerk session token is missing subject (sub) claim');
+  }
+
+  // 3. Resolve public key for verification
+  let publicKey = null;
+  const cfg = validateClerkConfig(config);
+  const envJwtKey = (config && config.jwtKey) || process.env.CLERK_JWT_KEY;
+
+  if (envJwtKey) {
+    try {
+      const pem = formatPemPublicKey(envJwtKey);
+      publicKey = crypto.createPublicKey(pem);
+    } catch (e) {
+      throw new Error(`Failed to import configured CLERK_JWT_KEY: ${e.message}`);
+    }
+  } else if (cfg.secretKey) {
+    try {
+      const jwks = await fetchClerkJwks(cfg.secretKey);
+      if (header.kid && jwks.has(header.kid)) {
+        publicKey = jwks.get(header.kid);
+      } else if (jwks.size === 1) {
+        publicKey = jwks.values().next().value;
+      }
+    } catch (_) {
+      // Fall through to API check
+    }
+  }
+
+  // Test / local environment: verify tokens signed by local test keypair
+  if (!publicKey && (process.env.NODE_ENV === 'test' || (header.kid === 'test_key_1' && process.env.NODE_ENV !== 'production'))) {
+    const { publicKey: testPub } = getTestKeyPair();
+    const dataBuf = Buffer.from(signingInput, 'utf8');
+    const isValid = signature.length > 0 && crypto.verify('sha256', dataBuf, testPub, signature);
+    if (!isValid) {
+      throw new Error('Invalid JWT cryptographic signature');
+    }
+    return {
+      verified: true,
+      userId: payload.sub,
+      claims: payload,
+    };
+  }
+
+  // 4. Verify cryptographic signature if public key is available
+  if (publicKey) {
+    const dataBuf = Buffer.from(signingInput, 'utf8');
+    const isValid = signature.length > 0 && crypto.verify('sha256', dataBuf, publicKey, signature);
+    if (!isValid) {
+      throw new Error('Invalid JWT cryptographic signature');
+    }
+    return {
+      verified: true,
+      userId: payload.sub,
+      claims: payload,
+    };
+  }
+
+  // 5. Fallback: If no public key available, verify with Clerk Backend API directly
+  if (cfg.secretKey) {
+    const apiResult = await verifySessionToken(token, cfg);
+    return {
+      verified: true,
+      userId: apiResult.userId,
+      claims: payload,
+      user: apiResult.user,
+    };
+  }
+
+  // Fail-closed
+  throw new Error('Clerk token cannot be verified: no public key (CLERK_JWT_KEY) or secret key (CLERK_SECRET_KEY) configured');
+}
+
+/**
  * Verify a Clerk session token via Clerk REST API.
  */
 async function verifySessionToken(token, config) {
@@ -325,6 +549,13 @@ module.exports = {
   validateClerkConfig,
   extractToken,
   decodeJwt,
+  parseJwt,
+  formatPemPublicKey,
+  getTestKeyPair,
+  signTestToken,
+  fetchClerkJwks,
+  clearJwksCache,
+  verifyClerkToken,
   verifySessionToken,
   getClerkUser,
   updateClerkMetadata,
