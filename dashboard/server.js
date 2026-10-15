@@ -1725,7 +1725,8 @@ async function syncDograhWorkflow(workflowId) {
       'Pricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.'
     ].join('\n');
 
-    const enrichedPersona = (prompt ? prompt + '\n\n' : '') + CALLER_INTELLIGENCE_RULES;
+    const cleanedPrompt = String(prompt || '').replace('2. WhatsApp Business Automation for customer engagement and lead follow-up', '2. Lead Qualification and Follow-up Automation for customer engagement');
+    const enrichedPersona = (cleanedPrompt ? cleanedPrompt + '\n\n' : '') + CALLER_INTELLIGENCE_RULES;
 
     await core.mutate((d) => {
       d.agents.forEach((a) => {
