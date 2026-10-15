@@ -6784,7 +6784,7 @@ async function viewAssistant(wrap) {
   // Confirm bar (above input)
   const confirmBar = el('div', {
     class: 'assistant-confirm-bar hide',
-    style: 'margin:0 28px 12px;background:#ffffff;border:1px solid #f59e0b;color:#1e293b;box-shadow:0 8px 30px rgba(0,0,0,0.06);'
+    style: 'margin:0 28px 12px;'
   }, [
     el('div', { class: 'assistant-confirm-info' }, [
       el('div', {
@@ -7037,7 +7037,7 @@ async function viewAssistant(wrap) {
         html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg>'
       }),
       el('div', { class: 'chat-bot-body' }, [
-        el('div', { class: 'assistant-typing', style: 'background:#ffffff;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 14px rgba(0,0,0,0.02);' }, [
+        el('div', { class: 'assistant-typing' }, [
           el('span', { style: 'background:#181920;' }),
           el('span', { style: 'background:#3b82f6;' }),
           el('span', { style: 'background:#8b5cf6;' })

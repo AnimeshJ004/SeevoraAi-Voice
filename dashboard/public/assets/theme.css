@@ -2150,3 +2150,208 @@ tr:hover td { background: #F8FAFC; }
   color: #0F172A !important;
   padding: 8px 12px !important;
 }
+
+/* ==========================================================================
+   AI ASSISTANT TRANSLUCENT GLASSMORPHIC WORKSPACE
+   (Matches Inbound, Outbound, Overview, and Settings design system)
+   ========================================================================== */
+.chat-workspace-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.45) 100%) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 12px 36px -4px rgba(15, 45, 90, 0.06), 0 2px 8px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  overflow: hidden !important;
+}
+
+/* Left Icon Rail */
+.chat-left-rail {
+  background: rgba(255, 255, 255, 0.32) !important;
+  border-right: 1px solid rgba(186, 214, 242, 0.55) !important;
+}
+
+.chat-rail-btn {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(186, 214, 242, 0.70) !important;
+  color: #475569 !important;
+  box-shadow: 0 2px 6px rgba(15, 45, 90, 0.04) !important;
+}
+
+.chat-rail-btn:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #0095FF !important;
+  border-color: rgba(0, 149, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.chat-rail-btn.primary-plus {
+  background: var(--grad-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.35) !important;
+}
+
+/* Center Stream */
+.chat-center-pane {
+  background: rgba(255, 255, 255, 0.20) !important;
+}
+
+.chat-center-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(186, 214, 242, 0.45) !important;
+}
+
+.chat-center-title {
+  color: var(--ink) !important;
+}
+
+.chat-delete-btn {
+  background: rgba(254, 242, 242, 0.8) !important;
+  border: 1px solid rgba(254, 202, 202, 0.85) !important;
+  color: #DC2626 !important;
+}
+
+.chat-delete-btn:hover {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+}
+
+/* Assistant Chat Bubble */
+.chat-bubble-assistant {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 22px 22px 22px 6px !important;
+  color: #1E293B !important;
+  box-shadow: 0 4px 18px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Chat Input Capsule & Completely Transparent Field */
+.chat-input-capsule {
+  background: rgba(255, 255, 255, 0.50) !important;
+  border: 1.5px solid rgba(186, 214, 242, 0.75) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 36px !important;
+  box-shadow: 0 8px 24px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease !important;
+}
+
+.chat-input-capsule:focus-within {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(0, 149, 255, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15), 0 10px 30px rgba(15, 45, 90, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Overriding global input[type="text"] so the assistant input field remains 100% transparent without inner borders */
+.chat-input-capsule input,
+.chat-input-capsule input[type="text"],
+.chat-input-capsule input.chat-text-input,
+.chat-input-capsule input.chat-text-input:focus,
+.chat-text-input,
+input.chat-text-input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 8px 6px !important;
+  border-radius: 0 !important;
+  color: #1E293B !important;
+  font-size: 0.94rem !important;
+}
+
+.chat-attach-btn {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  color: #475569 !important;
+}
+
+.chat-attach-btn:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #0095FF !important;
+  border-color: rgba(0, 149, 255, 0.4) !important;
+}
+
+.chat-send-btn {
+  background: var(--grad-blue) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.35) !important;
+}
+
+.chat-send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0080EA 0%, #025381 100%) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Right Connectivity & History Panel */
+.chat-right-panel {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-left: 1px solid rgba(186, 214, 242, 0.55) !important;
+}
+
+.chat-assistant-dropdown {
+  background: rgba(255, 255, 255, 0.60) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  box-shadow: 0 2px 8px rgba(15, 45, 90, 0.03) !important;
+}
+
+.chat-integration-item {
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.chat-integration-item:hover {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(186, 214, 242, 0.6) !important;
+}
+
+.history-item {
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.50) !important;
+  color: #0F172A !important;
+}
+
+.history-item.active {
+  background: rgba(255, 255, 255, 0.80) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  box-shadow: 0 2px 8px rgba(15, 45, 90, 0.04) !important;
+  color: #0F172A !important;
+}
+
+.robot-speech-bubble {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 6px 18px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.assistant-typing {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  box-shadow: 0 4px 14px rgba(15, 45, 90, 0.04) !important;
+}
+
+.assistant-confirm-bar {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(245, 158, 11, 0.85) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 8px 30px rgba(15, 45, 90, 0.08) !important;
+}
+
+.template-card {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 14px rgba(15, 45, 90, 0.04) !important;
+}
+
+.template-card:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 149, 255, 0.5) !important;
+  box-shadow: 0 10px 28px rgba(0, 149, 255, 0.12) !important;
+}
+
