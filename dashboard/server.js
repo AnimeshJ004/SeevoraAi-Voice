@@ -1094,10 +1094,10 @@ Update the agent persona, greeting, fields, guardrails, and sample transcript ac
 
   if (generatedData && generatedData.agent && typeof generatedData.agent === 'object') {
     const ag = generatedData.agent;
-    const model = ag.tts && ag.tts.model === 'mulberry' ? 'mulberry' : 'muga';
+    const model = ag.tts && ag.tts.model === 'muga' ? 'muga' : 'mulberry';
     const speaker = (ag.tts && providers.TTS_SPEAKERS.has(ag.tts.speaker)) ? ag.tts.speaker : 'speaker_2';
     const toneVal = (ag.tts && ag.tts.tone) || 'neutral';
-    const descVal = (ag.tts && ag.tts.description) || `${tone} female voice, natural conversational cadence`;
+    const descVal = (ag.tts && ag.tts.description) || process.env.RUMIK_VOICE_DESCRIPTION || 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
 
     const normalized = {
       agent: {
@@ -1109,7 +1109,7 @@ Update the agent persona, greeting, fields, guardrails, and sample transcript ac
           model,
           speaker,
           tone: toneVal,
-          f0_up_key: 0,
+          f0_up_key: -1,
           description: descVal.slice(0, 500),
         },
         fields: Array.isArray(ag.fields) ? ag.fields.map(String).slice(0, 20) : ['caller_name', 'phone_number', 'reason_for_call'],
@@ -1243,6 +1243,24 @@ async function apiWsConnect(req, res, ctx) {
 }
 
 const CALLER_INTELLIGENCE_RULES = `
+# HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):
+- TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:
+  * NEVER use formal robotic filler phrases like: "Certainly! I'd be happy to assist you with...", "As an AI language model...", "Thank you for reaching out to us today.", "Is there anything else I can assist you with today?".
+  * Use warm, human everyday phrases: "Haanji bilkul!", "Achaa got it!", "Sure thing!", "Haanji boliye!", "Glad to help with that!".
+- CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:
+  * ALWAYS use contractions: "I'm", "we're", "don't", "can't", "that's", "it's", "we'll", "you'll". Humans never say "I am" or "do not" on a natural phone call.
+- NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:
+  * In Hindi/Hinglish: Start turns naturally with "Haanji", "Achaa", "Bilkul", "Sahi hai", or "Ji".
+  * In English: Start turns naturally with "Got it", "Right", "Sure", "Understood", or "Awesome".
+- BREVITY & BREATHING CADENCE:
+  * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).
+  * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.
+- PHONETIC PRONUNCIATION FOR TELEPHONY TTS:
+  * Always pronounce "24/7" as "twenty-four seven" or "chaubees ghante".
+  * Always pronounce "seevora.in" as "seevora dot in".
+  * Pronounce "AI" clearly as "A I".
+  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.
+
 # DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):
 - In Hindi and Hinglish: "Mera naam [Name] hai" or "Mera name [Name]" means "My name is [Name]". "Mera" translates to "My".
 - "Mera" IS NEVER A PERSON'S NAME! Never call the user "Mira" or "Mera".
@@ -1319,6 +1337,28 @@ async function apiChat(req, res, ctx) {
     let system = String(b.system || '');
     if (!system.includes('Mera naam')) {
       system += '\n\n' + CALLER_INTELLIGENCE_RULES;
+    }
+
+    // Strict Dynamic Language Detection for 100% accurate language mirroring
+    const lastUserMsg = (Array.isArray(b.messages) && b.messages.slice().reverse().find(m => m.role === 'user' || m.role === 'caller')) || {};
+    const lastUserText = String(lastUserMsg.text || lastUserMsg.content || '').trim();
+    let turnLanguage = 'English';
+    if (lastUserText) {
+      if (/[\u0900-\u097F]/.test(lastUserText)) {
+        turnLanguage = 'Hindi';
+      } else {
+        const lower = lastUserText.toLowerCase();
+        const hindiTokens = ['mera', 'naam', 'kya', 'hai', 'kaise', 'batao', 'bolo', 'karti', 'karta', 'aap', 'aapka', 'hum', 'haan', 'haanji', 'nahi', 'karo', 'chahiye', 'baare', 'mein', 'kitna', 'kon', 'kaun', 'acha', 'theek', 'namaste', 'dhanyawad', 'shukriya', 'kripya', 'ki', 'ke', 'ko', 'se', 'bhi', 'kuch'];
+        const words = lower.split(/[^a-z0-9]+/);
+        const hindiCount = words.filter(w => hindiTokens.includes(w)).length;
+        if (hindiCount >= 1) turnLanguage = 'Hindi';
+      }
+    }
+
+    if (turnLanguage === 'English') {
+      system += `\n\n[CRITICAL MANDATORY INSTRUCTION FOR THIS TURN: The caller spoke in ENGLISH ("${lastUserText.slice(0, 100)}"). You MUST reply 100% in natural, fluent ENGLISH! Do NOT use Hindi or Hinglish words on this turn!]`;
+    } else {
+      system += `\n\n[CRITICAL MANDATORY INSTRUCTION FOR THIS TURN: The caller spoke in HINDI / HINGLISH ("${lastUserText.slice(0, 100)}"). You MUST reply in natural conversational Hinglish using Roman script (e.g. "Haanji bilkul..."). Do NOT reply in pure English!]`;
     }
 
     try {
@@ -1696,12 +1736,12 @@ async function syncDograhWorkflow(workflowId) {
         a.llm = { provider: 'groq', model: 'qwen/qwen3.8-27b' };
         a.tts = {
           provider: 'rumik',
-          model: 'muga',
+          model: 'mulberry',
           voice: 'ira',
           speaker: 'speaker_2',
-          f0_up_key: 0,
+          f0_up_key: -1,
           tone: 'neutral',
-          description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional'
+          description: process.env.RUMIK_VOICE_DESCRIPTION || 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic'
         };
       });
       if (Array.isArray(d.presets)) {
@@ -3721,24 +3761,26 @@ sttWss.on('connection', (client, req) => {
     return client.close(1011, 'Deepgram unavailable');
   }
 
-  let lang = 'en-IN';
+  let requestedLang = 'multi';
   try {
     const parsed = new URL(req.url, 'http://localhost');
     const qLang = parsed.searchParams.get('lang');
-    if (qLang === 'hi' || qLang === 'en-IN' || qLang === 'en') lang = qLang;
+    if (qLang === 'en') requestedLang = 'en';
+    else if (qLang === 'hi') requestedLang = 'hi';
+    else requestedLang = 'multi';
   } catch (_) {}
 
-  // Nova-2 provides full Indian English (en-IN), Hindi (hi), and keyword boosting
-  const model = 'nova-2';
+  // Nova-3 provides full multilingual (multi) automatic English <-> Hindi recognition without dropping words
+  const model = 'nova-3';
 
   const query = new URLSearchParams({
     model: model,
-    language: lang,
+    language: requestedLang,
     smart_format: 'true',
     punctuate: 'true',
     interim_results: 'true',
-    endpointing: '650',
-    utterance_end_ms: '1500',
+    endpointing: '850',
+    utterance_end_ms: '2500',
     vad_events: 'true',
   });
   ['mera:3', 'naam:3', 'mera naam:4', 'aapka:2', 'namaste:2', 'shukriya:2', 'Seevora:3', 'Indore:3', 'Chaitanya:3', 'Panwar:3', 'CEO:3'].forEach((kw) => query.append('keywords', kw));
