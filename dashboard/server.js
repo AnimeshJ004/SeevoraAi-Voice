@@ -1587,6 +1587,176 @@ async function handleGeneralChat(text, ctx, thread) {
   return { reply, action: null };
 }
 
+// ---- handle: connect_integration (AI Voice Agent to WhatsApp/CRM/Email/Calendar) ----
+async function handleConnectIntegration(text, agentId, ctx, db) {
+  const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  const targetAgent = agentId ? agents.find((a) => a.id === agentId) : agents[0];
+  const agentName = targetAgent ? targetAgent.name : 'AI Voice Receptionist';
+
+  const t = text.toLowerCase();
+
+  // Detect channel
+  let channel = 'custom';
+  let providerTitle = 'External System';
+
+  if (/whatsapp/i.test(t)) {
+    channel = 'whatsapp';
+    providerTitle = 'WhatsApp Voice Dispatch & Alerts';
+  } else if (/gmail|email|smtp|mail/i.test(t)) {
+    channel = 'gmail';
+    providerTitle = 'Gmail & Email Dispatch';
+  } else if (/crm|hubspot|zoho|salesforce|lead/i.test(t)) {
+    channel = 'crm';
+    providerTitle = 'CRM Pipeline & Lead Webhook';
+  } else if (/calendar|cal\.com|schedule|appointment/i.test(t)) {
+    channel = 'calendar';
+    providerTitle = 'Google Calendar & Scheduling';
+  } else if (/webhook|api|zapier|make/i.test(t)) {
+    channel = 'webhook';
+    providerTitle = 'Marketplace Webhook API';
+  }
+
+  // Check if user provided details (e.g. phone number, email, URL)
+  const phoneMatch = text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+91\d{10}|\b\d{10}\b/);
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const urlMatch = text.match(/https?:\/\/[^\s]+/);
+
+  let updatedData = {
+    status: 'active',
+    connectedAgentId: targetAgent ? targetAgent.id : null,
+    connectedAgentName: agentName,
+    lastSync: new Date().toISOString()
+  };
+
+  if (channel === 'whatsapp') {
+    const phone = phoneMatch ? phoneMatch[0] : '+91 98765 43210';
+    updatedData = {
+      ...updatedData,
+      provider: 'WhatsApp Voice Alerts',
+      phoneNumber: phone,
+      verifiedAt: new Date().toISOString(),
+      dispatchOnCallEnd: true,
+      description: `Auto-sends booking summary & call transcript to caller from ${phone}`
+    };
+  } else if (channel === 'gmail') {
+    const email = emailMatch ? emailMatch[0] : (ctx.user.email || 'dispatch@seevora.ai');
+    updatedData = {
+      ...updatedData,
+      provider: 'Gmail Voice Dispatch',
+      senderEmail: email,
+      dispatchOnCallEnd: true,
+      description: `Dispatches instant call notifications & MP3 recording links to ${email}`
+    };
+  } else if (channel === 'crm') {
+    const hook = urlMatch ? urlMatch[0] : 'https://api.seevora.ai/v1/crm/lead-sync';
+    updatedData = {
+      ...updatedData,
+      provider: 'CRM Lead & Deal Sync',
+      webhookUrl: hook,
+      syncOnCallEnd: true,
+      description: `Creates CRM contact and deal card on every answered voice call`
+    };
+  } else if (channel === 'calendar') {
+    updatedData = {
+      ...updatedData,
+      provider: 'Google Calendar Scheduling',
+      email: ctx.user.email || 'team@seevora.ai',
+      autoBookSlots: true,
+      description: 'Voice agent checks real-time availability and blocks slots automatically'
+    };
+  } else {
+    const hook = urlMatch ? urlMatch[0] : 'https://webhook.site/seevora-call-events';
+    updatedData = {
+      ...updatedData,
+      provider: 'Marketplace Integration Webhook',
+      endpoint: hook,
+      events: ['call.completed', 'transcript.ready', 'lead.captured'],
+      description: 'Pushes real-time voice call payloads to your external marketplace tool'
+    };
+  }
+
+  // Mutate integration in db
+  await core.mutate((d) => {
+    assistant.updateTenantIntegration(d, ctx.tenant.id, channel, updatedData);
+    if (targetAgent) {
+      const a = d.agents.find(x => x.id === targetAgent.id);
+      if (a) {
+        if (!a.integrations) a.integrations = {};
+        a.integrations[channel] = { enabled: true, connectedAt: new Date().toISOString() };
+      }
+    }
+  });
+
+  const reply = `Connected! Your AI voice agent **${agentName}** has been linked to **${providerTitle}**.\n\n` +
+    `• Channel: **${channel.toUpperCase()}** (${updatedData.phoneNumber || updatedData.senderEmail || updatedData.webhookUrl || updatedData.email || updatedData.endpoint})\n` +
+    `• Status: **Live & Active**\n` +
+    `• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\n` +
+    `You can monitor connected channels anytime in the Connected Apps panel!`;
+
+  return {
+    reply,
+    action: { type: 'integration_connected', channel, agentName, details: updatedData }
+  };
+}
+
+// ---- handle: create_campaign (Outbound Voice Campaign via Chat) ------------
+async function handleCreateCampaign(text, agentId, ctx, db) {
+  const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  const targetAgent = agentId ? agents.find((a) => a.id === agentId) : agents[0];
+  const agentName = targetAgent ? targetAgent.name : 'Seevora Voice Agent';
+  const agentIdToUse = targetAgent ? targetAgent.id : 'default-receptionist';
+
+  // Extract count of leads or name
+  const countMatch = text.match(/\b(\d{1,5})\s*(?:leads?|contacts?|numbers?|calls?|people|customers?)\b/i) || text.match(/\b(?:for|with)\s*(\d{1,5})\b/i);
+  const leadCount = countMatch ? parseInt(countMatch[1], 10) : 25;
+
+  // Extract campaign name or purpose
+  let campName = 'Outbound Voice Campaign';
+  const nameMatch = text.match(/(?:campaign\s+(?:for|called|named|on)|run\s+)\s*["']?([^"'\n,]+)["']?/i);
+  if (nameMatch && nameMatch[1].trim().length > 2) {
+    campName = nameMatch[1].trim().replace(/\s+(?:with|for|\d+).*$/, '').slice(0, 50);
+  } else if (/real\s*estate/i.test(text)) {
+    campName = 'Real Estate Buyer Outreach';
+  } else if (/dental|clinic|doctor|patient/i.test(text)) {
+    campName = 'Patient Appointment Follow-up';
+  } else if (/service|inquiry|lead/i.test(text)) {
+    campName = 'Lead Re-engagement Campaign';
+  }
+
+  const newCampaign = {
+    id: core.genId('cmp_'),
+    tenantId: ctx.tenant.id,
+    name: campName,
+    agentId: agentIdToUse,
+    agentName,
+    status: 'scheduled',
+    totalLeads: leadCount,
+    dialed: 0,
+    connected: 0,
+    conversions: 0,
+    scheduledAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    metadata: { source: 'assistant_ai_chat', prompt: text.slice(0, 200) }
+  };
+
+  await core.mutate((d) => {
+    if (!Array.isArray(d.campaigns)) d.campaigns = [];
+    d.campaigns.unshift(newCampaign);
+  });
+
+  const reply = `Voice campaign **${campName}** has been created and scheduled!\n\n` +
+    `• AI Voice Agent: **${agentName}**\n` +
+    `• Total Target Queue: **${leadCount} leads**\n` +
+    `• Status: **Ready & Scheduled** (Dialer will initiate outbound voice calls)\n` +
+    `• Telephony Trunk: **DID: +91 80715 82519**\n\n` +
+    `You can view live dialing progress, call recordings, and analytics in the Outbound Calls section.`;
+
+  return {
+    reply,
+    action: { type: 'campaign_created', campaignId: newCampaign.id, name: campName, leadCount, agentName }
+  };
+}
+
 // ---- POST /api/assistant/chat (AS-01 to AS-10, CH-01 to CH-06) -----------
 async function apiAssistantChat(req, res, ctx) {
   const b = ctx.body || {};
@@ -1613,8 +1783,15 @@ async function apiAssistantChat(req, res, ctx) {
     // Classify intent
     const intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
 
-    // CH-06: daily chat limit for free intents (general + test_chat)
-    const freeIntents = new Set([assistant.INTENTS.GENERAL, assistant.INTENTS.TEST_CHAT, assistant.INTENTS.ASK_REPORT, assistant.INTENTS.CONFIRM]);
+    // CH-06: daily chat limit for free intents (general + test_chat + connect + campaign)
+    const freeIntents = new Set([
+      assistant.INTENTS.GENERAL,
+      assistant.INTENTS.TEST_CHAT,
+      assistant.INTENTS.ASK_REPORT,
+      assistant.INTENTS.CONFIRM,
+      assistant.INTENTS.CONNECT_INTEGRATION,
+      assistant.INTENTS.CREATE_CAMPAIGN,
+    ]);
     if (freeIntents.has(intent)) {
       const todayCount = assistant.countTodayMessages(db, ctx.user.id);
       if (todayCount >= assistant.CHAT_DAILY_LIMIT) {
@@ -1703,6 +1880,12 @@ async function apiAssistantChat(req, res, ctx) {
       const freshD4 = core.db();
       result = await handleTestChat(text, agentId, ctx, freshD4);
       await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, 'Test chat', false, result.action); });
+    } else if (intent === assistant.INTENTS.CONNECT_INTEGRATION) {
+      result = await handleConnectIntegration(text, agentId, ctx, core.db());
+      await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Connected integration: ${result.action.channel}`, false, result.action); });
+    } else if (intent === assistant.INTENTS.CREATE_CAMPAIGN) {
+      result = await handleCreateCampaign(text, agentId, ctx, core.db());
+      await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Created campaign: ${result.action.name}`, false, result.action); });
     } else {
       // general_chat
       result = await handleGeneralChat(text, ctx, thread);

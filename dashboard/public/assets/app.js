@@ -796,7 +796,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -813,8 +813,12 @@ function onRoute() {
   $$('.nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('data-route') === id));
   const visible = getVisibleRoutes();
   const r = visible.find((x) => x.id === id);
-  const tt = $('#routeTitle'); if (tt) tt.textContent = r ? r.label : (id === 'onboarding' ? 'AI Voice Agent Onboarding' : 'Dashboard');
-  $('.shell') && $('.shell').classList.remove('nav-open');
+  const shell = $('.shell');
+  if (shell) {
+    shell.classList.remove('nav-open');
+    shell.setAttribute('data-route', id);
+    shell.classList.toggle('route-assistant', id === 'assistant');
+  }
   const view = $('#view');
   view.innerHTML = '';
   const wrap = el('div', { class: 'view' });
@@ -6738,7 +6742,8 @@ async function viewAssistant(wrap) {
     createIntegrationItem('file', 'File Reader', '#107C41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#107C41" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#107C41" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="#107C41" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="#107C41" stroke-width="2"/></svg>', 'Active', openFileReaderModal),
     createIntegrationItem('media', 'Media Files', '#8B5CF6', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#8B5CF6" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#8B5CF6"/></svg>', '31', openMediaFilesModal),
     createIntegrationItem('gmail', 'Gmail Dispatch', '#EA4335', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#EA4335" stroke-width="2"/><polyline points="22,6 12,13 2,6" stroke="#EA4335" stroke-width="2"/></svg>', 'Active', openGmailModal),
-    createIntegrationItem('whatsapp', 'WhatsApp Business', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal)
+    createIntegrationItem('whatsapp', 'WhatsApp Voice Alerts', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal),
+    createIntegrationItem('crm', 'CRM Pipeline Sync', '#0284C7', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284C7" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
   ]);
   rightPanel.appendChild(integrationsList);
 
@@ -7100,6 +7105,13 @@ async function viewAssistant(wrap) {
         if (data.action.type === 'agent_created' || data.action.type === 'agent_updated') {
           document.dispatchEvent(new CustomEvent('assistant:agentChanged', { detail: data.action }));
         }
+        if (data.action.type === 'integration_connected') {
+          loadIntegrationsData();
+          toast(`Connected to ${data.action.channel ? data.action.channel.toUpperCase() : 'Integration'}!`, 'info', 'Integration Active');
+        }
+        if (data.action.type === 'campaign_created') {
+          toast(`Campaign "${data.action.name}" (${data.action.leadCount} leads) queued!`, 'info', 'Campaign Scheduled');
+        }
       }
 
       // Reload sessions list to keep titles and timestamps synchronized
@@ -7233,6 +7245,16 @@ async function viewAssistant(wrap) {
     }
   }
 
+  async function loadIntegrationsData() {
+    try {
+      const res = await api('/api/assistant/integrations');
+      if (res && res.integrations) {
+        currentIntegrations = res.integrations;
+        updateIntegrationsUI(currentIntegrations);
+      }
+    } catch (_) {}
+  }
+
   // Initial load
   async function loadInitial() {
     await loadSessionsList();
@@ -7241,14 +7263,7 @@ async function viewAssistant(wrap) {
     } else {
       await startNewChat();
     }
-    // Load integrations state
-    try {
-      const res = await api('/api/assistant/integrations');
-      if (res && res.integrations) {
-        currentIntegrations = res.integrations;
-        updateIntegrationsUI(currentIntegrations);
-      }
-    } catch (_) {}
+    await loadIntegrationsData();
   }
 
   function updateIntegrationsUI(integrations) {
@@ -7265,6 +7280,7 @@ async function viewAssistant(wrap) {
     if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#8B5CF6');
     if (integrations.gmail) setStatus('gmail', integrations.gmail.status === 'active' ? 'Active' : 'Setup', '#EA4335');
     if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#25D366');
+    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#0284C7');
   }
 
   // =========================================================================
@@ -7443,6 +7459,67 @@ async function viewAssistant(wrap) {
         currentIntegrations = (res && res.integrations) || currentIntegrations;
         updateIntegrationsUI(currentIntegrations);
         toast('Test dispatch delivered to ' + recipient, 'info', 'Gmail Dispatched');
+      }
+    });
+  }
+
+  // CRM Webhook & Pipeline Modal
+  async function openCrmModal() {
+    const crm = (currentIntegrations && currentIntegrations.crm) || {};
+    const body = el('div', { class: 'conn-modal-body' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+        el('span', { style: 'font-size:0.86rem;color:#475569;' }, 'CRM Lead & Pipeline Webhook Sync'),
+        el('span', { class: 'conn-status-badge live' }, crm.status === 'active' ? 'Active & Synced' : 'Setup Required')
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', {}, 'CRM Platform'),
+        el('select', { id: 'crm-platform' }, [
+          el('option', { value: 'HubSpot CRM', selected: true }, 'HubSpot CRM'),
+          el('option', { value: 'Zoho CRM' }, 'Zoho CRM'),
+          el('option', { value: 'Salesforce' }, 'Salesforce'),
+          el('option', { value: 'Custom CRM Webhook' }, 'Custom Webhook API (Zapier / Make / Pabbly)')
+        ])
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', {}, 'CRM Lead Intake Webhook URL'),
+        el('input', { id: 'crm-webhook', type: 'url', value: crm.webhookUrl || 'https://api.seevora.ai/v1/crm/lead-sync', placeholder: 'https://hooks.zapier.com/hooks/catch/...' })
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.84rem;color:#475569;font-weight:normal;cursor:pointer;' }, [
+          el('input', { type: 'checkbox', id: 'crm-sync-toggle', checked: true }),
+          el('span', {}, 'Instantly push caller phone, transcript, booking time, and call recording link to CRM stage')
+        ])
+      ]),
+      el('div', { style: 'font-size:0.76rem;color:#64748b;background:#f8fafc;padding:10px;border-radius:8px;' },
+        'Any incoming or outgoing call completed by your AI voice agent will automatically create or update lead records in your CRM.'
+      )
+    ]);
+
+    modal({
+      title: 'CRM Pipeline Synchronization',
+      body,
+      confirmText: 'Save & Test CRM Sync',
+      confirmKind: 'primary',
+      onConfirm: async () => {
+        const platform = $('#crm-platform').value;
+        const hook = $('#crm-webhook').value.trim();
+        const syncOnCallEnd = $('#crm-sync-toggle').checked;
+        const res = await api('/api/assistant/integrations', {
+          method: 'POST',
+          body: {
+            channel: 'crm',
+            data: {
+              provider: platform,
+              webhookUrl: hook,
+              syncOnCallEnd,
+              status: 'active',
+              lastSync: new Date().toISOString()
+            }
+          }
+        });
+        currentIntegrations = (res && res.integrations) || currentIntegrations;
+        updateIntegrationsUI(currentIntegrations);
+        toast(`CRM synchronized with ${platform}!`, 'info', 'CRM Active');
       }
     });
   }
@@ -7659,6 +7736,24 @@ async function viewAssistant(wrap) {
         title: 'Customer Support & Helpdesk Tier-1',
         desc: 'Resolves common customer queries, looks up order tracking numbers, and creates support tickets with sentiment tags.',
         prompt: 'Build a customer service voice agent that resolves tier-1 FAQs and creates support tickets.'
+      },
+      {
+        id: 'whatsapp_connect',
+        title: 'Voice-to-WhatsApp Alerts Link',
+        desc: 'Connects voice receptionist directly to WhatsApp Business to instantly send callers their appointment details and transcripts.',
+        prompt: 'Connect this voice agent to my WhatsApp account +91 98765 43210'
+      },
+      {
+        id: 'crm_connect',
+        title: 'CRM Pipeline Webhook Integration',
+        desc: 'Hooks your voice receptionist to HubSpot, Zoho, or webhook to automatically sync qualified leads and call summaries.',
+        prompt: 'Connect this voice agent to my CRM pipeline webhook'
+      },
+      {
+        id: 'outbound_campaign',
+        title: '50-Lead Outbound Voice Campaign',
+        desc: 'Schedules an automated outbound voice calling campaign for 50 qualified property or clinic leads.',
+        prompt: 'Create an outbound voice campaign for 50 leads'
       }
     ];
 
@@ -7731,6 +7826,14 @@ async function viewAssistant(wrap) {
           el('strong', { style: 'color:#0f172a;display:block;' }, 'File Reader'),
           el('span', { style: 'font-size:0.75rem;color:#107c41;font-weight:700;' }, 'Knowledge Active'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'PDFs and FAQs parsed into agent memory.')
+        ]),
+        el('div', {
+          style: 'padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;cursor:pointer;',
+          onclick: () => { $('#modal-host').classList.add('hide'); openCrmModal(); }
+        }, [
+          el('strong', { style: 'color:#0f172a;display:block;' }, 'CRM Pipeline Sync'),
+          el('span', { style: 'font-size:0.75rem;color:#0284c7;font-weight:700;' }, 'Active & Synced'),
+          el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-pushes caller contacts, recordings & deals to CRM.')
         ])
       ])
     ]);

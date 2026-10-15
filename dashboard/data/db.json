@@ -349,7 +349,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$d00e5e1014d0060cef9db89caca542c8$ddb100654898957a9e582de0f01a1f610f74e16f25968f5ee40c564f0bce85a80baae8bfa775c2e732520b82c965b7d0c4d81b87fe223b4d66495e742f70ef01",
+      "passHash": "scrypt$98fa4793d393231f612d5dc0fab3763b$b7aeb315440ec635086edf317a7335e4c63fa64aa40e54bbe3f40ac32dcd46ca6f7a7abd48cfed5d80497365d13f109d33c83b88ba71a33119373231d0465acf",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -359,7 +359,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$ab58a7e54b139f64e73925740d870223$9341e32201ae95ec4f845e81ae4b6220641dc055d24f8d875a7a0d415ffbcccc4c083b6383742dce20207cfd017bde634e9f168068a5be9dcfc998d61470f3b5",
+      "passHash": "scrypt$f49725756e25e46ac65f6933edc9af6c$2de41f3ca13cf55beef69a727aa8355fc1f9bc66775c769456e5d9440a66e1a256dddb355732f47849de197a43c621021f428baf4abe13ec2df61f206d3d42ed",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
@@ -997,7 +997,17 @@
       "prompt": "You are Priya, a polite, helpful AI voice receptionist speaking natural conversational Hindi and English (Hinglish). Greet callers warmly, answer questions about timings, services, appointments, and guide them to schedule consultations.",
       "createdAt": "2026-09-18T12:01:22.680Z",
       "persona": "# WHO YOU ARE\n\nYou are Ria, the AI receptionist for Seevora. You are on a live phone call.\n\n# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)\n\nCompany name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\n\nIf asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.\nIf asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.\n\n# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING\n\n- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!\n  * If the caller speaks Hindi or Hinglish (e.g. \"Seevora ke baare me batao\", \"Aap kya karte ho?\", \"Founder kaun hai?\"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!\n  * If the caller speaks English (e.g. \"Tell me about Seevora\", \"Who is the CEO?\"): Reply in natural English.\n  * Always mirror the caller's language dynamically from turn to turn.\n- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.\n- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n\n- ONE or TWO short sentences per turn. Never more. This is a phone call, not an essay.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n- Mirror the caller naturally in English, Hindi, or Hinglish.\n\n# INDIAN NAMES & PHONETIC CORRECTION\n\n- Telephony speech-to-text often mishears Indian names and surnames phonetically (for example, \"Shatulpedi\" or \"Shaturvedi\" is \"Chaturvedi\", \"Bhavya\", etc.).\n- Intelligently normalize phonetically distorted Indian names to their proper spelling.\n- Address the caller warmly by their first name naturally (e.g., \"Got it, Bhavya! Nice to connect with you.\").\n- NEVER repeat an awkward, misspelled, or phonetically garbled name back to the caller.\n\n# THE ONE RULE YOU MUST NEVER BREAK\n\nNEVER say \"sorry, I didn't catch that\" more than once in an entire call.\n\nIf the caller says anything unclear, joking, off-topic, or in another language, do NOT ask them to repeat. Roll with it in one short line and steer back with a question. Always keep the conversation moving.\n\nExamples:\n- Caller jokes or flirts -> laugh it off briefly, then ask what they need.\n- Caller swears or tests you -> stay unbothered and friendly, ask how you can help.\n- Caller speaks Hindi or Hinglish -> reply naturally in the same style.\n- Caller asks what you are -> say you are Seevora's AI receptionist, built to answer calls and help callers reach the right person.\n- Total silence or noise -> ask one short friendly question.\n\nYou would rather keep talking than stall the call.\n\n\n\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)\n- NEVER write or say \"twenty-four seven\" or \"twenty-four seven\" or \"/\". Always say \"twenty-four seven\" or \"chaubees ghante\".\n- NEVER say raw mathematical symbols, asterisks, or markdown characters.\n- When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.\n- Keep responses strictly to 1 or 2 concise, spoken sentences.\n\n\n# VOICE TONE & SPOKEN CADENCE (RUMIK MULBERRY HUMAN VOICE)\n- Speak like a warm, relaxed, articulate 28-year-old Indian receptionist in Indore.\n- ALWAYS use natural spoken contractions in English: \"I'm\", \"we'll\", \"don't\", \"can't\", \"that's\". Never say \"I am\" or \"do not\".\n- Use natural micro-affirmations: \"Haanji bilkul\", \"Achaa got it\", \"Right\", \"Sure thing\".\n- Strictly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n- Use commas for micro-pauses so the speech engine breathes naturally.\n- Never output bullet points, asterisks, brackets, or robotic pleasantries.\n- Pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\", and \"seevora.in\" as \"seevora dot in\".\n\n\n\n# HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):\n- TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:\n  * NEVER use formal robotic filler phrases like: \"Certainly! I'd be happy to assist you with...\", \"As an AI language model...\", \"Thank you for reaching out to us today.\", \"Is there anything else I can assist you with today?\".\n  * Use warm, human everyday phrases: \"Haanji bilkul!\", \"Achaa got it!\", \"Sure thing!\", \"Haanji boliye!\", \"Glad to help with that!\".\n- CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:\n  * ALWAYS use contractions: \"I'm\", \"we're\", \"don't\", \"can't\", \"that's\", \"it's\", \"we'll\", \"you'll\". Humans never say \"I am\" or \"do not\" on a natural phone call.\n- NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:\n  * In Hindi/Hinglish: Start turns naturally with \"Haanji\", \"Achaa\", \"Bilkul\", \"Sahi hai\", or \"Ji\".\n  * In English: Start turns naturally with \"Got it\", \"Right\", \"Sure\", \"Understood\", or \"Awesome\".\n- BREVITY & BREATHING CADENCE:\n  * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n  * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.\n- PHONETIC PRONUNCIATION FOR TELEPHONY TTS:\n  * Always pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\".\n  * Always pronounce \"seevora.in\" as \"seevora dot in\".\n  * Pronounce \"AI\" clearly as \"A I\".\n  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.\n\n# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):\n- In Hindi and Hinglish: \"Mera naam [Name] hai\" or \"Mera name [Name]\" means \"My name is [Name]\". \"Mera\" translates to \"My\".\n- \"Mera\" IS NEVER A PERSON'S NAME! Never call the user \"Mira\" or \"Mera\".\n- If the caller says \"Mera naam [Name]\", or if speech-to-text wrote \"Mira naam [Name]\" or \"Mira [Name]\", recognize that the caller's actual name is [Name]!\n- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).\n- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.\n\n# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:\n- DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.\n- NEVER badger or loop asking for a phone number on every turn! If the caller greets you (\"Hey\"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.\n- Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.\n- Speak naturally in 1 to 2 concise sentences per turn.\n",
-      "knowledge": "Company name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\nPhone: +91 8071582519\nWorking Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.\nPricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote."
+      "knowledge": "Company name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\nPhone: +91 8071582519\nWorking Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.\nPricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.",
+      "integrations": {
+        "whatsapp": {
+          "enabled": true,
+          "connectedAt": "2026-10-15T11:26:15.053Z"
+        },
+        "crm": {
+          "enabled": true,
+          "connectedAt": "2026-10-15T11:26:15.402Z"
+        }
+      }
     },
     {
       "id": "ag_t72762609982",
@@ -4613,24 +4623,6 @@
       "exp": 1792582424832
     },
     {
-      "tokenHash": "b7a3b008501ad2ee3ace8cb161b253673fe61a559fcbe57b7d238a1605fe4f67",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792584114135
-    },
-    {
-      "tokenHash": "1b917fa3a0aac68938d782de26fca1c368942ee4397e8d68fa6badccc040cb4c",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792584253013
-    },
-    {
-      "tokenHash": "0d770193e7e1ebd28591a215083ee1557aa6f20a2a1b4c773bdcbabebbcb60a1",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792584276694
-    },
-    {
       "tokenHash": "634fa5dd87aed90375174683d21901015281f20d46ceb5246b00104b75ec89d4",
       "userId": "u_c6b5f6cf84425987",
       "tenantId": "t_4feb1d5f86369faa",
@@ -4791,6 +4783,24 @@
       "userId": "u_9615cb3586082da5",
       "tenantId": "t_61cb4c3f0a845e2a",
       "exp": 1792665902432
+    },
+    {
+      "tokenHash": "a86db933d3aba64c30efef0dc4d754fe2dd9702157b44ea7b1dc689d06a674b4",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792668374968
+    },
+    {
+      "tokenHash": "e45669ff171b85cb3e638ef78c7d047ef1c2a5c2eef8c088f73eb00aa784e5d3",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792668375293
+    },
+    {
+      "tokenHash": "005364c38ac64857e4a3a6a68958aa51d1936fcfadc07efecb9522acecd0d8cd",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792668375660
     }
   ],
   "wallets": [
@@ -20679,9 +20689,124 @@
           "text": "I am a voice receptionist assistant and cannot generate visual content. I can help you manage your AI agents or review call analytics.",
           "intent": "general_chat",
           "ts": "2026-10-15T09:06:30.849Z"
+        },
+        {
+          "role": "user",
+          "text": "Help me automate call answering for my business",
+          "ts": "2026-10-15T10:56:36.503Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I can help you set up an AI voice agent to answer calls automatically.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:56:37.130Z"
+        },
+        {
+          "role": "user",
+          "text": "hey train my agent of dentl",
+          "ts": "2026-10-15T10:57:07.557Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Haan ji, main aapki madad kar sakti hoon. Aap apne agent ke liye knowledge base update karke usse naye business details ya FAQs sikhwa sakte hain.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:08.227Z"
+        },
+        {
+          "role": "user",
+          "text": "how",
+          "ts": "2026-10-15T10:57:18.791Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Navigate to your agent's settings and open the knowledge base section. There, you can upload documents or type in FAQs to train the agent.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:19.467Z"
+        },
+        {
+          "role": "user",
+          "text": "can uyou do it",
+          "ts": "2026-10-15T10:57:29.304Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Nahi, main directly aapke agent ko train nahi kar sakti. Aapko platform mein jaake knowledge base section se documents ya FAQs upload karne honge.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:30.017Z"
+        },
+        {
+          "role": "user",
+          "text": "Connect this voice agent to my WhatsApp account +919876543210",
+          "ts": "2026-10-15T11:26:15.023Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **WhatsApp Voice Dispatch & Alerts**.\n\n• Channel: **WHATSAPP** (+919876543210)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\nYou can monitor connected channels anytime in the Connected Apps panel!",
+          "intent": "connect_integration",
+          "action": {
+            "type": "integration_connected",
+            "channel": "whatsapp",
+            "agentName": "Ria - Seevora AI Voice Receptionist",
+            "details": {
+              "status": "active",
+              "connectedAgentId": "ag_t61cb4c3f0a8",
+              "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+              "lastSync": "2026-10-15T11:26:15.053Z",
+              "provider": "WhatsApp Voice Alerts",
+              "phoneNumber": "+919876543210",
+              "verifiedAt": "2026-10-15T11:26:15.053Z",
+              "dispatchOnCallEnd": true,
+              "description": "Auto-sends booking summary & call transcript to caller from +919876543210"
+            }
+          },
+          "ts": "2026-10-15T11:26:15.119Z"
+        },
+        {
+          "role": "user",
+          "text": "Connect my voice agent to CRM webhook https://api.seevora.ai/v1/crm/lead-sync",
+          "ts": "2026-10-15T11:26:15.347Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **CRM Pipeline & Lead Webhook**.\n\n• Channel: **CRM** (https://api.seevora.ai/v1/crm/lead-sync)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\nYou can monitor connected channels anytime in the Connected Apps panel!",
+          "intent": "connect_integration",
+          "action": {
+            "type": "integration_connected",
+            "channel": "crm",
+            "agentName": "Ria - Seevora AI Voice Receptionist",
+            "details": {
+              "status": "active",
+              "connectedAgentId": "ag_t61cb4c3f0a8",
+              "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+              "lastSync": "2026-10-15T11:26:15.402Z",
+              "provider": "CRM Lead & Deal Sync",
+              "webhookUrl": "https://api.seevora.ai/v1/crm/lead-sync",
+              "syncOnCallEnd": true,
+              "description": "Creates CRM contact and deal card on every answered voice call"
+            }
+          },
+          "ts": "2026-10-15T11:26:15.464Z"
+        },
+        {
+          "role": "user",
+          "text": "Create outbound campaign for 50 leads with real estate receptionist",
+          "ts": "2026-10-15T11:26:15.753Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Voice campaign **50 leads** has been created and scheduled!\n\n• AI Voice Agent: **Ria - Seevora AI Voice Receptionist**\n• Total Target Queue: **50 leads**\n• Status: **Ready & Scheduled** (Dialer will initiate outbound voice calls)\n• Telephony Trunk: **DID: +91 80715 82519**\n\nYou can view live dialing progress, call recordings, and analytics in the Outbound Calls section.",
+          "intent": "create_campaign",
+          "action": {
+            "type": "campaign_created",
+            "campaignId": "cmp_38be161539c8ae63",
+            "name": "50 leads",
+            "leadCount": 50,
+            "agentName": "Ria - Seevora AI Voice Receptionist"
+          },
+          "ts": "2026-10-15T11:26:15.863Z"
         }
       ],
-      "updatedAt": "2026-10-15T09:06:30.849Z"
+      "updatedAt": "2026-10-15T11:26:15.863Z"
     },
     {
       "id": "atr_1345f94ecbaae51f",
@@ -20844,10 +20969,141 @@
       "result": null,
       "creditUsed": 0,
       "ts": "2026-10-15T10:18:15.741Z"
+    },
+    {
+      "id": "aac_22841ae1376afce9",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "intent": "connect_integration",
+      "summary": "Connected integration: whatsapp",
+      "result": "{\"type\":\"integration_connected\",\"channel\":\"whatsapp\",\"agentName\":\"Ria - Seevora AI Voice Receptionist\",\"details\":{\"status\":\"active\",\"connectedAgentId\":\"ag_t61cb4c3f0a8\",\"connectedAgentName\":\"Ria - Seevora AI Voice Receptionist\",\"lastSync\":\"2026-10-15T11:26:15.053Z\",\"provider\":\"WhatsApp Voice Alerts\",\"phoneNumber\":\"+919876543210\",\"verifiedAt\":\"2026-10-15T11:26:15.053Z\",\"dispatchOnCallEnd\":true,\"description\":\"Auto-sends booking summary & call transcript to caller from +919876543210\"}}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T11:26:15.080Z"
+    },
+    {
+      "id": "aac_95c56308b8babf57",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "intent": "connect_integration",
+      "summary": "Connected integration: crm",
+      "result": "{\"type\":\"integration_connected\",\"channel\":\"crm\",\"agentName\":\"Ria - Seevora AI Voice Receptionist\",\"details\":{\"status\":\"active\",\"connectedAgentId\":\"ag_t61cb4c3f0a8\",\"connectedAgentName\":\"Ria - Seevora AI Voice Receptionist\",\"lastSync\":\"2026-10-15T11:26:15.402Z\",\"provider\":\"CRM Lead & Deal Sync\",\"webhookUrl\":\"https://api.seevora.ai/v1/crm/lead-sync\",\"syncOnCallEnd\":true,\"description\":\"Creates CRM contact and deal card on every answered voice call\"}}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T11:26:15.432Z"
+    },
+    {
+      "id": "aac_9581ab0ab3a7d476",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "intent": "create_campaign",
+      "summary": "Created campaign: 50 leads",
+      "result": "{\"type\":\"campaign_created\",\"campaignId\":\"cmp_38be161539c8ae63\",\"name\":\"50 leads\",\"leadCount\":50,\"agentName\":\"Ria - Seevora AI Voice Receptionist\"}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T11:26:15.810Z"
     }
   ],
   "pendingConfirmations": [],
   "assistantSessions": [
+    {
+      "id": "ses_0066d0939582bc73",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "title": "Create outbound campaign for 50 leads with re",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Create outbound campaign for 50 leads with real estate receptionist",
+          "ts": "2026-10-15T11:26:15.753Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Voice campaign **50 leads** has been created and scheduled!\n\n• AI Voice Agent: **Ria - Seevora AI Voice Receptionist**\n• Total Target Queue: **50 leads**\n• Status: **Ready & Scheduled** (Dialer will initiate outbound voice calls)\n• Telephony Trunk: **DID: +91 80715 82519**\n\nYou can view live dialing progress, call recordings, and analytics in the Outbound Calls section.",
+          "intent": "create_campaign",
+          "action": {
+            "type": "campaign_created",
+            "campaignId": "cmp_38be161539c8ae63",
+            "name": "50 leads",
+            "leadCount": 50,
+            "agentName": "Ria - Seevora AI Voice Receptionist"
+          },
+          "ts": "2026-10-15T11:26:15.863Z"
+        }
+      ],
+      "createdAt": "2026-10-15T11:26:15.753Z",
+      "updatedAt": "2026-10-15T11:26:15.863Z"
+    },
+    {
+      "id": "ses_c2a4fbd2a70ce0b4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "title": "Connect my voice agent to CRM webhook https:/",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Connect my voice agent to CRM webhook https://api.seevora.ai/v1/crm/lead-sync",
+          "ts": "2026-10-15T11:26:15.347Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **CRM Pipeline & Lead Webhook**.\n\n• Channel: **CRM** (https://api.seevora.ai/v1/crm/lead-sync)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\nYou can monitor connected channels anytime in the Connected Apps panel!",
+          "intent": "connect_integration",
+          "action": {
+            "type": "integration_connected",
+            "channel": "crm",
+            "agentName": "Ria - Seevora AI Voice Receptionist",
+            "details": {
+              "status": "active",
+              "connectedAgentId": "ag_t61cb4c3f0a8",
+              "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+              "lastSync": "2026-10-15T11:26:15.402Z",
+              "provider": "CRM Lead & Deal Sync",
+              "webhookUrl": "https://api.seevora.ai/v1/crm/lead-sync",
+              "syncOnCallEnd": true,
+              "description": "Creates CRM contact and deal card on every answered voice call"
+            }
+          },
+          "ts": "2026-10-15T11:26:15.464Z"
+        }
+      ],
+      "createdAt": "2026-10-15T11:26:15.347Z",
+      "updatedAt": "2026-10-15T11:26:15.464Z"
+    },
+    {
+      "id": "ses_fa37cebd763dd60a",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "title": "Connect this voice agent to my WhatsApp accou",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Connect this voice agent to my WhatsApp account +919876543210",
+          "ts": "2026-10-15T11:26:15.022Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **WhatsApp Voice Dispatch & Alerts**.\n\n• Channel: **WHATSAPP** (+919876543210)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\nYou can monitor connected channels anytime in the Connected Apps panel!",
+          "intent": "connect_integration",
+          "action": {
+            "type": "integration_connected",
+            "channel": "whatsapp",
+            "agentName": "Ria - Seevora AI Voice Receptionist",
+            "details": {
+              "status": "active",
+              "connectedAgentId": "ag_t61cb4c3f0a8",
+              "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+              "lastSync": "2026-10-15T11:26:15.053Z",
+              "provider": "WhatsApp Voice Alerts",
+              "phoneNumber": "+919876543210",
+              "verifiedAt": "2026-10-15T11:26:15.053Z",
+              "dispatchOnCallEnd": true,
+              "description": "Auto-sends booking summary & call transcript to caller from +919876543210"
+            }
+          },
+          "ts": "2026-10-15T11:26:15.119Z"
+        }
+      ],
+      "createdAt": "2026-10-15T11:26:15.022Z",
+      "updatedAt": "2026-10-15T11:26:15.119Z"
+    },
     {
       "id": "ses_bafc30ee0c4efa7c",
       "tenantId": "t_61cb4c3f0a845e2a",
@@ -21000,10 +21256,54 @@
           "text": "I am a voice receptionist assistant and cannot generate visual content. I can help you manage your AI agents or review call analytics.",
           "intent": "general_chat",
           "ts": "2026-10-15T09:06:30.849Z"
+        },
+        {
+          "role": "user",
+          "text": "Help me automate call answering for my business",
+          "ts": "2026-10-15T10:56:36.499Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I can help you set up an AI voice agent to answer calls automatically.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:56:37.129Z"
+        },
+        {
+          "role": "user",
+          "text": "hey train my agent of dentl",
+          "ts": "2026-10-15T10:57:07.557Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Haan ji, main aapki madad kar sakti hoon. Aap apne agent ke liye knowledge base update karke usse naye business details ya FAQs sikhwa sakte hain.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:08.227Z"
+        },
+        {
+          "role": "user",
+          "text": "how",
+          "ts": "2026-10-15T10:57:18.791Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Navigate to your agent's settings and open the knowledge base section. There, you can upload documents or type in FAQs to train the agent.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:19.467Z"
+        },
+        {
+          "role": "user",
+          "text": "can uyou do it",
+          "ts": "2026-10-15T10:57:29.304Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Nahi, main directly aapke agent ko train nahi kar sakti. Aapko platform mein jaake knowledge base section se documents ya FAQs upload karne honge.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T10:57:30.017Z"
         }
       ],
       "createdAt": "2026-10-15T08:29:24.247Z",
-      "updatedAt": "2026-10-15T10:45:10.133Z"
+      "updatedAt": "2026-10-15T10:57:30.017Z"
     },
     {
       "id": "ses_8c184d833c150101",
@@ -21137,15 +21437,53 @@
         "lastDispatchedAt": "2026-10-15T10:45:10.612Z"
       },
       "whatsapp": {
-        "status": "live",
-        "phoneNumber": "+91 98765 43210",
+        "status": "active",
+        "phoneNumber": "+919876543210",
         "wabaId": "waba_991204",
-        "verifiedAt": "2026-10-15T10:45:10.612Z",
-        "botActive": true
+        "verifiedAt": "2026-10-15T11:26:15.053Z",
+        "botActive": true,
+        "connectedAgentId": "ag_t61cb4c3f0a8",
+        "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+        "lastSync": "2026-10-15T11:26:15.053Z",
+        "provider": "WhatsApp Voice Alerts",
+        "dispatchOnCallEnd": true,
+        "description": "Auto-sends booking summary & call transcript to caller from +919876543210",
+        "updatedAt": "2026-10-15T11:26:15.053Z"
+      },
+      "crm": {
+        "status": "active",
+        "connectedAgentId": "ag_t61cb4c3f0a8",
+        "connectedAgentName": "Ria - Seevora AI Voice Receptionist",
+        "lastSync": "2026-10-15T11:26:15.402Z",
+        "provider": "CRM Lead & Deal Sync",
+        "webhookUrl": "https://api.seevora.ai/v1/crm/lead-sync",
+        "syncOnCallEnd": true,
+        "description": "Creates CRM contact and deal card on every answered voice call",
+        "updatedAt": "2026-10-15T11:26:15.402Z"
       }
     }
   ],
   "recordings": [],
   "waAutomations": [],
-  "waPendingVerifications": []
+  "waPendingVerifications": [],
+  "campaigns": [
+    {
+      "id": "cmp_38be161539c8ae63",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "name": "50 leads",
+      "agentId": "ag_t61cb4c3f0a8",
+      "agentName": "Ria - Seevora AI Voice Receptionist",
+      "status": "scheduled",
+      "totalLeads": 50,
+      "dialed": 0,
+      "connected": 0,
+      "conversions": 0,
+      "scheduledAt": "2026-10-15T11:26:15.782Z",
+      "createdAt": "2026-10-15T11:26:15.782Z",
+      "metadata": {
+        "source": "assistant_ai_chat",
+        "prompt": "Create outbound campaign for 50 leads with real estate receptionist"
+      }
+    }
+  ]
 }
