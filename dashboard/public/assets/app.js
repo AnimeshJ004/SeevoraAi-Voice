@@ -367,34 +367,88 @@ function ensureCharts() {
    =========================================================================== */
 async function ensureClerkReady() {
   let waited = 0;
-  while (!window.Clerk && waited < 4000) {
+  while (!window.Clerk && waited < 5000) {
     await new Promise((r) => setTimeout(r, 100));
     waited += 100;
   }
-  if (window.Clerk && !window.Clerk.loaded) {
-    try {
-      await window.Clerk.load({
-        ui: { ClerkUI: window.__internal_ClerkUICtor },
-        appearance: {
-          variables: {
-            colorPrimary: '#0095FF',
-            colorBackground: '#FFFFFF',
-            colorText: '#0F172A',
-            colorNeutral: '#0F172A',
-            borderRadius: '10px',
+  if (window.Clerk) {
+    if (!window.Clerk.loaded) {
+      try {
+        await window.Clerk.load({
+          ui: { ClerkUI: window.__internal_ClerkUICtor },
+          appearance: {
+            variables: {
+              colorPrimary: '#0095FF',
+              colorBackground: '#FFFFFF',
+              colorText: '#0F172A',
+              colorNeutral: '#0F172A',
+              borderRadius: '10px',
+            },
           },
-        },
-      });
-    } catch (e) {
-      console.warn('Clerk.load in app.js:', e);
+        });
+      } catch (e) {
+        console.warn('Clerk.load in app.js:', e);
+      }
     }
   }
+}
+
+let _pipelineCache = null;
+let _ticketsCache = null;
+
+function prewarmAppData() {
+  setTimeout(() => {
+    Promise.all([
+      ensureAgents().catch(() => {}),
+      ensureTelephony().catch(() => {}),
+      api('/api/recordings?limit=100&offset=0').then((res) => {
+        if (res && Array.isArray(res.recordings)) _recState.recordings = res.recordings;
+      }).catch(() => {}),
+      api('/api/crm/pipeline').then((res) => {
+        if (res && Array.isArray(res.pipeline)) _pipelineCache = res;
+      }).catch(() => {}),
+      api('/api/support/tickets').then((res) => {
+        if (res && Array.isArray(res.tickets)) _ticketsCache = res.tickets;
+      }).catch(() => {})
+    ]).catch(() => {});
+  }, 40);
 }
 
 async function boot() {
   try {
     await ensureClerkReady();
-    const me = await api('/api/me', { allow401: true });
+
+    let me = null;
+    let authError = null;
+
+    // Retry loop for /api/me: gives cross-origin / cloud deployments ample time to retrieve token
+    // On localhost it succeeds on attempt 0 (0ms). On cloud deployments, cross-origin handshake
+    // takes 400ms - 1500ms, so we retry gracefully every 200ms up to 15 times (~3 seconds).
+    for (let attempt = 0; attempt < 15; attempt++) {
+      if (window.Clerk && window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
+        try { await window.Clerk.session.getToken(); } catch (_) {}
+      }
+
+      try {
+        me = await api('/api/me', { allow401: true });
+        if (me && me.user) {
+          authError = null;
+          break;
+        }
+      } catch (err) {
+        authError = err;
+      }
+
+      // If we got 401 or token was not ready, wait and let Clerk session hydrate
+      if (attempt < 14) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    }
+
+    if (!me || !me.user) {
+      throw authError || new Error('Not authenticated');
+    }
+
     State.me = me;
 
     const cu = window.Clerk && window.Clerk.user;
@@ -420,42 +474,9 @@ async function boot() {
     }
 
     renderShell();
+    prewarmAppData();
   } catch (e) {
-    console.warn('Initial /api/me failed, checking Clerk session...', e);
-    if (window.Clerk && window.Clerk.user) {
-      try {
-        const tok = await window.Clerk.session?.getToken();
-        if (tok) {
-          const me = await api('/api/me', { allow401: true });
-          State.me = me;
-          const retryCu = window.Clerk.user;
-          const retryClerkOnboarded = retryCu ? (
-            (retryCu.unsafeMetadata && retryCu.unsafeMetadata.onboardingCompleted) ||
-            (retryCu.publicMetadata && retryCu.publicMetadata.onboardingCompleted) ||
-            (localStorage.getItem('seevora_onboarded_' + retryCu.id) === 'true')
-          ) : false;
-
-          const retryIsPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
-          const isCompleted = retryIsPlatformAdmin || (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-            (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
-            retryClerkOnboarded;
-          const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-          if (retryIsPlatformAdmin) {
-            if (hash === 'onboarding' || hash === 'ai-creator' || !hash) {
-              location.hash = '#/overview';
-            }
-          } else if (!isCompleted) {
-            location.hash = '#/onboarding';
-          } else if (hash === 'onboarding' || hash === 'ai-creator') {
-            location.hash = '#/overview';
-          }
-          renderShell();
-          return;
-        }
-      } catch (retryErr) {
-        console.error('Clerk retry failed:', retryErr);
-      }
-    }
+    console.warn('Authentication check failed:', e);
     renderAuth();
   }
 }
@@ -463,8 +484,8 @@ async function boot() {
 /* ===========================================================================
    AUTH GATE
    =========================================================================== */
-function renderAuth() {
-  window.location.replace('/?logout=1');
+function renderAuth(isExplicitLogout) {
+  window.location.replace(isExplicitLogout ? '/?logout=1' : '/');
 }
 function resetData() {
   State.agents = []; State.providers = null; State.usage = null; State.telephony = null;
@@ -668,13 +689,6 @@ function renderShell() {
       el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
-      el('button', { class: 'top-icon-btn', title: 'Search', onclick: () => toast('Search console...', 'info') }, [
-        uiIcon('search', 16)
-      ]),
-      el('button', { class: 'top-icon-btn top-bell-btn', title: 'Notifications', onclick: () => toast('No unread notifications', 'info') }, [
-        uiIcon('bell', 16),
-        el('span', { class: 'top-bell-dot' })
-      ]),
       isPlatformAdmin
         ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;letter-spacing:0.3px;' }, 'Admin')
         : null,
@@ -796,7 +810,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -875,7 +889,7 @@ async function openMakeCallModal(prefillNumber) {
   const agentSelect = el('select', {
     class: 'input modal-select',
     id: 'modal_agent_select',
-    style: 'width:100%;height:44px;padding:8px 14px;background:#FFF;border:1.5px solid #CBD5E1;border-radius:10px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;cursor:pointer;display:block;'
+    style: 'width:100%;height:44px;padding:8px 14px;background:rgba(255,255,255,0.55);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;cursor:pointer;display:block;'
   }, agents.map((a) =>
     el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')')
   ));
@@ -893,9 +907,9 @@ async function openMakeCallModal(prefillNumber) {
   numI.addEventListener('input', () => { numI.value = numI.value.replace(/\D/g, '').slice(0, 10); });
 
   const dialRow = el('div', {
-    style: 'display:flex;align-items:center;border:1.5px solid #CBD5E1;border-radius:10px;overflow:hidden;background:#FFF;transition:border-color .2s;'
+    style: 'display:flex;align-items:center;border:1px solid rgba(255,255,255,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.55);backdrop-filter:blur(14px);transition:border-color .2s;'
   }, [
-    el('span', { style: 'padding:11px 16px;background:#F1F5F9;font-weight:700;color:#334155;border-right:1px solid #CBD5E1;font-size:.95rem;user-select:none;' }, '+91'),
+    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#0284C7;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
     numI
   ]);
 
@@ -937,7 +951,9 @@ async function openMakeCallModal(prefillNumber) {
         if (ex.status === 400 && ex.data && ex.data.code === 'needs_confirm') {
           toast('Confirmation required. Retrying call...', 'warn');
         } else {
-          toast(ex.message || 'Call failed.', 'err');
+          const detail = (ex.data && (ex.data.detail || ex.data.message)) || '';
+          const msg = detail && !ex.message.includes(detail) ? `${ex.message}: ${detail}` : (ex.message || 'Call failed.');
+          toast(msg, 'err');
         }
         throw ex;
       }
@@ -991,6 +1007,10 @@ function renderVoiceDashboard(root, opts) {
   dash.appendChild(grid);
 
   // ═════�  // ── Card 1: Voice Balance ─────────────────────────────────────────────
+  const colLeft = el('div', { class: 'sv-col sv-col-left' });
+  grid.appendChild(colLeft);
+
+  // ── Card 1: Voice Balance ─────────────────────────────────────────────
   let balHidden = false;
   const balEl = el('span', { class: 'sv-balance-val' }, opts.balance || '24,850 Mins');
   const eyeBtn = el('button', { class: 'sv-eye-btn', title: 'Toggle visibility' }, [
@@ -1251,18 +1271,7 @@ function renderVoiceDashboard(root, opts) {
 async function viewAgencyOverview(root) {
   const name = State.me.user.name || State.me.user.email;
 
-  // Fetch real tenants / overview data in background
-  let overviewData = { kpis: { paidPaise: 0, outstandingPaise: 0, activeClients: 2, activity: 6, calls: 54 } };
-  let tenantsList = [];
-  try {
-    const [ovRes, tenRes] = await Promise.all([
-      api('/api/agency/overview').catch(() => null),
-      api('/api/admin/tenants').catch(() => null)
-    ]);
-    if (ovRes) { overviewData = ovRes; State.agency = ovRes; State.loaded.agency = true; }
-    if (tenRes && Array.isArray(tenRes.tenants)) { tenantsList = tenRes.tenants; }
-  } catch (_) { }
-
+  // Render dashboard immediately with zero blocking delay
   renderVoiceDashboard(root, {
     isAgency: true,
     title: 'Dashboard',
@@ -1272,6 +1281,14 @@ async function viewAgencyOverview(root) {
     minutesLogged: '3,540 Mins',
     trafficVal: '842 Calls'
   });
+
+  // Background refresh to avoid blocking instant page load
+  Promise.all([
+    api('/api/agency/overview').catch(() => null),
+    api('/api/admin/tenants').catch(() => null)
+  ]).then(([ovRes, tenRes]) => {
+    if (ovRes) { State.agency = ovRes; State.loaded.agency = true; }
+  }).catch(() => {});
 }
 
 function renderCallRowAdmin(number, clientName, duration, outcome) {
@@ -1370,19 +1387,8 @@ function relativeTime(iso) {
    =========================================================================== */
 async function viewTenantOverview(root) {
   const name = State.me.user.name || State.me.user.email;
-  await ensureAgents().catch(() => { });
 
-  let activeAgent = State.agents.find((a) => a.id === State.activeAgentId) || State.agents[0];
-  if (!activeAgent) {
-    activeAgent = {
-      id: 'default-receptionist',
-      name: 'Seevora AI Voice Receptionist',
-      greeting: 'Hi, thanks for calling! How can I assist you with your inquiry today?',
-      persona: 'Warm, natural AI telephone receptionist.',
-      tts: { model: 'muga', tone: 'neutral', speaker: 'speaker_2' }
-    };
-  }
-
+  // Render dashboard immediately with zero blocking delay
   renderVoiceDashboard(root, {
     isAgency: false,
     title: 'Dashboard',
@@ -1392,6 +1398,9 @@ async function viewTenantOverview(root) {
     minutesLogged: '3,540 Mins',
     trafficVal: '842 Calls'
   });
+
+  // Ensure agents are loaded in background without stalling view switch
+  ensureAgents().catch(() => {});
 }
 
 function renderCallRow(number, timeStr, duration, outcome, hasAudio) {
@@ -1571,14 +1580,20 @@ async function viewAgents(root) {
   const gridHost = el('div', { id: 'agentsGrid', class: 'agents-grid', style: 'margin-top:22px' }, skeleton('sk-card', 3));
   root.appendChild(gridHost);
 
-  try {
-    await Promise.all([ensureAgents(true), ensureTelephony().catch(() => null), ensureProviders().catch(() => null)]);
+  // Paint existing cached agents immediately so view appears with zero delay
+  if (State.agents && State.agents.length) {
+    paintAgents();
+  }
+
+  Promise.all([ensureAgents(), ensureTelephony().catch(() => null), ensureProviders().catch(() => null)]).then(() => {
     refillDidOptions();
     paintAgents();
-  } catch (e) {
-    gridHost.innerHTML = '';
-    gridHost.appendChild(el('div', { class: 'empty muted' }, 'Could not load agents. ' + esc(e.message)));
-  }
+  }).catch((e) => {
+    if (!State.agents || !State.agents.length) {
+      gridHost.innerHTML = '';
+      gridHost.appendChild(el('div', { class: 'empty muted' }, 'Could not load agents. ' + esc(e.message)));
+    }
+  });
 }
 
 function dids() {
@@ -3055,9 +3070,10 @@ function openVoiceSimulator(agent) {
 }
 
 async function viewTalk(root, customAgent) {
-  await ensureAgents().catch(() => { });
+  ensureAgents().catch(() => { });
 
-  let activeAgent = customAgent || State.agents.find((a) => a.id === State.activeAgentId) || State.agents[0];
+  const agentsList = (State.agents && Array.isArray(State.agents)) ? State.agents : [];
+  let activeAgent = customAgent || agentsList.find((a) => a.id === State.activeAgentId) || agentsList[0];
   if (!activeAgent) {
     activeAgent = {
       id: 'default-receptionist',
@@ -4366,7 +4382,9 @@ async function viewRecordings(root) {
   }
 
   syncBtn.onclick = () => loadData(true);
-  await loadData(false);
+  _recState.recordings = _recState.recordings || [];
+  applyFiltersAndRender();
+  loadData(false);
 }
 
 /* ===========================================================================
@@ -4567,14 +4585,22 @@ async function viewInbound(root) {
   searchInput.addEventListener('input', applyInboundFilters);
   statusSelect.addEventListener('change', applyInboundFilters);
 
-  // Load recordings
-  try {
-    const res = await api('/api/recordings?limit=100&offset=0');
-    _recState.recordings = (res && Array.isArray(res.recordings)) ? res.recordings : [];
-  } catch (_) {
-    _recState.recordings = [];
-  }
+  // Render immediately in 0ms
+  _recState.recordings = _recState.recordings || [];
   applyInboundFilters();
+
+  // Load recordings in background without stalling the view
+  api('/api/recordings?limit=100&offset=0').then((res) => {
+    if (res && Array.isArray(res.recordings)) {
+      _recState.recordings = res.recordings;
+      applyInboundFilters();
+    }
+  }).catch(() => {
+    if (!_recState.recordings || !_recState.recordings.length) {
+      _recState.recordings = [];
+      applyInboundFilters();
+    }
+  });
 }
 
 /* ===========================================================================
@@ -4683,8 +4709,8 @@ async function viewCampaigns(root) {
   ]));
   root.appendChild(head);
 
-  await ensureTelephony().catch(() => null);
-  await ensureAgents().catch(() => null);
+  ensureTelephony().catch(() => null);
+  ensureAgents().catch(() => null);
 
   const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+918071582519';
 
@@ -4717,14 +4743,16 @@ async function viewCampaigns(root) {
       toast('Call placed to +91 ' + num + '!', 'ok');
       quickDialerInput.value = '';
     } catch (e) {
-      toast(e.message || 'Call failed.', 'err');
+      const detail = (e.data && (e.data.detail || e.data.message)) || '';
+      const msg = detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.');
+      toast(msg, 'err');
     } finally {
       quickDialBtn.disabled = false;
       quickDialBtn.textContent = 'Dial Recipient Now';
     }
   });
 
-  const directDialerCard = el('div', { class: 'card card-pad', style: 'margin-bottom:20px;border:1.5px solid rgba(0,149,255,0.25);background:linear-gradient(135deg,#FFFFFF 0%,#F0F8FF 100%);' }, [
+  const directDialerCard = el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(0,149,255,0.3);' }, [
     el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:10px;' }, [
       el('h3', { class: 't-h3', style: 'margin-bottom:2px;display:flex;align-items:center;gap:8px;' }, [
         el('span', { html: uiIcon('phone', 18) }),
@@ -4740,8 +4768,8 @@ async function viewCampaigns(root) {
       ]),
       el('div', {}, [
         el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Recipient Number (+91)'),
-        el('div', { style: 'display:flex;align-items:center;border:1.5px solid #CBD5E1;border-radius:8px;overflow:hidden;background:#FFF;' }, [
-          el('span', { style: 'padding:10px 14px;background:#F1F5F9;font-weight:700;border-right:1px solid #CBD5E1;font-size:.92rem;' }, '+91'),
+        el('div', { style: 'display:flex;align-items:center;border:1.5px solid rgba(203,213,225,0.8);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.65);backdrop-filter:blur(10px);' }, [
+          el('span', { style: 'padding:10px 14px;background:rgba(241,245,249,0.7);font-weight:700;border-right:1px solid rgba(203,213,225,0.8);font-size:.92rem;color:#334155;' }, '+91'),
           quickDialerInput
         ])
       ]),
@@ -6022,7 +6050,10 @@ async function viewSupport(root) {
   const subject = el('input', { class: 'input', placeholder: 'What do you need help with.' });
   const message = el('textarea', { class: 'input textarea', placeholder: 'Describe the issue, expected result, and what happened.' });
   const create = el('button', { class: 'btn btn-primary' }, 'Open ticket');
-  const list = el('div', { class: 'ticket-list' }, skeleton('sk-card', 2));
+  const list = el('div', { class: 'ticket-list' }, (_ticketsCache && _ticketsCache.length)
+    ? _ticketsCache.map((t) => ticketCard(t, false))
+    : [el('div', { class: 'card card-pad muted' }, 'No support tickets yet.')]
+  );
   create.onclick = async () => {
     create.disabled = true;
     try {
@@ -6034,15 +6065,22 @@ async function viewSupport(root) {
     el('section', { class: 'card card-pad support-compose' }, [el('h3', { class: 't-h3' }, 'New ticket'), field('Subject', subject), field('Message', message), create]),
     list
   ]));
-  await loadTickets(list);
+  loadTickets(list);
 }
 
 async function loadTickets(host) {
   try {
-    const out = await api('/api/support/tickets'); host.innerHTML = '';
-    (out.tickets || []).forEach((t) => host.appendChild(ticketCard(t, false)));
-    if (!(out.tickets || []).length) host.appendChild(el('div', { class: 'card card-pad muted' }, 'No support tickets yet.'));
-  } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad muted' }, e.message)); }
+    const out = await api('/api/support/tickets');
+    _ticketsCache = out.tickets || [];
+    host.innerHTML = '';
+    _ticketsCache.forEach((t) => host.appendChild(ticketCard(t, false)));
+    if (!_ticketsCache.length) host.appendChild(el('div', { class: 'card card-pad muted' }, 'No support tickets yet.'));
+  } catch (e) {
+    if (!host.children.length) {
+      host.innerHTML = '';
+      host.appendChild(el('div', { class: 'card card-pad muted' }, e.message));
+    }
+  }
 }
 
 function ticketCard(t, admin) {
@@ -6470,63 +6508,79 @@ async function viewCrmPipeline(root) {
   const board = el('div', { class: 'wacrm-pipeline-board' });
   root.appendChild(board);
 
-  async function loadPipeline() {
+  const defaultStages = [
+    { stage: 'New Lead', count: 0, totalValue: 0, deals: [] },
+    { stage: 'Call Completed', count: 0, totalValue: 0, deals: [] },
+    { stage: 'Qualified', count: 0, totalValue: 0, deals: [] },
+    { stage: 'Proposal Sent', count: 0, totalValue: 0, deals: [] },
+    { stage: 'Closed Won', count: 0, totalValue: 0, deals: [] },
+    { stage: 'Closed Lost', count: 0, totalValue: 0, deals: [] }
+  ];
+
+  function renderStages(stages) {
     board.innerHTML = '';
-    board.appendChild(el('div', { class: 'muted', style: 'padding:40px;text-align:center;width:100%' }, 'Loading pipeline stages...'));
+    (stages || defaultStages).forEach((st) => {
+      const col = el('div', { class: 'wacrm-pipeline-col' }, [
+        el('div', { class: 'wacrm-pipeline-col-header' }, [
+          el('span', {}, st.stage),
+          el('span', { class: 'pill', style: 'font-size:0.7rem' }, String(st.count || (st.deals ? st.deals.length : 0)))
+        ])
+      ]);
+
+      const dealsContainer = el('div', { class: 'wacrm-pipeline-deals' });
+      if (!st.deals || !st.deals.length) {
+        dealsContainer.appendChild(el('div', { class: 'muted', style: 'padding:24px 8px;text-align:center;font-size:0.78rem' }, 'No leads in this stage.'));
+      } else {
+        st.deals.forEach((deal) => {
+          const card = el('div', { class: 'wacrm-deal-card' }, [
+            el('div', { class: 'flex items-center justify-between' }, [
+              el('b', { style: 'font-size:0.88rem' }, deal.name || deal.phone),
+              deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--ok);font-size:0.8rem' }, '₹' + fmtInr(deal.dealValue)) : null
+            ]),
+            el('div', { class: 'muted', style: 'font-size:0.78rem' }, [
+              deal.phone,
+              deal.company ? ` • ${deal.company}` : ''
+            ].filter(Boolean).join('')),
+            deal.email ? el('div', { class: 'soft', style: 'font-size:0.72rem;margin-top:2px' }, deal.email) : null,
+            deal.notes ? el('p', { class: 'muted', title: deal.notes, style: 'font-size:0.75rem;margin:4px 0;line-height:1.3;max-height:50px;overflow:hidden;text-overflow:ellipsis' }, deal.notes) : null,
+            el('div', { class: 'flex gap-2 items-center', style: 'margin-top:6px;flex-wrap:wrap' },
+              (deal.tags || []).slice(0, 3).map((t) => el('span', { class: 'pill', style: 'font-size:0.65rem' }, t))
+            ),
+            el('div', { class: 'wacrm-deal-card-footer' }, [
+              el('div', { class: 'wacrm-deal-card-actions' }, [
+                el('button', {
+                  type: 'button',
+                  class: 'wacrm-card-btn btn-call',
+                  title: 'Call lead with AI Voice Agent',
+                  onclick: (e) => { e.stopPropagation(); openMakeCallModal(deal.phone); },
+                  html: iconCallSvg(13) + '<span>Call</span>'
+                }),
+              ]),
+              createStageSelect(deal.id, deal.stage, loadPipeline)
+            ])
+          ]);
+          dealsContainer.appendChild(card);
+        });
+      }
+      col.appendChild(dealsContainer);
+      board.appendChild(col);
+    });
+  }
+
+  // Paint immediately in 0ms from cache or defaults
+  renderStages((_pipelineCache && _pipelineCache.pipeline) || defaultStages);
+
+  async function loadPipeline() {
     try {
       const res = await api('/api/crm/pipeline');
       const stages = (res && Array.isArray(res.pipeline)) ? res.pipeline : [];
-      board.innerHTML = '';
-
-      stages.forEach((st) => {
-        const col = el('div', { class: 'wacrm-pipeline-col' }, [
-          el('div', { class: 'wacrm-pipeline-col-header' }, [
-            el('span', {}, st.stage),
-            el('span', { class: 'pill', style: 'font-size:0.7rem' }, String(st.count))
-          ])
-        ]);
-
-        const dealsContainer = el('div', { class: 'wacrm-pipeline-deals' });
-        if (!st.deals.length) {
-          dealsContainer.appendChild(el('div', { class: 'muted', style: 'padding:24px 8px;text-align:center;font-size:0.78rem' }, 'No leads in this stage.'));
-        } else {
-          st.deals.forEach((deal) => {
-            const card = el('div', { class: 'wacrm-deal-card' }, [
-              el('div', { class: 'flex items-center justify-between' }, [
-                el('b', { style: 'font-size:0.88rem' }, deal.name || deal.phone),
-                deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--ok);font-size:0.8rem' }, '₹' + fmtInr(deal.dealValue)) : null
-              ]),
-              el('div', { class: 'muted', style: 'font-size:0.78rem' }, [
-                deal.phone,
-                deal.company ? ` • ${deal.company}` : ''
-              ].filter(Boolean).join('')),
-              deal.email ? el('div', { class: 'soft', style: 'font-size:0.72rem;margin-top:2px' }, deal.email) : null,
-              deal.notes ? el('p', { class: 'muted', title: deal.notes, style: 'font-size:0.75rem;margin:4px 0;line-height:1.3;max-height:50px;overflow:hidden;text-overflow:ellipsis' }, deal.notes) : null,
-              el('div', { class: 'flex gap-2 items-center', style: 'margin-top:6px;flex-wrap:wrap' },
-                (deal.tags || []).slice(0, 3).map((t) => el('span', { class: 'pill', style: 'font-size:0.65rem' }, t))
-              ),
-              el('div', { class: 'wacrm-deal-card-footer' }, [
-                el('div', { class: 'wacrm-deal-card-actions' }, [
-                  el('button', {
-                    type: 'button',
-                    class: 'wacrm-card-btn btn-call',
-                    title: 'Call lead with AI Voice Agent',
-                    onclick: (e) => { e.stopPropagation(); openMakeCallModal(deal.phone); },
-                    html: iconCallSvg(13) + '<span>Call</span>'
-                  }),
-                ]),
-                createStageSelect(deal.id, deal.stage, loadPipeline)
-              ])
-            ]);
-            dealsContainer.appendChild(card);
-          });
-        }
-        col.appendChild(dealsContainer);
-        board.appendChild(col);
-      });
+      _pipelineCache = res;
+      renderStages(stages);
     } catch (e) {
-      board.innerHTML = '';
-      board.appendChild(el('div', { class: 'err-msg' }, 'Failed to load pipeline: ' + e.message));
+      if (!board.children.length) {
+        board.innerHTML = '';
+        board.appendChild(el('div', { class: 'err-msg' }, 'Failed to load pipeline: ' + e.message));
+      }
     }
   }
 
@@ -7235,20 +7289,19 @@ async function viewAssistant(wrap) {
 
   // Initial load
   async function loadInitial() {
-    await loadSessionsList();
-    if (allSessions.length > 0) {
-      await loadSession(allSessions[0].id);
-    } else {
-      await startNewChat();
-    }
+    appendAssistantBubble("Hello, I am your Seevora Voice & AI Assistant. How can I help you manage your agents, review call analytics, or test conversations today?");
+    loadSessionsList().then(async () => {
+      if (allSessions.length > 0) {
+        await loadSession(allSessions[0].id);
+      }
+    });
     // Load integrations state
-    try {
-      const res = await api('/api/assistant/integrations');
+    api('/api/assistant/integrations').then((res) => {
       if (res && res.integrations) {
         currentIntegrations = res.integrations;
         updateIntegrationsUI(currentIntegrations);
       }
-    } catch (_) {}
+    }).catch(() => {});
   }
 
   function updateIntegrationsUI(integrations) {

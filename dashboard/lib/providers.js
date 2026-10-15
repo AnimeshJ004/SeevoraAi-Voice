@@ -544,8 +544,9 @@ const telVobiz = {
       record_call: true,
     });
     if (result.up.status < 200 || result.up.status >= 300) {
-      throw new ProviderError('Dograh could not initiate the VoBiz call', upstreamStatus(result.up.status),
-        'upstream', upstreamMessage(result.data, 'The call was not placed.'));
+      const msg = upstreamMessage(result.data, 'The call was not placed.');
+      throw new ProviderError(`Dograh could not initiate the VoBiz call: ${msg}`, upstreamStatus(result.up.status),
+        'upstream', msg);
     }
     return { status: result.up.status, data: result.data };
   },

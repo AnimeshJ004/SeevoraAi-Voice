@@ -18,10 +18,10 @@
   --bg:           #D8E8F5;
   --bg-inner:     #EEF4FA;
 
-  /* Surfaces */
-  --panel:        #FFFFFF;
-  --panel-2:      #F8FAFD;
-  --raised:       #FFFFFF;
+  /* Surfaces (Translucent Glassmorphic matching ambient background) */
+  --panel:        rgba(255, 255, 255, 0.58);
+  --panel-2:      rgba(240, 248, 255, 0.42);
+  --raised:       rgba(255, 255, 255, 0.70);
 
   /* Borders */
   --line:         rgba(203, 213, 225, 0.7);
@@ -560,43 +560,124 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
-   INPUTS
+   INPUTS (Translucent Glassmorphic Form Fields)
    ========================================================================== */
-.input, .textarea, .select {
-  background: #FFFFFF !important;
-  border: 1px solid #CBD5E1 !important;
-  border-radius: 10px !important;
-  padding: 9px 12px !important;
+.input, .textarea, .select, input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(14px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
   font-size: 0.88rem !important;
-  color: #1E293B !important;
+  color: #0F172A !important;
+  box-shadow: inset 0 1px 3px rgba(15, 45, 90, 0.04), 0 2px 6px rgba(15, 45, 90, 0.02) !important;
   transition: all 0.2s ease !important;
   font-family: var(--font) !important;
 }
 
-.input:focus, .textarea:focus, .select:focus {
-  border-color: #0095FF !important;
-  box-shadow: 0 0 0 3px rgba(0,149,255,0.12) !important;
+.input::placeholder, .textarea::placeholder, input::placeholder, textarea::placeholder {
+  color: #64748B !important;
+  opacity: 0.82 !important;
+}
+
+.input:focus, .textarea:focus, .select:focus, input:focus, select:focus, textarea:focus {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(0, 149, 255, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
   outline: none !important;
 }
 
+/* Option tags inside select dropdowns (must remain readable on native menus) */
+select option {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
 /* ==========================================================================
-   CARDS
+   CARDS (Translucent Glassmorphic Matching Background)
    ========================================================================== */
 .card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.05), 0 2px 8px rgba(15, 45, 90, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  padding: 22px !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 16px 40px -6px rgba(0, 149, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Campaign & Analytics Stat Cards */
+.campaign-stat-box,
+.stat-card,
+.rec-stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(20px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 18px !important;
-  box-shadow: var(--shadow-card) !important;
-  padding: 20px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.campaign-stat-box:hover,
+.stat-card:hover,
+.rec-stat-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(225, 240, 255, 0.52) 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 14px 32px -4px rgba(0, 149, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Dropzone & Import Area */
+.dropzone-box {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 2px dashed rgba(0, 149, 255, 0.35) !important;
+  border-radius: 18px !important;
+  padding: 36px 24px !important;
+  transition: all 0.22s ease !important;
+}
+
+.dropzone-box:hover {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(0, 149, 255, 0.65) !important;
+}
+
+/* Table Card & Container */
+.rec-card-table,
+.table-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.60) 0%, rgba(230, 243, 255, 0.40) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 32px -4px rgba(15, 45, 90, 0.05) !important;
+  overflow: hidden !important;
 }
 
 /* ==========================================================================
    MODAL
    ========================================================================== */
 .modal {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(226, 232, 240, 0.9) !important;
-  border-radius: 22px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 248, 255, 0.88) 100%) !important;
+  backdrop-filter: blur(32px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(1.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 24px !important;
   box-shadow: 0 24px 60px -10px rgba(0,149,255,0.18) !important;
 }
 
@@ -604,7 +685,9 @@ h1, h2, h3, h4, h5, h6 {
    TOAST
    ========================================================================== */
 .toast {
-  background: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   border: 1px solid #BAE6FD !important;
   border-radius: 14px !important;
   box-shadow: 0 8px 24px rgba(0,149,255,0.12) !important;
@@ -620,9 +703,11 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600 !important;
   font-size: 0.74rem !important;
   padding: 3px 10px !important;
-  background: #F1F5F9;
-  border: 1px solid #E2E8F0;
-  color: #475569;
+  background: rgba(241, 245, 249, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  color: #475569 !important;
 }
 
 .pill.active {
@@ -632,7 +717,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pill.inprogress {
-  background: #EFF6FF !important;
+  background: rgba(239, 246, 255, 0.85) !important;
   border-color: #BFDBFE !important;
   color: #0369A1 !important;
 }
@@ -641,10 +726,13 @@ h1, h2, h3, h4, h5, h6 {
    VOICE CALL STAGE (Talk to Agent)
    ========================================================================== */
 .voice-call-stage {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(226,232,240,0.9) !important;
-  border-radius: 22px !important;
-  box-shadow: var(--shadow-card) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.60) 0%, rgba(230, 243, 255, 0.40) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 12px 36px -6px rgba(15, 45, 90, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
   padding: 28px 20px !important;
   text-align: center;
 }
@@ -835,13 +923,14 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Frosted Bento Cards */
 .sv-card {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(28px) saturate(1.2);
-  -webkit-backdrop-filter: blur(28px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 24px;
   padding: 22px;
-  box-shadow: 0 10px 32px -6px rgba(15, 45, 90, 0.05), 0 1px 3px rgba(15, 45, 90, 0.02);
+  box-shadow: 0 10px 32px -6px rgba(15, 45, 90, 0.05), 0 1px 3px rgba(15, 45, 90, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -850,17 +939,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sv-card:hover {
-  background: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
   transform: translateY(-2px);
-  box-shadow: 0 18px 45px -8px rgba(15, 45, 90, 0.09), 0 2px 6px rgba(15, 45, 90, 0.03);
-  border-color: #FFFFFF;
+  box-shadow: 0 18px 45px -8px rgba(15, 45, 90, 0.09), 0 2px 6px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.98) !important;
 }
 
 /* Hero card with smooth ambient gradient */
 .sv-hero-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 249, 255, 0.88) 100%);
-  border: 1px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 14px 40px -8px rgba(2, 132, 199, 0.08), 0 2px 6px rgba(15, 45, 90, 0.03);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.72) 0%, rgba(220, 240, 255, 0.52) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 14px 40px -8px rgba(2, 132, 199, 0.08), 0 2px 6px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .sv-card-header {
@@ -1405,11 +1494,21 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 11px;
-  background: rgba(241, 245, 249, 0.75);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 16px;
-  padding: 11px 14px;
-  margin-bottom: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  padding: 12px 14px !important;
+  margin-bottom: 14px !important;
+  box-shadow: 0 4px 14px -2px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  transition: all 0.2s ease !important;
+}
+
+.sv-contact-pill:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.98) !important;
 }
 
 .sv-contact-av {
@@ -1455,17 +1554,34 @@ h1, h2, h3, h4, h5, h6 {
 .sv-change-btn:hover { color: #047857; text-decoration: underline; }
 
 .sv-input-box {
-  background: #FFFFFF;
-  border: 1px solid rgba(203, 213, 225, 0.85);
-  border-radius: 16px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  margin-bottom: 14px !important;
+  box-shadow: 0 4px 14px -2px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  transition: all 0.2s ease !important;
 }
 
 .sv-input-box:focus-within {
-  border-color: #0284C7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(225, 240, 255, 0.55) 100%) !important;
+  border-color: rgba(0, 149, 255, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.sv-country-pill {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 99px !important;
+  padding: 3px 10px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
 }
 
 .sv-input-label {
@@ -1520,7 +1636,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.70rem;
   color: #64748B;
   margin-top: 10px;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid rgba(255, 255, 255, 0.6);
   padding-top: 8px;
 }
 
@@ -1530,11 +1646,21 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 11px;
-  background: rgba(241, 245, 249, 0.75);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 16px;
-  padding: 10px 14px;
-  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  padding: 10px 14px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 4px 14px -2px rgba(15, 45, 90, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  transition: all 0.2s ease !important;
+}
+
+.sv-trunk-pill:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.98) !important;
 }
 
 .sv-trunk-icon {
@@ -1789,3 +1915,64 @@ tr:hover td { background: #F8FAFC; }
 .text-xs { font-size: 0.78rem; }
 .soft { color: var(--ink-dim); }
 .hide { display: none !important; }
+
+/* ==========================================================================
+   GLOBAL GLASSMORPHIC SURFACES ACROSS ALL OPTIONS
+   (Inbound, Outbound, Recordings, Pipeline, Agents, Talk, Billing, Support, Settings)
+   ========================================================================== */
+.wacrm-pipeline-col,
+.wacrm-deal-card,
+.billing-overview-card,
+.meter-card,
+.pricing-plan-card,
+.ticket-message,
+.support-compose,
+.rec-toolbar,
+.agent-card,
+.agent-form-box,
+.campaign-dialer-card,
+.live-progress-banner,
+.onboard-step-card,
+.conn-card,
+.wh-card,
+.dev-card,
+.pref-card,
+.profile-card,
+.stage-col,
+.ticket-layout .card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%) !important;
+  backdrop-filter: blur(20px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+.wacrm-pipeline-col-header {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.75) !important;
+}
+
+.wacrm-deal-card:hover,
+.pricing-plan-card:hover,
+.meter-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(225, 240, 255, 0.50) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 14px 34px -4px rgba(0, 149, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.rec-toolbar {
+  border-radius: 16px !important;
+  padding: 12px 16px !important;
+}
+
+.rec-filter-select {
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.80) !important;
+  border-radius: 12px !important;
+  color: #0F172A !important;
+}

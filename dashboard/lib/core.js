@@ -377,21 +377,23 @@ async function createImpersonationSession(actorUserId, targetUserId, targetTenan
 }
 
 // Build the Set-Cookie header value for a fresh session.
-function sessionCookie(token) {
+function sessionCookie(token, req) {
   const maxAge = Math.floor(SESSION_TTL_MS / 1000);
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const isExplicitHttp = req && (req.headers && req.headers['x-forwarded-proto'] === 'http');
+  const isSecureEnv = process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false';
+  const secure = (isSecureEnv && !isExplicitHttp) ? '; Secure' : '';
   return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 // Build the Set-Cookie header value that clears the session.
 function clearCookie() {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const secure = process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false' ? '; Secure' : '';
   return `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
 // Parse the request cookie header for our session token.
 function parseCookieToken(req) {
-  const raw = req.headers.cookie || '';
+  const raw = (req && req.headers && req.headers.cookie) || '';
   for (const part of raw.split(';')) {
     const idx = part.indexOf('=');
     if (idx === -1) continue;
@@ -713,10 +715,11 @@ async function requireRole(req, res, minimum, handler, body) {
 async function requireAuth(req, res, handler, body) {
   const ctx = await getSession(req);
   if (!ctx) {
-    return send(res, 401, JSON.stringify({ error: 'authentication required', code: 'no_session' }), {
-      'Content-Type': 'application/json',
-      'Set-Cookie': clearCookie(),
-    });
+    const headers = { 'Content-Type': 'application/json' };
+    if (parseCookieToken(req)) {
+      headers['Set-Cookie'] = clearCookie();
+    }
+    return send(res, 401, JSON.stringify({ error: 'authentication required', code: 'no_session' }), headers);
   }
   return handler(req, res, { ...ctx, body });
 }

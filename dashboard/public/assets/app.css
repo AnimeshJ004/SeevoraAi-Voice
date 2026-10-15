@@ -3635,10 +3635,21 @@
   margin-bottom: 22px;
 }
 .campaign-stat-box {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(230, 243, 255, 0.38) 100%);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
   padding: 16px 20px;
+  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.campaign-stat-box:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(225, 240, 255, 0.52) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -4px rgba(0, 149, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 1);
 }
 .campaign-stat-box .lbl {
   font-size: 0.72rem;
@@ -3667,17 +3678,19 @@
 }
 
 .dropzone-box {
-  border: 2px dashed var(--line);
-  border-radius: var(--radius-sm);
-  padding: 28px 20px;
+  border: 2px dashed rgba(0, 149, 255, 0.35);
+  border-radius: 18px;
+  padding: 32px 20px;
   text-align: center;
-  background: #fbfaf6;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
 }
 .dropzone-box:hover, .dropzone-box.drag-over {
-  border-color: var(--accent);
-  background: #f5f2e8;
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(0, 149, 255, 0.65);
 }
 .dropzone-icon {
   width: 40px;

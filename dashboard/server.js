@@ -539,7 +539,7 @@ async function apiSignup(req, res, body) {
   const token = await core.createSession(userId, tenantId);
   core.send(res, 200, JSON.stringify({ user: publicUser(user), tenant: publicTenant(tenant) }), {
     'Content-Type': 'application/json',
-    'Set-Cookie': core.sessionCookie(token),
+    'Set-Cookie': core.sessionCookie(token, req),
   });
 }
 
@@ -607,7 +607,7 @@ async function apiLogin(req, res, body) {
   const token = await core.createSession(user.id, user.tenantId);
   core.send(res, 200, JSON.stringify({ user: publicUser(user), tenant: publicTenant(tenant) }), {
     'Content-Type': 'application/json',
-    'Set-Cookie': core.sessionCookie(token),
+    'Set-Cookie': core.sessionCookie(token, req),
   });
 }
 
@@ -637,7 +637,7 @@ async function apiMe(req, res, ctx) {
   // Refresh cookie session only if near expiration (< 24h) or missing cookie session
   if (!ctx.session || !ctx.session.exp || (ctx.session.exp - Date.now() < 24 * 60 * 60 * 1000)) {
     const token = await core.createSession(ctx.user.id, ctx.tenant.id);
-    headers['Set-Cookie'] = core.sessionCookie(token);
+    headers['Set-Cookie'] = core.sessionCookie(token, req);
   }
 
   // Non-blocking metadata sync to Clerk if authenticated with Clerk
@@ -2263,6 +2263,7 @@ async function apiTelephonyDial(req, res, ctx) {
     }).catch(() => {});
     core.sendJson(res, r.status, r.data);
   } catch (e) {
+    console.error('[DIAL ERROR]', (e && e.message) || e, (e && e.detail) || '');
     handleProviderError(res, e);
   }
 }
@@ -3403,14 +3404,14 @@ async function apiAdminImpersonate(req, res, ctx) {
   if (!tenant || tenant.status !== 'active') return core.sendJson(res, 409, { error: 'target tenant is not active', code: 'target_inactive' });
   const token = await core.createImpersonationSession(ctx.user.id, target.id, tenant.id, reason);
   await core.mutate((d) => addAudit(d, ctx, 'admin.impersonation.started', 'user', target.id, { reason }));
-  core.send(res, 200, JSON.stringify({ ok: true, user: publicUser(target), tenant: publicTenant(tenant) }), { 'Content-Type': 'application/json', 'Set-Cookie': core.sessionCookie(token) });
+  core.send(res, 200, JSON.stringify({ ok: true, user: publicUser(target), tenant: publicTenant(tenant) }), { 'Content-Type': 'application/json', 'Set-Cookie': core.sessionCookie(token, req) });
 }
 
 async function apiImpersonationExit(req, res, ctx) {
   if (!ctx.impersonator) return core.sendJson(res, 409, { error: 'not impersonating', code: 'not_impersonating' });
   const actor = ctx.impersonator; const tenant = core.db().tenants.find((t) => t.id === actor.tenantId); const token = await core.createSession(actor.id, actor.tenantId);
   await core.mutate((d) => addAudit(d, ctx, 'admin.impersonation.ended', 'user', ctx.user.id));
-  core.send(res, 200, JSON.stringify({ ok: true, user: publicUser(actor), tenant: publicTenant(tenant) }), { 'Content-Type': 'application/json', 'Set-Cookie': core.sessionCookie(token) });
+  core.send(res, 200, JSON.stringify({ ok: true, user: publicUser(actor), tenant: publicTenant(tenant) }), { 'Content-Type': 'application/json', 'Set-Cookie': core.sessionCookie(token, req) });
 }
 
 async function apiAdminTenantStatus(req, res, ctx) {
@@ -3760,6 +3761,24 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
   }
 }
 
+const _lastDograhSync = {}; // tenantId -> timestamp
+function triggerBackgroundDograhSync(tenantId) {
+  if (!tenantId) return;
+  const now = Date.now();
+  if (_lastDograhSync[tenantId] && (now - _lastDograhSync[tenantId] < 30000)) {
+    return; // Already synced within last 30s
+  }
+  _lastDograhSync[tenantId] = now;
+  setImmediate(async () => {
+    try {
+      await syncDograhRecordingsForTenant(tenantId, { limit: 50 });
+      await core.mutate((mutDb) => {
+        wacrm.syncCallRecordingsToCrm(mutDb, tenantId);
+      });
+    } catch (_) {}
+  });
+}
+
 // GET /api/recordings - list recordings, sync from Dograh first.
 async function apiRecordingsList(req, res, ctx) {
   if (ctx.tenant.privacyMode === 'no_recording') {
@@ -3770,8 +3789,8 @@ async function apiRecordingsList(req, res, ctx) {
     const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
     const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
 
-    // Live sync from Dograh
-    await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
+    // Instant response from DB; trigger background Dograh sync
+    triggerBackgroundDograhSync(ctx.tenant.id);
 
     let all = (core.db().callRecordings || [])
       .filter((r) => r.tenantId === ctx.tenant.id);
@@ -3912,11 +3931,8 @@ async function apiRecordingAudio(req, res, ctx) {
    ========================================================================== */
 
 async function apiCrmContactsList(req, res, ctx) {
-  // Automatically sync Dograh calls and extracted caller details into CRM contacts
-  await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
-  await core.mutate((mutDb) => {
-    wacrm.syncCallRecordingsToCrm(mutDb, ctx.tenant.id);
-  });
+  // Trigger non-blocking background Dograh sync
+  triggerBackgroundDograhSync(ctx.tenant.id);
   const d = core.db();
   const q = new URL(req.url, 'http://local').searchParams;
   const stage = q.get('stage');
@@ -3978,11 +3994,8 @@ async function apiCrmImportContacts(req, res, ctx) {
 }
 
 async function apiCrmPipelineGet(req, res, ctx) {
-  // Automatically sync Dograh calls and extracted caller details into CRM contacts
-  await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 }).catch(() => {});
-  await core.mutate((mutDb) => {
-    wacrm.syncCallRecordingsToCrm(mutDb, ctx.tenant.id);
-  });
+  // Trigger non-blocking background Dograh sync
+  triggerBackgroundDograhSync(ctx.tenant.id);
   const d = core.db();
   const contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
   const stages = wacrm.DEFAULT_STAGES;

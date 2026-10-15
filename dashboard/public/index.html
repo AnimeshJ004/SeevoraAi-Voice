@@ -597,6 +597,7 @@
             signUpMounted = true;
             window.Clerk.mountSignUp(signUpSlot, {
               appearance: clerkAppearance,
+              forceRedirectUrl: '/app.html',
               fallbackRedirectUrl: '/app.html',
               signInUrl: '/#sign-in',
             });
@@ -614,19 +615,20 @@
         showSignUp();
       });
 
-      // Capture clicks on Clerk internal links to switch tabs seamlessly without navigating away to clerk.accounts.dev
+      // Capture clicks on Clerk footer switch links to toggle tabs seamlessly
       if (mountZone) {
         mountZone.addEventListener('click', function (e) {
           const anchor = e.target.closest('a');
           if (!anchor) return;
           const href = (anchor.getAttribute('href') || '').toLowerCase();
           const text = (anchor.textContent || '').toLowerCase().trim();
+          const isFooterAction = anchor.classList.contains('cl-footerActionLink') || anchor.getAttribute('data-localization-key')?.includes('footerAction');
 
-          if (href.includes('sign-up') || text === 'sign up' || text.includes('sign up')) {
+          if (isFooterAction || href.endsWith('#sign-up') || text === 'sign up') {
             e.preventDefault();
             e.stopPropagation();
             showSignUp();
-          } else if (href.includes('sign-in') || text === 'sign in' || text.includes('sign in')) {
+          } else if (isFooterAction || href.endsWith('#sign-in') || text === 'sign in') {
             e.preventDefault();
             e.stopPropagation();
             showSignIn();
@@ -662,16 +664,25 @@
             appearance: clerkAppearance,
           });
 
-          // The starting URL must always show the login page. If a previous Clerk
-          // session is still active, Clerk's SignIn component would auto-redirect to
-          // /app.html (and then onboarding). End that stale session on a fresh visit.
-          // Skip this while a sign-in / sign-up / OAuth callback flow is in progress.
-          const h = window.location.hash || '';
-          const flowInProgress = /sso-callback|verify|factor|continue|tasks|reset-password/i.test(h) ||
-            /__clerk_ticket|__clerk_status|__clerk_created_session/.test(window.location.search);
-          if ((isLoggedOut || (window.Clerk.user && !flowInProgress)) && typeof window.Clerk.signOut === 'function') {
+          // If explicit logout is requested via ?logout=1, clear session and sign out.
+          // Otherwise, if the user is already authenticated with Clerk, navigate to /app.html directly!
+          if (isLoggedOut) {
             document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
-            await window.Clerk.signOut().catch(() => {});
+            if (window.Clerk && typeof window.Clerk.signOut === 'function') {
+              await window.Clerk.signOut().catch(() => {});
+            }
+          } else if (window.Clerk && window.Clerk.user) {
+            window.location.replace('/app.html');
+            return;
+          }
+
+          // Active listener: as soon as Clerk authenticates user on this page, immediately redirect to dashboard
+          if (typeof window.Clerk.addListener === 'function') {
+            window.Clerk.addListener(({ user }) => {
+              if (user && !isLoggedOut) {
+                window.location.replace('/app.html');
+              }
+            });
           }
 
           // Hide initial loader
@@ -682,6 +693,7 @@
           // Mount SignIn into dedicated visible slot
           window.Clerk.mountSignIn(signInSlot, {
             appearance: clerkAppearance,
+            forceRedirectUrl: '/app.html',
             fallbackRedirectUrl: '/app.html',
             signUpUrl: '/#sign-up',
           });
