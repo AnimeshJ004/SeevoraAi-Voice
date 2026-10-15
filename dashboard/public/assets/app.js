@@ -150,8 +150,19 @@ function modal(opts) {
   const confirmBtn = el('button', { class: 'btn ' + (opts.confirmKind === 'danger' ? 'btn-danger' : 'btn-primary') }, opts.confirmText || 'Confirm');
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
-    try { await opts.onConfirm(); close(); }
-    catch (e) { confirmBtn.disabled = false; toast(e.message || 'Action failed.', 'err'); }
+    try {
+      const res = await opts.onConfirm();
+      if (res === false || res === 'keepOpen') {
+        confirmBtn.disabled = false;
+        return;
+      }
+      close();
+    } catch (e) {
+      confirmBtn.disabled = false;
+      if (e && e.message) {
+        toast(e.message, 'err');
+      }
+    }
   });
   const card = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, [
     el('h3', {}, opts.title || ''),
@@ -827,8 +838,12 @@ function onRoute() {
   $$('.nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('data-route') === id));
   const visible = getVisibleRoutes();
   const r = visible.find((x) => x.id === id);
-  const tt = $('#routeTitle'); if (tt) tt.textContent = r ? r.label : (id === 'onboarding' ? 'AI Voice Agent Onboarding' : 'Dashboard');
-  $('.shell') && $('.shell').classList.remove('nav-open');
+  const shell = $('.shell');
+  if (shell) {
+    shell.classList.remove('nav-open');
+    shell.setAttribute('data-route', id);
+    shell.classList.toggle('route-assistant', id === 'assistant');
+  }
   const view = $('#view');
   view.innerHTML = '';
   const wrap = el('div', { class: 'view' });
@@ -6792,7 +6807,8 @@ async function viewAssistant(wrap) {
     createIntegrationItem('file', 'File Reader', '#107C41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#107C41" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#107C41" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="#107C41" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="#107C41" stroke-width="2"/></svg>', 'Active', openFileReaderModal),
     createIntegrationItem('media', 'Media Files', '#8B5CF6', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#8B5CF6" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#8B5CF6"/></svg>', '31', openMediaFilesModal),
     createIntegrationItem('gmail', 'Gmail Dispatch', '#EA4335', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#EA4335" stroke-width="2"/><polyline points="22,6 12,13 2,6" stroke="#EA4335" stroke-width="2"/></svg>', 'Active', openGmailModal),
-    createIntegrationItem('whatsapp', 'WhatsApp Business', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal)
+    createIntegrationItem('whatsapp', 'WhatsApp Voice Alerts', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal),
+    createIntegrationItem('crm', 'CRM Pipeline Sync', '#0284C7', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284C7" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
   ]);
   rightPanel.appendChild(integrationsList);
 
@@ -7154,6 +7170,16 @@ async function viewAssistant(wrap) {
         if (data.action.type === 'agent_created' || data.action.type === 'agent_updated') {
           document.dispatchEvent(new CustomEvent('assistant:agentChanged', { detail: data.action }));
         }
+        if (data.action.type === 'integration_connected') {
+          loadIntegrationsData();
+          toast(`Connected to ${data.action.channel ? data.action.channel.toUpperCase() : 'Integration'}!`, 'info', 'Integration Active');
+        }
+        if (data.action.type === 'campaign_created') {
+          toast(`Campaign "${data.action.name}" (${data.action.leadCount} leads) queued!`, 'info', 'Campaign Scheduled');
+        }
+        if (data.action.type === 'broadcast_sent') {
+          toast(`WhatsApp broadcast dispatched to ${data.action.count} contacts from ${data.action.senderNumber}!`, 'ok', 'Broadcast Sent');
+        }
       }
 
       // Reload sessions list to keep titles and timestamps synchronized
@@ -7287,6 +7313,16 @@ async function viewAssistant(wrap) {
     }
   }
 
+  async function loadIntegrationsData() {
+    try {
+      const res = await api('/api/assistant/integrations');
+      if (res && res.integrations) {
+        currentIntegrations = res.integrations;
+        updateIntegrationsUI(currentIntegrations);
+      }
+    } catch (_) {}
+  }
+
   // Initial load
   async function loadInitial() {
     appendAssistantBubble("Hello, I am your Seevora Voice & AI Assistant. How can I help you manage your agents, review call analytics, or test conversations today?");
@@ -7295,13 +7331,7 @@ async function viewAssistant(wrap) {
         await loadSession(allSessions[0].id);
       }
     });
-    // Load integrations state
-    api('/api/assistant/integrations').then((res) => {
-      if (res && res.integrations) {
-        currentIntegrations = res.integrations;
-        updateIntegrationsUI(currentIntegrations);
-      }
-    }).catch(() => {});
+    loadIntegrationsData();
   }
 
   function updateIntegrationsUI(integrations) {
@@ -7318,6 +7348,7 @@ async function viewAssistant(wrap) {
     if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#8B5CF6');
     if (integrations.gmail) setStatus('gmail', integrations.gmail.status === 'active' ? 'Active' : 'Setup', '#EA4335');
     if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#25D366');
+    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#0284C7');
   }
 
   // =========================================================================
@@ -7379,22 +7410,67 @@ async function viewAssistant(wrap) {
     });
   }
 
-  // 2. WhatsApp Business Modal (With Phone Number + OTP Flow)
+  // 2. WhatsApp Business Modal (With Phone Number + WABA Detection + OTP Flow)
   async function openWhatsAppModal() {
     const wa = (currentIntegrations && currentIntegrations.whatsapp) || {};
     let step = 1;
     let generatedOtp = '849201';
+    let verifiedWabaId = wa.wabaId || 'waba_991204';
+
+    const statusBox = el('div', { id: 'wa-status-box', style: 'margin-top:8px;' });
+
+    const metaToggleBtn = el('button', {
+      type: 'button',
+      style: 'background:none;border:none;color:#0284c7;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
+      onclick: () => {
+        const sec = $('#wa-meta-creds');
+        if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+      }
+    }, '⚙️ Connect via Custom Meta WhatsApp Cloud API Credentials (Optional)');
+
+    const metaCredsSection = el('div', { id: 'wa-meta-creds', style: 'display:none;margin-top:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;' }, [
+      el('div', { style: 'font-size:0.76rem;color:#475569;margin-bottom:6px;' }, 'For direct live WhatsApp message delivery to your phone from developers.facebook.com:'),
+      el('input', { id: 'wa-meta-token', type: 'password', placeholder: 'Meta Permanent System User Access Token', style: 'width:100%;font-size:0.8rem;margin-bottom:6px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' }),
+      el('input', { id: 'wa-meta-phone-id', type: 'text', placeholder: 'Meta WhatsApp Phone Number ID (e.g. 109823412345)', style: 'width:100%;font-size:0.8rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' })
+    ]);
 
     const step1Container = el('div', { class: 'conn-form-group' }, [
       el('label', {}, 'Business WhatsApp Phone Number (with Country Code)'),
-      el('input', { id: 'wa-phone', type: 'tel', value: wa.phoneNumber || '+91 98765 43210', placeholder: '+91 98765 43210' }),
-      el('span', { style: 'font-size:0.75rem;color:#64748b;margin-top:2px;' }, 'Enter the phone number connected to your WhatsApp Business Cloud.')
+      el('input', {
+        id: 'wa-phone',
+        type: 'tel',
+        value: wa.phoneNumber || '+91 80715 82519',
+        placeholder: '+91 80715 82519',
+        oninput: () => {
+          const inp = $('#wa-phone');
+          if (inp) inp.style.borderColor = '';
+          statusBox.innerHTML = '';
+        }
+      }),
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-top:4px;flex-wrap:wrap;gap:6px;' }, [
+        el('span', { style: 'font-size:0.74rem;color:#64748b;' }, 'Only registered WhatsApp Business Accounts (WABA) are accepted.'),
+        el('button', {
+          type: 'button',
+          style: 'background:none;border:none;color:#0284c7;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
+          onclick: () => {
+            const inp = $('#wa-phone');
+            if (inp) { inp.value = '+91 80715 82519'; inp.style.borderColor = ''; }
+            statusBox.innerHTML = '';
+          }
+        }, 'Use Verified Business Number (+91 80715 82519)')
+      ]),
+      metaToggleBtn,
+      metaCredsSection,
+      statusBox
     ]);
 
+    const otpNotice = el('div', {
+      style: 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:10px;line-height:1.4;',
+      html: `OTP Code has been generated: <strong style="color:#065f46;font-size:1.02rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong> (enter below to complete verification)`
+    });
+
     const step2Container = el('div', { class: 'conn-form-group', style: 'display:none;' }, [
-      el('div', { style: 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 12px;border-radius:8px;font-size:0.8rem;margin-bottom:8px;' },
-        `OTP Code has been generated: <strong>${generatedOtp}</strong> (enter below to complete verification)`
-      ),
+      otpNotice,
       el('label', {}, 'Enter 6-Digit Verification Code'),
       el('input', { id: 'wa-otp', type: 'text', placeholder: '849201', maxlength: '6' }),
       el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#475569;font-weight:normal;cursor:pointer;margin-top:8px;' }, [
@@ -7415,21 +7491,63 @@ async function viewAssistant(wrap) {
     modal({
       title: 'WhatsApp Business Voice Integration',
       body,
-      confirmText: step === 1 ? 'Send Verification OTP' : 'Verify & Connect',
+      confirmText: step === 1 ? 'Verify & Send OTP' : 'Verify OTP & Activate Bot',
       confirmKind: 'primary',
       onConfirm: async () => {
         if (step === 1) {
-          const phone = $('#wa-phone').value.trim();
+          const phoneInput = $('#wa-phone');
+          const phone = phoneInput ? phoneInput.value.trim() : '';
           if (!phone) throw new Error('Please enter a valid phone number');
+
+          const metaToken = ($('#wa-meta-token') && $('#wa-meta-token').value.trim()) || '';
+          const phoneId = ($('#wa-meta-phone-id') && $('#wa-meta-phone-id').value.trim()) || '';
+          const metaConfig = (metaToken && phoneId) ? { accessToken: metaToken, phoneNumberId: phoneId } : {};
+
+          // Check if number is an official WhatsApp Business Account
+          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#0284c7;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #0284c7;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
+
+          let checkRes = null;
+          try {
+            checkRes = await api('/api/integrations/whatsapp/verify-business', {
+              method: 'POST',
+              body: { phoneNumber: phone, metaConfig }
+            });
+          } catch (err) {
+            checkRes = { isBusiness: false, error: err.message || 'Verification failed' };
+          }
+
+          if (!checkRes || !checkRes.isBusiness) {
+            const errMsg = (checkRes && checkRes.error) || 'This phone number is registered as a personal mobile WhatsApp account, not an authorized WhatsApp Business Account (WABA). Meta Cloud API and Seevora Voice AI strictly require an official WhatsApp Business account.';
+            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">❌ Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#2563eb;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
+            if (phoneInput) phoneInput.style.borderColor = '#ef4444';
+            const link = $('#wa-fill-biz-link');
+            if (link) {
+              link.onclick = (e) => {
+                e.preventDefault();
+                if (phoneInput) { phoneInput.value = '+91 80715 82519'; phoneInput.style.borderColor = ''; }
+                statusBox.innerHTML = '';
+              };
+            }
+            toast('Personal WhatsApp number rejected. WhatsApp Business number required.', 'err', 'Verification Failed');
+            return false; // Keep modal open on step 1
+          }
+
+          // Verified as WhatsApp Business Account
+          generatedOtp = checkRes.otp || '849201';
+          verifiedWabaId = checkRes.wabaId || 'waba_991204';
+          const realSentNote = checkRes.realOtpSent ? ' (Live SMS/WhatsApp sent)' : ' (Enter below to verify)';
+          otpNotice.innerHTML = `✓ Verified WhatsApp Business Account: <strong style="color:#0f172a;">${checkRes.phoneNumber}</strong> (WABA: <code>${verifiedWabaId}</code>)<br/><span style="display:block;margin-top:6px;">OTP Code: <strong style="color:#065f46;font-size:1.05rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong>${realSentNote}</span>`;
+
           step = 2;
           step1Container.style.display = 'none';
           step2Container.style.display = 'flex';
           const modalBtn = $('.modal .btn-primary');
           if (modalBtn) modalBtn.textContent = 'Verify OTP & Activate Bot';
-          toast('Verification code sent to ' + phone);
-          throw new Error(''); // keep modal open for step 2
+          toast('WhatsApp Business verified! OTP generated for ' + phone, 'info', 'OTP Ready');
+          return false; // keep modal open for step 2
         } else {
-          const otp = $('#wa-otp').value.trim();
+          const otpInput = $('#wa-otp');
+          const otp = otpInput ? otpInput.value.trim() : '';
           if (otp !== generatedOtp && otp !== '849201' && otp !== '123456') {
             throw new Error('Invalid OTP. Please enter ' + generatedOtp);
           }
@@ -7439,7 +7557,14 @@ async function viewAssistant(wrap) {
             method: 'POST',
             body: {
               channel: 'whatsapp',
-              data: { status: 'live', phoneNumber: phone, botActive, verifiedAt: new Date().toISOString() }
+              data: {
+                status: 'live',
+                phoneNumber: phone,
+                wabaId: verifiedWabaId,
+                botActive,
+                verifiedAt: new Date().toISOString(),
+                description: `Auto-sends booking summary & call transcript to caller from ${phone}`
+              }
             }
           });
           currentIntegrations = (res && res.integrations) || currentIntegrations;
@@ -7496,6 +7621,67 @@ async function viewAssistant(wrap) {
         currentIntegrations = (res && res.integrations) || currentIntegrations;
         updateIntegrationsUI(currentIntegrations);
         toast('Test dispatch delivered to ' + recipient, 'info', 'Gmail Dispatched');
+      }
+    });
+  }
+
+  // CRM Webhook & Pipeline Modal
+  async function openCrmModal() {
+    const crm = (currentIntegrations && currentIntegrations.crm) || {};
+    const body = el('div', { class: 'conn-modal-body' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+        el('span', { style: 'font-size:0.86rem;color:#475569;' }, 'CRM Lead & Pipeline Webhook Sync'),
+        el('span', { class: 'conn-status-badge live' }, crm.status === 'active' ? 'Active & Synced' : 'Setup Required')
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', {}, 'CRM Platform'),
+        el('select', { id: 'crm-platform' }, [
+          el('option', { value: 'HubSpot CRM', selected: true }, 'HubSpot CRM'),
+          el('option', { value: 'Zoho CRM' }, 'Zoho CRM'),
+          el('option', { value: 'Salesforce' }, 'Salesforce'),
+          el('option', { value: 'Custom CRM Webhook' }, 'Custom Webhook API (Zapier / Make / Pabbly)')
+        ])
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', {}, 'CRM Lead Intake Webhook URL'),
+        el('input', { id: 'crm-webhook', type: 'url', value: crm.webhookUrl || 'https://api.seevora.ai/v1/crm/lead-sync', placeholder: 'https://hooks.zapier.com/hooks/catch/...' })
+      ]),
+      el('div', { class: 'conn-form-group' }, [
+        el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.84rem;color:#475569;font-weight:normal;cursor:pointer;' }, [
+          el('input', { type: 'checkbox', id: 'crm-sync-toggle', checked: true }),
+          el('span', {}, 'Instantly push caller phone, transcript, booking time, and call recording link to CRM stage')
+        ])
+      ]),
+      el('div', { style: 'font-size:0.76rem;color:#64748b;background:#f8fafc;padding:10px;border-radius:8px;' },
+        'Any incoming or outgoing call completed by your AI voice agent will automatically create or update lead records in your CRM.'
+      )
+    ]);
+
+    modal({
+      title: 'CRM Pipeline Synchronization',
+      body,
+      confirmText: 'Save & Test CRM Sync',
+      confirmKind: 'primary',
+      onConfirm: async () => {
+        const platform = $('#crm-platform').value;
+        const hook = $('#crm-webhook').value.trim();
+        const syncOnCallEnd = $('#crm-sync-toggle').checked;
+        const res = await api('/api/assistant/integrations', {
+          method: 'POST',
+          body: {
+            channel: 'crm',
+            data: {
+              provider: platform,
+              webhookUrl: hook,
+              syncOnCallEnd,
+              status: 'active',
+              lastSync: new Date().toISOString()
+            }
+          }
+        });
+        currentIntegrations = (res && res.integrations) || currentIntegrations;
+        updateIntegrationsUI(currentIntegrations);
+        toast(`CRM synchronized with ${platform}!`, 'info', 'CRM Active');
       }
     });
   }
@@ -7712,6 +7898,30 @@ async function viewAssistant(wrap) {
         title: 'Customer Support & Helpdesk Tier-1',
         desc: 'Resolves common customer queries, looks up order tracking numbers, and creates support tickets with sentiment tags.',
         prompt: 'Build a customer service voice agent that resolves tier-1 FAQs and creates support tickets.'
+      },
+      {
+        id: 'whatsapp_connect',
+        title: 'Voice-to-WhatsApp Alerts Link',
+        desc: 'Connects voice receptionist directly to WhatsApp Business to instantly send callers their appointment details and transcripts.',
+        prompt: 'Connect this voice agent to my WhatsApp account +91 98765 43210'
+      },
+      {
+        id: 'crm_connect',
+        title: 'CRM Pipeline Webhook Integration',
+        desc: 'Hooks your voice receptionist to HubSpot, Zoho, or webhook to automatically sync qualified leads and call summaries.',
+        prompt: 'Connect this voice agent to my CRM pipeline webhook'
+      },
+      {
+        id: 'outbound_campaign',
+        title: '50-Lead Outbound Voice Campaign',
+        desc: 'Schedules an automated outbound voice calling campaign for 50 qualified property or clinic leads.',
+        prompt: 'Create an outbound voice campaign for 50 leads'
+      },
+      {
+        id: 'whatsapp_broadcast',
+        title: 'WhatsApp Broadcast to All Contacts',
+        desc: 'Broadcasts an announcement or promotional update to all CRM contacts directly via your connected WhatsApp Business number.',
+        prompt: "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'"
       }
     ];
 
@@ -7784,6 +7994,14 @@ async function viewAssistant(wrap) {
           el('strong', { style: 'color:#0f172a;display:block;' }, 'File Reader'),
           el('span', { style: 'font-size:0.75rem;color:#107c41;font-weight:700;' }, 'Knowledge Active'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'PDFs and FAQs parsed into agent memory.')
+        ]),
+        el('div', {
+          style: 'padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;cursor:pointer;',
+          onclick: () => { $('#modal-host').classList.add('hide'); openCrmModal(); }
+        }, [
+          el('strong', { style: 'color:#0f172a;display:block;' }, 'CRM Pipeline Sync'),
+          el('span', { style: 'font-size:0.75rem;color:#0284c7;font-weight:700;' }, 'Active & Synced'),
+          el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-pushes caller contacts, recordings & deals to CRM.')
         ])
       ])
     ]);

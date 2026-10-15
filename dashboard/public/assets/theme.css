@@ -438,6 +438,38 @@ h1, h2, h3, h4, h5, h6 {
   overflow-y: auto;
 }
 
+/* Full-page workspace layout for Assistant & full-bleed views */
+.shell[data-route="assistant"],
+.shell.route-assistant {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.shell[data-route="assistant"] .top,
+.shell.route-assistant .top {
+  padding: 8px 18px 4px !important;
+  min-height: 44px;
+}
+
+.shell[data-route="assistant"] .main,
+.shell.route-assistant .main,
+.main:has(.view-assistant-wrapper) {
+  padding: 0 14px 14px 14px !important;
+  height: calc(100vh - 50px) !important;
+  max-height: calc(100vh - 50px) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.main:has(.view-assistant-wrapper) .view {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+}
+
 .view {
   animation: fadeUp 0.22s ease both;
   background: transparent !important;

@@ -17,6 +17,9 @@ const INTENTS = Object.freeze({
   BUILD_AGENT: 'build_agent',
   EDIT_AGENT: 'edit_agent',
   ADD_KNOWLEDGE: 'add_knowledge',
+  CONNECT_INTEGRATION: 'connect_integration',
+  CREATE_CAMPAIGN: 'create_campaign',
+  BROADCAST_MESSAGE: 'broadcast_message',
   ASK_REPORT: 'ask_report',
   TEST_CHAT: 'test_chat',
   CONFIRM: 'confirm_pending',
@@ -36,6 +39,30 @@ function classifyIntent(text, hasPendingToken) {
   // If user has a pending confirmation and replies yes/no
   if (hasPendingToken && /^(yes|yep|confirm|ok|okay|sure|go ahead|proceed|haan|bilkul|ha|theek hai|done)[\s!.]*$/.test(t)) {
     return INTENTS.CONFIRM;
+  }
+
+  // Broadcast message to all contacts via connected WhatsApp Business number
+  const isCallingCampaign = /\b(campaign|calling|dialer|outbound\s*calls?)\b/i.test(text);
+  if (!isCallingCampaign && (
+      /\b(send|bhej|broadcast|blast|forward|dispatch)\b.{0,50}\b(contacts?|leads?|clients?|customers?|sabko|saare|sabhi)\b/i.test(text) ||
+      /\b(contacts?|leads?|clients?|customers?|sabko|saare|sabhi)\b.{0,50}\b(send|bhej|message|msg|whatsapp)\b/i.test(text) ||
+      /\b(message|msg)\b.{0,30}\b(bhej|send|to all|contacts?)\b/i.test(text) ||
+      /\b(broadcast)\b/i.test(text)
+  )) {
+    return INTENTS.BROADCAST_MESSAGE;
+  }
+
+  // Connect integration (WhatsApp, CRM, Gmail/Email, Calendar, Webhook, Marketplace tools)
+  if (/\b(connect|integrate|link|hook|sync|bind|attach)\b.{0,50}\b(whatsapp|crm|gmail|email|calendar|hubspot|zoho|salesforce|webhook|marketplace|tool)\b/i.test(text) ||
+      /\b(whatsapp|crm|gmail|email|calendar|hubspot|zoho|salesforce|webhook)\b.{0,50}\b(connect|integration|integrate|link|hook|sync|setup|set up)\b/i.test(text) ||
+      /\bconnect\s+(this\s+)?(voice\s+)?agent\b/i.test(text)) {
+    return INTENTS.CONNECT_INTEGRATION;
+  }
+
+  // Create or launch campaign (Voice outbound calling campaign)
+  if (/\b(create|launch|start|run|schedule|setup|new)\b.{0,40}\b(campaign|outbound calls|outbound call|blast|broadcast)\b/i.test(text) ||
+      /\b(campaign)\b.{0,30}\b(for|with|of|to call|leads)\b/i.test(text)) {
+    return INTENTS.CREATE_CAMPAIGN;
   }
 
   // Build agent
@@ -200,11 +227,29 @@ function defaultIntegrations(tenantId) {
       lastDispatchedAt: new Date().toISOString()
     },
     whatsapp: {
-      status: 'live',
+      provider: 'WhatsApp Voice Dispatch',
+      status: 'active',
       phoneNumber: '+91 98765 43210',
       wabaId: 'waba_991204',
       verifiedAt: new Date().toISOString(),
-      botActive: true
+      dispatchOnCallEnd: true,
+      description: 'Sends post-call audio transcript and booking confirmation via WhatsApp'
+    },
+    crm: {
+      provider: 'CRM Webhook & Pipeline',
+      status: 'active',
+      webhookUrl: 'https://api.seevora.ai/v1/crm/lead-sync',
+      syncOnCallEnd: true,
+      lastSync: new Date().toISOString(),
+      description: 'Auto-syncs caller contact and conversation notes to your CRM pipeline'
+    },
+    webhook: {
+      provider: 'Custom Webhook API',
+      status: 'active',
+      endpoint: 'https://webhook.site/seevora-call-events',
+      events: ['call.answered', 'call.completed', 'booking.created'],
+      lastDispatchedAt: new Date().toISOString(),
+      description: 'Dispatches real-time call events to any external system or marketplace tool'
     }
   };
 }

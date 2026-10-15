@@ -5779,26 +5779,31 @@
    ========================================================================== */
 
 .view-assistant-wrapper {
-  background: linear-gradient(135deg, #eef3f9 0%, #f6f8fc 50%, #eaeff8 100%);
-  border-radius: 32px;
-  padding: 12px;
-  min-height: calc(100vh - 100px);
-  display: flex;
-  flex-direction: column;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
 }
 
 .chat-workspace-card {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
-  display: flex;
-  height: calc(100vh - 124px);
-  min-height: 680px;
-  overflow: hidden;
-  position: relative;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  display: flex !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 /* ---- 1. Left Icon Rail ---- */
