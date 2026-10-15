@@ -1021,7 +1021,6 @@ function renderVoiceDashboard(root, opts) {
   const grid = el('div', { class: 'sv-grid' });
   dash.appendChild(grid);
 
-  // ═════�  // ── Card 1: Voice Balance ─────────────────────────────────────────────
   const colLeft = el('div', { class: 'sv-col sv-col-left' });
   grid.appendChild(colLeft);
 
@@ -1050,45 +1049,45 @@ function renderVoiceDashboard(root, opts) {
     el('div', { class: 'sv-balance-val-row' }, [balEl, eyeBtn]),
     el('div', { class: 'sv-limit-pill', onclick: () => goto('billing') }, [
       el('span', { class: 'sv-pill-dot' }),
-      el('span', {}, 'Available Limit • 35,000 Mins Allocated'),
+      el('span', {}, 'Live Capacity • 10/10 Channels Active'),
       el('span', { style: 'margin-left:auto;font-weight:700;' }, '›')
     ]),
     el('div', { class: 'sv-actions-sep' }, [
-      el('div', { class: 'sv-actions-label' }, 'Quick Actions'),
+      el('div', { class: 'sv-actions-label' }, 'Executive Quick Actions'),
       el('div', { class: 'sv-actions-row' }, [
         el('button', { class: 'sv-action-item', onclick: () => openMakeCallModal() }, [
           el('div', { class: 'sv-action-circle' }, [ uiIcon('phone', 17) ]),
           el('span', { class: 'sv-action-lbl' }, 'Make Call')
         ]),
-        el('button', { class: 'sv-action-item', onclick: () => isAgency ? openAddClientModal() : goto('billing') }, [
+        el('button', { class: 'sv-action-item', onclick: () => goto('agents') }, [
           el('div', { class: 'sv-action-circle' }, [ uiIcon('plus', 17) ]),
-          el('span', { class: 'sv-action-lbl' }, isAgency ? 'Add Client' : 'Top Up')
+          el('span', { class: 'sv-action-lbl' }, 'New Agent')
         ]),
         el('button', { class: 'sv-action-item', onclick: () => goto('talk') }, [
           el('div', { class: 'sv-action-circle' }, [ uiIcon('mic', 17) ]),
-          el('span', { class: 'sv-action-lbl' }, 'Test Agent')
+          el('span', { class: 'sv-action-lbl' }, 'Test Voice')
         ]),
-        el('button', { class: 'sv-action-item', onclick: () => { toast('Syncing CRM gateway...', 'ok'); setTimeout(() => toast('CRM synced!', 'ok'), 900); } }, [
-          el('div', { class: 'sv-action-circle' }, [ uiIcon('refresh', 17) ]),
-          el('span', { class: 'sv-action-lbl' }, 'Sync CRM')
+        el('button', { class: 'sv-action-item', onclick: () => goto('assistant') }, [
+          el('div', { class: 'sv-action-circle' }, [ uiIcon('sparkle', 17) ]),
+          el('span', { class: 'sv-action-lbl' }, 'Broadcast')
         ])
       ])
     ])
   ]));
 
-  // ── Card 2: Recent Voice Calls ────────────────────────────────────────
+  // ── Card 2: Recent Autonomous Calls ──────────────────────────────────
   const calls = [
-    { name: 'Apex Global Health',          meta: 'Today, 5:32 PM',     dur: '+3m 24s', out: false, av: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80' },
-    { name: 'Rajesh Verma (Consultation)', meta: 'Today, 2:40 PM',     dur: '-1m 15s', out: true,  av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
-    { name: 'Priya Nair (Appointment)',    meta: 'Yesterday, 6:51 PM', dur: '+4m 50s', out: false, av: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80' },
-    { name: 'CarePlus Diagnostics Group',  meta: 'Today, 9:15 AM',     dur: '+2m 10s', out: false, av: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=80&q=80' },
-    { name: 'Horizon Advisory Services',   meta: 'Yesterday, 4:30 PM', dur: '-5m 12s', out: true,  av: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80' },
-    { name: 'Metropolis Lab Voice',        meta: 'Today, 11:45 AM',    dur: '+1m 45s', out: false, av: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&q=80' }
+    { name: 'Apex Global Health',          meta: 'Today, 5:32 PM',     tag: 'Appointment Booked', dur: '+3m 24s', out: false, av: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Rajesh Verma (Consultation)', meta: 'Today, 2:40 PM',     tag: 'Consultation Triage', dur: '-1m 15s', out: true,  av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Priya Nair (Appointment)',    meta: 'Yesterday, 6:51 PM', tag: 'Patient Booking',     dur: '+4m 50s', out: false, av: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80' },
+    { name: 'CarePlus Diagnostics Group',  meta: 'Today, 9:15 AM',     tag: 'Report Inquiry',      dur: '+2m 10s', out: false, av: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Horizon Advisory Services',   meta: 'Yesterday, 4:30 PM', tag: 'Lead Qualified',      dur: '-5m 12s', out: true,  av: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Metropolis Lab Voice',        meta: 'Today, 11:45 AM',    tag: 'Prescription Refill', dur: '+1m 45s', out: false, av: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&q=80' }
   ];
 
   colLeft.appendChild(el('div', { class: 'sv-card' }, [
     el('div', { class: 'sv-card-header' }, [
-      el('span', { class: 'sv-card-heading' }, 'Recent Voice Calls'),
+      el('span', { class: 'sv-card-heading' }, 'Recent Autonomous Calls'),
       el('button', { class: 'sv-link-btn', onclick: () => goto('recordings') }, 'View All')
     ]),
     el('div', { class: 'sv-recent-list' }, calls.map(c => {
@@ -1101,7 +1100,10 @@ function renderVoiceDashboard(root, opts) {
           img,
           el('div', { class: 'sv-recent-info' }, [
             el('span', { class: 'sv-recent-name' }, c.name),
-            el('span', { class: 'sv-recent-meta' }, c.meta)
+            el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
+              el('span', { class: 'sv-recent-meta' }, c.meta),
+              el('span', { class: 'sv-tag-pill' }, c.tag)
+            ])
           ])
         ]),
         el('span', { class: 'sv-recent-dur' + (c.out ? ' out' : '') }, c.dur)
@@ -1118,30 +1120,32 @@ function renderVoiceDashboard(root, opts) {
   // ── Top 2 stat cards ───────────────────────────────────────────────────
   colCenter.appendChild(el('div', { class: 'sv-stat-row' }, [
     el('div', { class: 'sv-card sv-stat-card' }, [
-      el('div', { class: 'sv-stat-label' }, 'Total Calls Handled'),
+      el('div', { class: 'sv-stat-label' }, 'Autonomous Resolution Rate'),
       el('div', { class: 'sv-stat-body' }, [
-        el('span', { class: 'sv-stat-val' }, opts.callsHandled || '1,428 Calls'),
-        el('span', { class: 'sv-trend-pill green' }, '+12%')
-      ])
+        el('span', { class: 'sv-stat-val' }, '94.8%'),
+        el('span', { class: 'sv-trend-pill green' }, '+3.4%')
+      ]),
+      el('div', { class: 'sv-kpi-sub' }, 'Handled end-to-end without human escalation')
     ]),
     el('div', { class: 'sv-card sv-stat-card' }, [
-      el('div', { class: 'sv-stat-label' }, 'Voice Minutes Logged'),
+      el('div', { class: 'sv-stat-label' }, 'Total Minutes & Calls'),
       el('div', { class: 'sv-stat-body' }, [
         el('span', { class: 'sv-stat-val' }, opts.minutesLogged || '3,540 Mins'),
-        el('span', { class: 'sv-trend-pill blue' }, '99.4%')
-      ])
+        el('span', { class: 'sv-trend-pill blue' }, opts.callsHandled || '1,428 Calls')
+      ]),
+      el('div', { class: 'sv-kpi-sub' }, '148.5 human receptionist hours saved')
     ])
   ]));
 
   // ── Weekly Call Traffic + Bar Chart ───────────────────────────────────
   const bars = [
-    { l: 'S', h: 38 }, { l: 'M', h: 88, active: true }, { l: 'T', h: 32 },
-    { l: 'W', h: 58 }, { l: 'T', h: 26 }, { l: 'F', h: 52 }, { l: 'S', h: 36 }
+    { l: 'S', h: 38 }, { l: 'M', h: 88, active: true }, { l: 'T', h: 42 },
+    { l: 'W', h: 64 }, { l: 'T', h: 36 }, { l: 'F', h: 58 }, { l: 'S', h: 46 }
   ];
 
   colCenter.appendChild(el('div', { class: 'sv-card' }, [
     el('div', { class: 'sv-card-header' }, [
-      el('span', { class: 'sv-card-heading' }, 'Weekly Call Traffic'),
+      el('span', { class: 'sv-card-heading' }, 'Weekly Call Volume & Traffic'),
       el('div', { class: 'sv-filter-pill' }, [
         el('span', {}, 'This Week'),
         el('span', { style: 'font-size:9px;margin-left:4px;opacity:0.7;' }, '▼')
@@ -1150,7 +1154,8 @@ function renderVoiceDashboard(root, opts) {
     el('div', { class: 'sv-activity-body' }, [
       el('div', { class: 'sv-activity-left' }, [
         el('span', { class: 'sv-activity-val' }, opts.trafficVal || '842 Calls'),
-        el('span', { class: 'sv-activity-trend' }, '↗ +8.4% this week')
+        el('span', { class: 'sv-activity-trend' }, '↗ +8.4% this week'),
+        el('span', { style: 'font-size:0.72rem;color:#64748b;margin-top:2px;' }, 'Peak Traffic: 2:00 PM – 5:30 PM')
       ]),
       el('div', { class: 'sv-chart-bars' }, bars.map(b =>
         el('div', { class: 'sv-bar-col' }, [
@@ -1164,122 +1169,148 @@ function renderVoiceDashboard(root, opts) {
     ])
   ]));
 
-  // ── Connected Voice Infrastructure (Payno Upcoming Payments style) ────
-  const channels = [
-    { iconName: 'bolt',     title: 'VoBiz SIP Trunk',          sub: 'AC: 122 6122 EB12 • DID: +91 80715 82519', status: 'Live & Active',   meta: '99.98% SLA', cls: 'green' },
-    { iconName: 'activity', title: 'Deepgram Nova-3 STT',      sub: 'Direct WebSocket Audio Stream',            status: '120ms Latency',  meta: 'Ultra-Low',  cls: 'blue'  },
-    { iconName: 'sparkle',  title: 'Rumik Mulberry Voice TTS', sub: 'Indian English Natural Voice Engine',       status: 'Online 24/7',    meta: 'Human Parity',cls: 'green' },
-    { iconName: 'link',     title: 'Dograh Telephony Gateway', sub: 'Automated CRM Lead Dispatcher',            status: 'Synced',         meta: 'DID Route',  cls: 'blue'  }
+  // ── Call Outcomes & Lead Conversion (Replaces Technical Telephony Plumbing) ──
+  const outcomes = [
+    { dot: 'green',  title: '📅 Appointments & Consultations Booked', sub: 'Synced to Google Calendar & Cal.com', count: '404 Calls (48%)' },
+    { dot: 'blue',   title: '🎯 Qualified Buyer & Patient Leads',    sub: 'Caller intent, budget & CRM pipeline sync', count: '236 Leads (28%)' },
+    { dot: 'purple', title: '💡 Autonomous Inquiries & FAQs Solved',  sub: 'Operating hours, pricing & triage without wait', count: '152 Calls (18%)' },
+    { dot: 'amber',  title: '👤 Warm Transfer to Human Staff',       sub: 'Escalated on complex or emergency requests', count: '50 Calls (6%)' }
   ];
 
   colCenter.appendChild(el('div', { class: 'sv-card' }, [
     el('div', { class: 'sv-card-header' }, [
-      el('span', { class: 'sv-card-heading' }, 'Connected Voice Channels'),
-      el('button', { class: 'sv-link-btn', onclick: () => goto('inbound') }, 'View All')
+      el('span', { class: 'sv-card-heading' }, 'Call Outcomes & Business Impact'),
+      el('button', { class: 'sv-link-btn', onclick: () => goto('pipeline') }, 'View Pipeline')
     ]),
-    el('div', { class: 'sv-channel-list' }, channels.map(ch =>
-      el('div', { class: 'sv-channel-item' }, [
-        el('div', { class: 'sv-channel-left' }, [
-          el('div', { class: 'sv-channel-icon' }, [ uiIcon(ch.iconName, 17) ]),
-          el('div', { class: 'sv-channel-info' }, [
-            el('span', { class: 'sv-channel-title' }, ch.title),
-            el('span', { class: 'sv-channel-sub' }, ch.sub)
+    el('div', { class: 'sv-outcomes-progress' }, [
+      el('div', { class: 'sv-outcomes-seg green', style: 'width:48%;' }),
+      el('div', { class: 'sv-outcomes-seg blue', style: 'width:28%;' }),
+      el('div', { class: 'sv-outcomes-seg purple', style: 'width:18%;' }),
+      el('div', { class: 'sv-outcomes-seg amber', style: 'width:6%;' })
+    ]),
+    el('div', { class: 'sv-outcome-list' }, outcomes.map(o =>
+      el('div', { class: 'sv-outcome-item' }, [
+        el('div', { class: 'sv-outcome-left' }, [
+          el('span', { class: 'sv-outcome-dot ' + o.dot }),
+          el('div', {}, [
+            el('span', { class: 'sv-outcome-title' }, o.title),
+            el('span', { class: 'sv-outcome-sub' }, o.sub)
           ])
         ]),
-        el('div', { class: 'sv-channel-right' }, [
-          el('span', { class: 'sv-status-pill ' + ch.cls }, ch.status),
-          el('span', { class: 'sv-channel-due' }, ch.meta)
+        el('div', { class: 'sv-outcome-right' }, [
+          el('span', { class: 'sv-outcome-count' }, o.count)
         ])
       ])
     ))
   ]));
 
   // ══════════════════════════════════════════════════════════════════════════
-  // RIGHT COLUMN
+  // RIGHT COLUMN (Executive Fleet & CSAT Intelligence)
   // ══════════════════════════════════════════════════════════════════════════
   const colRight = el('div', { class: 'sv-col sv-col-right' });
   grid.appendChild(colRight);
 
-  // ── Quick Outbound Call Widget (Payno Send Money style) ────────────────
-  const contactAv = el('img', {
-    class: 'sv-contact-av',
-    src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
-    alt: 'Client'
-  });
-  contactAv.onerror = () => { contactAv.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><circle cx="18" cy="18" r="18" fill="%23DBEAFE"/><text x="18" y="23" font-family="sans-serif" font-size="12" font-weight="bold" fill="%230369A1" text-anchor="middle">SG</text></svg>'; };
-
-  const phoneInput = el('input', {
-    type: 'text',
-    class: 'sv-input-field',
-    value: '98765 43210',
-    placeholder: 'Phone number'
-  });
+  // ── Card 1: Active AI Voice Receptionists Fleet ────────────────────────
+  const fleet = [
+    {
+      name: 'Dr. Sarah (Clinic Receptionist)',
+      role: 'Healthcare & Patient Triage',
+      calls: '624 Calls',
+      csat: '98.4%',
+      av: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=80&q=80'
+    },
+    {
+      name: 'Aria (Real Estate Lead Qualifier)',
+      role: 'Property Visits & Buyer Budgets',
+      calls: '418 Calls',
+      csat: '95.1%',
+      av: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=80&q=80'
+    },
+    {
+      name: 'Marcus (24/7 HVAC Emergency)',
+      role: 'Emergency Dispatch & SLA Routing',
+      calls: '286 Calls',
+      csat: '97.0%',
+      av: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=80&q=80'
+    },
+    {
+      name: 'Maya (Customer Care & Billing)',
+      role: 'Order Inquiries & Tier-1 Support',
+      calls: '198 Calls',
+      csat: '93.8%',
+      av: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=80&q=80'
+    }
+  ];
 
   colRight.appendChild(el('div', { class: 'sv-card' }, [
     el('div', { class: 'sv-card-header' }, [
-      el('span', { class: 'sv-card-heading' }, 'Quick Outbound Call')
+      el('span', { class: 'sv-card-heading' }, 'Active AI Voice Receptionists'),
+      el('button', { class: 'sv-link-btn', onclick: () => goto('agents') }, 'Manage All')
     ]),
-    el('div', { class: 'sv-contact-pill' }, [
-      contactAv,
-      el('div', { class: 'sv-contact-info' }, [
-        el('span', { class: 'sv-contact-name' }, 'Sterling Group Holdings'),
-        el('span', { class: 'sv-contact-sub' }, 'Primary Client Workspace')
-      ]),
-      el('button', { class: 'sv-change-btn', onclick: () => openMakeCallModal() }, 'Change')
+    el('div', { class: 'sv-agent-list' }, fleet.map(a => {
+      const img = el('img', { class: 'sv-agent-av', src: a.av, alt: a.name });
+      img.onerror = () => {
+        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23DBEAFE"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%230369A1" text-anchor="middle">' + a.name[0] + '</text></svg>';
+      };
+      return el('div', { class: 'sv-agent-item' }, [
+        el('div', { class: 'sv-agent-left' }, [
+          el('div', { class: 'sv-agent-av-wrap' }, [
+            img,
+            el('span', { class: 'sv-agent-dot' })
+          ]),
+          el('div', { class: 'sv-agent-info' }, [
+            el('span', { class: 'sv-agent-name' }, a.name),
+            el('div', { class: 'sv-agent-meta' }, [
+              el('span', {}, a.role),
+              el('span', { style: 'opacity:0.5;' }, '•'),
+              el('span', { style: 'font-weight:600;color:#0284c7;' }, a.calls)
+            ])
+          ])
+        ]),
+        el('div', { class: 'sv-agent-right' }, [
+          el('button', { class: 'sv-agent-test-btn', onclick: () => goto('talk'), title: 'Test Voice Agent' }, [
+            uiIcon('mic', 12),
+            el('span', {}, 'Test')
+          ])
+        ])
+      ]);
+    })),
+    el('button', {
+      class: 'sv-submit-btn',
+      style: 'margin-top:14px;background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);box-shadow:0 8px 24px -4px rgba(2,132,199,0.35);',
+      onclick: () => goto('agents')
+    }, '+ Create New Voice Agent')
+  ]));
+
+  // ── Card 2: Voice AI Health & Satisfaction (CSAT) ─────────────────────
+  colRight.appendChild(el('div', { class: 'sv-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('span', { class: 'sv-card-heading' }, 'Voice AI Quality & CSAT'),
+      el('span', { class: 'sv-status-pill green' }, 'Live Monitor')
     ]),
-    el('div', { class: 'sv-input-box' }, [
-      el('div', { class: 'sv-input-top-row' }, [
-        el('span', { class: 'sv-input-label' }, 'Destination Phone Number'),
-        el('div', { class: 'sv-country-pill' }, '🇮🇳 +91 ▾')
-      ]),
-      el('div', { class: 'sv-input-row' }, [
-        el('span', { class: 'sv-input-prefix' }, '+91'),
-        phoneInput
-      ]),
-      el('div', { class: 'sv-delivery-row' }, [
-        el('span', {}, 'ⓘ Estimated Route'),
-        el('span', { class: 'sv-delivery-val' }, 'Direct Low-Latency SIP')
-      ])
+    el('div', { class: 'sv-csat-hero' }, [
+      el('span', { class: 'sv-csat-val' }, '4.9'),
+      el('span', { class: 'sv-csat-stars' }, '★★★★★')
     ]),
-    el('div', { class: 'sv-trunk-pill' }, [
-      el('div', { class: 'sv-trunk-icon' }, [ uiIcon('creditCard', 17) ]),
-      el('div', { class: 'sv-trunk-info' }, [
-        el('span', { class: 'sv-trunk-name' }, 'Mulberry Voice Trunk'),
-        el('span', { class: 'sv-trunk-num' }, '•••• 82519')
-      ]),
-      el('button', { class: 'sv-change-btn', onclick: () => goto('agents') }, 'Change')
+    el('div', { class: 'sv-csat-sub' }, '97.2% Positive Caller Sentiment across 1,428 calls'),
+    el('div', { class: 'sv-sentiment-bar' }, [
+      el('div', { class: 'sv-sentiment-seg pos', style: 'width:88%;' }),
+      el('div', { class: 'sv-sentiment-seg neu', style: 'width:9%;' }),
+      el('div', { class: 'sv-sentiment-seg neg', style: 'width:3%;' })
+    ]),
+    el('div', { class: 'sv-sentiment-labels' }, [
+      el('span', { style: 'color:#047857;font-weight:700;' }, '● 88% Positive'),
+      el('span', { style: 'color:#0284C7;font-weight:700;' }, '● 9% Neutral'),
+      el('span', { style: 'color:#B45309;font-weight:700;' }, '● 3% Escalated')
+    ]),
+    el('div', { class: 'sv-latency-pill' }, [
+      el('span', { style: 'font-weight:600;' }, '⚡ Voice Latency (Sub-second)'),
+      el('span', { style: 'font-weight:750;color:#047857;' }, '480ms Human-Parity')
     ]),
     el('button', {
       class: 'sv-submit-btn',
-      onclick: () => {
-        const num = phoneInput.value ? ('+91' + phoneInput.value.replace(/\D/g, '')) : '+919876543210';
-        openMakeCallModal(num);
-      }
+      onclick: () => openMakeCallModal()
     }, 'Make Outbound Call')
-  ]));
-
-  // ── Virtual SIP Trunk Card (Styled like credit card) ───────────────────
-  colRight.appendChild(el('div', { class: 'sv-card sv-sip-wrapper', style: 'padding:18px;' }, [
-    el('div', { class: 'sv-card-header', style: 'margin-bottom:14px;' }, [
-      el('span', { class: 'sv-card-heading' }, 'Virtual Telephony Trunk')
-    ]),
-    el('div', { class: 'sv-sip-card' }, [
-      el('div', { class: 'sv-sip-top' }, [
-        el('span', { class: 'sv-sip-brand' }, 'seevora'),
-        el('div', { class: 'sv-sip-chip' })
-      ]),
-      el('div', { class: 'sv-sip-num' }, 'DID: +91 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 82519'),
-      el('div', { class: 'sv-sip-bottom' }, [
-        el('div', { class: 'sv-sip-waves' }, [
-          el('svg', { width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            el('path', { d: 'M8.5 16.5a5 5 0 0 1 0-7' }),
-            el('path', { d: 'M12 19a8.5 8.5 0 0 0 0-14' }),
-            el('path', { d: 'M5 14a2 2 0 0 1 0-3' })
-          ])
-        ]),
-        el('span', { class: 'sv-sip-badge' }, 'VOICE SIP')
-      ])
-    ])
   ]));
 }
 
