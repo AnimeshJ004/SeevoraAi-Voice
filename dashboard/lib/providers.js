@@ -232,7 +232,7 @@ const sttDeepgram = {
       'Content-Type': 'application/json',
       'Content-Length': body.length,
     }, body);
-    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch {}
+    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch { }
     if (up.status !== 200 || !data.access_token) {
       throw new ProviderError('deepgram token grant failed', up.status, 'upstream',
         (data.err_msg || data.error || up.buffer.toString('utf8')).slice(0, 300));
@@ -254,7 +254,7 @@ const sttDeepgram = {
       'Content-Type': mime,
       'Content-Length': audio.length,
     }, audio);
-    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch {}
+    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch { }
     if (up.status !== 200) {
       throw new ProviderError('deepgram transcription failed', up.status, 'upstream',
         (data.err_msg || data.error || up.buffer.toString('utf8')).slice(0, 300));
@@ -305,7 +305,7 @@ const llmGroq = {
       'Content-Type': 'application/json',
       'Content-Length': payload.length,
     }, payload);
-    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch {}
+    let data = {}; try { data = JSON.parse(up.buffer.toString('utf8')); } catch { }
     if (up.status !== 200) {
       throw new ProviderError('groq response failed', up.status, 'upstream',
         (((data.error || {}).message) || up.buffer.toString('utf8')).slice(0, 300));
@@ -565,8 +565,8 @@ const telVobiz = {
     }
     const runs = (result.data && Array.isArray(result.data.runs)) ? result.data.runs
       : Array.isArray(result.data) ? result.data
-      : (result.data && Array.isArray(result.data.results)) ? result.data.results
-      : [];
+        : (result.data && Array.isArray(result.data.results)) ? result.data.results
+          : [];
     const total = (result.data && (result.data.total_count || result.data.total)) || runs.length;
     return { runs, total };
   },

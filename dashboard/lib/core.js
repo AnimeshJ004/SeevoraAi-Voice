@@ -187,6 +187,9 @@ function defaultDb() {
     clientActivities: [], tenantStatusEvents: [], callRecordings: [],
     crmContacts: [], crmPipelines: [], waConversations: [], waMessages: [],
     waTemplates: [], waBroadcasts: [], wacrmConfig: [],
+    // AI assistant collections (added for assistant chatbot feature)
+    assistantThreads: [], assistantActions: [], pendingConfirmations: [],
+    assistantSessions: [], assistantIntegrations: [],
   };
 }
 
@@ -198,6 +201,8 @@ const COLLECTIONS = [
   'clientActivities', 'tenantStatusEvents', 'callRecordings',
   'crmContacts', 'crmPipelines', 'waConversations', 'waMessages',
   'waTemplates', 'waBroadcasts', 'wacrmConfig',
+  'assistantThreads', 'assistantActions', 'pendingConfirmations',
+  'assistantSessions', 'assistantIntegrations',
 ];
 
 function migrateDb(parsed) {
@@ -242,10 +247,16 @@ function loadDb() {
 function flushSync() {
   ensureDataDir();
   const json = JSON.stringify(_db, null, 2);
-  fs.writeFileSync(DB_TMP, json, { mode: 0o600 });
-  fs.chmodSync(DB_TMP, 0o600);
-  fs.renameSync(DB_TMP, DB_FILE);
-  fs.chmodSync(DB_FILE, 0o600);
+  try {
+    fs.writeFileSync(DB_TMP, json, { mode: 0o600 });
+    try { fs.chmodSync(DB_TMP, 0o600); } catch (_) {}
+    fs.renameSync(DB_TMP, DB_FILE);
+    try { fs.chmodSync(DB_FILE, 0o600); } catch (_) {}
+  } catch (_) {
+    try {
+      fs.writeFileSync(DB_FILE, json, { mode: 0o600 });
+    } catch (_) {}
+  }
 }
 
 let _lastSupabaseSync = 0;

@@ -30,6 +30,7 @@ const wacrm = require('./lib/wacrm');
 const plans = require('./lib/plans');
 const demoSeeder = require('./lib/demo-seeder');
 const logger = require('./lib/logger');
+const assistant = require('./lib/assistant');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -1326,6 +1327,587 @@ function extractContactFromMessages(messages) {
     return { name, phone, requirement };
   }
   return null;
+}
+
+/* ==========================================================================
+   AI Assistant APIs (Module 9 + Module 11 of the Seevora spec)
+   POST /api/assistant/chat      -- main intent-routing chat endpoint
+   POST /api/assistant/confirm   -- execute a pending confirmation token
+   GET  /api/assistant/thread    -- load the user's thread history
+   DELETE /api/assistant/thread  -- clear the user's thread
+   GET  /api/assistant/history   -- action log (AS-11)
+   ========================================================================== */
+
+// Helper: robust JSON extractor from LLM output
+function safeExtractJson(raw) {
+  if (!raw) return null;
+  const stripped = String(raw)
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/```[a-z]*\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  const start = stripped.indexOf('{');
+  const end = stripped.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  const candidate = stripped.slice(start, end + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch (_) {
+    try {
+      const fixed = candidate.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(fixed);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+// Helper: run a quick LLM call and return only the text reply.
+async function llmQuick(systemPrompt, userText, maxTokens) {
+  const selected = providers.resolveSelection('llm', {});
+  const out = await selected.adapter.chat({
+    system: systemPrompt,
+    messages: [{ role: 'user', text: userText }],
+    skipVoiceRule: true,
+    maxTokens: maxTokens || 800,
+    temperature: 0.5,
+    model: selected.model,
+  });
+  return String((out && out.text) || '').trim();
+}
+
+// ---- handle: build_agent ---------------------------------------------------
+async function handleBuildAgent(text, ctx) {
+  const systemPrompt = `You are an elite AI Voice Agent Architect for Seevora.\nGiven the user's one-sentence business description, extract:\n- businessName\n- industry\n- objective\n- needs (key tasks the agent should perform)\nReturn ONLY a JSON object with those four string fields.`;
+  let parsed = {};
+  try {
+    const raw = await llmQuick(systemPrompt, text, 300);
+    parsed = safeExtractJson(raw) || {};
+  } catch (_) {
+    parsed = {};
+  }
+
+  const businessName = parsed.businessName || '';
+  const industry = parsed.industry || 'General Business';
+  const objective = parsed.objective || 'Customer inquiry handling and appointment booking';
+  const needs = parsed.needs || text;
+
+  const agentSystem = `You are an elite Voice AI Systems Architect.\nYou MUST reply with ONLY a single raw JSON object (no markdown, no backticks).\nSchema: { "agent": { "name": string, "greeting": string, "persona": string, "tts": { "model": "muga"|"mulberry", "speaker": "speaker_1"|"speaker_2"|"speaker_3"|"speaker_4", "f0_up_key": 0, "description": string }, "fields": string[], "guardrails": string[] } }`;
+  const agentPrompt = `Business: ${businessName || 'Client Business'}\nIndustry: ${industry}\nObjective: ${objective}\nNeeds: ${needs}\nGenerate the agent JSON now.`;
+
+  let agentData = null;
+  try {
+    const raw2 = await llmQuick(agentSystem, agentPrompt, 1800);
+    agentData = safeExtractJson(raw2);
+  } catch (_) {}
+
+  let ag = agentData ? (agentData.agent || agentData) : null;
+  if (!ag || !ag.name) {
+    const bp = buildFallbackAgentBlueprint({
+      businessName,
+      industry,
+      objective,
+      tone: 'Warm, professional, and clear',
+      language: 'English (Indian accent)',
+      needs,
+    });
+    ag = bp.agent;
+  }
+
+  const nowIso = new Date().toISOString();
+  const newAgent = {
+    id: core.genId('ag_'),
+    tenantId: ctx.tenant.id,
+    name: String(ag.name || `${businessName || industry} Receptionist`).slice(0, 80),
+    persona: String(ag.persona || `You are an AI receptionist for ${businessName || 'the business'}. Assist callers warmly and concisely.`).slice(0, 8000),
+    tts: {
+      provider: 'rumik',
+      model: ag.tts && ag.tts.model === 'muga' ? 'muga' : 'mulberry',
+      speaker: ag.tts && ag.tts.speaker || 'speaker_2',
+      f0_up_key: 0,
+      description: ag.tts && ag.tts.description || 'warm professional voice',
+    },
+    greeting: String(ag.greeting || `Hello, thank you for calling. How can I help you today?`).slice(0, 300),
+    telephony: { did: '' },
+    fields: Array.isArray(ag.fields) ? ag.fields.slice(0, 20) : ['caller_name', 'phone_number', 'inquiry'],
+    guardrails: Array.isArray(ag.guardrails) ? ag.guardrails.slice(0, 10) : ['Always be polite', 'Confirm details before ending call'],
+    createdAt: nowIso,
+  };
+
+  await core.mutate((d) => { d.agents.push(newAgent); });
+
+  return {
+    reply: `Done! I've created **${newAgent.name}** for you.\n\nGreeting: "${newAgent.greeting}"\n\nYou can find it in the Agents section. Want me to adjust the persona, voice, or anything else?`,
+    action: { type: 'agent_created', agentId: newAgent.id, agentName: newAgent.name },
+  };
+}
+
+// ---- handle: edit_agent ---------------------------------------------------
+async function handleEditAgent(text, agentId, ctx, db) {
+  const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  let target = agentId ? agents.find((a) => a.id === agentId) : agents[0];
+  if (!target) {
+    return { reply: 'I could not find an agent to edit. Please open an agent in the Agents section and try again.', action: null, needsConfirm: false };
+  }
+
+  const editSystem = `You are an AI agent editor.\nGiven the user's edit request and the current agent config, determine which field to change and what the new value should be.\nReturn ONLY JSON: { "field": "name"|"greeting"|"persona"|"knowledge", "before": string, "after": string, "summary": string }`;
+  const editPrompt = `Agent name: ${target.name}\nCurrent greeting: ${target.greeting}\nCurrent persona (first 400 chars): ${String(target.persona || '').slice(0, 400)}\n\nUser request: "${text}"\n\nWhat should change?`;
+
+  let editPlan = null;
+  try {
+    const raw = await llmQuick(editSystem, editPrompt, 600);
+    editPlan = safeExtractJson(raw);
+  } catch (_) {}
+
+  if (!editPlan || !editPlan.field || !editPlan.after) {
+    const t = text.trim();
+    if (/\bgreeting\b/i.test(t)) {
+      const match = t.match(/["']([^"']+)["']/) || t.match(/(?:to|saying|as)\s+(.+)$/i);
+      if (match) {
+        editPlan = { field: 'greeting', before: target.greeting, after: match[1].trim() };
+      }
+    }
+  }
+
+  if (!editPlan || !editPlan.field || !editPlan.after) {
+    return { reply: `I am not sure exactly what to change on "${target.name}". Could you be more specific? For example: "Change the greeting to say Hello, I am Maya" or "Update the persona to be more formal."`, action: null, needsConfirm: false };
+  }
+
+  const previewText = `Change **${editPlan.field}** on agent "${target.name}":\n\nBefore: "${String(editPlan.before || '').slice(0, 200)}"\nAfter: "${String(editPlan.after || '').slice(0, 200)}"\n\nReply **yes** to apply, or tell me what to adjust.`;
+  const confirmToken = assistant.createConfirmToken(db, ctx.tenant.id, ctx.user.id, assistant.INTENTS.EDIT_AGENT, { agentId: target.id, field: editPlan.field, newValue: editPlan.after }, previewText);
+
+  return {
+    reply: previewText,
+    action: null,
+    needsConfirm: true,
+    confirmToken,
+    preview: previewText,
+  };
+}
+
+// ---- handle: add_knowledge ------------------------------------------------
+async function handleAddKnowledge(text, agentId, ctx, db) {
+  const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  let target = agentId ? agents.find((a) => a.id === agentId) : agents[0];
+  if (!target) {
+    return { reply: 'I could not find an agent to add knowledge to. Please create an agent first.', action: null };
+  }
+
+  // Extract the knowledge content from the message (remove meta-instruction noise)
+  const extractSystem = `Extract only the factual knowledge or FAQ content from the user message that should be stored for an AI agent. Remove phrases like "add this", "teach the agent", "the agent should know". Return ONLY the clean knowledge text.`;
+  let knowledgeText = text;
+  try {
+    knowledgeText = await llmQuick(extractSystem, text, 600);
+  } catch (_) {}
+
+  const existing = String(target.knowledge || target.businessKnowledge || '').trim();
+  const newKnowledge = existing ? `${existing}\n\n${knowledgeText}` : knowledgeText;
+  await core.mutate((d) => {
+    const a = d.agents.find((x) => x.id === target.id);
+    if (a) a.knowledge = newKnowledge.slice(0, 10000);
+  });
+
+  return {
+    reply: `Added to **${target.name}**'s knowledge base. The agent will now use this information when answering calls and chats.\n\nKnowledge added:\n"${knowledgeText.slice(0, 300)}${knowledgeText.length > 300 ? '...' : ''}"`,
+    action: { type: 'knowledge_added', agentId: target.id, agentName: target.name },
+  };
+}
+
+// ---- handle: ask_report ---------------------------------------------------
+async function handleAskReport(text, ctx, db) {
+  const reportCtx = assistant.buildReportContext(db, ctx.tenant.id);
+  const reportSystem = `You are a business analytics assistant. You have the following metrics for the tenant. Answer the user's question naturally in 2-4 sentences. Use plain text, no markdown tables, no bullet points.\n\nMetrics:\n- Today's calls: ${reportCtx.today.calls}\n- Last 7 days calls: ${reportCtx.last7Days.calls}\n- Last 30 days calls: ${reportCtx.last30Days.calls}\n- Wallet balance: Rs ${reportCtx.walletBalanceInr}\n- Active agents: ${reportCtx.agentCount}\n- CRM contacts: ${reportCtx.contactCount}\n- Total recordings: ${reportCtx.recordingCount}\n- Recordings this week: ${reportCtx.recentRecordingCount}`;
+
+  let answer = '';
+  try {
+    answer = await llmQuick(reportSystem, text, 400);
+  } catch (_) {
+    answer = `Here is a quick summary: ${reportCtx.last7Days.calls} calls in the last 7 days, ${reportCtx.last30Days.calls} in the last 30 days. Wallet balance: Rs ${reportCtx.walletBalanceInr}. You have ${reportCtx.agentCount} agent(s) and ${reportCtx.contactCount} CRM contact(s).`;
+  }
+
+  return { reply: answer, action: null };
+}
+
+// ---- handle: test_chat (CH-01 / CH-02) ------------------------------------
+async function handleTestChat(text, agentId, ctx, db) {
+  const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  const target = agentId ? agents.find((a) => a.id === agentId) : agents[0];
+  if (!target) {
+    return { reply: 'No agent found to test. Create an agent first, then ask me to chat with it.', action: null };
+  }
+
+  const persona = String(target.persona || 'You are a helpful AI receptionist.').slice(0, 6000);
+  const knowledge = String(target.knowledge || target.businessKnowledge || '').slice(0, 2000);
+  const systemPrompt = `${persona}${knowledge ? `\n\nKNOWLEDGE BASE:\n${knowledge}` : ''}\n\n[This is a text-based test chat. Reply naturally in 1-2 sentences as the voice agent would.]`;
+
+  let agentReply = '';
+  try {
+    const selected = providers.resolveSelection('llm', {});
+    const out = await selected.adapter.chat({
+      system: systemPrompt,
+      messages: [{ role: 'user', text }],
+      maxTokens: 300,
+      temperature: 0.7,
+      model: selected.model,
+    });
+    agentReply = String((out && out.text) || '').trim();
+  } catch (_) {
+    agentReply = target.greeting || 'Hello, how can I help you today?';
+  }
+
+  return {
+    reply: `[**${target.name}** says]\n${agentReply}`,
+    action: { type: 'test_chat', agentId: target.id, agentName: target.name },
+    isMeta: false,
+  };
+}
+
+// ---- handle: general_chat -------------------------------------------------
+async function handleGeneralChat(text, ctx, thread) {
+  const systemPrompt = `You are Seevora AI Assistant, a smart, friendly product assistant built into the Seevora AI Voice Receptionist platform. You help users manage their AI voice agents, review call analytics, and navigate the platform. Keep responses concise (2-4 sentences). You can speak English and Hinglish naturally.`;
+
+  const historyMessages = thread ? thread.messages.slice(-10).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', text: m.text })) : [];
+  historyMessages.push({ role: 'user', text });
+
+  let reply = '';
+  try {
+    const selected = providers.resolveSelection('llm', {});
+    const out = await selected.adapter.chat({
+      system: systemPrompt,
+      messages: historyMessages,
+      maxTokens: 400,
+      temperature: 0.7,
+      model: selected.model,
+    });
+    reply = String((out && out.text) || '').trim();
+  } catch (_) {
+    reply = 'I am here to help! You can ask me to create or edit an agent, check your call analytics, or add knowledge to an agent.';
+  }
+
+  return { reply, action: null };
+}
+
+// ---- POST /api/assistant/chat (AS-01 to AS-10, CH-01 to CH-06) -----------
+async function apiAssistantChat(req, res, ctx) {
+  const b = ctx.body || {};
+  const text = String(b.text || '').trim().slice(0, 4000);
+  const agentId = String(b.agentId || '').trim() || null;
+  const confirmToken = String(b.confirmToken || '').trim() || null;
+  let currentSessionId = String(b.sessionId || '').trim() || null;
+
+  if (!text && !confirmToken) {
+    return core.sendJson(res, 422, { error: 'text is required', code: 'missing_text' });
+  }
+
+  try {
+    const db = core.db();
+
+    // Housekeep stale confirmation tokens
+    assistant.pruneConfirmations(db);
+
+    // Check for a pending confirmation token for this user
+    const hasPendingToken = confirmToken || db.pendingConfirmations.some(
+      (c) => c.tenantId === ctx.tenant.id && c.userId === ctx.user.id
+    );
+
+    // Classify intent
+    const intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
+
+    // CH-06: daily chat limit for free intents (general + test_chat)
+    const freeIntents = new Set([assistant.INTENTS.GENERAL, assistant.INTENTS.TEST_CHAT, assistant.INTENTS.ASK_REPORT, assistant.INTENTS.CONFIRM]);
+    if (freeIntents.has(intent)) {
+      const todayCount = assistant.countTodayMessages(db, ctx.user.id);
+      if (todayCount >= assistant.CHAT_DAILY_LIMIT) {
+        return core.sendJson(res, 429, { error: `Daily chat limit of ${assistant.CHAT_DAILY_LIMIT} messages reached. Resets at midnight UTC.`, code: 'chat_limit_reached' });
+      }
+    }
+
+    // AS-10: credit check for write-action intents
+    const creditIntents = new Set([assistant.INTENTS.BUILD_AGENT, assistant.INTENTS.EDIT_AGENT, assistant.INTENTS.ADD_KNOWLEDGE]);
+    if (creditIntents.has(intent) && !assistant.walletHasCredit(db, ctx.tenant.id)) {
+      return core.sendJson(res, 402, { error: 'No assistant credits remaining. Top up your wallet to continue.', code: 'insufficient_credits' });
+    }
+
+    // Persist user message to session and thread
+    if (text) {
+      await core.mutate((d) => {
+        const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
+        currentSessionId = appended.session.id;
+      });
+    }
+
+    // Load current thread for context (after adding user msg)
+    const thread = assistant.getThread(core.db(), ctx.tenant.id, ctx.user.id);
+
+    let result = { reply: '', action: null, needsConfirm: false, confirmToken: null, preview: null };
+
+    // Route to the right handler
+    if (intent === assistant.INTENTS.CONFIRM) {
+      // Execute the pending confirmation
+      let conf = null;
+      await core.mutate((d) => { conf = assistant.consumeConfirmToken(d, confirmToken || (d.pendingConfirmations.find((c) => c.tenantId === ctx.tenant.id && c.userId === ctx.user.id) || {}).token, ctx.tenant.id, ctx.user.id); });
+      if (!conf) {
+        result.reply = 'The confirmation has expired or was not found. Please try the action again.';
+      } else if (conf.intent === assistant.INTENTS.EDIT_AGENT) {
+        const { agentId: editId, field, newValue } = conf.payload;
+        await core.mutate((d) => {
+          const a = d.agents.find((x) => x.id === editId && x.tenantId === ctx.tenant.id);
+          if (a) a[field] = String(newValue).slice(0, field === 'persona' ? 8000 : 300);
+        });
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, conf.intent, `Updated ${field} on agent`, true, { agentId: editId, field }); });
+        await deductAssistantCredit(ctx.tenant.id, ctx.user.id);
+        result.reply = `Done! The **${field}** has been updated. Check the Agents section to see the change.`;
+        result.action = { type: 'agent_updated', agentId: editId, field };
+      } else {
+        result.reply = 'Action completed.';
+      }
+    } else if (intent === assistant.INTENTS.BUILD_AGENT) {
+      result = await handleBuildAgent(text, ctx);
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, result.action.agentName ? `Built agent: ${result.action.agentName}` : 'Built agent', true, result.action); });
+        await deductAssistantCredit(ctx.tenant.id, ctx.user.id);
+      }
+    } else if (intent === assistant.INTENTS.EDIT_AGENT) {
+      const freshDb = core.db();
+      let editResult = null;
+      await core.mutate((d) => {
+        editResult = null; // we need sync result
+      });
+      // handleEditAgent only creates a confirm token (does not mutate agents yet)
+      const freshD = core.db();
+      result = await handleEditAgent(text, agentId, ctx, freshD);
+      if (result.needsConfirm && result.confirmToken) {
+        await core.mutate((d) => {
+          // persist the confirmation token that handleEditAgent already placed in freshD
+          const existing = d.pendingConfirmations.find((c) => c.token === result.confirmToken);
+          if (!existing) {
+            // re-create it under the write lock so it lands in the persisted db
+            const conf = freshD.pendingConfirmations.find((c) => c.token === result.confirmToken);
+            if (conf) d.pendingConfirmations.push({ ...conf });
+          }
+          assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, 'Requested agent edit (pending confirm)', false, null);
+        });
+      }
+    } else if (intent === assistant.INTENTS.ADD_KNOWLEDGE) {
+      const freshD2 = core.db();
+      result = await handleAddKnowledge(text, agentId, ctx, freshD2);
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Added knowledge to ${result.action.agentName}`, true, result.action); });
+        await deductAssistantCredit(ctx.tenant.id, ctx.user.id);
+      }
+    } else if (intent === assistant.INTENTS.ASK_REPORT) {
+      const freshD3 = core.db();
+      result = await handleAskReport(text, ctx, freshD3);
+      await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, 'Report query', false, null); });
+    } else if (intent === assistant.INTENTS.TEST_CHAT) {
+      const freshD4 = core.db();
+      result = await handleTestChat(text, agentId, ctx, freshD4);
+      await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, 'Test chat', false, result.action); });
+    } else {
+      // general_chat
+      result = await handleGeneralChat(text, ctx, thread);
+    }
+
+    // Persist assistant reply to session and thread
+    await core.mutate((d) => {
+      assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'assistant', result.reply, { intent, action: result.action || undefined });
+    });
+
+    // Return messages for the client to render
+    const sessionObj = assistant.getSession(core.db(), ctx.tenant.id, ctx.user.id, currentSessionId);
+    const finalThread = assistant.getThread(core.db(), ctx.tenant.id, ctx.user.id);
+    const threadSlice = sessionObj ? sessionObj.messages : (finalThread ? finalThread.messages.slice(-20) : []);
+
+    core.sendJson(res, 200, {
+      reply: result.reply,
+      intent,
+      action: result.action || null,
+      needsConfirm: result.needsConfirm || false,
+      confirmToken: result.confirmToken || null,
+      preview: result.preview || null,
+      creditUsed: creditIntents.has(intent) && result.action ? 1 : 0,
+      sessionId: currentSessionId,
+      thread: threadSlice,
+    });
+  } catch (e) {
+    logger.error('assistant chat error', { error: e.message });
+    core.sendJson(res, 500, { error: 'Assistant error: ' + String(e.message), code: 'assistant_error' });
+  }
+}
+
+// ---- POST /api/assistant/confirm (AS-09) ----------------------------------
+async function apiAssistantConfirm(req, res, ctx) {
+  const b = ctx.body || {};
+  const token = String(b.confirmToken || '').trim();
+  const confirmSessionId = String(b.sessionId || '').trim() || null;
+  if (!token) return core.sendJson(res, 422, { error: 'confirmToken is required', code: 'missing_token' });
+
+  try {
+    let conf = null;
+    await core.mutate((d) => { conf = assistant.consumeConfirmToken(d, token, ctx.tenant.id, ctx.user.id); });
+    if (!conf) return core.sendJson(res, 410, { error: 'Confirmation expired or not found. Please try the action again.', code: 'token_expired' });
+
+    let result = { reply: 'Action completed.', action: null };
+
+    if (conf.intent === assistant.INTENTS.EDIT_AGENT) {
+      const { agentId: editId, field, newValue } = conf.payload;
+      await core.mutate((d) => {
+        const a = d.agents.find((x) => x.id === editId && x.tenantId === ctx.tenant.id);
+        if (a) a[field] = String(newValue).slice(0, field === 'persona' ? 8000 : 300);
+        assistant.logAction(d, ctx.tenant.id, ctx.user.id, conf.intent, `Updated ${field}`, true, { agentId: editId, field });
+      });
+      await deductAssistantCredit(ctx.tenant.id, ctx.user.id);
+      result.reply = `Done! The **${field}** has been updated on the agent.`;
+      result.action = { type: 'agent_updated', agentId: editId, field };
+    }
+
+    // Append to thread and session
+    await core.mutate((d) => {
+      assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, confirmSessionId, 'assistant', result.reply, { intent: conf.intent, action: result.action || undefined });
+    });
+
+    core.sendJson(res, 200, { reply: result.reply, action: result.action, confirmed: true, sessionId: confirmSessionId });
+  } catch (e) {
+    core.sendJson(res, 500, { error: String(e.message), code: 'confirm_error' });
+  }
+}
+
+// ---- GET /api/assistant/thread (load thread for page render) --------------
+async function apiAssistantThreadGet(req, res, ctx) {
+  const q = new URL(req.url, 'http://local').searchParams;
+  const sessionId = q.get('sessionId');
+  if (sessionId) {
+    const session = assistant.getSession(core.db(), ctx.tenant.id, ctx.user.id, sessionId);
+    if (session) {
+      return core.sendJson(res, 200, {
+        sessionId: session.id,
+        title: session.title,
+        messages: session.messages,
+        updatedAt: session.updatedAt,
+      });
+    }
+  }
+  const sessions = assistant.listSessions(core.db(), ctx.tenant.id, ctx.user.id);
+  if (sessions && sessions.length) {
+    const latest = assistant.getSession(core.db(), ctx.tenant.id, ctx.user.id, sessions[0].id);
+    if (latest) {
+      return core.sendJson(res, 200, {
+        sessionId: latest.id,
+        title: latest.title,
+        messages: latest.messages,
+        updatedAt: latest.updatedAt,
+      });
+    }
+  }
+  const thread = assistant.getThread(core.db(), ctx.tenant.id, ctx.user.id);
+  core.sendJson(res, 200, { messages: thread ? thread.messages.slice(-50) : [], updatedAt: thread ? thread.updatedAt : null });
+}
+
+// ---- DELETE /api/assistant/thread (clear thread / delete session) -----------
+async function apiAssistantThreadDelete(req, res, ctx) {
+  const q = new URL(req.url, 'http://local').searchParams;
+  const sessionId = q.get('sessionId');
+  await core.mutate((d) => {
+    if (sessionId) {
+      assistant.deleteSession(d, ctx.tenant.id, ctx.user.id, sessionId);
+    }
+    const idx = d.assistantThreads.findIndex((t) => t.tenantId === ctx.tenant.id && t.userId === ctx.user.id);
+    if (idx !== -1) d.assistantThreads.splice(idx, 1);
+  });
+  core.sendJson(res, 200, { ok: true, deletedSessionId: sessionId || null });
+}
+
+// ---- GET /api/assistant/sessions (list all user sessions) -------------------
+async function apiAssistantSessionsList(req, res, ctx) {
+  let sessions = [];
+  await core.mutate((d) => {
+    sessions = assistant.listSessions(d, ctx.tenant.id, ctx.user.id);
+  });
+  core.sendJson(res, 200, { sessions });
+}
+
+// ---- POST /api/assistant/sessions (create a new session) --------------------
+async function apiAssistantSessionCreate(req, res, ctx) {
+  const b = ctx.body || {};
+  const title = String(b.title || 'New Conversation').trim();
+  let session = null;
+  await core.mutate((d) => {
+    session = assistant.createSession(d, ctx.tenant.id, ctx.user.id, title);
+  });
+  core.sendJson(res, 201, { session });
+}
+
+// ---- GET /api/assistant/sessions/:id (load specific session conversation) ---
+async function apiAssistantSessionGet(req, res, ctx) {
+  const sessionId = req.url.split('?')[0].split('/').pop();
+  const session = assistant.getSession(core.db(), ctx.tenant.id, ctx.user.id, sessionId);
+  if (!session) {
+    return core.sendJson(res, 404, { error: 'Session not found', code: 'not_found' });
+  }
+  core.sendJson(res, 200, { session });
+}
+
+// ---- DELETE /api/assistant/sessions/:id (delete a specific session) ---------
+async function apiAssistantSessionDelete(req, res, ctx) {
+  const sessionId = req.url.split('?')[0].split('/').pop();
+  let deleted = false;
+  await core.mutate((d) => {
+    deleted = assistant.deleteSession(d, ctx.tenant.id, ctx.user.id, sessionId);
+  });
+  core.sendJson(res, 200, { ok: deleted, deletedSessionId: sessionId });
+}
+
+// ---- GET /api/assistant/integrations ---------------------------------------
+async function apiAssistantIntegrationsGet(req, res, ctx) {
+  let integrations = null;
+  await core.mutate((d) => {
+    integrations = assistant.getTenantIntegrations(d, ctx.tenant.id);
+  });
+  core.sendJson(res, 200, { integrations });
+}
+
+// ---- POST /api/assistant/integrations --------------------------------------
+async function apiAssistantIntegrationSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required', code: 'missing_channel' });
+  let integrations = null;
+  await core.mutate((d) => {
+    integrations = assistant.updateTenantIntegration(d, ctx.tenant.id, channel, b.data || {});
+  });
+  core.sendJson(res, 200, { ok: true, channel, integrations });
+}
+
+// ---- GET /api/assistant/history (AS-11 action log) -----------------------
+async function apiAssistantHistory(req, res, ctx) {
+  const db = core.db();
+  const actions = (db.assistantActions || [])
+    .filter((a) => a.tenantId === ctx.tenant.id)
+    .sort((a, b) => (b.ts > a.ts ? 1 : -1))
+    .slice(0, 100)
+    .map((a) => ({ id: a.id, intent: a.intent, summary: a.summary, creditUsed: a.creditUsed, ts: a.ts }));
+  core.sendJson(res, 200, { actions });
+}
+
+// ---- Credit deduction helper (AS-10) ------------------------------------
+async function deductAssistantCredit(tenantId, userId) {
+  await core.mutate((d) => {
+    const wallet = d.wallets.find((w) => w.tenantId === tenantId);
+    if (!wallet || wallet.balancePaise < assistant.CREDIT_COST_PAISE) return;
+    wallet.balancePaise -= assistant.CREDIT_COST_PAISE;
+    wallet.updatedAt = new Date().toISOString();
+    d.ledger.push({
+      id: core.genId('led_'),
+      tenantId,
+      type: 'assistant_credit_debit',
+      amountPaise: -assistant.CREDIT_COST_PAISE,
+      balanceAfterPaise: wallet.balancePaise,
+      idempotencyKey: core.genId('acd_'),
+      actorUserId: userId || null,
+      metadata: { source: 'assistant' },
+      createdAt: new Date().toISOString(),
+    });
+  });
 }
 
 // POST /api/chat -> { text, finish, provider, model, latency_ms } (Groq brain with Gemini & intelligent conversational fallback).
@@ -3583,6 +4165,10 @@ const server = http.createServer(async (req, res) => {
         return apiPublicDemoMeta(req, res, token);
       }
 
+      // ---- DELETE routes ----
+      if (req.method === 'DELETE' && route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionDelete);
+      if (req.method === 'DELETE' && route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadDelete);
+
       // ---- Authed GET routes ----
       if (req.method === 'GET') {
         if (route === '/api/me') return core.requireAuth(req, res, apiMe);
@@ -3617,6 +4203,12 @@ const server = http.createServer(async (req, res) => {
         if (route.startsWith('/api/recordings/') && !route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingDetail);
         if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactsList);
         if (route === '/api/crm/pipeline') return core.requireAuth(req, res, apiCrmPipelineGet);
+        // AI assistant GET routes
+        if (route === '/api/assistant/sessions') return core.requireAuth(req, res, apiAssistantSessionsList);
+        if (route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionGet);
+        if (route === '/api/assistant/integrations') return core.requireAuth(req, res, apiAssistantIntegrationsGet);
+        if (route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadGet);
+        if (route === '/api/assistant/history') return core.requireAuth(req, res, apiAssistantHistory);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -3693,6 +4285,11 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/hvac/jobs') return core.requireAuth(req, res, apiHvacJobSave, body);
       if (route === '/api/hvac/book') return core.requireAuth(req, res, apiHvacBook, body);
       if (route.startsWith('/api/recordings/') && route.endsWith('/transcribe')) return core.requireAuth(req, res, apiRecordingTranscribe, body);
+      // AI assistant POST routes
+      if (route === '/api/assistant/sessions') return core.requireAuth(req, res, apiAssistantSessionCreate, body);
+      if (route === '/api/assistant/integrations') return core.requireAuth(req, res, apiAssistantIntegrationSave, body);
+      if (route === '/api/assistant/chat') return core.requireAuth(req, res, apiAssistantChat, body);
+      if (route === '/api/assistant/confirm') return core.requireAuth(req, res, apiAssistantConfirm, body);
 
       return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
     }
