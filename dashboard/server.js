@@ -202,6 +202,9 @@ function migrateLegacyAgent(legacy, tenantId) {
 }
 
 async function boot() {
+  // Pre-fetch Clerk JWKS in the background so OAuth tokens verify with 0ms cold-start latency
+  clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => {});
+
   // Force a load so a missing/corrupt db.json resolves to a clean default.
   const existing = core.db();
   await core.mutate((d) => {

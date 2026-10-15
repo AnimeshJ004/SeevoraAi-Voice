@@ -436,10 +436,10 @@ async function boot() {
 
     // Retry loop for /api/me: gives cross-origin / cloud deployments ample time to retrieve token
     // On localhost it succeeds on attempt 0 (0ms). On cloud deployments, cross-origin handshake
-    // takes 400ms - 1500ms, so we retry gracefully every 200ms up to 15 times (~3 seconds).
-    for (let attempt = 0; attempt < 15; attempt++) {
+    // takes 400ms - 1500ms, so we retry gracefully every 200ms up to 20 times (~4 seconds).
+    for (let attempt = 0; attempt < 20; attempt++) {
       if (window.Clerk && window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
-        try { await window.Clerk.session.getToken(); } catch (_) {}
+        try { await window.Clerk.session.getToken({ skipCache: attempt > 2 }); } catch (_) {}
       }
 
       try {
@@ -453,7 +453,7 @@ async function boot() {
       }
 
       // If we got 401 or token was not ready, wait and let Clerk session hydrate
-      if (attempt < 14) {
+      if (attempt < 19) {
         await new Promise((r) => setTimeout(r, 200));
       }
     }
@@ -490,6 +490,13 @@ async function boot() {
     prewarmAppData();
   } catch (e) {
     console.warn('Authentication check failed:', e);
+    // Anti-loop protection: If Clerk session failed server authentication,
+    // clear the Clerk session before redirecting so index.html does not loop back!
+    if (window.Clerk && window.Clerk.user && typeof window.Clerk.signOut === 'function') {
+      try {
+        await window.Clerk.signOut();
+      } catch (_) {}
+    }
     renderAuth();
   }
 }

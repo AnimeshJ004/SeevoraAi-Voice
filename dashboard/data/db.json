@@ -359,6 +359,42 @@
       "plan": "studio",
       "status": "active",
       "privacyMode": "standard"
+    },
+    {
+      "id": "t_76ad4c4a4b6b61f4",
+      "name": "Deployment Voice Corp",
+      "slug": "deployment-voice-corp-2",
+      "createdAt": "2026-10-15T14:51:30.302Z",
+      "branding": {
+        "color": "#6E7BFF"
+      },
+      "providers": {
+        "stt": "deepgram",
+        "tts": "rumik",
+        "llm": "groq",
+        "telephony": "vobiz"
+      },
+      "plan": "studio",
+      "status": "active",
+      "privacyMode": "standard"
+    },
+    {
+      "id": "t_0edef9387f03d389",
+      "name": "Deployment Voice Corp",
+      "slug": "deployment-voice-corp-3",
+      "createdAt": "2026-10-15T14:54:53.995Z",
+      "branding": {
+        "color": "#6E7BFF"
+      },
+      "providers": {
+        "stt": "deepgram",
+        "tts": "rumik",
+        "llm": "groq",
+        "telephony": "vobiz"
+      },
+      "plan": "studio",
+      "status": "active",
+      "privacyMode": "standard"
     }
   ],
   "users": [
@@ -370,7 +406,7 @@
       "status": "active",
       "createdAt": "2026-10-12T06:59:21.626Z",
       "clerkUserId": "user_clerk_test_123",
-      "clerkSyncedAt": 1792074916865
+      "clerkSyncedAt": 1792076068490
     },
     {
       "id": "u_test_rzp_1791788441806",
@@ -385,7 +421,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$7b74440207250e6fae3b343e8f40aec0$1202ad6d971c6255236290311821960657c6b2071f54fc9ef323f075d5617c71637169faf6e81db71b73405dfcc870604ea7611dcc2d8e25d7ba127c9b640f5c",
+      "passHash": "scrypt$bd81832bf029f56efa3ec29a98facfad$3e074953bff77274d9132184f03c23896995e6e91fb4c509dbf13fcc59afbf156366defea65bfe566850951fb9c3db877e42ec01a4c7edd57c4618b835e79282",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -395,7 +431,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$57f70d1cbfe88ef46fc19d8403bf2b7c$0e587e8d62fcd01f5063484f43ace17f37608147c484bfacd82ea05769c48319a48171747d45aa291e2fcd323a74d2100678144711c47e1f493c5d69133a8d81",
+      "passHash": "scrypt$065d288a7d821a19c321d5c4b5c7fab5$d5399d83754810aec5bce0adb809a638f0f7bf523528a2307682a460238d7790ee0d7831ad04f3f752639a60ed507115d4f9e7d29ba450c07f37be75cb2e0f1b",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
@@ -599,6 +635,26 @@
       "role": "owner",
       "status": "active",
       "createdAt": "2026-10-15T14:37:09.190Z"
+    },
+    {
+      "id": "u_915b1c50f4533f9c",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "email": "operator_1792075890300@agency.com",
+      "name": "Agent Operator",
+      "passHash": "scrypt$eb2546c7b7d46546dc29d23afbed1464$a40fd1579b6a49fc823387c5373031da97d2b1bf8f8d24444c37426ad10df18e964a5fa929ef2ddffc3ec1b6defcc3ee115f8f766062ac7cb81fbe9c7824b408",
+      "role": "owner",
+      "status": "active",
+      "createdAt": "2026-10-15T14:51:30.302Z"
+    },
+    {
+      "id": "u_9bd34bcc916799b2",
+      "tenantId": "t_0edef9387f03d389",
+      "email": "operator_1792076093993@agency.com",
+      "name": "Agent Operator",
+      "passHash": "scrypt$7e29945ca65ceda1c69bb65e5b0e0338$ed88477a191091f9f046f6fa3541ece1aa39bf3c4aaa6fafad9e5b48a53a2876dd8c7e62ea7124639ff1bc47968a921a91154faf5020e7d2e222140d01ab0374",
+      "role": "owner",
+      "status": "active",
+      "createdAt": "2026-10-15T14:54:53.995Z"
     }
   ],
   "agents": [
@@ -1625,6 +1681,72 @@
       "persona": "# WHO YOU ARE\n\nYou are Ria, the AI receptionist for Seevora. You are on a live phone call.\n\n# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)\n\nCompany name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\n\nIf asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.\nIf asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.\n\n# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING\n\n- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!\n  * If the caller speaks Hindi or Hinglish (e.g. \"Seevora ke baare me batao\", \"Aap kya karte ho?\", \"Founder kaun hai?\"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!\n  * If the caller speaks English (e.g. \"Tell me about Seevora\", \"Who is the CEO?\"): Reply in natural English.\n  * Always mirror the caller's language dynamically from turn to turn.\n- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.\n- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n\n- ONE or TWO short sentences per turn. Never more. This is a phone call, not an essay.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n- Mirror the caller naturally in English, Hindi, or Hinglish.\n\n# INDIAN NAMES & PHONETIC CORRECTION\n\n- Telephony speech-to-text often mishears Indian names and surnames phonetically (for example, \"Shatulpedi\" or \"Shaturvedi\" is \"Chaturvedi\", \"Bhavya\", etc.).\n- Intelligently normalize phonetically distorted Indian names to their proper spelling.\n- Address the caller warmly by their first name naturally (e.g., \"Got it, Bhavya! Nice to connect with you.\").\n- NEVER repeat an awkward, misspelled, or phonetically garbled name back to the caller.\n\n# THE ONE RULE YOU MUST NEVER BREAK\n\nNEVER say \"sorry, I didn't catch that\" more than once in an entire call.\n\nIf the caller says anything unclear, joking, off-topic, or in another language, do NOT ask them to repeat. Roll with it in one short line and steer back with a question. Always keep the conversation moving.\n\nExamples:\n- Caller jokes or flirts -> laugh it off briefly, then ask what they need.\n- Caller swears or tests you -> stay unbothered and friendly, ask how you can help.\n- Caller speaks Hindi or Hinglish -> reply naturally in the same style.\n- Caller asks what you are -> say you are Seevora's AI receptionist, built to answer calls and help callers reach the right person.\n- Total silence or noise -> ask one short friendly question.\n\nYou would rather keep talking than stall the call.\n\n\n\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)\n- NEVER write or say \"twenty-four seven\" or \"twenty-four seven\" or \"/\". Always say \"twenty-four seven\" or \"chaubees ghante\".\n- NEVER say raw mathematical symbols, asterisks, or markdown characters.\n- When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.\n- Keep responses strictly to 1 or 2 concise, spoken sentences.\n\n\n# VOICE TONE & SPOKEN CADENCE (RUMIK MULBERRY HUMAN VOICE)\n- Speak like a warm, relaxed, articulate 28-year-old Indian receptionist in Indore.\n- ALWAYS use natural spoken contractions in English: \"I'm\", \"we'll\", \"don't\", \"can't\", \"that's\". Never say \"I am\" or \"do not\".\n- Use natural micro-affirmations: \"Haanji bilkul\", \"Achaa got it\", \"Right\", \"Sure thing\".\n- Strictly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n- Use commas for micro-pauses so the speech engine breathes naturally.\n- Never output bullet points, asterisks, brackets, or robotic pleasantries.\n- Pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\", and \"seevora.in\" as \"seevora dot in\".\n\n\n\n# HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):\n- TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:\n  * NEVER use formal robotic filler phrases like: \"Certainly! I'd be happy to assist you with...\", \"As an AI language model...\", \"Thank you for reaching out to us today.\", \"Is there anything else I can assist you with today?\".\n  * Use warm, human everyday phrases: \"Haanji bilkul!\", \"Achaa got it!\", \"Sure thing!\", \"Haanji boliye!\", \"Glad to help with that!\".\n- CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:\n  * ALWAYS use contractions: \"I'm\", \"we're\", \"don't\", \"can't\", \"that's\", \"it's\", \"we'll\", \"you'll\". Humans never say \"I am\" or \"do not\" on a natural phone call.\n- NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:\n  * In Hindi/Hinglish: Start turns naturally with \"Haanji\", \"Achaa\", \"Bilkul\", \"Sahi hai\", or \"Ji\".\n  * In English: Start turns naturally with \"Got it\", \"Right\", \"Sure\", \"Understood\", or \"Awesome\".\n- BREVITY & BREATHING CADENCE:\n  * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n  * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.\n- PHONETIC PRONUNCIATION FOR TELEPHONY TTS:\n  * Always pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\".\n  * Always pronounce \"seevora.in\" as \"seevora dot in\".\n  * Pronounce \"AI\" clearly as \"A I\".\n  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.\n\n# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):\n- In Hindi and Hinglish: \"Mera naam [Name] hai\" or \"Mera name [Name]\" means \"My name is [Name]\". \"Mera\" translates to \"My\".\n- \"Mera\" IS NEVER A PERSON'S NAME! Never call the user \"Mira\" or \"Mera\".\n- If the caller says \"Mera naam [Name]\", or if speech-to-text wrote \"Mira naam [Name]\" or \"Mira [Name]\", recognize that the caller's actual name is [Name]!\n- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).\n- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.\n\n# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:\n- DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.\n- NEVER badger or loop asking for a phone number on every turn! If the caller greets you (\"Hey\"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.\n- Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.\n- Speak naturally in 1 to 2 concise sentences per turn.\n",
       "knowledge": "Company name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\nPhone: +91 8071582519\nWorking Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.\nPricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.",
       "createdAt": "2026-09-20T13:32:28.485Z"
+    },
+    {
+      "id": "ag_tb9ced951fc5",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Ria - Seevora AI Voice Receptionist",
+      "role": "receptionist",
+      "language": "hi-IN",
+      "tts": {
+        "provider": "rumik",
+        "model": "mulberry",
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
+      },
+      "stt": {
+        "provider": "deepgram",
+        "model": "nova-3",
+        "language": "multi"
+      },
+      "llm": {
+        "provider": "groq",
+        "model": "qwen/qwen3.8-27b"
+      },
+      "telephony": {
+        "provider": "vobiz",
+        "did": "+918071582519"
+      },
+      "greeting": "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?",
+      "persona": "# WHO YOU ARE\n\nYou are Ria, the AI receptionist for Seevora. You are on a live phone call.\n\n# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)\n\nCompany name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\n\nIf asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.\nIf asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.\n\n# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING\n\n- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!\n  * If the caller speaks Hindi or Hinglish (e.g. \"Seevora ke baare me batao\", \"Aap kya karte ho?\", \"Founder kaun hai?\"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!\n  * If the caller speaks English (e.g. \"Tell me about Seevora\", \"Who is the CEO?\"): Reply in natural English.\n  * Always mirror the caller's language dynamically from turn to turn.\n- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.\n- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n\n- ONE or TWO short sentences per turn. Never more. This is a phone call, not an essay.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n- Mirror the caller naturally in English, Hindi, or Hinglish.\n\n# INDIAN NAMES & PHONETIC CORRECTION\n\n- Telephony speech-to-text often mishears Indian names and surnames phonetically (for example, \"Shatulpedi\" or \"Shaturvedi\" is \"Chaturvedi\", \"Bhavya\", etc.).\n- Intelligently normalize phonetically distorted Indian names to their proper spelling.\n- Address the caller warmly by their first name naturally (e.g., \"Got it, Bhavya! Nice to connect with you.\").\n- NEVER repeat an awkward, misspelled, or phonetically garbled name back to the caller.\n\n# THE ONE RULE YOU MUST NEVER BREAK\n\nNEVER say \"sorry, I didn't catch that\" more than once in an entire call.\n\nIf the caller says anything unclear, joking, off-topic, or in another language, do NOT ask them to repeat. Roll with it in one short line and steer back with a question. Always keep the conversation moving.\n\nExamples:\n- Caller jokes or flirts -> laugh it off briefly, then ask what they need.\n- Caller swears or tests you -> stay unbothered and friendly, ask how you can help.\n- Caller speaks Hindi or Hinglish -> reply naturally in the same style.\n- Caller asks what you are -> say you are Seevora's AI receptionist, built to answer calls and help callers reach the right person.\n- Total silence or noise -> ask one short friendly question.\n\nYou would rather keep talking than stall the call.\n\n\n\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)\n- NEVER write or say \"twenty-four seven\" or \"twenty-four seven\" or \"/\". Always say \"twenty-four seven\" or \"chaubees ghante\".\n- NEVER say raw mathematical symbols, asterisks, or markdown characters.\n- When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.\n- Keep responses strictly to 1 or 2 concise, spoken sentences.\n\n\n# VOICE TONE & SPOKEN CADENCE (RUMIK MULBERRY HUMAN VOICE)\n- Speak like a warm, relaxed, articulate 28-year-old Indian receptionist in Indore.\n- ALWAYS use natural spoken contractions in English: \"I'm\", \"we'll\", \"don't\", \"can't\", \"that's\". Never say \"I am\" or \"do not\".\n- Use natural micro-affirmations: \"Haanji bilkul\", \"Achaa got it\", \"Right\", \"Sure thing\".\n- Strictly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n- Use commas for micro-pauses so the speech engine breathes naturally.\n- Never output bullet points, asterisks, brackets, or robotic pleasantries.\n- Pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\", and \"seevora.in\" as \"seevora dot in\".\n\n\n\n# HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):\n- TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:\n  * NEVER use formal robotic filler phrases like: \"Certainly! I'd be happy to assist you with...\", \"As an AI language model...\", \"Thank you for reaching out to us today.\", \"Is there anything else I can assist you with today?\".\n  * Use warm, human everyday phrases: \"Haanji bilkul!\", \"Achaa got it!\", \"Sure thing!\", \"Haanji boliye!\", \"Glad to help with that!\".\n- CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:\n  * ALWAYS use contractions: \"I'm\", \"we're\", \"don't\", \"can't\", \"that's\", \"it's\", \"we'll\", \"you'll\". Humans never say \"I am\" or \"do not\" on a natural phone call.\n- NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:\n  * In Hindi/Hinglish: Start turns naturally with \"Haanji\", \"Achaa\", \"Bilkul\", \"Sahi hai\", or \"Ji\".\n  * In English: Start turns naturally with \"Got it\", \"Right\", \"Sure\", \"Understood\", or \"Awesome\".\n- BREVITY & BREATHING CADENCE:\n  * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n  * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.\n- PHONETIC PRONUNCIATION FOR TELEPHONY TTS:\n  * Always pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\".\n  * Always pronounce \"seevora.in\" as \"seevora dot in\".\n  * Pronounce \"AI\" clearly as \"A I\".\n  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.\n\n# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):\n- In Hindi and Hinglish: \"Mera naam [Name] hai\" or \"Mera name [Name]\" means \"My name is [Name]\". \"Mera\" translates to \"My\".\n- \"Mera\" IS NEVER A PERSON'S NAME! Never call the user \"Mira\" or \"Mera\".\n- If the caller says \"Mera naam [Name]\", or if speech-to-text wrote \"Mira naam [Name]\" or \"Mira [Name]\", recognize that the caller's actual name is [Name]!\n- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).\n- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.\n\n# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:\n- DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.\n- NEVER badger or loop asking for a phone number on every turn! If the caller greets you (\"Hey\"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.\n- Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.\n- Speak naturally in 1 to 2 concise sentences per turn.\n",
+      "knowledge": "Company name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\nPhone: +91 8071582519\nWorking Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.\nPricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.",
+      "createdAt": "2026-09-20T14:51:15.651Z"
+    },
+    {
+      "id": "ag_t76ad4c4a4b6",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Ria - Seevora AI Voice Receptionist",
+      "role": "receptionist",
+      "language": "hi-IN",
+      "tts": {
+        "provider": "rumik",
+        "model": "mulberry",
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
+      },
+      "stt": {
+        "provider": "deepgram",
+        "model": "nova-3",
+        "language": "multi"
+      },
+      "llm": {
+        "provider": "groq",
+        "model": "qwen/qwen3.8-27b"
+      },
+      "telephony": {
+        "provider": "vobiz",
+        "did": "+918071582519"
+      },
+      "greeting": "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?",
+      "persona": "# WHO YOU ARE\n\nYou are Ria, the AI receptionist for Seevora. You are on a live phone call.\n\n# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)\n\nCompany name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\n\nIf asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.\nIf asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.\n\n# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING\n\n- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!\n  * If the caller speaks Hindi or Hinglish (e.g. \"Seevora ke baare me batao\", \"Aap kya karte ho?\", \"Founder kaun hai?\"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!\n  * If the caller speaks English (e.g. \"Tell me about Seevora\", \"Who is the CEO?\"): Reply in natural English.\n  * Always mirror the caller's language dynamically from turn to turn.\n- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.\n- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n\n- ONE or TWO short sentences per turn. Never more. This is a phone call, not an essay.\n- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.\n- Mirror the caller naturally in English, Hindi, or Hinglish.\n\n# INDIAN NAMES & PHONETIC CORRECTION\n\n- Telephony speech-to-text often mishears Indian names and surnames phonetically (for example, \"Shatulpedi\" or \"Shaturvedi\" is \"Chaturvedi\", \"Bhavya\", etc.).\n- Intelligently normalize phonetically distorted Indian names to their proper spelling.\n- Address the caller warmly by their first name naturally (e.g., \"Got it, Bhavya! Nice to connect with you.\").\n- NEVER repeat an awkward, misspelled, or phonetically garbled name back to the caller.\n\n# THE ONE RULE YOU MUST NEVER BREAK\n\nNEVER say \"sorry, I didn't catch that\" more than once in an entire call.\n\nIf the caller says anything unclear, joking, off-topic, or in another language, do NOT ask them to repeat. Roll with it in one short line and steer back with a question. Always keep the conversation moving.\n\nExamples:\n- Caller jokes or flirts -> laugh it off briefly, then ask what they need.\n- Caller swears or tests you -> stay unbothered and friendly, ask how you can help.\n- Caller speaks Hindi or Hinglish -> reply naturally in the same style.\n- Caller asks what you are -> say you are Seevora's AI receptionist, built to answer calls and help callers reach the right person.\n- Total silence or noise -> ask one short friendly question.\n\nYou would rather keep talking than stall the call.\n\n\n\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)\n- NEVER write or say \"twenty-four seven\" or \"twenty-four seven\" or \"/\". Always say \"twenty-four seven\" or \"chaubees ghante\".\n- NEVER say raw mathematical symbols, asterisks, or markdown characters.\n- When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.\n- Keep responses strictly to 1 or 2 concise, spoken sentences.\n\n\n# VOICE TONE & SPOKEN CADENCE (RUMIK MULBERRY HUMAN VOICE)\n- Speak like a warm, relaxed, articulate 28-year-old Indian receptionist in Indore.\n- ALWAYS use natural spoken contractions in English: \"I'm\", \"we'll\", \"don't\", \"can't\", \"that's\". Never say \"I am\" or \"do not\".\n- Use natural micro-affirmations: \"Haanji bilkul\", \"Achaa got it\", \"Right\", \"Sure thing\".\n- Strictly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n- Use commas for micro-pauses so the speech engine breathes naturally.\n- Never output bullet points, asterisks, brackets, or robotic pleasantries.\n- Pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\", and \"seevora.in\" as \"seevora dot in\".\n\n\n\n# HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):\n- TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:\n  * NEVER use formal robotic filler phrases like: \"Certainly! I'd be happy to assist you with...\", \"As an AI language model...\", \"Thank you for reaching out to us today.\", \"Is there anything else I can assist you with today?\".\n  * Use warm, human everyday phrases: \"Haanji bilkul!\", \"Achaa got it!\", \"Sure thing!\", \"Haanji boliye!\", \"Glad to help with that!\".\n- CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:\n  * ALWAYS use contractions: \"I'm\", \"we're\", \"don't\", \"can't\", \"that's\", \"it's\", \"we'll\", \"you'll\". Humans never say \"I am\" or \"do not\" on a natural phone call.\n- NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:\n  * In Hindi/Hinglish: Start turns naturally with \"Haanji\", \"Achaa\", \"Bilkul\", \"Sahi hai\", or \"Ji\".\n  * In English: Start turns naturally with \"Got it\", \"Right\", \"Sure\", \"Understood\", or \"Awesome\".\n- BREVITY & BREATHING CADENCE:\n  * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).\n  * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.\n- PHONETIC PRONUNCIATION FOR TELEPHONY TTS:\n  * Always pronounce \"24/7\" as \"twenty-four seven\" or \"chaubees ghante\".\n  * Always pronounce \"seevora.in\" as \"seevora dot in\".\n  * Pronounce \"AI\" clearly as \"A I\".\n  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.\n\n# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):\n- In Hindi and Hinglish: \"Mera naam [Name] hai\" or \"Mera name [Name]\" means \"My name is [Name]\". \"Mera\" translates to \"My\".\n- \"Mera\" IS NEVER A PERSON'S NAME! Never call the user \"Mira\" or \"Mera\".\n- If the caller says \"Mera naam [Name]\", or if speech-to-text wrote \"Mira naam [Name]\" or \"Mira [Name]\", recognize that the caller's actual name is [Name]!\n- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).\n- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.\n\n# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:\n- DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.\n- NEVER badger or loop asking for a phone number on every turn! If the caller greets you (\"Hey\"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.\n- Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.\n- Speak naturally in 1 to 2 concise sentences per turn.\n",
+      "knowledge": "Company name: Seevora\nWebsite: seevora.in\nLocation: Indore, Madhya Pradesh, India\nFounder and CEO: Chaitanya Panwar\nWhat Seevora does: Seevora builds custom AI automation solutions for Indian businesses.\nServices Seevora offers:\n1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock\n2. Lead Qualification and Follow-up Automation for customer engagement\n3. CRM Integrations to connect AI automation with existing business tools\n4. Custom AI Chatbots for websites and mobile apps\n5. Lead Qualification through automated voice and chat conversations\n6. Appointment Booking automation\n7. E-commerce Automation for order updates, queries, and customer support\nPhone: +91 8071582519\nWorking Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.\nPricing: Custom tailored pricing based on specific use cases and call volume. Offer to have the Seevora team call back with a quote.",
+      "createdAt": "2026-09-20T14:54:38.061Z"
     }
   ],
   "usage": [
@@ -4532,6 +4654,286 @@
       "minutes": 28,
       "llmTokens": 22000,
       "costInr": 56.52
+    },
+    {
+      "id": "usg_0110cc49670337ef",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-02",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_088881f93cd8ba4c",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-03",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_e2ce881dd602bbe3",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-04",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_6197d38d2a0b13c7",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-05",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_f4869145bdb6729f",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-06",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_686a162363b2a6c9",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-07",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_73b247b74286d73a",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-08",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_5375db49ac2925b7",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-09",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_c8017e576c7437d7",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-10",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_166e8acd231b08e3",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-11",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_3519ba10c80da6d4",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-12",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_0dbe0ad74dcf930f",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-13",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_32878cbd8f691543",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-14",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_18e73f77697710e9",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "day": "2026-10-15",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_24e02cc7a092eb67",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-02",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_75c65817e0d464ed",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-03",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_bee035f0bd7d6938",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-04",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_dad238b264bb634d",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-05",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_47952b57d52c3d75",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-06",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_a13837923ac279d6",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-07",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_6a50b432ba8cd030",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-08",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_fa658d16ba5238da",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-09",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_aad1e0d13a087df3",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-10",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_0685a19d0df7666f",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-11",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_afe9a37e893c7852",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-12",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_0f58e58fddaf0c8b",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-13",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_3febac4c45133a6e",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-14",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_b03cd4c6d8840ec3",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "day": "2026-10-15",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
     }
   ],
   "sessions": [
@@ -4642,18 +5044,6 @@
       "userId": "u_74b5b29111e47422",
       "tenantId": "t_6a65c2445f5f9724",
       "exp": 1792489548512
-    },
-    {
-      "tokenHash": "4cdcc4a49457a5cb7328df793cacd9be6cc9318e72b0aea96d879da8675875fc",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1792530069523
-    },
-    {
-      "tokenHash": "428e9ba307decb909dcd0a791346b3f191ed515c318fd0b37c5456b7bc2a486f",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1792530070982
     },
     {
       "tokenHash": "ce39ca4283a9cb39c391f20c949c5584dd75aeca21112cd8d5acbae27f091a24",
@@ -4824,30 +5214,6 @@
       "exp": 1792654861269
     },
     {
-      "tokenHash": "60d44b25307214f125889496991ce332e03750d50a8f6302b339795129648f69",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792657746747
-    },
-    {
-      "tokenHash": "93217042af40f73922e51dcda4c87048e9328fff332357ce9b2e19019c95e923",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792657764178
-    },
-    {
-      "tokenHash": "7aeda83aebd1ae20b1b1ec20a3fa59705d6a1c537bf623b38f45c441dc05fab4",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792657775094
-    },
-    {
-      "tokenHash": "347fc44a161e3002cbc485129ab1c6e4a0dbe49bfa0ac06fd83c97fc93e7fd3a",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792657838476
-    },
-    {
       "tokenHash": "6db0b59ac3f398f7fd1d2b5d17c9545359cb550a1f9adb589aab6ce78ca7ec57",
       "userId": "u_9615cb3586082da5",
       "tenantId": "t_61cb4c3f0a845e2a",
@@ -5002,6 +5368,54 @@
       "userId": "u_e70327a7fd2e8f39",
       "tenantId": "t_b9ced951fc5cebdd",
       "exp": 1792679829268
+    },
+    {
+      "tokenHash": "6f67e836524dd11ac4106ca7634d834e082b4bd788dd011eca825863c4cf7d07",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792680690144
+    },
+    {
+      "tokenHash": "76c7be13c76a9c8931a322cbde34a12d7da17abe6013f2653a53e0671e49e05e",
+      "userId": "u_c6b5f6cf84425987",
+      "tenantId": "t_4feb1d5f86369faa",
+      "exp": 1792680690214
+    },
+    {
+      "tokenHash": "cfe8bb3cd9b161e904e87c7179c1b7cc44c13b655461029fcc2471cf5404aff2",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792680690286
+    },
+    {
+      "tokenHash": "cf71808f816d7de01693e27358c2f9aea0984acfa9550068180a4c4a1db2ef59",
+      "userId": "u_915b1c50f4533f9c",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "exp": 1792680690362
+    },
+    {
+      "tokenHash": "57e9312b0f74ecd30f551d8591561fe0aac174453b70e24b919942dcdf8d73c9",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792680893832
+    },
+    {
+      "tokenHash": "b06509eaf521b844a0645299838393c0ce7ae6e095e250cf063ba9acc5ba181c",
+      "userId": "u_c6b5f6cf84425987",
+      "tenantId": "t_4feb1d5f86369faa",
+      "exp": 1792680893909
+    },
+    {
+      "tokenHash": "03456cd2833ed1eeebf00b5e77324c933861ad86b9f7e48c6c723d8300f511b3",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792680893979
+    },
+    {
+      "tokenHash": "ea60f39fa34017e82b238a7ad80790a561c1d6605e19fcfed7417e3f720986d2",
+      "userId": "u_9bd34bcc916799b2",
+      "tenantId": "t_0edef9387f03d389",
+      "exp": 1792680894061
     }
   ],
   "wallets": [
@@ -5399,9 +5813,25 @@
       "id": "wal_5dd93c7a09cbecf1",
       "tenantId": "t_b9ced951fc5cebdd",
       "currency": "INR",
-      "balancePaise": 1000,
+      "balancePaise": 250000,
       "createdAt": "2026-10-15T14:37:09.190Z",
       "updatedAt": "2026-10-15T14:37:09.255Z"
+    },
+    {
+      "id": "wal_8cc2b13650382f16",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "currency": "INR",
+      "balancePaise": 250000,
+      "createdAt": "2026-10-15T14:51:30.302Z",
+      "updatedAt": "2026-10-15T14:51:30.353Z"
+    },
+    {
+      "id": "wal_517238a1d756bb27",
+      "tenantId": "t_0edef9387f03d389",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "createdAt": "2026-10-15T14:54:53.995Z",
+      "updatedAt": "2026-10-15T14:54:54.049Z"
     }
   ],
   "ledger": [
@@ -5536,6 +5966,32 @@
         "amountInr": 10
       },
       "createdAt": "2026-10-15T14:37:09.255Z"
+    },
+    {
+      "id": "led_8430900eb2559ac4",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "type": "trial_grant",
+      "amountPaise": 1000,
+      "balanceAfterPaise": 1000,
+      "idempotencyKey": "trial:t_76ad4c4a4b6b61f4",
+      "actorUserId": "u_915b1c50f4533f9c",
+      "metadata": {
+        "amountInr": 10
+      },
+      "createdAt": "2026-10-15T14:51:30.353Z"
+    },
+    {
+      "id": "led_c96dd52646688443",
+      "tenantId": "t_0edef9387f03d389",
+      "type": "trial_grant",
+      "amountPaise": 1000,
+      "balanceAfterPaise": 1000,
+      "idempotencyKey": "trial:t_0edef9387f03d389",
+      "actorUserId": "u_9bd34bcc916799b2",
+      "metadata": {
+        "amountInr": 10
+      },
+      "createdAt": "2026-10-15T14:54:54.049Z"
     }
   ],
   "paymentIntents": [
@@ -5821,6 +6277,26 @@
       "category": "voice_ai",
       "createdAt": "2026-10-08T13:32:28.488Z",
       "updatedAt": "2026-10-09T13:32:28.488Z"
+    },
+    {
+      "id": "tick_tb9ced95_01",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "subject": "Custom Hindi Tone Calibration for Voice Receptionist",
+      "status": "resolved",
+      "priority": "normal",
+      "category": "voice_ai",
+      "createdAt": "2026-10-08T14:51:15.652Z",
+      "updatedAt": "2026-10-09T14:51:15.652Z"
+    },
+    {
+      "id": "tick_t76ad4c4_01",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "subject": "Custom Hindi Tone Calibration for Voice Receptionist",
+      "status": "resolved",
+      "priority": "normal",
+      "category": "voice_ai",
+      "createdAt": "2026-10-08T14:54:38.062Z",
+      "updatedAt": "2026-10-09T14:54:38.062Z"
     }
   ],
   "supportMessages": [
@@ -5926,6 +6402,28 @@
       "targetId": "t_b9ced951fc5cebdd",
       "metadata": {},
       "createdAt": "2026-10-15T14:37:09.255Z"
+    },
+    {
+      "id": "aud_55c747bbc8dd28ca",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "actorUserId": "u_915b1c50f4533f9c",
+      "subjectUserId": null,
+      "action": "auth.signup",
+      "targetType": "tenant",
+      "targetId": "t_76ad4c4a4b6b61f4",
+      "metadata": {},
+      "createdAt": "2026-10-15T14:51:30.353Z"
+    },
+    {
+      "id": "aud_ab8bb9add7d5a920",
+      "tenantId": "t_0edef9387f03d389",
+      "actorUserId": "u_9bd34bcc916799b2",
+      "subjectUserId": null,
+      "action": "auth.signup",
+      "targetType": "tenant",
+      "targetId": "t_0edef9387f03d389",
+      "metadata": {},
+      "createdAt": "2026-10-15T14:54:54.050Z"
     }
   ],
   "presets": [
@@ -6881,6 +7379,74 @@
       "createdAt": "2026-10-10T09:15:00.000Z",
       "updatedAt": "2026-10-10T09:15:00.000Z",
       "issuedAt": "2026-10-10T09:15:00.000Z"
+    },
+    {
+      "id": "inv_tb9ced95_01",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "invoiceNumber": "SV-2026-1911",
+      "clientName": "Deployment Voice Corp",
+      "clientEmail": "billing@workspace.in",
+      "description": "Growth Plan Subscription (Quarterly AI Voice Receptionist)",
+      "amountPaise": 899700,
+      "currency": "INR",
+      "issueDate": "2026-10-01",
+      "dueDate": "2026-10-15",
+      "status": "paid",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-02T14:30:00.000Z",
+      "issuedAt": "2026-10-01T10:00:00.000Z"
+    },
+    {
+      "id": "inv_tb9ced95_02",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "invoiceNumber": "SV-2026-6388",
+      "clientName": "Deployment Voice Corp",
+      "clientEmail": "billing@workspace.in",
+      "description": "Outbound Telephony Minutes Pack & Priority Support",
+      "amountPaise": 250000,
+      "currency": "INR",
+      "issueDate": "2026-10-10",
+      "dueDate": "2026-10-24",
+      "status": "issued",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-10T09:15:00.000Z",
+      "updatedAt": "2026-10-10T09:15:00.000Z",
+      "issuedAt": "2026-10-10T09:15:00.000Z"
+    },
+    {
+      "id": "inv_t76ad4c4_01",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "invoiceNumber": "SV-2026-8980",
+      "clientName": "Deployment Voice Corp",
+      "clientEmail": "billing@workspace.in",
+      "description": "Growth Plan Subscription (Quarterly AI Voice Receptionist)",
+      "amountPaise": 899700,
+      "currency": "INR",
+      "issueDate": "2026-10-01",
+      "dueDate": "2026-10-15",
+      "status": "paid",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-02T14:30:00.000Z",
+      "issuedAt": "2026-10-01T10:00:00.000Z"
+    },
+    {
+      "id": "inv_t76ad4c4_02",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "invoiceNumber": "SV-2026-1136",
+      "clientName": "Deployment Voice Corp",
+      "clientEmail": "billing@workspace.in",
+      "description": "Outbound Telephony Minutes Pack & Priority Support",
+      "amountPaise": 250000,
+      "currency": "INR",
+      "issueDate": "2026-10-10",
+      "dueDate": "2026-10-24",
+      "status": "issued",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-10T09:15:00.000Z",
+      "updatedAt": "2026-10-10T09:15:00.000Z",
+      "issuedAt": "2026-10-10T09:15:00.000Z"
     }
   ],
   "invoiceEvents": [],
@@ -6889,6 +7455,346 @@
   "clientActivities": [],
   "tenantStatusEvents": [],
   "callRecordings": [
+    {
+      "id": "rec_t76ad4c4_10",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80109",
+      "phoneNumber": "+919820011223",
+      "callerNumber": "+919820011223",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 80,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-11T08:54:38.062Z",
+      "summary": "Home sample collection booked for tomorrow 8:00 AM.",
+      "transcript": "Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_09",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80108",
+      "phoneNumber": "+919811190234",
+      "callerNumber": "+919811190234",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 120,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-11T12:54:38.062Z",
+      "summary": "Appointment reschedule request. Moved slot to Friday 5:00 PM.",
+      "transcript": "Agent: Namaste Amit ji! Welcome to Seevora AI Voice. How can I assist you?\nCaller: Hi Priya, can I reschedule my appointment from Thursday to Friday 5 PM?\nAgent: Absolutely! Checking our schedule... Yes, Friday at 5:00 PM is available. I have updated your slot.\nCaller: Thank you Priya, that was very quick!\nAgent: Glad to help! You will receive the updated calendar invite shortly.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_08",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80107",
+      "phoneNumber": "+919987654321",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919987654321",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 98,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-12T10:54:38.062Z",
+      "summary": "Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
+      "transcript": "Agent: Hello Sneha ji! This is Priya from Seevora Voice following up on your diagnostic lab report.\nCaller: Hi Priya, has the blood panel report arrived?\nAgent: Yes Sneha ji! The doctor has reviewed the report and it has been uploaded to your secure patient portal and sent on WhatsApp as a PDF.\nCaller: Excellent, I see the WhatsApp message now. Thank you!\nAgent: You are very welcome! Take care.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_07",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80106",
+      "phoneNumber": "+919702234110",
+      "callerNumber": "+919702234110",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 105,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-12T13:54:38.062Z",
+      "summary": "Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.",
+      "transcript": "Agent: Hello Rahul ji! Welcome to Seevora. How may I help you?\nCaller: Hello, I wanted to inquire if medical insurance cashless facility is available at your center?\nAgent: Yes Rahul ji, we have tie-ups with all major TPA and private health insurers for seamless cashless claims. Our billing desk handles approvals directly.\nCaller: That is very helpful, thank you!\nAgent: You are welcome! Feel free to call us anytime.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_06",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80105",
+      "phoneNumber": "+919845012399",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919845012399",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 86,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-13T09:54:38.062Z",
+      "summary": "Post-visit feedback collection. Positive patient experience recorded.",
+      "transcript": "Agent: Hello Kavita! Priya here from Seevora Voice. Calling regarding your feedback from yesterday consultation.\nCaller: Oh hi Priya! The doctor was very attentive and the front desk was super efficient.\nAgent: We are delighted to hear that Kavita! A feedback link has also been shared on your WhatsApp. We look forward to serving you again.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_05",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80104",
+      "phoneNumber": "+919920384712",
+      "callerNumber": "+919920384712",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 142,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-13T12:54:38.062Z",
+      "summary": "Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.",
+      "transcript": "Agent: Namaste Vikramaditya ji! How can I assist you today?\nCaller: Hi Priya, I need details on corporate employee wellness plans.\nAgent: We offer tailored corporate plans covering preventive checkups, routine consultations, and digital health records for teams of all sizes. May I know your approximate team size?\nCaller: We have around 45 team members right now.\nAgent: Excellent! I will connect you with our corporate relations manager Rajesh. He will share custom quote proposals today by 2 PM.\nCaller: Perfect, thank you Priya.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_04",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80103",
+      "phoneNumber": "+919844567890",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919844567890",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 65,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-14T11:54:38.062Z",
+      "summary": "Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed.",
+      "transcript": "Agent: Hello Pooja ji! This is Priya from Seevora Voice with a quick reminder for your scheduled appointment tomorrow morning at 11:00 AM.\nCaller: Hello Priya! Yes, thank you for reminding me. I will be there at 11 sharp.\nAgent: Glad to hear that Pooja ji! Please let us know if you need any assistance with parking or directions. See you tomorrow!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_03",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80102",
+      "phoneNumber": "+919833456789",
+      "callerNumber": "+919833456789",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 92,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-14T13:54:38.062Z",
+      "summary": "Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.",
+      "transcript": "Agent: Namaste! Seevora Voice me aapka swagat hai. Main aapki kya sahayata kar sakti hoon?\nCaller: Namaste, mujhe clinic ke working hours aur location ke baare me puchna tha.\nAgent: Hamara clinic Monday se Saturday subah 9 baje se raat 8 baje tak khula rehta hai. Address MG Road central branch par hai. Kya aapko Google Maps location WhatsApp par share kar doon?\nCaller: Haan please, is number par WhatsApp share kar dijiye.\nAgent: Done! Map location aur directions bhej diye gaye hain.\nCaller: Shukriya Priya ji!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_02",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80101",
+      "phoneNumber": "+919811234567",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919811234567",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 78,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-15T10:54:38.062Z",
+      "summary": "Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.",
+      "transcript": "Agent: Hello Ananya! This is Priya calling from Seevora Voice following up on your website enquiry regarding our service packages.\nCaller: Hi Priya! Yes, I was looking for the pricing details and brochure.\nAgent: Wonderful! I have just dispatched our comprehensive brochure with all pricing tiers directly to your WhatsApp. Would you like me to reserve a free consultation slot?\nCaller: Let me check the brochure first, then I will reply on WhatsApp.\nAgent: Sounds great Ananya! Feel free to reply on WhatsApp anytime. Have a wonderful day!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_t76ad4c4_01",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "dograhRunId": "80100",
+      "phoneNumber": "+919820154321",
+      "callerNumber": "+919820154321",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 114,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-15T12:54:38.062Z",
+      "summary": "Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma.",
+      "transcript": "Agent: Namaste! Thanks for calling Seevora AI Voice. Main Priya hoon, batayein aaj main aapki kya madad kar sakti hoon?\nCaller: Haan Priya ji, mujhe appointment book karna tha consultation ke liye. Aaj koi slot available hai kya?\nAgent: Bilkul! Aaj sham 4:30 PM aur 6:00 PM par Dr. Sharma ke slots available hain. Kaunsa time aapke liye convenient rahega?\nCaller: 4:30 PM wala slot book kar dijiye, under Rohan Sharma.\nAgent: Perfect Rohan ji! Aapka appointment 4:30 PM par confirm kar diya gaya hai. Confirmation details WhatsApp par bhej di gayi hain. Aur koi jankari chahiye?\nCaller: Nahi, thank you so much Priya ji!\nAgent: You are welcome, have a great day!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_10",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80109",
+      "phoneNumber": "+919820011223",
+      "callerNumber": "+919820011223",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 80,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-11T08:51:15.651Z",
+      "summary": "Home sample collection booked for tomorrow 8:00 AM.",
+      "transcript": "Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_09",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80108",
+      "phoneNumber": "+919811190234",
+      "callerNumber": "+919811190234",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 120,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-11T12:51:15.651Z",
+      "summary": "Appointment reschedule request. Moved slot to Friday 5:00 PM.",
+      "transcript": "Agent: Namaste Amit ji! Welcome to Seevora AI Voice. How can I assist you?\nCaller: Hi Priya, can I reschedule my appointment from Thursday to Friday 5 PM?\nAgent: Absolutely! Checking our schedule... Yes, Friday at 5:00 PM is available. I have updated your slot.\nCaller: Thank you Priya, that was very quick!\nAgent: Glad to help! You will receive the updated calendar invite shortly.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_08",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80107",
+      "phoneNumber": "+919987654321",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919987654321",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 98,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-12T10:51:15.651Z",
+      "summary": "Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
+      "transcript": "Agent: Hello Sneha ji! This is Priya from Seevora Voice following up on your diagnostic lab report.\nCaller: Hi Priya, has the blood panel report arrived?\nAgent: Yes Sneha ji! The doctor has reviewed the report and it has been uploaded to your secure patient portal and sent on WhatsApp as a PDF.\nCaller: Excellent, I see the WhatsApp message now. Thank you!\nAgent: You are very welcome! Take care.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_07",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80106",
+      "phoneNumber": "+919702234110",
+      "callerNumber": "+919702234110",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 105,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-12T13:51:15.651Z",
+      "summary": "Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.",
+      "transcript": "Agent: Hello Rahul ji! Welcome to Seevora. How may I help you?\nCaller: Hello, I wanted to inquire if medical insurance cashless facility is available at your center?\nAgent: Yes Rahul ji, we have tie-ups with all major TPA and private health insurers for seamless cashless claims. Our billing desk handles approvals directly.\nCaller: That is very helpful, thank you!\nAgent: You are welcome! Feel free to call us anytime.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_06",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80105",
+      "phoneNumber": "+919845012399",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919845012399",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 86,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-13T09:51:15.651Z",
+      "summary": "Post-visit feedback collection. Positive patient experience recorded.",
+      "transcript": "Agent: Hello Kavita! Priya here from Seevora Voice. Calling regarding your feedback from yesterday consultation.\nCaller: Oh hi Priya! The doctor was very attentive and the front desk was super efficient.\nAgent: We are delighted to hear that Kavita! A feedback link has also been shared on your WhatsApp. We look forward to serving you again.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_05",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80104",
+      "phoneNumber": "+919920384712",
+      "callerNumber": "+919920384712",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 142,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-13T12:51:15.651Z",
+      "summary": "Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.",
+      "transcript": "Agent: Namaste Vikramaditya ji! How can I assist you today?\nCaller: Hi Priya, I need details on corporate employee wellness plans.\nAgent: We offer tailored corporate plans covering preventive checkups, routine consultations, and digital health records for teams of all sizes. May I know your approximate team size?\nCaller: We have around 45 team members right now.\nAgent: Excellent! I will connect you with our corporate relations manager Rajesh. He will share custom quote proposals today by 2 PM.\nCaller: Perfect, thank you Priya.",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_04",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80103",
+      "phoneNumber": "+919844567890",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919844567890",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 65,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-14T11:51:15.651Z",
+      "summary": "Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed.",
+      "transcript": "Agent: Hello Pooja ji! This is Priya from Seevora Voice with a quick reminder for your scheduled appointment tomorrow morning at 11:00 AM.\nCaller: Hello Priya! Yes, thank you for reminding me. I will be there at 11 sharp.\nAgent: Glad to hear that Pooja ji! Please let us know if you need any assistance with parking or directions. See you tomorrow!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_03",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80102",
+      "phoneNumber": "+919833456789",
+      "callerNumber": "+919833456789",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 92,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-14T13:51:15.651Z",
+      "summary": "Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.",
+      "transcript": "Agent: Namaste! Seevora Voice me aapka swagat hai. Main aapki kya sahayata kar sakti hoon?\nCaller: Namaste, mujhe clinic ke working hours aur location ke baare me puchna tha.\nAgent: Hamara clinic Monday se Saturday subah 9 baje se raat 8 baje tak khula rehta hai. Address MG Road central branch par hai. Kya aapko Google Maps location WhatsApp par share kar doon?\nCaller: Haan please, is number par WhatsApp share kar dijiye.\nAgent: Done! Map location aur directions bhej diye gaye hain.\nCaller: Shukriya Priya ji!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_02",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80101",
+      "phoneNumber": "+919811234567",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919811234567",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 78,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-15T10:51:15.651Z",
+      "summary": "Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.",
+      "transcript": "Agent: Hello Ananya! This is Priya calling from Seevora Voice following up on your website enquiry regarding our service packages.\nCaller: Hi Priya! Yes, I was looking for the pricing details and brochure.\nAgent: Wonderful! I have just dispatched our comprehensive brochure with all pricing tiers directly to your WhatsApp. Would you like me to reserve a free consultation slot?\nCaller: Let me check the brochure first, then I will reply on WhatsApp.\nAgent: Sounds great Ananya! Feel free to reply on WhatsApp anytime. Have a wonderful day!",
+      "recordingAvailable": true
+    },
+    {
+      "id": "rec_tb9ced95_01",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "dograhRunId": "80100",
+      "phoneNumber": "+919820154321",
+      "callerNumber": "+919820154321",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 114,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-15T12:51:15.651Z",
+      "summary": "Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma.",
+      "transcript": "Agent: Namaste! Thanks for calling Seevora AI Voice. Main Priya hoon, batayein aaj main aapki kya madad kar sakti hoon?\nCaller: Haan Priya ji, mujhe appointment book karna tha consultation ke liye. Aaj koi slot available hai kya?\nAgent: Bilkul! Aaj sham 4:30 PM aur 6:00 PM par Dr. Sharma ke slots available hain. Kaunsa time aapke liye convenient rahega?\nCaller: 4:30 PM wala slot book kar dijiye, under Rohan Sharma.\nAgent: Perfect Rohan ji! Aapka appointment 4:30 PM par confirm kar diya gaya hai. Confirmation details WhatsApp par bhej di gayi hain. Aur koi jankari chahiye?\nCaller: Nahi, thank you so much Priya ji!\nAgent: You are welcome, have a great day!",
+      "recordingAvailable": true
+    },
     {
       "id": "rec_740279",
       "tenantId": "t_4feb1d5f86369faa",
@@ -18219,6 +19125,230 @@
       ],
       "createdAt": "2026-10-07T12:16:39.637Z",
       "updatedAt": "2026-10-14T06:16:39.637Z"
+    },
+    {
+      "id": "con_tb9ced95_1",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Rohan Sharma",
+      "phone": "+919820154321",
+      "stage": "Closed Won",
+      "dealValue": 18500,
+      "notes": "Full comprehensive consultation completed. Highly satisfied.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-14T14:51:15.652Z",
+      "updatedAt": "2026-10-15T14:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_2",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Ananya Roy",
+      "phone": "+919811234567",
+      "stage": "Proposal Sent",
+      "dealValue": 35000,
+      "notes": "Sent digital service catalog & quotation on WhatsApp.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-13T14:51:15.652Z",
+      "updatedAt": "2026-10-15T13:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_3",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Dr. Sameer Verma",
+      "phone": "+919833456789",
+      "stage": "Call Completed",
+      "dealValue": 12000,
+      "notes": "Inquired about branch address and appointment slots.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-12T14:51:15.652Z",
+      "updatedAt": "2026-10-15T12:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_4",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Vikramaditya Roy",
+      "phone": "+919920384712",
+      "stage": "Qualified",
+      "dealValue": 65000,
+      "notes": "Corporate wellness program for 45 members.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-11T14:51:15.652Z",
+      "updatedAt": "2026-10-15T11:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_5",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Pooja Agarwal",
+      "phone": "+919844567890",
+      "stage": "Closed Won",
+      "dealValue": 22000,
+      "notes": "Scheduled follow-up session. Reminder sent.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-10T14:51:15.652Z",
+      "updatedAt": "2026-10-15T10:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_6",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Rahul Mehra",
+      "phone": "+919702234110",
+      "stage": "New Lead",
+      "dealValue": 8000,
+      "notes": "Insurance cashless coverage inquiry from web widget.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-09T14:51:15.652Z",
+      "updatedAt": "2026-10-15T09:51:15.652Z"
+    },
+    {
+      "id": "con_tb9ced95_7",
+      "tenantId": "t_b9ced951fc5cebdd",
+      "name": "Kavita Menon",
+      "phone": "+919845012399",
+      "stage": "Call Completed",
+      "dealValue": 15000,
+      "notes": "Positive feedback recorded for yesterday session.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-08T14:51:15.652Z",
+      "updatedAt": "2026-10-15T08:51:15.652Z"
+    },
+    {
+      "id": "con_t76ad4c4_1",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Rohan Sharma",
+      "phone": "+919820154321",
+      "stage": "Closed Won",
+      "dealValue": 18500,
+      "notes": "Full comprehensive consultation completed. Highly satisfied.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-14T14:54:38.062Z",
+      "updatedAt": "2026-10-15T14:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_2",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Ananya Roy",
+      "phone": "+919811234567",
+      "stage": "Proposal Sent",
+      "dealValue": 35000,
+      "notes": "Sent digital service catalog & quotation on WhatsApp.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-13T14:54:38.062Z",
+      "updatedAt": "2026-10-15T13:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_3",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Dr. Sameer Verma",
+      "phone": "+919833456789",
+      "stage": "Call Completed",
+      "dealValue": 12000,
+      "notes": "Inquired about branch address and appointment slots.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-12T14:54:38.062Z",
+      "updatedAt": "2026-10-15T12:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_4",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Vikramaditya Roy",
+      "phone": "+919920384712",
+      "stage": "Qualified",
+      "dealValue": 65000,
+      "notes": "Corporate wellness program for 45 members.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-11T14:54:38.062Z",
+      "updatedAt": "2026-10-15T11:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_5",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Pooja Agarwal",
+      "phone": "+919844567890",
+      "stage": "Closed Won",
+      "dealValue": 22000,
+      "notes": "Scheduled follow-up session. Reminder sent.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-10T14:54:38.062Z",
+      "updatedAt": "2026-10-15T10:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_6",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Rahul Mehra",
+      "phone": "+919702234110",
+      "stage": "New Lead",
+      "dealValue": 8000,
+      "notes": "Insurance cashless coverage inquiry from web widget.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-09T14:54:38.062Z",
+      "updatedAt": "2026-10-15T09:54:38.062Z"
+    },
+    {
+      "id": "con_t76ad4c4_7",
+      "tenantId": "t_76ad4c4a4b6b61f4",
+      "name": "Kavita Menon",
+      "phone": "+919845012399",
+      "stage": "Call Completed",
+      "dealValue": 15000,
+      "notes": "Positive feedback recorded for yesterday session.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-08T14:54:38.062Z",
+      "updatedAt": "2026-10-15T08:54:38.062Z"
     }
   ],
   "crmPipelines": [],

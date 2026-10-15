@@ -433,8 +433,14 @@ async function getSession(req) {
         let user = d.users.find((u) => u.clerkUserId === claims.sub);
 
         let clerkUser = verifiedResult.user || null;
-        let email = claims.email || (claims.primary_email_address) || '';
-        let name = claims.name || '';
+        let headerEmail = '';
+        let headerName = '';
+        try {
+          if (req.headers && req.headers['x-clerk-user-email']) headerEmail = decodeURIComponent(req.headers['x-clerk-user-email']);
+          if (req.headers && req.headers['x-clerk-user-name']) headerName = decodeURIComponent(req.headers['x-clerk-user-name']);
+        } catch (_) {}
+        let email = claims.email || (claims.primary_email_address) || headerEmail || '';
+        let name = claims.name || headerName || '';
         const clientHeaderOnboarded = req.headers && req.headers['x-clerk-onboarded'] === '1';
 
         // Extract role strictly from verified Clerk public_metadata or verified Clerk Backend API.
@@ -445,10 +451,8 @@ async function getSession(req) {
 
         const needsClerkFetch = process.env.CLERK_SECRET_KEY && (
           !user ||
-          !user.email ||
-          user.email.includes('@clerk.user') ||
-          !user.name ||
-          user.name.startsWith('user_') ||
+          ((!user.email || user.email.includes('@clerk.user')) && !headerEmail) ||
+          ((!user.name || user.name.startsWith('user_')) && !headerName) ||
           !user.clerkRoleCheckedAt ||
           (Date.now() - user.clerkRoleCheckedAt > 300000)
         );
@@ -669,7 +673,8 @@ async function getSession(req) {
           };
         }
       }
-    } catch (_) {
+    } catch (clerkErr) {
+      logger.warn('Clerk session resolution non-fatal warning', { error: clerkErr.message });
       // Fall through to standard cookie session
     }
   }

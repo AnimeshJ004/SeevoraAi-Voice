@@ -187,9 +187,27 @@ function signTestToken(payload, headerOverrides = {}) {
   return `${h64}.${p64}.${sig.toString('base64url')}`;
 }
 
+const DEFAULT_INSTANCE_JWK = {
+  use: 'sig',
+  kty: 'RSA',
+  kid: 'ins_3KaFgqGYik7FYziDRqTnjw9vePx',
+  alg: 'RS256',
+  n: 'uA9niHGd5pLhiUA_I-qCvqi1ISCAbhA9qlC17S74lPKNYW0jNgTdFjmB2YWQDp4v-IxhsAiz6Lq3Rg4AFR03WyrvQFhumthgOu55qo9YT2VMr5DT7bmVxlXPAm8JpHQDFWRFEUiLODW0XaOyItyHTqREnaI60uHaKe1Znu3s6Q74zoD1STaVh9pmD8WdOujGOMQGFJ0naqzpS-4ejBPj69GI_japZumwHgVtz2p8w-8aAM1UXKX48snUXTcEqGC0zX8SagFh2YtuSzWuDgrzL3NQvyqr9_eBiQsolSSl0b2yTrwU1vNDjOkq9iiueEqTP_86AoNYcrHSLaVB4B9cOQ',
+  e: 'AQAB',
+};
+
+function initJwksKeys() {
+  const m = new Map();
+  try {
+    const keyObj = crypto.createPublicKey({ key: DEFAULT_INSTANCE_JWK, format: 'jwk' });
+    m.set(DEFAULT_INSTANCE_JWK.kid, keyObj);
+  } catch (_) {}
+  return m;
+}
+
 let _jwksCache = {
-  keys: new Map(),
-  fetchedAt: 0,
+  keys: initJwksKeys(),
+  fetchedAt: Date.now(),
 };
 let _jwksInFlight = null;
 
@@ -225,7 +243,7 @@ async function fetchClerkJwks(secretKey) {
     try {
       const domain = getClerkFrontendDomain();
       const res = await new Promise((resolve, reject) => {
-        const req = https.get(`https://${domain}/.well-known/jwks.json`, { timeout: 8000 }, (r) => {
+        const req = https.get(`https://${domain}/.well-known/jwks.json`, { timeout: 15000 }, (r) => {
           let raw = '';
           r.on('data', (c) => (raw += c));
           r.on('end', () => {
@@ -233,7 +251,7 @@ async function fetchClerkJwks(secretKey) {
           });
         });
         req.on('error', reject);
-        req.setTimeout(8000, () => req.destroy(new Error('JWKS timeout')));
+        req.setTimeout(15000, () => req.destroy(new Error('JWKS timeout')));
       });
       const keysMap = new Map();
       if (res && Array.isArray(res.keys)) {
@@ -347,6 +365,16 @@ async function verifyClerkToken(token, config) {
         publicKey = jwks.get(header.kid);
       } else if (jwks.size === 1) {
         publicKey = jwks.values().next().value;
+      } else if (jwks && jwks.size > 0) {
+        for (const key of jwks.values()) {
+          try {
+            const dataBuf = Buffer.from(signingInput, 'utf8');
+            if (crypto.verify('sha256', dataBuf, key, signature)) {
+              publicKey = key;
+              break;
+            }
+          } catch (_) {}
+        }
       }
     } catch (_) {
       // Fall through to API check
