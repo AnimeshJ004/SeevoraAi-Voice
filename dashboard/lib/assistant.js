@@ -19,6 +19,7 @@ const INTENTS = Object.freeze({
   ADD_KNOWLEDGE: 'add_knowledge',
   CONNECT_INTEGRATION: 'connect_integration',
   CREATE_CAMPAIGN: 'create_campaign',
+  BROADCAST_MESSAGE: 'broadcast_message',
   ASK_REPORT: 'ask_report',
   TEST_CHAT: 'test_chat',
   CONFIRM: 'confirm_pending',
@@ -38,6 +39,17 @@ function classifyIntent(text, hasPendingToken) {
   // If user has a pending confirmation and replies yes/no
   if (hasPendingToken && /^(yes|yep|confirm|ok|okay|sure|go ahead|proceed|haan|bilkul|ha|theek hai|done)[\s!.]*$/.test(t)) {
     return INTENTS.CONFIRM;
+  }
+
+  // Broadcast message to all contacts via connected WhatsApp Business number
+  const isCallingCampaign = /\b(campaign|calling|dialer|outbound\s*calls?)\b/i.test(text);
+  if (!isCallingCampaign && (
+      /\b(send|bhej|broadcast|blast|forward|dispatch)\b.{0,50}\b(contacts?|leads?|clients?|customers?|sabko|saare|sabhi)\b/i.test(text) ||
+      /\b(contacts?|leads?|clients?|customers?|sabko|saare|sabhi)\b.{0,50}\b(send|bhej|message|msg|whatsapp)\b/i.test(text) ||
+      /\b(message|msg)\b.{0,30}\b(bhej|send|to all|contacts?)\b/i.test(text) ||
+      /\b(broadcast)\b/i.test(text)
+  )) {
+    return INTENTS.BROADCAST_MESSAGE;
   }
 
   // Connect integration (WhatsApp, CRM, Gmail/Email, Calendar, Webhook, Marketplace tools)

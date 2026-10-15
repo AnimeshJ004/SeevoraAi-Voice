@@ -7123,6 +7123,9 @@ async function viewAssistant(wrap) {
         if (data.action.type === 'campaign_created') {
           toast(`Campaign "${data.action.name}" (${data.action.leadCount} leads) queued!`, 'info', 'Campaign Scheduled');
         }
+        if (data.action.type === 'broadcast_sent') {
+          toast(`WhatsApp broadcast dispatched to ${data.action.count} contacts from ${data.action.senderNumber}!`, 'ok', 'Broadcast Sent');
+        }
       }
 
       // Reload sessions list to keep titles and timestamps synchronized
@@ -7859,6 +7862,12 @@ async function viewAssistant(wrap) {
         title: '50-Lead Outbound Voice Campaign',
         desc: 'Schedules an automated outbound voice calling campaign for 50 qualified property or clinic leads.',
         prompt: 'Create an outbound voice campaign for 50 leads'
+      },
+      {
+        id: 'whatsapp_broadcast',
+        title: 'WhatsApp Broadcast to All Contacts',
+        desc: 'Broadcasts an announcement or promotional update to all CRM contacts directly via your connected WhatsApp Business number.',
+        prompt: "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'"
       }
     ];
 

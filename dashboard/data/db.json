@@ -323,6 +323,42 @@
         "llm": "groq",
         "telephony": "vobiz"
       }
+    },
+    {
+      "id": "t_a2d06cf0811a0b93",
+      "name": "Broadcast Tester's Workspace",
+      "slug": "broadcast-tester-s-workspace",
+      "createdAt": "2026-10-15T12:46:55.562Z",
+      "branding": {
+        "color": "#6E7BFF"
+      },
+      "providers": {
+        "stt": "deepgram",
+        "tts": "rumik",
+        "llm": "groq",
+        "telephony": "vobiz"
+      },
+      "plan": "studio",
+      "status": "active",
+      "privacyMode": "standard"
+    },
+    {
+      "id": "t_1afcfb053c34acd6",
+      "name": "Animesh WABA Tester's Workspace",
+      "slug": "animesh-waba-tester-s-workspace",
+      "createdAt": "2026-10-15T12:47:13.800Z",
+      "branding": {
+        "color": "#6E7BFF"
+      },
+      "providers": {
+        "stt": "deepgram",
+        "tts": "rumik",
+        "llm": "groq",
+        "telephony": "vobiz"
+      },
+      "plan": "studio",
+      "status": "active",
+      "privacyMode": "standard"
     }
   ],
   "users": [
@@ -349,7 +385,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$dd8c9f252d19d9e1d9a6405a4c485a8e$bf8ef590fb297c3042550ec4cc5be5836caf60e6d45a9c79dceb8cb9e95931d85e48a1837f49d2656de52082ec5e6b462ea991cc016148ea8a199ec6e4c56424",
+      "passHash": "scrypt$796e8244831f8140a82bd46e0796e347$38c0aa279aec5d78aa708d6587a835ddaa06bde6d2aab7cbd6c5e3657ffdefc7b8ff3e4b4ff35faa1ed10a747b54212763914d8bc738297e9a66115461ebc169",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -359,7 +395,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$74ed20a2533e4e61c7d1c823b035b0a2$a068d56e46e3c869bb210017d3b3d7e76df0fdf7c08dcdaed7e943ee6e848dfb7d2b0a8e5c5fc16f25055e88e7db24d1f34bccfb7194944887fe0681060b9ed7",
+      "passHash": "scrypt$fedc414ad179eaaa0df8eb7e5af39c1c$051e2358bb55c0c5321fd77e93296ad90ae6f17823bde29a68666f884fe5493c71d3ea887306053c46f0567666e67e2345acae57430819b92639a143c0a015c0",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
@@ -379,9 +415,9 @@
       "tenantId": "t_bde226c83b26fdb3",
       "email": "demo@rapidx.ai",
       "name": "RapidX Demo",
-      "passHash": "scrypt$a84e2522d1e7ad7a0ec513b32014809f$56dace8f34e0f5e345e178a6eab6af5b1534c5b2cd964c99730c59a5d23365203bbc021a95242d022185c2741488bb51fb63c0bdfc29594dd5eed3d3f7ff60ec",
+      "passHash": "scrypt$29481e615f0c972c68d90c36e80f6725$b4c8e39e727e0cea2a4b9fd9b057ab6d9de14c117fc7ffbe08bda0b7c809c9b8dbdfdb6dba316546541849de9f772180d0a29048fd9493fea3dbdb9ef314f80e",
       "role": "admin",
-      "status": "disabled",
+      "status": "active",
       "createdAt": "2026-10-12T08:13:37.158Z"
     },
     {
@@ -543,6 +579,26 @@
       "onboardingCompleted": true,
       "createdAt": "2026-10-14T12:16:39.216Z",
       "clerkSyncedAt": 1791980200206
+    },
+    {
+      "id": "u_58282f59a376166d",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "email": "broadcast_test_1792068415320@seevora.ai",
+      "name": "Broadcast Tester",
+      "passHash": "scrypt$4f90b744ba27143c9d6c8113d8cf5d6d$e5c30c07ef2d3482742dabe51d82cbae71605c245d6e03a449cab0bc35df217461008411b11d00f81c50399db0bac678f1b003fe38eb267fc7059548358c367b",
+      "role": "owner",
+      "status": "active",
+      "createdAt": "2026-10-15T12:46:55.562Z"
+    },
+    {
+      "id": "u_95861cd3d1044e20",
+      "tenantId": "t_1afcfb053c34acd6",
+      "email": "broadcast_waba_1792068433585@seevora.ai",
+      "name": "Animesh WABA Tester",
+      "passHash": "scrypt$46b6e129de9d158331164fac681d23da$28361e1c7d82ce80ab8e3d24ac6f5c03a59c166a124c315eb8bbac0e9f68eafa80a1252437515d9a139dcc455e3aaab04f412478f5402b899b3a9b04798b439e",
+      "role": "owner",
+      "status": "active",
+      "createdAt": "2026-10-15T12:47:13.800Z"
     }
   ],
   "agents": [
@@ -4887,6 +4943,18 @@
       "userId": "u_9615cb3586082da5",
       "tenantId": "t_61cb4c3f0a845e2a",
       "exp": 1792671507559
+    },
+    {
+      "tokenHash": "f1c427be7daf9b68c5daed0d13c85665590b343f3fffa242d7b63ab3ee54b719",
+      "userId": "u_58282f59a376166d",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "exp": 1792673215734
+    },
+    {
+      "tokenHash": "0d3e3a662c8bc1b95df86c5842bd1301f1e9be046c275216d61287ca90e4b480",
+      "userId": "u_95861cd3d1044e20",
+      "tenantId": "t_1afcfb053c34acd6",
+      "exp": 1792673233986
     }
   ],
   "wallets": [
@@ -5271,6 +5339,22 @@
       "currency": "INR",
       "balancePaise": 250000,
       "updatedAt": "2026-10-14T12:16:39.216Z"
+    },
+    {
+      "id": "wal_5d78bf481cc25c05",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "createdAt": "2026-10-15T12:46:55.562Z",
+      "updatedAt": "2026-10-15T12:46:55.682Z"
+    },
+    {
+      "id": "wal_243b032eae0df553",
+      "tenantId": "t_1afcfb053c34acd6",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "createdAt": "2026-10-15T12:47:13.800Z",
+      "updatedAt": "2026-10-15T12:47:13.926Z"
     }
   ],
   "ledger": [
@@ -5405,6 +5489,32 @@
         "source": "assistant"
       },
       "createdAt": "2026-10-15T11:35:06.586Z"
+    },
+    {
+      "id": "led_0f032b1688f78a53",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "type": "trial_grant",
+      "amountPaise": 1000,
+      "balanceAfterPaise": 1000,
+      "idempotencyKey": "trial:t_a2d06cf0811a0b93",
+      "actorUserId": "u_58282f59a376166d",
+      "metadata": {
+        "amountInr": 10
+      },
+      "createdAt": "2026-10-15T12:46:55.682Z"
+    },
+    {
+      "id": "led_c02a7f8337b65ba5",
+      "tenantId": "t_1afcfb053c34acd6",
+      "type": "trial_grant",
+      "amountPaise": 1000,
+      "balanceAfterPaise": 1000,
+      "idempotencyKey": "trial:t_1afcfb053c34acd6",
+      "actorUserId": "u_95861cd3d1044e20",
+      "metadata": {
+        "amountInr": 10
+      },
+      "createdAt": "2026-10-15T12:47:13.926Z"
     }
   ],
   "paymentIntents": [
@@ -5763,6 +5873,28 @@
         "interval": "monthly"
       },
       "createdAt": "2026-10-14T10:49:07.703Z"
+    },
+    {
+      "id": "aud_9b42dc572959fe97",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "actorUserId": "u_58282f59a376166d",
+      "subjectUserId": null,
+      "action": "auth.signup",
+      "targetType": "tenant",
+      "targetId": "t_a2d06cf0811a0b93",
+      "metadata": {},
+      "createdAt": "2026-10-15T12:46:55.683Z"
+    },
+    {
+      "id": "aud_8aaf3966ca9ddb84",
+      "tenantId": "t_1afcfb053c34acd6",
+      "actorUserId": "u_95861cd3d1044e20",
+      "subjectUserId": null,
+      "action": "auth.signup",
+      "targetType": "tenant",
+      "targetId": "t_1afcfb053c34acd6",
+      "metadata": {},
+      "createdAt": "2026-10-15T12:47:13.926Z"
     }
   ],
   "presets": [
@@ -13472,6 +13604,186 @@
   ],
   "crmContacts": [
     {
+      "id": "ct_e27caf9a194116ed",
+      "tenantId": "t_1afcfb053c34acd6",
+      "phone": "+919543210987",
+      "name": "Vikram Singh",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:47:14.276Z",
+      "createdAt": "2026-10-15T12:47:14.229Z",
+      "updatedAt": "2026-10-15T12:47:14.276Z"
+    },
+    {
+      "id": "ct_1e17eee6cb856ada",
+      "tenantId": "t_1afcfb053c34acd6",
+      "phone": "+919654321098",
+      "name": "Sunita Rao",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:47:14.276Z",
+      "createdAt": "2026-10-15T12:47:14.229Z",
+      "updatedAt": "2026-10-15T12:47:14.276Z"
+    },
+    {
+      "id": "ct_adfe67addfa1ac2c",
+      "tenantId": "t_1afcfb053c34acd6",
+      "phone": "+919701234567",
+      "name": "Amit Verma",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.229Z",
+      "updatedAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "ct_6d4b8e25b13167e7",
+      "tenantId": "t_1afcfb053c34acd6",
+      "phone": "+919812345678",
+      "name": "Priya Patel",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.229Z",
+      "updatedAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "ct_c9ea3f70c31f7659",
+      "tenantId": "t_1afcfb053c34acd6",
+      "phone": "+919876543210",
+      "name": "Rahul Sharma",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.228Z",
+      "updatedAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "ct_782d40c4200c4c92",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "phone": "+919543210987",
+      "name": "Vikram Singh",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:46:55.925Z",
+      "createdAt": "2026-10-15T12:46:55.878Z",
+      "updatedAt": "2026-10-15T12:46:55.925Z"
+    },
+    {
+      "id": "ct_0ee917ad2a11e470",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "phone": "+919654321098",
+      "name": "Sunita Rao",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.878Z",
+      "updatedAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "ct_e31a0fb2a5726265",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "phone": "+919701234567",
+      "name": "Amit Verma",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.877Z",
+      "updatedAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "ct_e17827322e18d364",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "phone": "+919812345678",
+      "name": "Priya Patel",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.877Z",
+      "updatedAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "ct_39509b6d5f2326dd",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "phone": "+919876543210",
+      "name": "Rahul Sharma",
+      "email": "",
+      "company": "",
+      "stage": "Qualified",
+      "dealValue": 0,
+      "tags": [
+        "voice-lead"
+      ],
+      "notes": "",
+      "customFields": {},
+      "lastContactedAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.876Z",
+      "updatedAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
       "id": "ct_f3a805d2ff8df7e9",
       "tenantId": "t_4feb1d5f86369faa",
       "phone": "+919109207070",
@@ -15255,7 +15567,8 @@
         "lead"
       ],
       "createdAt": "2026-10-12T12:01:22.681Z",
-      "updatedAt": "2026-10-13T12:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.742Z",
+      "lastContactedAt": "2026-10-15T12:51:37.742Z"
     },
     {
       "id": "con_t61cb4c3_2",
@@ -15271,7 +15584,8 @@
         "lead"
       ],
       "createdAt": "2026-10-11T12:01:22.681Z",
-      "updatedAt": "2026-10-13T11:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.857Z",
+      "lastContactedAt": "2026-10-15T12:51:37.857Z"
     },
     {
       "id": "con_t61cb4c3_3",
@@ -15287,7 +15601,8 @@
         "lead"
       ],
       "createdAt": "2026-10-10T12:01:22.681Z",
-      "updatedAt": "2026-10-13T10:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.857Z",
+      "lastContactedAt": "2026-10-15T12:51:37.857Z"
     },
     {
       "id": "con_t61cb4c3_4",
@@ -15303,7 +15618,8 @@
         "lead"
       ],
       "createdAt": "2026-10-09T12:01:22.681Z",
-      "updatedAt": "2026-10-13T09:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.857Z",
+      "lastContactedAt": "2026-10-15T12:51:37.857Z"
     },
     {
       "id": "con_t61cb4c3_5",
@@ -15319,7 +15635,8 @@
         "lead"
       ],
       "createdAt": "2026-10-08T12:01:22.681Z",
-      "updatedAt": "2026-10-13T08:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.858Z",
+      "lastContactedAt": "2026-10-15T12:51:37.858Z"
     },
     {
       "id": "con_t61cb4c3_6",
@@ -15335,7 +15652,8 @@
         "lead"
       ],
       "createdAt": "2026-10-07T12:01:22.681Z",
-      "updatedAt": "2026-10-13T07:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.858Z",
+      "lastContactedAt": "2026-10-15T12:51:37.858Z"
     },
     {
       "id": "con_t61cb4c3_7",
@@ -15351,7 +15669,8 @@
         "lead"
       ],
       "createdAt": "2026-10-06T12:01:22.681Z",
-      "updatedAt": "2026-10-13T06:01:22.681Z"
+      "updatedAt": "2026-10-15T12:51:37.858Z",
+      "lastContactedAt": "2026-10-15T12:51:37.858Z"
     },
     {
       "id": "con_t7276260_1",
@@ -16924,6 +17243,210 @@
   ],
   "crmPipelines": [],
   "waConversations": [
+    {
+      "id": "conv_6d2b03e03f487f92",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_7",
+      "phone": "+919845012399",
+      "name": "Kavita Menon",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.858Z",
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "conv_513cd1a392b15265",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_6",
+      "phone": "+919702234110",
+      "name": "Rahul Mehra",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.858Z",
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "conv_96d054517565d89b",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_5",
+      "phone": "+919844567890",
+      "name": "Pooja Agarwal",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.858Z",
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "conv_95b0946364739d60",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_4",
+      "phone": "+919920384712",
+      "name": "Vikramaditya Roy",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.857Z",
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "conv_570f02358b94c62d",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_3",
+      "phone": "+919833456789",
+      "name": "Dr. Sameer Verma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.857Z",
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "conv_a66c906a3b2eb429",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_2",
+      "phone": "+919811234567",
+      "name": "Ananya Roy",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.857Z",
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "conv_48229d0ec2e59134",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "contactId": "con_t61cb4c3_1",
+      "phone": "+919820154321",
+      "name": "Rohan Sharma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:51:37.856Z",
+      "createdAt": "2026-10-15T12:51:37.742Z"
+    },
+    {
+      "id": "conv_9165af76fd0c2d6e",
+      "tenantId": "t_1afcfb053c34acd6",
+      "contactId": "ct_e27caf9a194116ed",
+      "phone": "+919543210987",
+      "name": "Vikram Singh",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "We have launched our new AI voice receptionist service!",
+      "lastMessageAt": "2026-10-15T12:47:14.276Z",
+      "createdAt": "2026-10-15T12:47:14.229Z"
+    },
+    {
+      "id": "conv_df2d76085d8598bf",
+      "tenantId": "t_1afcfb053c34acd6",
+      "contactId": "ct_1e17eee6cb856ada",
+      "phone": "+919654321098",
+      "name": "Sunita Rao",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "We have launched our new AI voice receptionist service!",
+      "lastMessageAt": "2026-10-15T12:47:14.276Z",
+      "createdAt": "2026-10-15T12:47:14.229Z"
+    },
+    {
+      "id": "conv_6837ef35bba00f8b",
+      "tenantId": "t_1afcfb053c34acd6",
+      "contactId": "ct_adfe67addfa1ac2c",
+      "phone": "+919701234567",
+      "name": "Amit Verma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "We have launched our new AI voice receptionist service!",
+      "lastMessageAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.229Z"
+    },
+    {
+      "id": "conv_01b3a994d4dfa2ae",
+      "tenantId": "t_1afcfb053c34acd6",
+      "contactId": "ct_6d4b8e25b13167e7",
+      "phone": "+919812345678",
+      "name": "Priya Patel",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "We have launched our new AI voice receptionist service!",
+      "lastMessageAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.229Z"
+    },
+    {
+      "id": "conv_a92d9d66830d04e8",
+      "tenantId": "t_1afcfb053c34acd6",
+      "contactId": "ct_c9ea3f70c31f7659",
+      "phone": "+919876543210",
+      "name": "Rahul Sharma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "We have launched our new AI voice receptionist service!",
+      "lastMessageAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.229Z"
+    },
+    {
+      "id": "conv_e2542b4daf48828a",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "contactId": "ct_782d40c4200c4c92",
+      "phone": "+919543210987",
+      "name": "Vikram Singh",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:46:55.925Z",
+      "createdAt": "2026-10-15T12:46:55.878Z"
+    },
+    {
+      "id": "conv_ad1862a3d1aca850",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "contactId": "ct_0ee917ad2a11e470",
+      "phone": "+919654321098",
+      "name": "Sunita Rao",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.878Z"
+    },
+    {
+      "id": "conv_fd6a0b2398a0edd6",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "contactId": "ct_e31a0fb2a5726265",
+      "phone": "+919701234567",
+      "name": "Amit Verma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.878Z"
+    },
+    {
+      "id": "conv_56a9809a198e8ace",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "contactId": "ct_e17827322e18d364",
+      "phone": "+919812345678",
+      "name": "Priya Patel",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.877Z"
+    },
+    {
+      "id": "conv_b169f3064de7dfae",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "contactId": "ct_39509b6d5f2326dd",
+      "phone": "+919876543210",
+      "name": "Rahul Sharma",
+      "unreadCount": 0,
+      "status": "open",
+      "lastMessageText": "Namaste! We are offering free health consultations this week.",
+      "lastMessageAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.877Z"
+    },
     {
       "id": "conv_992cd78c6237d521",
       "tenantId": "t_4feb1d5f86369faa",
@@ -20555,10 +21078,350 @@
         }
       },
       "createdAt": "2026-10-15T10:18:10.383Z"
+    },
+    {
+      "id": "msg_5ea3defebcf61534",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "conversationId": "conv_e2542b4daf48828a",
+      "contactId": "ct_782d40c4200c4c92",
+      "phone": "+919543210987",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:46:55.925Z"
+    },
+    {
+      "id": "msg_26b1e8cba94e07bc",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "conversationId": "conv_ad1862a3d1aca850",
+      "contactId": "ct_0ee917ad2a11e470",
+      "phone": "+919654321098",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "msg_d51b08f9dd3a89b1",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "conversationId": "conv_fd6a0b2398a0edd6",
+      "contactId": "ct_e31a0fb2a5726265",
+      "phone": "+919701234567",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "msg_f7059911a44ee6c2",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "conversationId": "conv_56a9809a198e8ace",
+      "contactId": "ct_e17827322e18d364",
+      "phone": "+919812345678",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "msg_5f85f0d129e5a956",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "conversationId": "conv_b169f3064de7dfae",
+      "contactId": "ct_39509b6d5f2326dd",
+      "phone": "+919876543210",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:46:55.926Z"
+    },
+    {
+      "id": "msg_a9c77a9fe7c6a51a",
+      "tenantId": "t_1afcfb053c34acd6",
+      "conversationId": "conv_9165af76fd0c2d6e",
+      "contactId": "ct_e27caf9a194116ed",
+      "phone": "+919543210987",
+      "direction": "outbound",
+      "type": "text",
+      "text": "We have launched our new AI voice receptionist service!",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:47:14.276Z"
+    },
+    {
+      "id": "msg_0d798cb7f8b826bc",
+      "tenantId": "t_1afcfb053c34acd6",
+      "conversationId": "conv_df2d76085d8598bf",
+      "contactId": "ct_1e17eee6cb856ada",
+      "phone": "+919654321098",
+      "direction": "outbound",
+      "type": "text",
+      "text": "We have launched our new AI voice receptionist service!",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:47:14.276Z"
+    },
+    {
+      "id": "msg_288ea5be725c3785",
+      "tenantId": "t_1afcfb053c34acd6",
+      "conversationId": "conv_6837ef35bba00f8b",
+      "contactId": "ct_adfe67addfa1ac2c",
+      "phone": "+919701234567",
+      "direction": "outbound",
+      "type": "text",
+      "text": "We have launched our new AI voice receptionist service!",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "msg_fb14959b549535b5",
+      "tenantId": "t_1afcfb053c34acd6",
+      "conversationId": "conv_01b3a994d4dfa2ae",
+      "contactId": "ct_6d4b8e25b13167e7",
+      "phone": "+919812345678",
+      "direction": "outbound",
+      "type": "text",
+      "text": "We have launched our new AI voice receptionist service!",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "msg_5a6d1ad60da27530",
+      "tenantId": "t_1afcfb053c34acd6",
+      "conversationId": "conv_a92d9d66830d04e8",
+      "contactId": "ct_c9ea3f70c31f7659",
+      "phone": "+919876543210",
+      "direction": "outbound",
+      "type": "text",
+      "text": "We have launched our new AI voice receptionist service!",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "msg_e3fb6cd3829c20f4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_48229d0ec2e59134",
+      "contactId": "con_t61cb4c3_1",
+      "phone": "+919820154321",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.856Z"
+    },
+    {
+      "id": "msg_2df6a68e7cb74e3a",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_a66c906a3b2eb429",
+      "contactId": "con_t61cb4c3_2",
+      "phone": "+919811234567",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "msg_2c6c0cffef0b911e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_570f02358b94c62d",
+      "contactId": "con_t61cb4c3_3",
+      "phone": "+919833456789",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "msg_dd8402c022b0c8b1",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_95b0946364739d60",
+      "contactId": "con_t61cb4c3_4",
+      "phone": "+919920384712",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.857Z"
+    },
+    {
+      "id": "msg_e1e1bbd52522eac8",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_96d054517565d89b",
+      "contactId": "con_t61cb4c3_5",
+      "phone": "+919844567890",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "msg_65dcbd45705b22ad",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_513cd1a392b15265",
+      "contactId": "con_t61cb4c3_6",
+      "phone": "+919702234110",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "msg_cfb1b5f4f243812b",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_6d2b03e03f487f92",
+      "contactId": "con_t61cb4c3_7",
+      "phone": "+919845012399",
+      "direction": "outbound",
+      "type": "text",
+      "text": "Namaste! We are offering free health consultations this week.",
+      "status": "delivered",
+      "metadata": {
+        "senderNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "broadcast": true,
+        "source": "assistant_broadcast"
+      },
+      "createdAt": "2026-10-15T12:51:37.858Z"
     }
   ],
   "waTemplates": [],
-  "waBroadcasts": [],
+  "waBroadcasts": [
+    {
+      "id": "wabc_c0a75ff5db67584d",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "senderNumber": "+91 98765 43210",
+      "wabaId": "waba_991204",
+      "recipientCount": 7,
+      "message": "Namaste! We are offering free health consultations this week.",
+      "status": "completed",
+      "sentAt": "2026-10-15T12:51:37.858Z",
+      "createdAt": "2026-10-15T12:51:37.858Z"
+    },
+    {
+      "id": "wabc_907413707dc0b614",
+      "tenantId": "t_1afcfb053c34acd6",
+      "senderNumber": "+91 80715 82519",
+      "wabaId": "waba_enterprise_live_77",
+      "recipientCount": 5,
+      "message": "We have launched our new AI voice receptionist service!",
+      "status": "completed",
+      "sentAt": "2026-10-15T12:47:14.277Z",
+      "createdAt": "2026-10-15T12:47:14.277Z"
+    },
+    {
+      "id": "wabc_8b5236b151ea1d3b",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "senderNumber": "+91 98765 43210",
+      "wabaId": "waba_991204",
+      "recipientCount": 5,
+      "message": "Namaste! We are offering free health consultations this week.",
+      "status": "completed",
+      "sentAt": "2026-10-15T12:46:55.926Z",
+      "createdAt": "2026-10-15T12:46:55.926Z"
+    }
+  ],
   "wacrmConfig": [
     {
       "tenantId": "t_5d81dcac99898375",
@@ -21049,9 +21912,27 @@
           "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **WhatsApp Business**.\n\n• Channel: **WHATSAPP** (+91 79743 15518)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.",
           "intent": "general_chat",
           "ts": "2026-10-15T12:12:10.050Z"
+        },
+        {
+          "role": "user",
+          "text": "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'",
+          "ts": "2026-10-15T12:51:37.485Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **7 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 98765 43210** (waba_991204)\n• Total Recipients: **7 contacts**\n• Broadcast Message:\n> \"Namaste! We are offering free health consultations this week.\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 7,
+            "senderNumber": "+91 98765 43210",
+            "wabaId": "waba_991204",
+            "message": "Namaste! We are offering free health consultations this week."
+          },
+          "ts": "2026-10-15T12:51:38.060Z"
         }
       ],
-      "updatedAt": "2026-10-15T12:12:10.050Z"
+      "updatedAt": "2026-10-15T12:51:38.060Z"
     },
     {
       "id": "atr_1345f94ecbaae51f",
@@ -21082,6 +21963,58 @@
         }
       ],
       "updatedAt": "2026-10-15T10:21:34.677Z"
+    },
+    {
+      "id": "atr_459129bb99c6c1bf",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "userId": "u_58282f59a376166d",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'",
+          "ts": "2026-10-15T12:46:55.824Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **5 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 98765 43210** (waba_991204)\n• Total Recipients: **5 contacts**\n• Broadcast Message:\n> \"Namaste! We are offering free health consultations this week.\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 5,
+            "senderNumber": "+91 98765 43210",
+            "wabaId": "waba_991204",
+            "message": "Namaste! We are offering free health consultations this week."
+          },
+          "ts": "2026-10-15T12:46:56.018Z"
+        }
+      ],
+      "updatedAt": "2026-10-15T12:46:56.018Z"
+    },
+    {
+      "id": "atr_173974933ceb3ecd",
+      "tenantId": "t_1afcfb053c34acd6",
+      "userId": "u_95861cd3d1044e20",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Mere saare jitne bhi contacts ho unko ye message bhejna hai: We have launched our new AI voice receptionist service!",
+          "ts": "2026-10-15T12:47:14.186Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **5 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 80715 82519** (waba_enterprise_live_77)\n• Total Recipients: **5 contacts**\n• Broadcast Message:\n> \"We have launched our new AI voice receptionist service!\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 5,
+            "senderNumber": "+91 80715 82519",
+            "wabaId": "waba_enterprise_live_77",
+            "message": "We have launched our new AI voice receptionist service!"
+          },
+          "ts": "2026-10-15T12:47:14.386Z"
+        }
+      ],
+      "updatedAt": "2026-10-15T12:47:14.386Z"
     }
   ],
   "assistantActions": [
@@ -21294,10 +22227,96 @@
       "result": "{\"type\":\"agent_created\",\"agentId\":\"ag_d89a05ee9299c062\",\"agentName\":\"Dr. Smile Assistant\"}",
       "creditUsed": 1,
       "ts": "2026-10-15T11:35:06.567Z"
+    },
+    {
+      "id": "aac_7558159a10b907c9",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "userId": "u_58282f59a376166d",
+      "intent": "broadcast_message",
+      "summary": "Broadcasted WhatsApp message to 5 contacts",
+      "result": "{\"type\":\"broadcast_sent\",\"count\":5,\"senderNumber\":\"+91 98765 43210\",\"wabaId\":\"waba_991204\",\"message\":\"Namaste! We are offering free health consultations this week.\"}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T12:46:55.974Z"
+    },
+    {
+      "id": "aac_02b93f9aa142a887",
+      "tenantId": "t_1afcfb053c34acd6",
+      "userId": "u_95861cd3d1044e20",
+      "intent": "broadcast_message",
+      "summary": "Broadcasted WhatsApp message to 5 contacts",
+      "result": "{\"type\":\"broadcast_sent\",\"count\":5,\"senderNumber\":\"+91 80715 82519\",\"wabaId\":\"waba_enterprise_live_77\",\"message\":\"We have launched our new AI voice receptionist service!\"}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T12:47:14.321Z"
+    },
+    {
+      "id": "aac_620167062cf22335",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "intent": "broadcast_message",
+      "summary": "Broadcasted WhatsApp message to 7 contacts",
+      "result": "{\"type\":\"broadcast_sent\",\"count\":7,\"senderNumber\":\"+91 98765 43210\",\"wabaId\":\"waba_991204\",\"message\":\"Namaste! We are offering free health consultations this week.\"}",
+      "creditUsed": 0,
+      "ts": "2026-10-15T12:51:38.010Z"
     }
   ],
   "pendingConfirmations": [],
   "assistantSessions": [
+    {
+      "id": "ses_2f3e01631ddef965",
+      "tenantId": "t_1afcfb053c34acd6",
+      "userId": "u_95861cd3d1044e20",
+      "title": "Mere saare jitne bhi contacts ho unko ye mess",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Mere saare jitne bhi contacts ho unko ye message bhejna hai: We have launched our new AI voice receptionist service!",
+          "ts": "2026-10-15T12:47:14.186Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **5 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 80715 82519** (waba_enterprise_live_77)\n• Total Recipients: **5 contacts**\n• Broadcast Message:\n> \"We have launched our new AI voice receptionist service!\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 5,
+            "senderNumber": "+91 80715 82519",
+            "wabaId": "waba_enterprise_live_77",
+            "message": "We have launched our new AI voice receptionist service!"
+          },
+          "ts": "2026-10-15T12:47:14.386Z"
+        }
+      ],
+      "createdAt": "2026-10-15T12:47:14.186Z",
+      "updatedAt": "2026-10-15T12:47:14.386Z"
+    },
+    {
+      "id": "ses_c7e26dc177751026",
+      "tenantId": "t_a2d06cf0811a0b93",
+      "userId": "u_58282f59a376166d",
+      "title": "Mere saare contacts ko ye message bhej do: 'N",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'",
+          "ts": "2026-10-15T12:46:55.824Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **5 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 98765 43210** (waba_991204)\n• Total Recipients: **5 contacts**\n• Broadcast Message:\n> \"Namaste! We are offering free health consultations this week.\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 5,
+            "senderNumber": "+91 98765 43210",
+            "wabaId": "waba_991204",
+            "message": "Namaste! We are offering free health consultations this week."
+          },
+          "ts": "2026-10-15T12:46:56.018Z"
+        }
+      ],
+      "createdAt": "2026-10-15T12:46:55.824Z",
+      "updatedAt": "2026-10-15T12:46:56.018Z"
+    },
     {
       "id": "ses_a291568823dd7015",
       "tenantId": "t_61cb4c3f0a845e2a",
@@ -21314,10 +22333,28 @@
           "text": "Connected! Your AI voice agent **Ria - Seevora AI Voice Receptionist** has been linked to **WhatsApp Business**.\n\n• Channel: **WHATSAPP** (+91 79743 15518)\n• Status: **Live & Active**\n• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.",
           "intent": "general_chat",
           "ts": "2026-10-15T12:12:10.050Z"
+        },
+        {
+          "role": "user",
+          "text": "Mere saare contacts ko ye message bhej do: 'Namaste! We are offering free health consultations this week.'",
+          "ts": "2026-10-15T12:51:37.485Z"
+        },
+        {
+          "role": "assistant",
+          "text": "WhatsApp broadcast successfully dispatched to **7 contacts**!\n\n• Sender WhatsApp Business (WABA): **+91 98765 43210** (waba_991204)\n• Total Recipients: **7 contacts**\n• Broadcast Message:\n> \"Namaste! We are offering free health consultations this week.\"\n\n• Delivery Status: **Delivered to WhatsApp timeline**\n• CRM Sync: Outbound message recorded in WhatsApp CRM for every contact.\n\nYou can review live message delivery status and replies anytime in the WhatsApp CRM panel.",
+          "intent": "broadcast_message",
+          "action": {
+            "type": "broadcast_sent",
+            "count": 7,
+            "senderNumber": "+91 98765 43210",
+            "wabaId": "waba_991204",
+            "message": "Namaste! We are offering free health consultations this week."
+          },
+          "ts": "2026-10-15T12:51:38.060Z"
         }
       ],
       "createdAt": "2026-10-15T11:52:52.509Z",
-      "updatedAt": "2026-10-15T12:12:10.050Z"
+      "updatedAt": "2026-10-15T12:51:38.060Z"
     },
     {
       "id": "ses_8c184d833c150101",
@@ -21479,6 +22516,147 @@
         "syncOnCallEnd": true,
         "description": "Creates CRM contact and deal card on every answered voice call",
         "updatedAt": "2026-10-15T11:32:31.837Z"
+      }
+    },
+    {
+      "tenantId": "t_a2d06cf0811a0b93",
+      "calendar": {
+        "provider": "Google Calendar",
+        "status": "connected",
+        "email": "team@seevora.ai",
+        "lastSync": "2026-10-15T12:46:55.874Z",
+        "eventsCount": 14
+      },
+      "fileReader": {
+        "status": "active",
+        "documents": [
+          {
+            "id": "doc_1",
+            "name": "Knowledge_Base_FAQ.pdf",
+            "size": "240 KB",
+            "pages": 8,
+            "uploadedAt": "2026-10-15T12:46:55.874Z"
+          },
+          {
+            "id": "doc_2",
+            "name": "Service_Catalog_Pricing.docx",
+            "size": "115 KB",
+            "pages": 4,
+            "uploadedAt": "2026-10-14T12:46:55.874Z"
+          }
+        ]
+      },
+      "mediaFiles": {
+        "status": "active",
+        "count": 31,
+        "storageUsedMb": "42.8 MB"
+      },
+      "gmail": {
+        "provider": "Gmail Dispatch",
+        "status": "active",
+        "senderEmail": "dispatch@seevora.ai",
+        "dispatchOnCallEnd": true,
+        "lastDispatchedAt": "2026-10-15T12:46:55.874Z"
+      },
+      "whatsapp": {
+        "provider": "WhatsApp Voice Dispatch",
+        "status": "active",
+        "phoneNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "verifiedAt": "2026-10-15T12:46:55.875Z",
+        "dispatchOnCallEnd": true,
+        "description": "Sends post-call audio transcript and booking confirmation via WhatsApp"
+      },
+      "crm": {
+        "provider": "CRM Webhook & Pipeline",
+        "status": "active",
+        "webhookUrl": "https://api.seevora.ai/v1/crm/lead-sync",
+        "syncOnCallEnd": true,
+        "lastSync": "2026-10-15T12:46:55.875Z",
+        "description": "Auto-syncs caller contact and conversation notes to your CRM pipeline"
+      },
+      "webhook": {
+        "provider": "Custom Webhook API",
+        "status": "active",
+        "endpoint": "https://webhook.site/seevora-call-events",
+        "events": [
+          "call.answered",
+          "call.completed",
+          "booking.created"
+        ],
+        "lastDispatchedAt": "2026-10-15T12:46:55.875Z",
+        "description": "Dispatches real-time call events to any external system or marketplace tool"
+      }
+    },
+    {
+      "tenantId": "t_1afcfb053c34acd6",
+      "calendar": {
+        "provider": "Google Calendar",
+        "status": "connected",
+        "email": "team@seevora.ai",
+        "lastSync": "2026-10-15T12:47:14.133Z",
+        "eventsCount": 14
+      },
+      "fileReader": {
+        "status": "active",
+        "documents": [
+          {
+            "id": "doc_1",
+            "name": "Knowledge_Base_FAQ.pdf",
+            "size": "240 KB",
+            "pages": 8,
+            "uploadedAt": "2026-10-15T12:47:14.133Z"
+          },
+          {
+            "id": "doc_2",
+            "name": "Service_Catalog_Pricing.docx",
+            "size": "115 KB",
+            "pages": 4,
+            "uploadedAt": "2026-10-14T12:47:14.133Z"
+          }
+        ]
+      },
+      "mediaFiles": {
+        "status": "active",
+        "count": 31,
+        "storageUsedMb": "42.8 MB"
+      },
+      "gmail": {
+        "provider": "Gmail Dispatch",
+        "status": "active",
+        "senderEmail": "dispatch@seevora.ai",
+        "dispatchOnCallEnd": true,
+        "lastDispatchedAt": "2026-10-15T12:47:14.133Z"
+      },
+      "whatsapp": {
+        "provider": "WhatsApp Voice Dispatch",
+        "status": "live",
+        "phoneNumber": "+91 80715 82519",
+        "wabaId": "waba_enterprise_live_77",
+        "verifiedAt": "2026-10-15T12:47:14.133Z",
+        "dispatchOnCallEnd": true,
+        "description": "Sends post-call audio transcript and booking confirmation via WhatsApp",
+        "updatedAt": "2026-10-15T12:47:14.133Z"
+      },
+      "crm": {
+        "provider": "CRM Webhook & Pipeline",
+        "status": "active",
+        "webhookUrl": "https://api.seevora.ai/v1/crm/lead-sync",
+        "syncOnCallEnd": true,
+        "lastSync": "2026-10-15T12:47:14.133Z",
+        "description": "Auto-syncs caller contact and conversation notes to your CRM pipeline"
+      },
+      "webhook": {
+        "provider": "Custom Webhook API",
+        "status": "active",
+        "endpoint": "https://webhook.site/seevora-call-events",
+        "events": [
+          "call.answered",
+          "call.completed",
+          "booking.created"
+        ],
+        "lastDispatchedAt": "2026-10-15T12:47:14.133Z",
+        "description": "Dispatches real-time call events to any external system or marketplace tool"
       }
     }
   ],
