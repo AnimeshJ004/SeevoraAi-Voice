@@ -349,7 +349,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$2ff600b1545bbf0c2cbda997a15a2aa8$3f391415f6f7674a0230a3ad2fdf1d6ab650122329d2bdbb4f5822a94ac0c694056a42dd0fca1732ce0aff3c03da8811da14a1de64502537d3cd08ab62d3c224",
+      "passHash": "scrypt$d00e5e1014d0060cef9db89caca542c8$ddb100654898957a9e582de0f01a1f610f74e16f25968f5ee40c564f0bce85a80baae8bfa775c2e732520b82c965b7d0c4d81b87fe223b4d66495e742f70ef01",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -359,7 +359,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$63a50641e277670be2b9fd141a37720e$f97d926c4c020018594dad90a34dcd63a04e8cd882bc370192236c49471cf7e5075c4883562ef7d70734867e9b5143ea4ba92358cede17c4f80fb0d1236a3898",
+      "passHash": "scrypt$ab58a7e54b139f64e73925740d870223$9341e32201ae95ec4f845e81ae4b6220641dc055d24f8d875a7a0d415ffbcccc4c083b6383742dce20207cfd017bde634e9f168068a5be9dcfc998d61470f3b5",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
@@ -4607,12 +4607,6 @@
       "exp": 1792581740053
     },
     {
-      "tokenHash": "23f2c1b73a34f9da9dd84b99ab8e228dac65589a214311ebcd8503910d72f2c8",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1792582424750
-    },
-    {
       "tokenHash": "7bc9d4b7f4e3f0e196ff0ebe83f80b3b8216e6fd4d8dbb66f17f5af64bead78b",
       "userId": "u_c6b5f6cf84425987",
       "tenantId": "t_4feb1d5f86369faa",
@@ -4791,6 +4785,12 @@
       "userId": "u_c6b5f6cf84425987",
       "tenantId": "t_4feb1d5f86369faa",
       "exp": 1792660214307
+    },
+    {
+      "tokenHash": "4a27acb87e03566efb12530b5d499e6df23e26f722d9df5ee42ae28bd59d5a8d",
+      "userId": "u_9615cb3586082da5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "exp": 1792665902432
     }
   ],
   "wallets": [
@@ -20849,6 +20849,163 @@
   "pendingConfirmations": [],
   "assistantSessions": [
     {
+      "id": "ses_bafc30ee0c4efa7c",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "userId": "u_9615cb3586082da5",
+      "title": "How many calls did I get today?",
+      "messages": [
+        {
+          "role": "user",
+          "text": "How many calls did I get today?",
+          "ts": "2026-10-15T08:29:24.247Z"
+        },
+        {
+          "role": "assistant",
+          "text": "You received 14 calls today. This is a significant portion of your 172 total calls over the last 7 days, indicating a busy day for your single active agent.",
+          "intent": "ask_report",
+          "ts": "2026-10-15T08:29:24.847Z"
+        },
+        {
+          "role": "user",
+          "text": "Create an AI receptionist for a dental clinic in Mumbai",
+          "ts": "2026-10-15T08:29:35.163Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I could not generate an agent from that description. Could you give me a bit more detail about the business and what the agent should do?",
+          "intent": "build_agent",
+          "ts": "2026-10-15T08:29:37.427Z"
+        },
+        {
+          "role": "user",
+          "text": "Create an AI receptionist for a dental clinic in Mumbai",
+          "ts": "2026-10-15T08:30:38.619Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I could not generate an agent from that description. Could you give me a bit more detail about the business and what the agent should do?",
+          "intent": "build_agent",
+          "ts": "2026-10-15T08:30:40.902Z"
+        },
+        {
+          "role": "user",
+          "text": "build an agent for a dental clinic called SmileCare",
+          "ts": "2026-10-15T08:33:10.348Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Done! I've created **SmileCare Assistant** for you.\n\nGreeting: \"Hello, welcome to SmileCare Dental. How can I help you today?\"\n\nYou can find it in the Agents section. Want me to adjust the persona, voice, or anything else?",
+          "intent": "build_agent",
+          "action": {
+            "type": "agent_created",
+            "agentId": "ag_15b9e099b29e1d50",
+            "agentName": "SmileCare Assistant"
+          },
+          "ts": "2026-10-15T08:33:12.067Z"
+        },
+        {
+          "role": "user",
+          "text": "Create an AI receptionist for a dental clinic in Mumbai",
+          "ts": "2026-10-15T08:35:27.768Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I could not generate an agent from that description. Could you give me a bit more detail about the business and what the agent should do?",
+          "intent": "build_agent",
+          "ts": "2026-10-15T08:35:29.900Z"
+        },
+        {
+          "role": "user",
+          "text": "Create an AI receptionist for a dental clinic in Mumbai",
+          "ts": "2026-10-15T08:39:09.243Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Done! I've created **Dr. Smile Assistant** for you.\n\nGreeting: \"Namaste! Thank you for calling Mumbai Dental Clinic. I am Dr. Smile, your virtual assistant. How can I help you today? Would you like to book an appointment, check our clinic hours, or ask about our dental services?\"\n\nYou can find it in the Agents section. Want me to adjust the persona, voice, or anything else?",
+          "intent": "build_agent",
+          "action": {
+            "type": "agent_created",
+            "agentId": "ag_d8870c1cd891bdec",
+            "agentName": "Dr. Smile Assistant"
+          },
+          "ts": "2026-10-15T08:39:11.281Z"
+        },
+        {
+          "role": "user",
+          "text": "How many calls did I get this week?",
+          "ts": "2026-10-15T08:39:11.388Z"
+        },
+        {
+          "role": "assistant",
+          "text": "You received 172 calls over the last 7 days. For context, this compares to 348 calls in the last 30 days and 14 calls today.",
+          "intent": "ask_report",
+          "ts": "2026-10-15T08:39:11.811Z"
+        },
+        {
+          "role": "user",
+          "text": "Add knowledge: Consultation hours are Monday to Saturday 10 AM to 7 PM",
+          "ts": "2026-10-15T08:39:11.845Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Added to **Dr. Smile Assistant**'s knowledge base. The agent will now use this information when answering calls and chats.\n\nKnowledge added:\n\"Consultation hours are Monday to Saturday 10 AM to 7 PM.\"",
+          "intent": "add_knowledge",
+          "action": {
+            "type": "knowledge_added",
+            "agentId": "ag_d8870c1cd891bdec",
+            "agentName": "Dr. Smile Assistant"
+          },
+          "ts": "2026-10-15T08:39:12.078Z"
+        },
+        {
+          "role": "user",
+          "text": "Change the greeting to say Hello and welcome to Dental Care",
+          "ts": "2026-10-15T08:39:12.096Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Change **greeting** on agent \"Dr. Smile Assistant\":\n\nBefore: \"Namaste! Thank you for calling Mumbai Dental Clinic. I am Dr. Smile, your virtual assistant. How can I help you today? Would you like to book an appointment, check our clinic hours, or ask about our d\"\nAfter: \"Hello and welcome to Dental Care. I am Dr. Smile, your virtual assistant. How can I help you today? Would you like to book an appointment, check our clinic hours, or ask about our dental services?\"\n\nReply **yes** to apply, or tell me what to adjust.",
+          "intent": "edit_agent",
+          "ts": "2026-10-15T08:39:12.638Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Done! The **greeting** has been updated on the agent.",
+          "intent": "edit_agent",
+          "action": {
+            "type": "agent_updated",
+            "agentId": "ag_d8870c1cd891bdec",
+            "field": "greeting"
+          },
+          "ts": "2026-10-15T08:39:12.701Z"
+        },
+        {
+          "role": "user",
+          "text": "Test chat: Hi, do you do teeth cleaning?",
+          "ts": "2026-10-15T08:39:12.720Z"
+        },
+        {
+          "role": "assistant",
+          "text": "Hello and welcome to Dental Care. I am Dr. Smile, your virtual assistant. How can I help you today?",
+          "intent": "general_chat",
+          "ts": "2026-10-15T08:39:13.021Z"
+        },
+        {
+          "role": "user",
+          "text": "Can you help me visualize a 3D scene?",
+          "ts": "2026-10-15T09:06:30.437Z"
+        },
+        {
+          "role": "assistant",
+          "text": "I am a voice receptionist assistant and cannot generate visual content. I can help you manage your AI agents or review call analytics.",
+          "intent": "general_chat",
+          "ts": "2026-10-15T09:06:30.849Z"
+        }
+      ],
+      "createdAt": "2026-10-15T08:29:24.247Z",
+      "updatedAt": "2026-10-15T10:45:10.133Z"
+    },
+    {
       "id": "ses_8c184d833c150101",
       "tenantId": "t_4feb1d5f86369faa",
       "userId": "u_c6b5f6cf84425987",
@@ -20936,6 +21093,54 @@
         "phoneNumber": "+91 98765 43210",
         "wabaId": "waba_991204",
         "verifiedAt": "2026-10-15T10:20:35.686Z",
+        "botActive": true
+      }
+    },
+    {
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "calendar": {
+        "provider": "Google Calendar",
+        "status": "connected",
+        "email": "team@seevora.ai",
+        "lastSync": "2026-10-15T10:45:10.609Z",
+        "eventsCount": 14
+      },
+      "fileReader": {
+        "status": "active",
+        "documents": [
+          {
+            "id": "doc_1",
+            "name": "Knowledge_Base_FAQ.pdf",
+            "size": "240 KB",
+            "pages": 8,
+            "uploadedAt": "2026-10-15T10:45:10.612Z"
+          },
+          {
+            "id": "doc_2",
+            "name": "Service_Catalog_Pricing.docx",
+            "size": "115 KB",
+            "pages": 4,
+            "uploadedAt": "2026-10-14T10:45:10.612Z"
+          }
+        ]
+      },
+      "mediaFiles": {
+        "status": "active",
+        "count": 31,
+        "storageUsedMb": "42.8 MB"
+      },
+      "gmail": {
+        "provider": "Gmail Dispatch",
+        "status": "active",
+        "senderEmail": "dispatch@seevora.ai",
+        "dispatchOnCallEnd": true,
+        "lastDispatchedAt": "2026-10-15T10:45:10.612Z"
+      },
+      "whatsapp": {
+        "status": "live",
+        "phoneNumber": "+91 98765 43210",
+        "wabaId": "waba_991204",
+        "verifiedAt": "2026-10-15T10:45:10.612Z",
         "botActive": true
       }
     }

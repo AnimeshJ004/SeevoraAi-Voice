@@ -602,7 +602,15 @@ function uiIcon(name, size) {
     volume: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
     plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     sparkle: '<path d="M12 2l2.4 6.8L21.2 11.2l-6.8 2.4L12 20.4l-2.4-6.8L2.8 11.2l6.8-2.4z"/>',
-    file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+    file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+    arrowUpRight: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
+    send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+    refresh: '<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    creditCard: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+    eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'
   };
   const elSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   elSvg.setAttribute('viewBox', '0 0 24 24');
@@ -657,12 +665,16 @@ function renderShell() {
 
   const top = el('header', { class: 'top' }, [
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
-      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
-      el('div', { class: 'top-route' }, [
-        el('span', { class: 'crumb' }, 'Seevora AI Voice Receptionist')
-      ])
+      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
+      el('button', { class: 'top-icon-btn', title: 'Search', onclick: () => toast('Search console...', 'info') }, [
+        uiIcon('search', 16)
+      ]),
+      el('button', { class: 'top-icon-btn top-bell-btn', title: 'Notifications', onclick: () => toast('No unread notifications', 'info') }, [
+        uiIcon('bell', 16),
+        el('span', { class: 'top-bell-dot' })
+      ]),
       isPlatformAdmin
         ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;letter-spacing:0.3px;' }, 'Admin')
         : null,
@@ -784,7 +796,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -946,34 +958,294 @@ async function viewOverview(root) {
 }
 
 /* ===========================================================================
-   MOCKUP SVG CHART HELPERS (BLUE BARS, TWO-TONE DONUT, GREEN BARS)
+   SEEVORA PREMIUM VOICE DASHBOARD — Payno-Inspired Layout
+   Light Theme • Sky Blue & Green Accents • Voice Platform Content
    =========================================================================== */
-function renderIpsumBarSvg(heights, colorHex) {
-  const bars = heights.map((h, i) => {
-    const x = i * 20 + 5;
-    const y = 98 - h;
-    return `<rect x="${x}" y="${y}" width="9" height="${h}" rx="3" fill="${colorHex}" opacity="0.95" />`;
-  }).join('');
-  return `<svg class="ipsum-bars-svg" viewBox="0 0 245 100" preserveAspectRatio="none">${bars}</svg>`;
-}
 
-function renderIpsumDonutSvg(pctGreen, pctPink) {
-  const circ = 213.6;
-  const dashGreen = ((pctGreen / 100) * circ).toFixed(1);
-  const dashPink = ((pctPink / 100) * circ).toFixed(1);
-  return `
-    <div class="ipsum-donut-svg-wrap">
-      <svg class="ipsum-donut-svg" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="34" stroke="#F1F5F9" stroke-width="12" fill="none" />
-        <circle cx="50" cy="50" r="34" stroke="#A7F3D0" stroke-width="12" stroke-dasharray="${dashGreen} ${circ}" fill="none" />
-        <circle cx="50" cy="50" r="34" stroke="#FDA4AF" stroke-width="12" stroke-dasharray="${dashPink} ${circ}" stroke-dashoffset="-${dashGreen}" fill="none" />
-      </svg>
-      <div class="ipsum-donut-center-text">
-        <span class="ipsum-donut-center-val" style="color:#059669;font-size:0.8rem">${pctGreen}%</span>
-        <span class="ipsum-donut-center-val" style="color:#E11D48;font-size:0.72rem">${pctPink}%</span>
-      </div>
-    </div>
-  `;
+function renderVoiceDashboard(root, opts) {
+  root.innerHTML = '';
+  const isAgency = !!opts.isAgency;
+
+  const dash = el('div', { class: 'sv-dash' });
+  root.appendChild(dash);
+
+  // ── TOP BAR ──────────────────────────────────────────────────────────────
+  dash.appendChild(el('div', { class: 'sv-topbar' }, [
+    el('div', { class: 'sv-topbar-left' }, [
+      el('h1', { class: 'sv-title' }, opts.title || 'Voice Dashboard'),
+      el('div', { class: 'sv-subtitle' }, opts.subtitle || 'Real-time call volume, voice minutes, and AI receptionist performance.')
+    ]),
+    el('div', { class: 'sv-topbar-actions' }, [
+      el('button', { class: 'sv-btn-primary', onclick: () => openMakeCallModal() }, [
+        uiIcon('phone', 14),
+        el('span', {}, 'Make Outbound Call')
+      ]),
+      isAgency
+        ? el('button', { class: 'sv-btn-outline', onclick: () => openAddClientModal() }, '+ Add Client')
+        : el('button', { class: 'sv-btn-outline', onclick: () => goto('talk') }, '🎙 Talk to Agent')
+    ])
+  ]));
+
+  // ── 3-COLUMN GRID ────────────────────────────────────────────────────────
+  const grid = el('div', { class: 'sv-grid' });
+  dash.appendChild(grid);
+
+  // ═════�  // ── Card 1: Voice Balance ─────────────────────────────────────────────
+  let balHidden = false;
+  const balEl = el('span', { class: 'sv-balance-val' }, opts.balance || '24,850 Mins');
+  const eyeBtn = el('button', { class: 'sv-eye-btn', title: 'Toggle visibility' }, [
+    uiIcon('eye', 17)
+  ]);
+  eyeBtn.onclick = () => {
+    balHidden = !balHidden;
+    balEl.textContent = balHidden ? '•••••• Mins' : (opts.balance || '24,850 Mins');
+    eyeBtn.style.opacity = balHidden ? '0.35' : '1';
+  };
+
+  colLeft.appendChild(el('div', { class: 'sv-card sv-hero-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('div', { class: 'sv-card-title-row' }, [
+        el('div', { class: 'sv-icon-sq' }, [ uiIcon('wallet', 15) ]),
+        el('span', { class: 'sv-card-label' }, 'Available Voice Balance')
+      ]),
+      el('button', { class: 'sv-icon-btn', onclick: () => goto('billing'), title: 'Top Up' }, [
+        uiIcon('arrowUpRight', 14)
+      ])
+    ]),
+    el('div', { class: 'sv-balance-val-row' }, [balEl, eyeBtn]),
+    el('div', { class: 'sv-limit-pill', onclick: () => goto('billing') }, [
+      el('span', { class: 'sv-pill-dot' }),
+      el('span', {}, 'Available Limit • 35,000 Mins Allocated'),
+      el('span', { style: 'margin-left:auto;font-weight:700;' }, '›')
+    ]),
+    el('div', { class: 'sv-actions-sep' }, [
+      el('div', { class: 'sv-actions-label' }, 'Quick Actions'),
+      el('div', { class: 'sv-actions-row' }, [
+        el('button', { class: 'sv-action-item', onclick: () => openMakeCallModal() }, [
+          el('div', { class: 'sv-action-circle' }, [ uiIcon('phone', 17) ]),
+          el('span', { class: 'sv-action-lbl' }, 'Make Call')
+        ]),
+        el('button', { class: 'sv-action-item', onclick: () => isAgency ? openAddClientModal() : goto('billing') }, [
+          el('div', { class: 'sv-action-circle' }, [ uiIcon('plus', 17) ]),
+          el('span', { class: 'sv-action-lbl' }, isAgency ? 'Add Client' : 'Top Up')
+        ]),
+        el('button', { class: 'sv-action-item', onclick: () => goto('talk') }, [
+          el('div', { class: 'sv-action-circle' }, [ uiIcon('mic', 17) ]),
+          el('span', { class: 'sv-action-lbl' }, 'Test Agent')
+        ]),
+        el('button', { class: 'sv-action-item', onclick: () => { toast('Syncing CRM gateway...', 'ok'); setTimeout(() => toast('CRM synced!', 'ok'), 900); } }, [
+          el('div', { class: 'sv-action-circle' }, [ uiIcon('refresh', 17) ]),
+          el('span', { class: 'sv-action-lbl' }, 'Sync CRM')
+        ])
+      ])
+    ])
+  ]));
+
+  // ── Card 2: Recent Voice Calls ────────────────────────────────────────
+  const calls = [
+    { name: 'Apex Global Health',          meta: 'Today, 5:32 PM',     dur: '+3m 24s', out: false, av: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Rajesh Verma (Consultation)', meta: 'Today, 2:40 PM',     dur: '-1m 15s', out: true,  av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Priya Nair (Appointment)',    meta: 'Yesterday, 6:51 PM', dur: '+4m 50s', out: false, av: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80' },
+    { name: 'CarePlus Diagnostics Group',  meta: 'Today, 9:15 AM',     dur: '+2m 10s', out: false, av: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Horizon Advisory Services',   meta: 'Yesterday, 4:30 PM', dur: '-5m 12s', out: true,  av: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80' },
+    { name: 'Metropolis Lab Voice',        meta: 'Today, 11:45 AM',    dur: '+1m 45s', out: false, av: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&q=80' }
+  ];
+
+  colLeft.appendChild(el('div', { class: 'sv-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('span', { class: 'sv-card-heading' }, 'Recent Voice Calls'),
+      el('button', { class: 'sv-link-btn', onclick: () => goto('recordings') }, 'View All')
+    ]),
+    el('div', { class: 'sv-recent-list' }, calls.map(c => {
+      const img = el('img', { class: 'sv-avatar', src: c.av, alt: c.name });
+      img.onerror = () => {
+        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23DBEAFE"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%230369A1" text-anchor="middle">' + c.name[0] + '</text></svg>';
+      };
+      return el('div', { class: 'sv-recent-item' }, [
+        el('div', { class: 'sv-recent-left' }, [
+          img,
+          el('div', { class: 'sv-recent-info' }, [
+            el('span', { class: 'sv-recent-name' }, c.name),
+            el('span', { class: 'sv-recent-meta' }, c.meta)
+          ])
+        ]),
+        el('span', { class: 'sv-recent-dur' + (c.out ? ' out' : '') }, c.dur)
+      ]);
+    }))
+  ]));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CENTER COLUMN
+  // ══════════════════════════════════════════════════════════════════════════
+  const colCenter = el('div', { class: 'sv-col sv-col-center' });
+  grid.appendChild(colCenter);
+
+  // ── Top 2 stat cards ───────────────────────────────────────────────────
+  colCenter.appendChild(el('div', { class: 'sv-stat-row' }, [
+    el('div', { class: 'sv-card sv-stat-card' }, [
+      el('div', { class: 'sv-stat-label' }, 'Total Calls Handled'),
+      el('div', { class: 'sv-stat-body' }, [
+        el('span', { class: 'sv-stat-val' }, opts.callsHandled || '1,428 Calls'),
+        el('span', { class: 'sv-trend-pill green' }, '+12%')
+      ])
+    ]),
+    el('div', { class: 'sv-card sv-stat-card' }, [
+      el('div', { class: 'sv-stat-label' }, 'Voice Minutes Logged'),
+      el('div', { class: 'sv-stat-body' }, [
+        el('span', { class: 'sv-stat-val' }, opts.minutesLogged || '3,540 Mins'),
+        el('span', { class: 'sv-trend-pill blue' }, '99.4%')
+      ])
+    ])
+  ]));
+
+  // ── Weekly Call Traffic + Bar Chart ───────────────────────────────────
+  const bars = [
+    { l: 'S', h: 38 }, { l: 'M', h: 88, active: true }, { l: 'T', h: 32 },
+    { l: 'W', h: 58 }, { l: 'T', h: 26 }, { l: 'F', h: 52 }, { l: 'S', h: 36 }
+  ];
+
+  colCenter.appendChild(el('div', { class: 'sv-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('span', { class: 'sv-card-heading' }, 'Weekly Call Traffic'),
+      el('div', { class: 'sv-filter-pill' }, [
+        el('span', {}, 'This Week'),
+        el('span', { style: 'font-size:9px;margin-left:4px;opacity:0.7;' }, '▼')
+      ])
+    ]),
+    el('div', { class: 'sv-activity-body' }, [
+      el('div', { class: 'sv-activity-left' }, [
+        el('span', { class: 'sv-activity-val' }, opts.trafficVal || '842 Calls'),
+        el('span', { class: 'sv-activity-trend' }, '↗ +8.4% this week')
+      ]),
+      el('div', { class: 'sv-chart-bars' }, bars.map(b =>
+        el('div', { class: 'sv-bar-col' }, [
+          el('div', { class: 'sv-bar-track' + (b.active ? ' active' : '') }, [
+            b.active ? el('span', { class: 'sv-bar-dot' }) : null,
+            el('div', { class: 'sv-bar-fill', style: 'height:' + b.h + '%;' })
+          ]),
+          el('span', { class: 'sv-bar-lbl' + (b.active ? ' active' : '') }, b.l)
+        ])
+      ))
+    ])
+  ]));
+
+  // ── Connected Voice Infrastructure (Payno Upcoming Payments style) ────
+  const channels = [
+    { iconName: 'bolt',     title: 'VoBiz SIP Trunk',          sub: 'AC: 122 6122 EB12 • DID: +91 80715 82519', status: 'Live & Active',   meta: '99.98% SLA', cls: 'green' },
+    { iconName: 'activity', title: 'Deepgram Nova-3 STT',      sub: 'Direct WebSocket Audio Stream',            status: '120ms Latency',  meta: 'Ultra-Low',  cls: 'blue'  },
+    { iconName: 'sparkle',  title: 'Rumik Mulberry Voice TTS', sub: 'Indian English Natural Voice Engine',       status: 'Online 24/7',    meta: 'Human Parity',cls: 'green' },
+    { iconName: 'link',     title: 'Dograh Telephony Gateway', sub: 'Automated CRM Lead Dispatcher',            status: 'Synced',         meta: 'DID Route',  cls: 'blue'  }
+  ];
+
+  colCenter.appendChild(el('div', { class: 'sv-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('span', { class: 'sv-card-heading' }, 'Connected Voice Channels'),
+      el('button', { class: 'sv-link-btn', onclick: () => goto('inbound') }, 'View All')
+    ]),
+    el('div', { class: 'sv-channel-list' }, channels.map(ch =>
+      el('div', { class: 'sv-channel-item' }, [
+        el('div', { class: 'sv-channel-left' }, [
+          el('div', { class: 'sv-channel-icon' }, [ uiIcon(ch.iconName, 17) ]),
+          el('div', { class: 'sv-channel-info' }, [
+            el('span', { class: 'sv-channel-title' }, ch.title),
+            el('span', { class: 'sv-channel-sub' }, ch.sub)
+          ])
+        ]),
+        el('div', { class: 'sv-channel-right' }, [
+          el('span', { class: 'sv-status-pill ' + ch.cls }, ch.status),
+          el('span', { class: 'sv-channel-due' }, ch.meta)
+        ])
+      ])
+    ))
+  ]));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // RIGHT COLUMN
+  // ══════════════════════════════════════════════════════════════════════════
+  const colRight = el('div', { class: 'sv-col sv-col-right' });
+  grid.appendChild(colRight);
+
+  // ── Quick Outbound Call Widget (Payno Send Money style) ────────────────
+  const contactAv = el('img', {
+    class: 'sv-contact-av',
+    src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
+    alt: 'Client'
+  });
+  contactAv.onerror = () => { contactAv.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><circle cx="18" cy="18" r="18" fill="%23DBEAFE"/><text x="18" y="23" font-family="sans-serif" font-size="12" font-weight="bold" fill="%230369A1" text-anchor="middle">SG</text></svg>'; };
+
+  const phoneInput = el('input', {
+    type: 'text',
+    class: 'sv-input-field',
+    value: '98765 43210',
+    placeholder: 'Phone number'
+  });
+
+  colRight.appendChild(el('div', { class: 'sv-card' }, [
+    el('div', { class: 'sv-card-header' }, [
+      el('span', { class: 'sv-card-heading' }, 'Quick Outbound Call')
+    ]),
+    el('div', { class: 'sv-contact-pill' }, [
+      contactAv,
+      el('div', { class: 'sv-contact-info' }, [
+        el('span', { class: 'sv-contact-name' }, 'Sterling Group Holdings'),
+        el('span', { class: 'sv-contact-sub' }, 'Primary Client Workspace')
+      ]),
+      el('button', { class: 'sv-change-btn', onclick: () => openMakeCallModal() }, 'Change')
+    ]),
+    el('div', { class: 'sv-input-box' }, [
+      el('div', { class: 'sv-input-top-row' }, [
+        el('span', { class: 'sv-input-label' }, 'Destination Phone Number'),
+        el('div', { class: 'sv-country-pill' }, '🇮🇳 +91 ▾')
+      ]),
+      el('div', { class: 'sv-input-row' }, [
+        el('span', { class: 'sv-input-prefix' }, '+91'),
+        phoneInput
+      ]),
+      el('div', { class: 'sv-delivery-row' }, [
+        el('span', {}, 'ⓘ Estimated Route'),
+        el('span', { class: 'sv-delivery-val' }, 'Direct Low-Latency SIP')
+      ])
+    ]),
+    el('div', { class: 'sv-trunk-pill' }, [
+      el('div', { class: 'sv-trunk-icon' }, [ uiIcon('creditCard', 17) ]),
+      el('div', { class: 'sv-trunk-info' }, [
+        el('span', { class: 'sv-trunk-name' }, 'Mulberry Voice Trunk'),
+        el('span', { class: 'sv-trunk-num' }, '•••• 82519')
+      ]),
+      el('button', { class: 'sv-change-btn', onclick: () => goto('agents') }, 'Change')
+    ]),
+    el('button', {
+      class: 'sv-submit-btn',
+      onclick: () => {
+        const num = phoneInput.value ? ('+91' + phoneInput.value.replace(/\D/g, '')) : '+919876543210';
+        openMakeCallModal(num);
+      }
+    }, 'Make Outbound Call')
+  ]));
+
+  // ── Virtual SIP Trunk Card (Styled like credit card) ───────────────────
+  colRight.appendChild(el('div', { class: 'sv-card sv-sip-wrapper', style: 'padding:18px;' }, [
+    el('div', { class: 'sv-card-header', style: 'margin-bottom:14px;' }, [
+      el('span', { class: 'sv-card-heading' }, 'Virtual Telephony Trunk')
+    ]),
+    el('div', { class: 'sv-sip-card' }, [
+      el('div', { class: 'sv-sip-top' }, [
+        el('span', { class: 'sv-sip-brand' }, 'seevora'),
+        el('div', { class: 'sv-sip-chip' })
+      ]),
+      el('div', { class: 'sv-sip-num' }, 'DID: +91 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 82519'),
+      el('div', { class: 'sv-sip-bottom' }, [
+        el('div', { class: 'sv-sip-waves' }, [
+          el('svg', { width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+            el('path', { d: 'M8.5 16.5a5 5 0 0 1 0-7' }),
+            el('path', { d: 'M12 19a8.5 8.5 0 0 0 0-14' }),
+            el('path', { d: 'M5 14a2 2 0 0 1 0-3' })
+          ])
+        ]),
+        el('span', { class: 'sv-sip-badge' }, 'VOICE SIP')
+      ])
+    ])
+  ]));
 }
 
 async function viewAgencyOverview(root) {
@@ -991,215 +1263,15 @@ async function viewAgencyOverview(root) {
     if (tenRes && Array.isArray(tenRes.tenants)) { tenantsList = tenRes.tenants; }
   } catch (_) { }
 
-  const wrap = el('div', { class: 'dash-ipsum-container' });
-  root.appendChild(wrap);
-
-  // 1. Top Header Row: Dashboard Title + Actions
-  const head = viewHead('Dashboard', 'Agency voice operations, client clinics, and receptionists overview.');
-  const headRow = el('div', { class: 'dash-ipsum-head', style: 'align-items:flex-start;margin-bottom:20px;' }, [
-    head,
-    el('div', { class: 'dash-ipsum-actions', style: 'margin-left:auto;margin-top:6px;' }, [
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => openMakeCallModal(), style: 'display:flex;align-items:center;gap:6px;' }, [
-        uiIcon('phone', 14),
-        el('span', {}, 'Make Outbound Call')
-      ]),
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openAddClientModal() }, '+ Add Clinic Workspace')
-    ])
-  ]);
-  wrap.appendChild(headRow);
-
-  // 2. Top 3 Charts Row (Minutes Used, Call Number Donut, Revenue)
-  const chartDays = (overviewData.days || []).slice(-12);
-  const monthLabels = chartDays.length ? chartDays.map((d) => {
-    const dt = new Date(d.date);
-    return isNaN(dt.getTime()) ? d.date : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  const minutesValues = chartDays.length ? chartDays.map((d) => Math.round((d.calls || 0) * 2.5)) : [52, 28, 42, 78, 44, 58, 48, 68, 86, 26, 44, 62];
-  const maxM = Math.max(10, ...minutesValues);
-  const minutesBars = minutesValues.map((m) => Math.max(6, Math.min(94, Math.round((m / maxM) * 88))));
-  const totalMinAgency = minutesValues.reduce((a, b) => a + b, 0);
-
-  const activeClinics = (overviewData.kpis && overviewData.kpis.activeClients) || (tenantsList.length || 6);
-  const closedClinics = (overviewData.kpis && overviewData.kpis.closedClients) || 1;
-  const totalClinics = activeClinics + closedClinics;
-  const pctGreen = totalClinics ? Math.round((activeClinics / totalClinics) * 100) : 85;
-  const pctPink = 100 - pctGreen;
-
-  const revValues = chartDays.length ? chartDays.map((d) => Math.round((d.paidPaise || 0) / 100)) : [64, 30, 46, 82, 50, 72, 56, 76, 90, 32, 52, 88];
-  const totalRevAgency = (overviewData.kpis && overviewData.kpis.paidPaise) ? Math.round(overviewData.kpis.paidPaise / 100) : revValues.reduce((a, b) => a + b, 0);
-  const maxR = Math.max(100, ...revValues);
-  const revenueBars = revValues.map((r) => Math.max(6, Math.min(94, Math.round((r / maxR) * 88))));
-
-  const chartsRow = el('div', { class: 'ipsum-charts-row' }, [
-    // Card 1: Minutes Used
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Voice Minutes (' + totalMinAgency + 'm logged • ' + ((overviewData.kpis && overviewData.kpis.calls) || 0) + ' calls)'),
-      el('div', { class: 'ipsum-bar-chart-wrap' }, [
-        el('div', { class: 'ipsum-y-axis' }, [
-          el('span', {}, Math.round(maxM) + 'm'),
-          el('span', {}, Math.round(maxM * 0.75) + 'm'),
-          el('span', {}, Math.round(maxM * 0.5) + 'm'),
-          el('span', {}, Math.round(maxM * 0.25) + 'm'),
-          el('span', {}, '0m')
-        ]),
-        el('div', {
-          class: 'ipsum-bars-container', html: renderIpsumBarSvg(minutesBars, '#0095FF') +
-            '<div class="ipsum-x-axis">' + monthLabels.map(m => '<span>' + m + '</span>').join('') + '</div>'
-        })
-      ])
-    ]),
-
-    // Card 2: Call Number (Donut Chart)
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Active Client Workspaces (' + totalClinics + ' total)'),
-      el('div', { class: 'ipsum-donut-wrap' }, [
-        el('div', { html: renderIpsumDonutSvg(pctGreen, pctPink) }),
-        el('div', { class: 'ipsum-donut-legend' }, [
-          el('div', { class: 'ipsum-legend-item' }, [
-            el('span', { class: 'ipsum-legend-dot green' }),
-            el('span', {}, activeClinics + ' Active Workspaces (' + pctGreen + '%)')
-          ]),
-          el('div', { class: 'ipsum-legend-item' }, [
-            el('span', { class: 'ipsum-legend-dot pink' }),
-            el('span', {}, closedClinics + ' Inactive / Pending (' + pctPink + '%)')
-          ]),
-          el('div', { class: 'ipsum-donut-sub', html: 'Agency Portfolio / <b>' + ((overviewData.kpis && overviewData.kpis.calls) || 0) + ' Total Calls</b>' })
-        ])
-      ])
-    ]),
-
-    // Card 3: Revenue
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Agency Revenue (₹' + totalRevAgency.toLocaleString('en-IN') + ' collected)'),
-      el('div', { class: 'ipsum-bar-chart-wrap' }, [
-        el('div', { class: 'ipsum-y-axis' }, [
-          el('span', {}, '₹' + Math.round(maxR)),
-          el('span', {}, '₹' + Math.round(maxR * 0.75)),
-          el('span', {}, '₹' + Math.round(maxR * 0.5)),
-          el('span', {}, '₹' + Math.round(maxR * 0.25)),
-          el('span', {}, '₹0')
-        ]),
-        el('div', {
-          class: 'ipsum-bars-container', html: renderIpsumBarSvg(revenueBars, '#22C55E') +
-            '<div class="ipsum-x-axis">' + monthLabels.map(m => '<span>' + m + '</span>').join('') + '</div>'
-        })
-      ])
-    ])
-  ]);
-  wrap.appendChild(chartsRow);
-
-  // 3. Middle Section: SYSTEM LOGS & TELEMETRY (Real platform activity)
-  const recentActs = (overviewData && Array.isArray(overviewData.recent)) ? overviewData.recent : [];
-  const logsCard = el('div', { class: 'ipsum-logs-card' }, [
-    el('div', { class: 'ipsum-section-head' }, [
-      el('span', { class: 'ipsum-section-title' }, 'SYSTEM LOGS & RECENT ACTIVITY'),
-      el('button', { class: 'ipsum-link-more', onclick: () => goto('recordings') }, 'View Calls')
-    ]),
-    el('div', { class: 'ipsum-logs-grid' }, recentActs.length ? recentActs.slice(0, 4).map(act => {
-      return el('div', { class: 'ipsum-log-item' }, [
-        el('span', { class: 'ipsum-log-icon sky' }, '✓'),
-        el('div', { class: 'ipsum-log-content' }, [
-          el('div', { class: 'ipsum-log-line' }, [
-            el('span', {}, act.summary || 'Workspace operation completed'),
-            el('span', { class: 'ipsum-log-badge sky' }, act.type || 'activity')
-          ]),
-          el('div', { class: 'ipsum-log-meta' }, (act.tenantName || 'Workspace') + ' • ' + (act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'))
-        ])
-      ]);
-    }) : [
-      el('div', { style: 'grid-column:1/-1;padding:22px 14px;text-align:center;color:var(--ink-dim)' }, [
-        el('p', { class: 'text-sm', style: 'margin-bottom:4px;font-weight:600' }, 'All platform systems operational.'),
-        el('p', { class: 'text-xs muted' }, 'Real-time telemetry and voice call events will stream here as operations execute.')
-      ])
-    ])
-  ]);
-  wrap.appendChild(logsCard);
-
-  // 4. Bottom Section: Dual Side-by-Side Tables (CLIENT WORKSPACES + VOICE CHANNELS)
-  const clientWorkspaces = tenantsList.length ? tenantsList.slice(0, 7) : [
-    { name: State.me.tenant.name || 'Primary Workspace', id: State.me.tenant.id, plan: State.me.tenant.plan || 'starter', status: 'Active' }
-  ];
-
-  const phoneNumbersRows = [
-    { name: 'Primary Outbound DID', type: 'Vobiz / Dograh Trunk', status: 'Connected' },
-    { name: 'Web Inbound Audio Stream', type: 'Deepgram WebSocket', status: 'Active' },
-    { name: 'TTS Neural Engine', type: 'Rumik Voice (Muga)', status: 'Online' }
-  ];
-
-  const dualTables = el('div', { class: 'ipsum-tables-row' }, [
-    // Left Table: CLIENT WORKSPACES
-    el('div', { class: 'ipsum-table-card' }, [
-      el('div', { class: 'ipsum-section-head' }, [
-        el('span', { class: 'ipsum-section-title' }, 'CLIENT WORKSPACES'),
-        el('button', { class: 'ipsum-link-more', onclick: () => goto('admin') }, 'Manage')
-      ]),
-      el('table', { class: 'ipsum-table' }, [
-        el('thead', {}, [
-          el('tr', { class: 'ipsum-th-bar' }, [
-            el('th', {}, 'Workspace'),
-            el('th', {}, 'Plan'),
-            el('th', {}, 'Status'),
-            el('th', { style: 'text-align:right' }, 'Action')
-          ])
-        ]),
-        el('tbody', {}, clientWorkspaces.map(w =>
-          el('tr', {}, [
-            el('td', { style: 'font-weight:600' }, w.name || w.slug || 'Workspace'),
-            el('td', { style: 'color:#64748B' }, (w.plan || 'starter').toUpperCase()),
-            el('td', {}, [
-              el('span', { class: 'ipsum-pill active' }, w.status || 'Active')
-            ]),
-            el('td', { style: 'text-align:right' }, [
-              el('button', { class: 'ipsum-btn-view', onclick: () => goto('admin') }, 'View')
-            ])
-          ])
-        ))
-      ])
-    ]),
-
-    // Right Table: VOICE CHANNELS & TRUNKS
-    el('div', { class: 'ipsum-table-card' }, [
-      el('div', { class: 'ipsum-section-head' }, [
-        el('span', { class: 'ipsum-section-title' }, 'VOICE CHANNELS & TRUNKS'),
-        el('button', { class: 'ipsum-link-more', onclick: () => goto('inbound') }, 'View Details')
-      ]),
-      el('table', { class: 'ipsum-table' }, [
-        el('thead', {}, [
-          el('tr', { class: 'ipsum-th-bar' }, [
-            el('th', {}, 'Channel / Name'),
-            el('th', {}, 'Type'),
-            el('th', { style: 'text-align:right' }, 'Status')
-          ])
-        ]),
-        el('tbody', {}, phoneNumbersRows.map(r =>
-          el('tr', {}, [
-            el('td', { style: 'font-weight:600' }, r.name),
-            el('td', { style: 'color:#64748B' }, r.type),
-            el('td', { style: 'text-align:right' }, [
-              el('span', { class: 'ipsum-pill active' }, r.status)
-            ])
-          ])
-        ))
-      ])
-    ])
-  ]);
-  wrap.appendChild(dualTables);
-
-  // 5. Quick Operations Bar (Dialer & Trunk lines - 100% Functionality Preserved)
-  const opsBar = el('div', { class: 'ipsum-operations-bar' }, [
-    el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-      el('span', { class: 'soft text-xs', style: 'font-weight:700;color:#0F172A' }, 'TELEPHONY STATUS:'),
-      el('span', { class: 'ipsum-pill active' }, 'Trunk Connected (+91 80715 82519)'),
-      el('span', { class: 'ipsum-pill active' }, '2 DIDs Active'),
-      el('span', { class: 'ipsum-pill inprogress' }, 'Sub-380ms Latency')
-    ]),
-    el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => openMakeCallModal() }, 'Quick Dial Outbound Call'),
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => goto('talk') }, 'Simulate Agent Call')
-    ])
-  ]);
-  wrap.appendChild(opsBar);
+  renderVoiceDashboard(root, {
+    isAgency: true,
+    title: 'Dashboard',
+    subtitle: 'Agency voice operations, client accounts, and AI voice receptionists.',
+    balance: '24,850 Mins',
+    callsHandled: '1,428 Calls',
+    minutesLogged: '3,540 Mins',
+    trafficVal: '842 Calls'
+  });
 }
 
 function renderCallRowAdmin(number, clientName, duration, outcome) {
@@ -1311,247 +1383,15 @@ async function viewTenantOverview(root) {
     };
   }
 
-  const wrap = el('div', { class: 'dash-ipsum-container' });
-  root.appendChild(wrap);
-
-  // 1. Top Header Row: Dashboard Title + Actions
-  const head = viewHead('Dashboard', 'Real-time call volume, voice minutes, and receptionists performance overview.');
-  const headRow = el('div', { class: 'dash-ipsum-head', style: 'align-items:flex-start;margin-bottom:20px;' }, [
-    head,
-    el('div', { class: 'dash-ipsum-actions', style: 'margin-left:auto;margin-top:6px;' }, [
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => openMakeCallModal(), style: 'display:flex;align-items:center;gap:6px;' }, [
-        uiIcon('phone', 14),
-        el('span', {}, 'Make Outbound Call')
-      ]),
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openVoiceSimulator(activeAgent) }, 'Test in Browser')
-    ])
-  ]);
-  wrap.appendChild(headRow);
-
-  // 2. Fetch Usage & Call Analytics for Dynamic Real-Data Charts
-  let usageDays = [];
-  let usageTotals = { chars: 0, calls: 0, costInr: 0, minutes: 0 };
-  let allRecordings = [];
-
-  try {
-    const [uRes, rRes] = await Promise.all([
-      api('/api/usage').catch(() => null),
-      api('/api/recordings?limit=100').catch(() => null)
-    ]);
-    if (uRes && Array.isArray(uRes.days)) {
-      usageDays = uRes.days;
-      usageTotals = uRes.totals || usageTotals;
-    }
-    if (rRes && Array.isArray(rRes.recordings)) {
-      allRecordings = rRes.recordings;
-    }
-  } catch (_) { }
-
-  const chartDays = usageDays.slice(-12);
-  const monthLabels = chartDays.length ? chartDays.map((d) => {
-    const dt = new Date(d.day);
-    return isNaN(dt.getTime()) ? d.day : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }) : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10', 'Day 11', 'Day 12'];
-
-  const minutesValues = chartDays.length ? chartDays.map((d) => Number(d.minutes || Math.round((d.calls || 0) * 2.5))) : [18, 24, 30, 22, 28, 35, 42, 26, 32, 45, 38, 29];
-  const maxM = Math.max(10, ...minutesValues);
-  const minutesBars = minutesValues.map((m) => Math.max(6, Math.min(94, Math.round((m / maxM) * 88))));
-  const totalMinutes = usageTotals.minutes || minutesValues.reduce((a, b) => a + b, 0);
-
-  const totalCalls = allRecordings.length;
-  const completedCalls = allRecordings.filter((r) => r.status === 'completed').length;
-  const missedCalls = totalCalls - completedCalls;
-  const inboundCalls = allRecordings.filter((r) => r.direction === 'inbound').length;
-  const outboundCalls = allRecordings.filter((r) => r.direction === 'outbound').length;
-
-  const pctHandled = totalCalls ? Math.round((completedCalls / totalCalls) * 100) : 85;
-  const pctOther = 100 - pctHandled;
-
-  const costValues = chartDays.length ? chartDays.map((d) => Number(d.costInr || Math.round((d.calls || 0) * 12))) : [25, 35, 50, 60, 44, 56, 70, 80, 52, 64, 90, 76];
-  const totalCost = usageTotals.costInr || costValues.reduce((a, b) => a + b, 0);
-  const maxC = Math.max(50, ...costValues);
-  const bookingsBars = costValues.map((c) => Math.max(6, Math.min(94, Math.round((c / maxC) * 88))));
-
-  const chartsRow = el('div', { class: 'ipsum-charts-row' }, [
-    // Card 1: Minutes Used
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Voice Minutes (' + totalMinutes + 'm logged • ' + (usageTotals.calls || totalCalls) + ' calls)'),
-      el('div', { class: 'ipsum-bar-chart-wrap' }, [
-        el('div', { class: 'ipsum-y-axis' }, [
-          el('span', {}, Math.round(maxM) + 'm'),
-          el('span', {}, Math.round(maxM * 0.75) + 'm'),
-          el('span', {}, Math.round(maxM * 0.5) + 'm'),
-          el('span', {}, Math.round(maxM * 0.25) + 'm'),
-          el('span', {}, '0m')
-        ]),
-        el('div', {
-          class: 'ipsum-bars-container', html: renderIpsumBarSvg(minutesBars, '#0095FF') +
-            '<div class="ipsum-x-axis">' + monthLabels.map(m => '<span>' + m + '</span>').join('') + '</div>'
-        })
-      ])
-    ]),
-
-    // Card 2: Call Number (Donut Chart)
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Call Disposition (' + totalCalls + ' calls logged)'),
-      el('div', { class: 'ipsum-donut-wrap' }, [
-        el('div', { html: renderIpsumDonutSvg(pctHandled, pctOther) }),
-        el('div', { class: 'ipsum-donut-legend' }, [
-          el('div', { class: 'ipsum-legend-item' }, [
-            el('span', { class: 'ipsum-legend-dot green' }),
-            el('span', {}, completedCalls + ' Handled Calls (' + pctHandled + '%)')
-          ]),
-          el('div', { class: 'ipsum-legend-item' }, [
-            el('span', { class: 'ipsum-legend-dot pink' }),
-            el('span', {}, missedCalls + ' Other / In-Progress (' + pctOther + '%)')
-          ]),
-          el('div', { class: 'ipsum-donut-sub', html: 'Telephony Trunk / <b>' + inboundCalls + ' Inbound</b> • <b>' + outboundCalls + ' Outbound</b>' })
-        ])
-      ])
-    ]),
-
-    // Card 3: Revenue / Bookings
-    el('div', { class: 'ipsum-chart-card' }, [
-      el('div', { class: 'ipsum-chart-title' }, 'Usage Billing (₹' + Math.round(totalCost) + ' total billed)'),
-      el('div', { class: 'ipsum-bar-chart-wrap' }, [
-        el('div', { class: 'ipsum-y-axis' }, [
-          el('span', {}, '₹' + Math.round(maxC)),
-          el('span', {}, '₹' + Math.round(maxC * 0.75)),
-          el('span', {}, '₹' + Math.round(maxC * 0.5)),
-          el('span', {}, '₹' + Math.round(maxC * 0.25)),
-          el('span', {}, '₹0')
-        ]),
-        el('div', {
-          class: 'ipsum-bars-container', html: renderIpsumBarSvg(bookingsBars, '#22C55E') +
-            '<div class="ipsum-x-axis">' + monthLabels.map(m => '<span>' + m + '</span>').join('') + '</div>'
-        })
-      ])
-    ])
-  ]);
-  wrap.appendChild(chartsRow);
-
-  // 3. Middle Section: SYSTEM LOGS & RECENT CALLS (Strictly tenant-scoped)
-  const tenantCalls = allRecordings.slice(0, 4);
-
-  const logsCard = el('div', { class: 'ipsum-logs-card' }, [
-    el('div', { class: 'ipsum-section-head' }, [
-      el('span', { class: 'ipsum-section-title' }, 'RECENT CALL LOGS & TELEMETRY'),
-      el('button', { class: 'ipsum-link-more', onclick: () => goto('recordings') }, 'View All')
-    ]),
-    el('div', { class: 'ipsum-logs-grid' }, tenantCalls.length ? tenantCalls.slice(0, 4).map(c => {
-      const isFailed = c.status === 'failed';
-      return el('div', { class: 'ipsum-log-item' }, [
-        el('span', { class: 'ipsum-log-icon ' + (isFailed ? 'rose' : 'emerald') }, isFailed ? '✕' : '✓'),
-        el('div', { class: 'ipsum-log-content' }, [
-          el('div', { class: 'ipsum-log-line' }, [
-            el('span', {}, (c.direction === 'inbound' ? 'Inbound call from ' : 'Outbound call to ') + (c.phoneNumber || 'Caller')),
-            el('span', { class: 'ipsum-log-badge ' + (isFailed ? 'rose' : 'emerald') }, c.status || 'completed')
-          ]),
-          el('div', { class: 'ipsum-log-meta' }, (c.agentName || 'AI Receptionist') + ' • ' + (c.durationSeconds ? c.durationSeconds + 's' : '0s') + ' • ' + (c.startedAt ? new Date(c.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'))
-        ])
-      ]);
-    }) : [
-      el('div', { style: 'grid-column:1/-1;padding:22px 14px;text-align:center;color:var(--ink-dim)' }, [
-        el('p', { class: 'text-sm', style: 'margin-bottom:4px;font-weight:600' }, 'No call activity recorded yet for this workspace.'),
-        el('p', { class: 'text-xs muted' }, 'Use "Make Outbound Call" or test in browser to place a voice call.')
-      ])
-    ])
-  ]);
-  wrap.appendChild(logsCard);
-
-  // 4. Bottom Section: Dual Side-by-Side Tables (ACTIVE AGENTS + PHONE / VOICE LINES)
-  const myAgents = (State.agents && State.agents.length) ? State.agents : [activeAgent];
-  const dualTables = el('div', { class: 'ipsum-tables-row' }, [
-    // Left Table: VOICE AGENTS
-    el('div', { class: 'ipsum-table-card' }, [
-      el('div', { class: 'ipsum-section-head' }, [
-        el('span', { class: 'ipsum-section-title' }, 'ACTIVE VOICE AGENTS'),
-        el('button', { class: 'ipsum-link-more', onclick: () => goto('agents') }, '+ Add Agent')
-      ]),
-      el('table', { class: 'ipsum-table' }, [
-        el('thead', {}, [
-          el('tr', { class: 'ipsum-th-bar' }, [
-            el('th', {}, 'Agent Name'),
-            el('th', {}, 'Voice Engine'),
-            el('th', {}, 'Status'),
-            el('th', { style: 'text-align:right' }, 'Action')
-          ])
-        ]),
-        el('tbody', {}, myAgents.map(a =>
-          el('tr', {}, [
-            el('td', { style: 'font-weight:600' }, a.name || 'AI Receptionist'),
-            el('td', { style: 'color:#64748B' }, (a.tts && a.tts.model) || 'Indian English (Muga)'),
-            el('td', {}, [
-              el('span', { class: 'ipsum-pill active' }, 'Active')
-            ]),
-            el('td', { style: 'text-align:right' }, [
-              el('button', { class: 'ipsum-btn-view', onclick: () => openVoiceSimulator(a) }, 'Test')
-            ])
-          ])
-        ))
-      ])
-    ]),
-
-    // Right Table: PHONE & VOICE LINES
-    el('div', { class: 'ipsum-table-card' }, [
-      el('div', { class: 'ipsum-section-head' }, [
-        el('span', { class: 'ipsum-section-title' }, 'VOICE LINES & CHANNELS'),
-        el('button', { class: 'ipsum-link-more', onclick: () => goto('inbound') }, 'View Details')
-      ]),
-      el('table', { class: 'ipsum-table' }, [
-        el('thead', {}, [
-          el('tr', { class: 'ipsum-th-bar' }, [
-            el('th', {}, 'Channel / Name'),
-            el('th', {}, 'Type'),
-            el('th', { style: 'text-align:right' }, 'Status')
-          ])
-        ]),
-        el('tbody', {}, myAgents.map(a =>
-          el('tr', {}, [
-            el('td', { style: 'font-weight:600' }, a.name || 'Reception Line'),
-            el('td', { style: 'color:#64748B' }, (a.telephony && a.telephony.did) ? a.telephony.did : 'Web Audio Stream'),
-            el('td', { style: 'text-align:right' }, [
-              el('span', { class: 'ipsum-pill active' }, 'Ready')
-            ])
-          ])
-        ))
-      ])
-    ])
-  ]);
-  wrap.appendChild(dualTables);
-
-  // 5. Quick Operations Bar (Dialer, Greeting Test, Front-desk Line)
-  const playGreetingBtn = el('button', { class: 'btn btn-ghost btn-sm', style: 'font-size:.8rem;display:inline-flex;align-items:center;gap:5px' }, [
-    uiIcon('volume', 13),
-    el('span', {}, 'Listen to Greeting')
-  ]);
-  playGreetingBtn.addEventListener('click', () => {
-    playGreetingBtn.disabled = true;
-    playGreetingBtn.textContent = 'Speaking...';
-    speakUtterance(activeAgent.greeting || 'Hi, thank you for calling. How can I assist you today?', {
-      voiceTone: (activeAgent.tts && activeAgent.tts.tone) || 'neutral',
-      onEnd: () => {
-        playGreetingBtn.disabled = false;
-        playGreetingBtn.innerHTML = '';
-        playGreetingBtn.appendChild(uiIcon('volume', 13));
-        playGreetingBtn.appendChild(el('span', {}, ' Listen to Greeting'));
-      }
-    });
+  renderVoiceDashboard(root, {
+    isAgency: false,
+    title: 'Dashboard',
+    subtitle: 'Real-time call volume, voice minutes, and receptionists performance overview.',
+    balance: '24,850 Mins',
+    callsHandled: '1,428 Calls',
+    minutesLogged: '3,540 Mins',
+    trafficVal: '842 Calls'
   });
-
-  const opsBar = el('div', { class: 'ipsum-operations-bar' }, [
-    el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-      el('span', { class: 'soft text-xs', style: 'font-weight:700;color:#0F172A' }, 'RECEPTIONIST STATUS:'),
-      el('span', { class: 'ipsum-pill active' }, 'Online 24/7 (+91 80715 82519)'),
-      el('span', { class: 'ipsum-pill inprogress' }, activeAgent.name)
-    ]),
-    el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-      playGreetingBtn,
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => openMakeCallModal() }, 'Quick Outbound Call'),
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openVoiceSimulator(activeAgent) }, 'Test in Browser')
-    ])
-  ]);
-  wrap.appendChild(opsBar);
 }
 
 function renderCallRow(number, timeStr, duration, outcome, hasAudio) {
@@ -6754,7 +6594,6 @@ async function viewCrmPipeline(root) {
   loadPipeline();
 }
 
-
 /* ===========================================================================
    VIEW: AI CHATBOT (Matches Exact User Reference Image)
    Light-mode soft lavender/ice-blue glassmorphism, 3-pane layout:
@@ -7919,6 +7758,7 @@ window.openAssistant = function(prompt) {
   }, 100);
 };
 
+
 /* ===========================================================================
    START
    =========================================================================== */
@@ -7926,5 +7766,3 @@ let _booted = false;
 function bootOnce() { if (_booted) return; _booted = true; boot(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootOnce);
 else bootOnce();
-
-
