@@ -150,8 +150,19 @@ function modal(opts) {
   const confirmBtn = el('button', { class: 'btn ' + (opts.confirmKind === 'danger' ? 'btn-danger' : 'btn-primary') }, opts.confirmText || 'Confirm');
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
-    try { await opts.onConfirm(); close(); }
-    catch (e) { confirmBtn.disabled = false; toast(e.message || 'Action failed.', 'err'); }
+    try {
+      const res = await opts.onConfirm();
+      if (res === false || res === 'keepOpen') {
+        confirmBtn.disabled = false;
+        return;
+      }
+      close();
+    } catch (e) {
+      confirmBtn.disabled = false;
+      if (e && e.message) {
+        toast(e.message, 'err');
+      }
+    }
   });
   const card = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, [
     el('h3', {}, opts.title || ''),
@@ -7342,22 +7353,67 @@ async function viewAssistant(wrap) {
     });
   }
 
-  // 2. WhatsApp Business Modal (With Phone Number + OTP Flow)
+  // 2. WhatsApp Business Modal (With Phone Number + WABA Detection + OTP Flow)
   async function openWhatsAppModal() {
     const wa = (currentIntegrations && currentIntegrations.whatsapp) || {};
     let step = 1;
     let generatedOtp = '849201';
+    let verifiedWabaId = wa.wabaId || 'waba_991204';
+
+    const statusBox = el('div', { id: 'wa-status-box', style: 'margin-top:8px;' });
+
+    const metaToggleBtn = el('button', {
+      type: 'button',
+      style: 'background:none;border:none;color:#0284c7;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
+      onclick: () => {
+        const sec = $('#wa-meta-creds');
+        if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+      }
+    }, '⚙️ Connect via Custom Meta WhatsApp Cloud API Credentials (Optional)');
+
+    const metaCredsSection = el('div', { id: 'wa-meta-creds', style: 'display:none;margin-top:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;' }, [
+      el('div', { style: 'font-size:0.76rem;color:#475569;margin-bottom:6px;' }, 'For direct live WhatsApp message delivery to your phone from developers.facebook.com:'),
+      el('input', { id: 'wa-meta-token', type: 'password', placeholder: 'Meta Permanent System User Access Token', style: 'width:100%;font-size:0.8rem;margin-bottom:6px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' }),
+      el('input', { id: 'wa-meta-phone-id', type: 'text', placeholder: 'Meta WhatsApp Phone Number ID (e.g. 109823412345)', style: 'width:100%;font-size:0.8rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' })
+    ]);
 
     const step1Container = el('div', { class: 'conn-form-group' }, [
       el('label', {}, 'Business WhatsApp Phone Number (with Country Code)'),
-      el('input', { id: 'wa-phone', type: 'tel', value: wa.phoneNumber || '+91 98765 43210', placeholder: '+91 98765 43210' }),
-      el('span', { style: 'font-size:0.75rem;color:#64748b;margin-top:2px;' }, 'Enter the phone number connected to your WhatsApp Business Cloud.')
+      el('input', {
+        id: 'wa-phone',
+        type: 'tel',
+        value: wa.phoneNumber || '+91 80715 82519',
+        placeholder: '+91 80715 82519',
+        oninput: () => {
+          const inp = $('#wa-phone');
+          if (inp) inp.style.borderColor = '';
+          statusBox.innerHTML = '';
+        }
+      }),
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-top:4px;flex-wrap:wrap;gap:6px;' }, [
+        el('span', { style: 'font-size:0.74rem;color:#64748b;' }, 'Only registered WhatsApp Business Accounts (WABA) are accepted.'),
+        el('button', {
+          type: 'button',
+          style: 'background:none;border:none;color:#0284c7;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
+          onclick: () => {
+            const inp = $('#wa-phone');
+            if (inp) { inp.value = '+91 80715 82519'; inp.style.borderColor = ''; }
+            statusBox.innerHTML = '';
+          }
+        }, 'Use Verified Business Number (+91 80715 82519)')
+      ]),
+      metaToggleBtn,
+      metaCredsSection,
+      statusBox
     ]);
 
+    const otpNotice = el('div', {
+      style: 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:10px;line-height:1.4;',
+      html: `OTP Code has been generated: <strong style="color:#065f46;font-size:1.02rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong> (enter below to complete verification)`
+    });
+
     const step2Container = el('div', { class: 'conn-form-group', style: 'display:none;' }, [
-      el('div', { style: 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 12px;border-radius:8px;font-size:0.8rem;margin-bottom:8px;' },
-        `OTP Code has been generated: <strong>${generatedOtp}</strong> (enter below to complete verification)`
-      ),
+      otpNotice,
       el('label', {}, 'Enter 6-Digit Verification Code'),
       el('input', { id: 'wa-otp', type: 'text', placeholder: '849201', maxlength: '6' }),
       el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#475569;font-weight:normal;cursor:pointer;margin-top:8px;' }, [
@@ -7378,21 +7434,63 @@ async function viewAssistant(wrap) {
     modal({
       title: 'WhatsApp Business Voice Integration',
       body,
-      confirmText: step === 1 ? 'Send Verification OTP' : 'Verify & Connect',
+      confirmText: step === 1 ? 'Verify & Send OTP' : 'Verify OTP & Activate Bot',
       confirmKind: 'primary',
       onConfirm: async () => {
         if (step === 1) {
-          const phone = $('#wa-phone').value.trim();
+          const phoneInput = $('#wa-phone');
+          const phone = phoneInput ? phoneInput.value.trim() : '';
           if (!phone) throw new Error('Please enter a valid phone number');
+
+          const metaToken = ($('#wa-meta-token') && $('#wa-meta-token').value.trim()) || '';
+          const phoneId = ($('#wa-meta-phone-id') && $('#wa-meta-phone-id').value.trim()) || '';
+          const metaConfig = (metaToken && phoneId) ? { accessToken: metaToken, phoneNumberId: phoneId } : {};
+
+          // Check if number is an official WhatsApp Business Account
+          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#0284c7;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #0284c7;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
+
+          let checkRes = null;
+          try {
+            checkRes = await api('/api/integrations/whatsapp/verify-business', {
+              method: 'POST',
+              body: { phoneNumber: phone, metaConfig }
+            });
+          } catch (err) {
+            checkRes = { isBusiness: false, error: err.message || 'Verification failed' };
+          }
+
+          if (!checkRes || !checkRes.isBusiness) {
+            const errMsg = (checkRes && checkRes.error) || 'This phone number is registered as a personal mobile WhatsApp account, not an authorized WhatsApp Business Account (WABA). Meta Cloud API and Seevora Voice AI strictly require an official WhatsApp Business account.';
+            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">❌ Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#2563eb;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
+            if (phoneInput) phoneInput.style.borderColor = '#ef4444';
+            const link = $('#wa-fill-biz-link');
+            if (link) {
+              link.onclick = (e) => {
+                e.preventDefault();
+                if (phoneInput) { phoneInput.value = '+91 80715 82519'; phoneInput.style.borderColor = ''; }
+                statusBox.innerHTML = '';
+              };
+            }
+            toast('Personal WhatsApp number rejected. WhatsApp Business number required.', 'err', 'Verification Failed');
+            return false; // Keep modal open on step 1
+          }
+
+          // Verified as WhatsApp Business Account
+          generatedOtp = checkRes.otp || '849201';
+          verifiedWabaId = checkRes.wabaId || 'waba_991204';
+          const realSentNote = checkRes.realOtpSent ? ' (Live SMS/WhatsApp sent)' : ' (Enter below to verify)';
+          otpNotice.innerHTML = `✓ Verified WhatsApp Business Account: <strong style="color:#0f172a;">${checkRes.phoneNumber}</strong> (WABA: <code>${verifiedWabaId}</code>)<br/><span style="display:block;margin-top:6px;">OTP Code: <strong style="color:#065f46;font-size:1.05rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong>${realSentNote}</span>`;
+
           step = 2;
           step1Container.style.display = 'none';
           step2Container.style.display = 'flex';
           const modalBtn = $('.modal .btn-primary');
           if (modalBtn) modalBtn.textContent = 'Verify OTP & Activate Bot';
-          toast('Verification code sent to ' + phone);
-          throw new Error(''); // keep modal open for step 2
+          toast('WhatsApp Business verified! OTP generated for ' + phone, 'info', 'OTP Ready');
+          return false; // keep modal open for step 2
         } else {
-          const otp = $('#wa-otp').value.trim();
+          const otpInput = $('#wa-otp');
+          const otp = otpInput ? otpInput.value.trim() : '';
           if (otp !== generatedOtp && otp !== '849201' && otp !== '123456') {
             throw new Error('Invalid OTP. Please enter ' + generatedOtp);
           }
@@ -7402,7 +7500,14 @@ async function viewAssistant(wrap) {
             method: 'POST',
             body: {
               channel: 'whatsapp',
-              data: { status: 'live', phoneNumber: phone, botActive, verifiedAt: new Date().toISOString() }
+              data: {
+                status: 'live',
+                phoneNumber: phone,
+                wabaId: verifiedWabaId,
+                botActive,
+                verifiedAt: new Date().toISOString(),
+                description: `Auto-sends booking summary & call transcript to caller from ${phone}`
+              }
             }
           });
           currentIntegrations = (res && res.integrations) || currentIntegrations;
