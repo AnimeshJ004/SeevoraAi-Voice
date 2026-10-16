@@ -15,8 +15,12 @@ local-dograh/
 
 # Temporary audio artifacts and reports
 *.wav
+*.mp3
 *.csv
 *-report.json
+.recordings/
+.xlsx_tmp/
 scratch/
 dashboard/scratch/
+
 
