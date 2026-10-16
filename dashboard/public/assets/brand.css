@@ -193,11 +193,17 @@ p { margin: 0; }
 /* ---- Inputs ---- */
 .field { display: flex; flex-direction: column; gap: 0.5em; }
 .field > label { font-size: 0.82rem; color: var(--ink-dim); font-weight: 500; letter-spacing: -0.01em; }
-.input, .textarea, .select {
+.input, .textarea {
   width: 100%; background: var(--bg-2); color: var(--ink);
   border: 1px solid var(--line-2); border-radius: var(--r);
   padding: 0.82em 1em; outline: none;
   transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+.select {
+  width: 100%; background: var(--bg-2); color: var(--ink);
+  border: 1px solid var(--line-2); border-radius: var(--r);
+  padding: 0.82em 1em; outline: none;
+  /* No transition on select — prevents flicker when native dropdown opens/closes */
 }
 .input:focus, .textarea:focus, .select:focus {
   border-color: rgba(0,149,255,0.7);

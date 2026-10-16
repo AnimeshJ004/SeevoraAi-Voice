@@ -4539,6 +4539,49 @@ async function apiCrmLeadFromCall(req, res, ctx) {
   core.sendJson(res, 200, { ok: true, contact });
 }
 
+// POST /api/crm/whatsapp/send - record and dispatch WhatsApp message to lead
+async function apiCrmWhatsAppSend(req, res, ctx) {
+  const b = ctx.body || {};
+  const phone = b.phone || '';
+  const text = b.text || '';
+  const name = b.name || '';
+  if (!phone) {
+    return core.sendJson(res, 400, { error: 'phone is required', code: 'bad_params' });
+  }
+  const normalizedPhone = wacrm.normalizeE164(phone);
+  let loggedMsg = null;
+  await core.mutate((mutDb) => {
+    loggedMsg = wacrm.recordMessage(mutDb, ctx.tenant.id, {
+      phone: normalizedPhone,
+      direction: 'outbound',
+      type: 'text',
+      text: text || 'WhatsApp conversation initiated',
+      status: 'sent',
+      metadata: { initiatedFrom: 'crm_pipeline', name }
+    });
+  });
+
+  // If live Meta WhatsApp credentials exist for this tenant, attempt direct delivery
+  let metaResult = null;
+  try {
+    const waConfig = wacrm.getTenantWacrmConfig(core.db(), ctx.tenant.id);
+    if (waConfig && waConfig.accessToken && waConfig.phoneNumberId && text) {
+      metaResult = await wacrm.sendMetaWhatsAppMessage({
+        phoneId: waConfig.phoneNumberId,
+        token: waConfig.accessToken,
+        to: normalizedPhone,
+        text
+      });
+    }
+  } catch (err) {
+    logger.warn('Meta WhatsApp dispatch skipped or failed (wa.me fallback ready): ' + err.message);
+  }
+
+  const cleanDigits = normalizedPhone.replace(/\D/g, '');
+  const waLink = `https://wa.me/${cleanDigits}${text ? '?text=' + encodeURIComponent(text) : ''}`;
+  core.sendJson(res, 200, { ok: true, waLink, message: loggedMsg, metaResult });
+}
+
 // POST /api/telephony/webhook & /api/calls/webhook - telephony provider completion callback
 async function apiTelephonyWebhook(req, res, body) {
   let payload = {};
@@ -4733,6 +4776,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
       if (route === '/api/crm/lead-from-call') return core.requireAuth(req, res, apiCrmLeadFromCall, body);
+      if (route === '/api/crm/whatsapp/send') return core.requireAuth(req, res, apiCrmWhatsAppSend, body);
       if (route === '/api/agents') return core.requireAuth(req, res, apiAgentsCreate, body);
       if (route === '/api/agents/generate-from-needs') return core.requireAuth(req, res, apiAgentsGenerateFromNeeds, body);
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);

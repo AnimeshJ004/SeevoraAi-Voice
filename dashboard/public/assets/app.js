@@ -184,8 +184,14 @@ function modal(opts) {
    SMALL UTILITIES
    =========================================================================== */
 function initials(name) {
-  const parts = String(name || '?').trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]).join('').toUpperCase() || '?';
+  const words = String(name || '?')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (!words.length) return '?';
+  return words.map((w) => w[0]).join('').toUpperCase();
 }
 function isPlatformUserClient(user) {
   return !!user && (user.role === 'super_admin' || user.role === 'admin');
@@ -582,12 +588,12 @@ const ROUTES = [
 
 /* ---- Real SVG Icon Helpers for Call & WhatsApp ---- */
 function iconCallSvg(size) {
-  size = size || 13;
+  size = size || 14;
   return '<svg class="wacrm-ic-call" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
 }
 
 function iconWhatsAppSvg(size) {
-  size = size || 13;
+  size = size || 14;
   return '<svg class="wacrm-ic-whatsapp" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
 }
 
@@ -913,7 +919,7 @@ async function openMakeCallModal(prefillNumber) {
   const agentSelect = el('select', {
     class: 'input modal-select',
     id: 'modal_agent_select',
-    style: 'width:100%;height:44px;padding:8px 14px;background:rgba(255,255,255,0.55);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;cursor:pointer;display:block;'
+    style: 'width:100%;height:44px;padding:8px 14px;background:rgba(255,255,255,0.9);border:1px solid rgba(203,213,225,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;cursor:pointer;display:block;'
   }, agents.map((a) =>
     el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')')
   ));
@@ -931,7 +937,7 @@ async function openMakeCallModal(prefillNumber) {
   numI.addEventListener('input', () => { numI.value = numI.value.replace(/\D/g, '').slice(0, 10); });
 
   const dialRow = el('div', {
-    style: 'display:flex;align-items:center;border:1px solid rgba(255,255,255,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.55);backdrop-filter:blur(14px);transition:border-color .2s;'
+    style: 'display:flex;align-items:center;border:1px solid rgba(203,213,225,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);transition:border-color .2s;'
   }, [
     el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#0284C7;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
     numI
@@ -984,6 +990,142 @@ async function openMakeCallModal(prefillNumber) {
     }
   });
   setTimeout(() => numI.focus(), 150);
+}
+
+/* ---- Global WhatsApp Message Modal ---- */
+function openWhatsAppModal(dealOrContact) {
+  dealOrContact = dealOrContact || {};
+  const phone = dealOrContact.phone || dealOrContact.callerNumber || dealOrContact.phoneNumber || '';
+  const digits = String(phone).replace(/\D/g, '');
+  const waPhone = digits.length === 10 ? '91' + digits : digits;
+  const name = dealOrContact.name || (digits ? 'Lead ' + digits.slice(-4) : 'Valued Customer');
+  const stage = dealOrContact.stage || 'New Lead';
+
+  // Preset templates tailored for Seevora Voice Receptionist
+  const templates = [
+    {
+      id: 'followup',
+      label: '📞 Call Follow-up',
+      text: `Hi ${name}, thank you for speaking with our Seevora Voice Receptionist earlier today. Following up on your inquiry—how can we best assist you next?`
+    },
+    {
+      id: 'appointment',
+      label: '📅 Booking Confirmation',
+      text: `Hi ${name}, confirming your appointment booked via Seevora AI Voice. Please reply to this message if you have any questions or need to reschedule.`
+    },
+    {
+      id: 'catalog',
+      label: '🏷️ Pricing & Brochure',
+      text: `Hi ${name}, here are the pricing and service details as requested during your call with our AI Voice agent. Feel free to review and chat right here!`
+    },
+    {
+      id: 'callback',
+      label: '💬 Quick Callback',
+      text: `Hi ${name}, we noticed your recent interaction with our voice receptionist. What would be a convenient time for a quick follow-up conversation?`
+    }
+  ];
+
+  let currentText = templates[0].text;
+  const phoneDisplay = digits.length >= 10 ? `+91 ${digits.slice(-10, -5)} ${digits.slice(-5)}` : (phone || 'No phone');
+
+  const metaHeader = el('div', { class: 'wa-modal-lead-banner' }, [
+    el('div', { class: 'wa-lead-avatar' }, [
+      el('span', { html: iconWhatsAppSvg(22) })
+    ]),
+    el('div', { style: 'flex:1;min-width:0;' }, [
+      el('div', { class: 'flex items-center gap-2', style: 'flex-wrap:wrap;' }, [
+        el('b', { style: 'font-size:0.95rem;color:var(--ink);' }, name),
+        el('span', { class: 'pill', style: 'font-size:0.7rem;background:rgba(37,211,102,0.12);color:#059669;border:1px solid rgba(37,211,102,0.3);' }, stage)
+      ]),
+      el('div', { class: 'muted', style: 'font-size:0.8rem;margin-top:2px;font-family:var(--mono);' }, phoneDisplay)
+    ])
+  ]);
+
+  const templateChips = el('div', { class: 'wa-template-chips' });
+  const textarea = el('textarea', {
+    class: 'textarea wa-compose-area',
+    rows: 4,
+    placeholder: 'Type your WhatsApp message here...'
+  });
+  textarea.value = currentText;
+
+  function renderChips(activeId) {
+    templateChips.innerHTML = '';
+    templates.forEach((tpl) => {
+      const chip = el('button', {
+        type: 'button',
+        class: 'wa-chip' + (tpl.id === activeId ? ' active' : ''),
+        onclick: () => {
+          textarea.value = tpl.text;
+          currentText = tpl.text;
+          renderChips(tpl.id);
+          textarea.focus();
+        }
+      }, tpl.label);
+      templateChips.appendChild(chip);
+    });
+  }
+  renderChips('followup');
+
+  textarea.addEventListener('input', () => {
+    currentText = textarea.value;
+  });
+
+  const body = el('div', { class: 'wa-modal-body' }, [
+    metaHeader,
+    el('div', { style: 'margin-top:14px;' }, [
+      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-size:0.82rem;font-weight:600;color:var(--ink);' }, 'Quick Message Templates:'),
+      templateChips
+    ]),
+    el('div', { style: 'margin-top:14px;' }, [
+      el('div', { class: 'flex justify-between items-center', style: 'margin-bottom:6px;' }, [
+        el('label', { class: 'field-label', style: 'font-size:0.82rem;font-weight:600;color:var(--ink);' }, 'Message Preview & Edit:'),
+        el('span', { class: 'soft', style: 'font-size:0.74rem;color:#059669;font-weight:600;' }, '● Opens directly in WhatsApp')
+      ]),
+      textarea
+    ])
+  ]);
+
+  const sendAndOpen = async () => {
+    const msg = textarea.value.trim();
+    if (!digits) {
+      toast('No valid phone number for this contact.', 'err');
+      return false;
+    }
+
+    // 1. Open WhatsApp Web or Mobile App directly with encoded message
+    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+
+    // 2. Log message to CRM in background
+    api('/api/crm/whatsapp/send', {
+      method: 'POST',
+      body: { phone: phone, name: name, text: msg }
+    }).catch(() => { });
+
+    toast(`Opening WhatsApp chat with ${name}...`, 'ok');
+    return true;
+  };
+
+  modal({
+    title: 'Send WhatsApp Message',
+    body,
+    confirmText: 'Send on WhatsApp →',
+    confirmKind: 'primary',
+    onConfirm: sendAndOpen
+  });
+
+  // Apply custom WhatsApp branding to modal confirm button
+  setTimeout(() => {
+    const host = $('#modal-host');
+    if (host) {
+      const btn = host.querySelector('.btn-primary');
+      if (btn) {
+        btn.classList.add('wa-confirm-btn');
+        btn.innerHTML = iconWhatsAppSvg(16) + '<span>Send via WhatsApp</span>';
+      }
+    }
+  }, 10);
 }
 
 
@@ -1585,7 +1727,8 @@ async function viewAgents(root) {
   const maxWf = (tenant.limits && tenant.limits.activeWorkflows) || 3;
   if (maxWf !== 999999) {
     const quotaBanner = el('div', {
-      style: 'background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:0.86rem'
+      class: 'agent-quota-banner',
+      style: 'margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:0.86rem'
     }, [
       el('div', {}, [
         el('strong', {}, 'Workflow Workspace Limit: '),
@@ -1599,10 +1742,12 @@ async function viewAgents(root) {
   }
 
   const dograhSyncBar = el('div', {
-    style: 'display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 16px;margin-bottom:18px;flex-wrap:wrap;gap:10px;'
+    class: 'dograh-sync-bar',
+    style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;'
   }, [
-    el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
-      el('span', { style: 'font-weight:600;font-size:0.9rem;' }, '🐕 Dograh Telephony Orchestrator:'),
+    el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+      el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0095FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
+      el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, 'Dograh Telephony Orchestrator:'),
       el('span', { class: 'muted', style: 'font-size:0.84rem;' }, 'Workflow #13027 (Seevora AI Voice Receptionist • DID +918071582519)')
     ]),
     el('button', {
@@ -1612,7 +1757,7 @@ async function viewAgents(root) {
       onclick: async (ev) => {
         const btn = ev.currentTarget;
         btn.disabled = true;
-        btn.textContent = '🔄 Syncing from Dograh...';
+        btn.innerHTML = '<span class="boot-spin"></span><span>Syncing from Dograh...</span>';
         try {
           const res = await api('/api/dograh/sync', { method: 'POST' });
           toast(`Synced successfully with Dograh Workflow #${(res.workflow && res.workflow.workflowId) || 13027}! Receptionist updated with latest Seevora facts & CEO info.`, 'ok');
@@ -1622,10 +1767,13 @@ async function viewAgents(root) {
           toast('Dograh sync failed: ' + err.message, 'err');
         } finally {
           btn.disabled = false;
-          btn.textContent = '🔄 Sync from Dograh';
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Sync from Dograh</span>';
         }
       }
-    }, '🔄 Sync from Dograh')
+    }, [
+      el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
+      el('span', {}, 'Sync from Dograh')
+    ])
   ]);
   root.appendChild(dograhSyncBar);
 
@@ -1811,18 +1959,27 @@ function agentCard(a) {
     : `mulberry / ${tts.speaker || 'speaker_2'}${tts.f0_up_key ? ' / pitch ' + (tts.f0_up_key > 0 ? '+' : '') + tts.f0_up_key : ''}`;
   const did = a.telephony && a.telephony.did ? a.telephony.did : null;
 
-  const previewBtn = el('button', { class: 'btn btn-ghost btn-sm' }, 'Listen');
+  const previewBtn = el('button', { class: 'btn btn-ghost btn-sm btn-listen' }, [
+    el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>' }),
+    el('span', {}, 'Listen')
+  ]);
   previewBtn.addEventListener('click', () => previewAgentVoice(a, previewBtn));
 
   const talkMicBtn = el('button', {
-    class: 'btn btn-primary btn-sm',
-    style: 'display:inline-flex;align-items:center;gap:4px;font-weight:600',
+    class: 'btn btn-primary btn-sm btn-test-browser',
+    style: 'display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;',
     onclick: () => openVoiceSimulator(a)
-  }, 'Test in Browser');
+  }, [
+    el('span', { html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>' }),
+    el('span', {}, 'Test in Browser')
+  ]);
 
   // Human Call Recording Training Studio
-  const trainingStudio = el('details', { style: 'margin-top:12px;border:1px dashed rgba(0,149,255,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(0,149,255,0.02)' }, [
-    el('summary', { style: 'cursor:pointer;font-size:.78rem;font-weight:600;color:var(--accent)' }, 'Train on Call Recording (.mp3 / .wav)'),
+  const trainingStudio = el('details', { class: 'agent-training-studio', style: 'margin-top:12px;border:1px dashed rgba(0,149,255,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(0,149,255,0.02)' }, [
+    el('summary', { style: 'cursor:pointer;font-size:.78rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;' }, [
+      el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
+      el('span', {}, 'Train on Call Recording (.mp3 / .wav)')
+    ]),
     el('p', { class: 'soft', style: 'font-size:.72rem;margin:6px 0 8px 0' }, 'Upload a real phone call recording. Speech analysis fine-tunes receptionist conversation strategy.'),
     (function () {
       const fileIn = el('input', { type: 'file', accept: 'audio/*', style: 'font-size:.76rem;width:100%' });
@@ -1878,8 +2035,7 @@ function agentCard(a) {
   // textContent everywhere = XSS safe for persona/name
   return el('div', { class: 'card card-glow agent-card' }, [
     el('div', { class: 'ac-top' }, [
-      el('div', { class: 'ac-av' }, initials(a.name)),
-      el('div', { style: 'min-width:0' }, [
+      el('div', { style: 'min-width:0;flex:1;' }, [
         el('div', { class: 'ac-name' }, a.name),
         el('div', { class: 'ac-voice' }, voiceLine)
       ])
@@ -1890,12 +2046,22 @@ function agentCard(a) {
       el('span', { class: 'tag' }, (tts.model || 'muga') + (isMuga ? ` (${tts.tone || 'excited'})` : ''))
     ]),
     trainingStudio,
-    el('div', { class: 'ac-actions', style: 'margin-top:14px;display:flex;flex-wrap:wrap;gap:8px' }, [
-      talkMicBtn,
-      previewBtn,
-      (a.sampleTranscript && a.sampleTranscript.length) ? el('button', { class: 'btn btn-ghost btn-sm', onclick: () => showTranscriptModal(a) }, 'Transcript') : null,
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openEditAgent(a) }, 'Edit'),
-      el('button', { class: 'btn btn-ghost btn-sm', onclick: () => confirmDeleteAgent(a) }, 'Delete')
+    el('div', { class: 'ac-actions' }, [
+      el('div', { class: 'ac-actions-row-main' }, [
+        talkMicBtn
+      ]),
+      el('div', { class: 'ac-actions-row-sub' }, [
+        previewBtn,
+        (a.sampleTranscript && a.sampleTranscript.length) ? el('button', { class: 'btn btn-ghost btn-sm', onclick: () => showTranscriptModal(a) }, 'Transcript') : null,
+        el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openEditAgent(a) }, [
+          el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>' }),
+          el('span', {}, 'Edit')
+        ]),
+        el('button', { class: 'btn btn-ghost btn-sm btn-delete-agent', onclick: () => confirmDeleteAgent(a) }, [
+          el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' }),
+          el('span', {}, 'Delete')
+        ])
+      ].filter(Boolean))
     ])
   ]);
 }
@@ -3161,7 +3327,7 @@ async function viewTalk(root, customAgent) {
         onclick: async (ev) => {
           const btn = ev.currentTarget;
           btn.disabled = true;
-          btn.textContent = '🔄 Syncing...';
+          btn.innerHTML = '<span class="boot-spin"></span><span>Syncing...</span>';
           try {
             const res = await api('/api/dograh/sync', { method: 'POST' });
             toast(`Synced with Dograh Workflow #${(res.workflow && res.workflow.workflowId) || 13027}!`, 'ok');
@@ -3173,10 +3339,13 @@ async function viewTalk(root, customAgent) {
             toast('Sync failed: ' + e.message, 'err');
           } finally {
             btn.disabled = false;
-            btn.textContent = '🔄 Sync from Dograh';
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Sync from Dograh</span>';
           }
         }
-      }, '🔄 Sync from Dograh')
+      }, [
+        el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
+        el('span', {}, 'Sync from Dograh')
+      ])
     ]));
   }
 
@@ -4824,7 +4993,7 @@ async function viewCampaigns(root) {
       ]),
       el('div', {}, [
         el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Recipient Number (+91)'),
-        el('div', { style: 'display:flex;align-items:center;border:1.5px solid rgba(203,213,225,0.8);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.65);backdrop-filter:blur(10px);' }, [
+        el('div', { style: 'display:flex;align-items:center;border:1.5px solid rgba(203,213,225,0.8);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);' }, [
           el('span', { style: 'padding:10px 14px;background:rgba(241,245,249,0.7);font-weight:700;border-right:1px solid rgba(203,213,225,0.8);font-size:.92rem;color:#334155;' }, '+91'),
           quickDialerInput
         ])
@@ -6607,10 +6776,17 @@ async function viewCrmPipeline(root) {
                 el('button', {
                   type: 'button',
                   class: 'wacrm-card-btn btn-call',
-                  title: 'Call lead with AI Voice Agent',
+                  title: 'Call lead with AI Voice Agent (' + (deal.phone || '') + ')',
                   onclick: (e) => { e.stopPropagation(); openMakeCallModal(deal.phone); },
-                  html: iconCallSvg(13) + '<span>Call</span>'
+                  html: iconCallSvg(14) + '<span>Call</span>'
                 }),
+                el('button', {
+                  type: 'button',
+                  class: 'wacrm-card-btn btn-whatsapp',
+                  title: 'Send message on WhatsApp (' + (deal.phone || '') + ')',
+                  onclick: (e) => { e.stopPropagation(); openWhatsAppModal(deal); },
+                  html: iconWhatsAppSvg(14) + '<span>WhatsApp</span>'
+                })
               ]),
               createStageSelect(deal.id, deal.stage, loadPipeline)
             ])

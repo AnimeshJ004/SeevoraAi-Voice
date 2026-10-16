@@ -1,0 +1,11 @@
+{
+  "name": "seevora-ai-voice",
+  "version": "1.0.0",
+  "description": "Seevora AI Voice - Management Studio & Voice Agent Stack",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "build": "npm --prefix dashboard run build",
+    "test": "npm --prefix dashboard test"
+  }
+}

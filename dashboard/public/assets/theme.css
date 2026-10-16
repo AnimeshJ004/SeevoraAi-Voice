@@ -2013,6 +2013,7 @@ td {
   color: #334155;
 }
 tr:hover td { background: #F8FAFC; }
+.rec-table tr:hover td { background: transparent; }
 
 /* Empty state */
 .empty {
@@ -2354,4 +2355,490 @@ input.chat-text-input {
   border-color: rgba(0, 149, 255, 0.5) !important;
   box-shadow: 0 10px 28px rgba(0, 149, 255, 0.12) !important;
 }
+
+/* ===========================================================================
+   Seevora CRM Pipeline: Professional Call & WhatsApp Action Buttons
+   =========================================================================== */
+
+.wacrm-deal-card-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 9px !important;
+  margin-top: 10px !important;
+  padding-top: 10px !important;
+  border-top: 1px dashed rgba(186, 214, 242, 0.8) !important;
+}
+
+.wacrm-deal-card-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.wacrm-card-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 12px !important;
+  font-family: inherit !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  border-radius: 9px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  outline: none !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.wacrm-card-btn svg {
+  flex-shrink: 0 !important;
+  transition: transform 0.2s ease !important;
+}
+
+/* Call Button - Professional Tech Voice Blue */
+.wacrm-card-btn.btn-call {
+  background: linear-gradient(135deg, #F0F7FF 0%, #E0F0FE 100%) !important;
+  color: #0284C7 !important;
+  border: 1px solid rgba(186, 214, 242, 0.95) !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.08) !important;
+}
+
+.wacrm-card-btn.btn-call:hover {
+  background: linear-gradient(135deg, #0284C7 0%, #0095FF 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #0284C7 !important;
+  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.28) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.wacrm-card-btn.btn-call:hover svg {
+  transform: scale(1.15) !important;
+}
+
+.wacrm-card-btn.btn-call:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 2px rgba(0, 149, 255, 0.2) !important;
+}
+
+/* WhatsApp Button - Professional WhatsApp Emerald Green */
+.wacrm-card-btn.btn-whatsapp {
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important;
+  color: #059669 !important;
+  border: 1px solid rgba(167, 243, 208, 0.95) !important;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.08) !important;
+}
+
+.wacrm-card-btn.btn-whatsapp:hover {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #059669 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.wacrm-card-btn.btn-whatsapp:hover svg {
+  transform: scale(1.15) !important;
+}
+
+.wacrm-card-btn.btn-whatsapp:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Stage Selector dropdown polish */
+.wacrm-stage-select {
+  width: 100% !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  border-radius: 9px !important;
+  padding: 6px 10px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.wacrm-stage-select:hover,
+.wacrm-stage-select:focus {
+  border-color: #0095FF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.12) !important;
+}
+
+/* WhatsApp Composer Modal Styles */
+.wa-modal-lead-banner {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important;
+  border: 1px solid rgba(167, 243, 208, 0.85) !important;
+  border-radius: 12px !important;
+}
+
+.wa-lead-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: #25D366 !important;
+  color: #FFFFFF !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 4px 10px rgba(37, 211, 102, 0.35) !important;
+}
+
+.wa-template-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.wa-chip {
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  background: #FFFFFF !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.wa-chip:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #94A3B8 !important;
+}
+
+.wa-chip.active {
+  background: #059669 !important;
+  color: #FFFFFF !important;
+  border-color: #047857 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25) !important;
+}
+
+.wa-compose-area {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  font-family: inherit !important;
+  font-size: 0.85rem !important;
+  line-height: 1.45 !important;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  resize: vertical !important;
+}
+
+.wa-compose-area:focus {
+  border-color: #25D366 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.15) !important;
+}
+
+.wa-confirm-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%) !important;
+  border-color: #059669 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.wa-confirm-btn:hover {
+  background: linear-gradient(135deg, #1FB855 0%, #0E7064 100%) !important;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ===========================================================================
+   Seevora Agent Workspace: Transparent Glassmorphism & Fixed Card Alignment
+   =========================================================================== */
+
+/* Top Dograh Sync Banner & Quota Banner - Transparent Glassmorphic */
+.dograh-sync-bar,
+.agent-quota-banner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  padding: 12px 18px !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+.dograh-sync-bar .sync-btn,
+.dograh-sync-bar .btn-secondary {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(186, 214, 242, 0.9) !important;
+  color: #0284C7 !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 6px 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.dograh-sync-bar .sync-btn:hover,
+.dograh-sync-bar .btn-secondary:hover {
+  background: #0284C7 !important;
+  color: #FFFFFF !important;
+  border-color: #0284C7 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* New Agent Builder Card - Transparent Glassmorphic */
+.card.builder {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 20px !important;
+  padding: 24px 28px !important;
+  box-shadow: 0 12px 36px -6px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.card.builder .input,
+.card.builder .textarea,
+.card.builder .select {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(186, 214, 242, 0.8) !important;
+  border-radius: 12px !important;
+  color: #0F172A !important;
+  padding: 10px 14px !important;
+  font-family: inherit !important;
+  font-size: 0.88rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(15, 45, 90, 0.02) !important;
+}
+
+.card.builder .input:focus,
+.card.builder .textarea:focus,
+.card.builder .select:focus {
+  background: #FFFFFF !important;
+  border-color: #0095FF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15) !important;
+}
+
+.card.builder .seg {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.card.builder .seg button {
+  background: transparent !important;
+  border: none !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  transition: all 0.18s ease !important;
+}
+
+.card.builder .seg button.on {
+  background: linear-gradient(135deg, #0284C7 0%, #0095FF 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 149, 255, 0.3) !important;
+}
+
+/* Agents Grid Alignment: Fill available horizontal space with clean proportions */
+.agents-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)) !important;
+  gap: 24px !important;
+  width: 100% !important;
+  margin-top: 24px !important;
+}
+
+/* Agent Card - Transparent Glassmorphic Theme & Clean Proportions */
+.agent-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(186, 214, 242, 0.75) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 20px !important;
+  padding: 24px !important;
+  box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.agent-card:hover {
+  border-color: rgba(0, 149, 255, 0.65) !important;
+  box-shadow: 0 16px 42px -6px rgba(0, 149, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-2px) !important;
+}
+
+.agent-card .ac-top {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.agent-card .ac-av {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 14px !important;
+  flex: 0 0 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #0284C7 0%, #0095FF 100%) !important;
+  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.3) !important;
+}
+
+.agent-card .ac-name {
+  font-size: 1.08rem !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+  letter-spacing: -0.01em !important;
+}
+
+.agent-card .ac-voice {
+  font-family: var(--mono) !important;
+  font-size: 0.74rem !important;
+  color: #0284C7 !important;
+  background: rgba(2, 132, 199, 0.08) !important;
+  border: 1px solid rgba(186, 214, 242, 0.7) !important;
+  display: inline-block !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  margin-top: 4px !important;
+}
+
+.agent-card .ac-persona {
+  font-size: 0.85rem !important;
+  color: #334155 !important;
+  line-height: 1.55 !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(186, 214, 242, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  margin: 0 !important;
+}
+
+.agent-card .ac-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.agent-card .ac-meta .tag {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(186, 214, 242, 0.8) !important;
+  border-radius: 8px !important;
+  font-size: 0.74rem !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  color: #475569 !important;
+}
+
+/* Training Studio Details */
+.agent-card .agent-training-studio {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px dashed rgba(0, 149, 255, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+}
+
+/* Card Actions Symmetric Alignment */
+.agent-card .ac-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-top: auto !important;
+  padding-top: 12px !important;
+  border-top: 1px dashed rgba(186, 214, 242, 0.75) !important;
+  width: 100% !important;
+}
+
+.ac-actions-row-main {
+  width: 100% !important;
+}
+
+.ac-actions-row-main .btn {
+  width: 100% !important;
+  padding: 10px 16px !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  border-radius: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  background: linear-gradient(135deg, #0284C7 0%, #0095FF 100%) !important;
+  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.28) !important;
+  border: none !important;
+  color: #FFFFFF !important;
+  transition: all 0.2s ease !important;
+}
+
+.ac-actions-row-main .btn:hover {
+  background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%) !important;
+  box-shadow: 0 6px 18px rgba(0, 149, 255, 0.38) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ac-actions-row-sub {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.ac-actions-row-sub .btn {
+  padding: 8px 12px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(186, 214, 242, 0.85) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: #334155 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+.ac-actions-row-sub .btn:hover {
+  background: #FFFFFF !important;
+  border-color: #0095FF !important;
+  color: #0095FF !important;
+  box-shadow: 0 2px 8px rgba(0, 149, 255, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ac-actions-row-sub .btn-delete-agent:hover {
+  background: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #DC2626 !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15) !important;
+}
+
+
 

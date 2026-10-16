@@ -3859,7 +3859,7 @@
   color: var(--ink-soft);
 }
 .rec-drawer-wrap {
-  background: var(--panel-2);
+  background: #FAFCFF;
   border-bottom: 1px solid var(--line-2);
   padding: 20px 24px;
 }
@@ -3872,7 +3872,7 @@
   .rec-drawer-grid { grid-template-columns: 1fr; }
 }
 .rec-panel {
-  background: var(--panel);
+  background: #FFFFFF;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 16px 18px;
