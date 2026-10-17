@@ -105,6 +105,8 @@ function normalizeSpokenText(raw) {
   s = s.replace(/\ba[c]+h+a+h*\b/gi, 'अच्छा');
   s = s.replace(/\baccha\b/gi, 'अच्छा');
   s = s.replace(/\bacha\b/gi, 'अच्छा');
+  // Normalize Roman 'main' in Hindi phrases so Mulberry TTS does not pronounce it as English 'main' (/meɪn/ = मेन)
+  s = s.replace(/\b[Mm]ain\s+(Priya|sun|bol|baat|aapko|aapki|kab|bhi|ek|yahan|wahan|to)\b/gi, 'मैं $1');
   // Convert numbers and symbols to natural spoken forms
   s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
   s = s.replace(/\b(\d+)\s*%/g, (_, n) => n + ' percent');

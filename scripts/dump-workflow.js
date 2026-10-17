@@ -12,23 +12,11 @@ async function run() {
     headers: { 'X-API-Key': key }
   });
   const d = await r.json();
-  console.log('Top keys:', Object.keys(d));
-  console.log('Workflow keys:', {
-    llm_config: d.llm_config,
-    voice_config: d.voice_config,
-    model: d.model,
-    tts: d.tts,
-    stt: d.stt
-  });
+  console.log('Workflow Name:', d.name);
+  console.log('Voice Config:', JSON.stringify(d.voice_config || d.workflow_configurations?.voice_config || {}, null, 2));
   for (const n of (d.workflow_definition?.nodes || [])) {
-    console.log('Node ' + n.id + ' (' + (n.data?.name || n.name) + '):', {
-      model: n.data?.model,
-      voice: n.data?.voice,
-      tts: n.data?.tts,
-      llm: n.data?.llm,
-      model_config: n.data?.model_config,
-      voice_config: n.data?.voice_config
-    });
+    console.log(`\n=================== NODE ${n.id}: ${n.data?.name || n.name} ===================`);
+    console.log(n.data?.prompt);
   }
 }
 run().catch(console.error);

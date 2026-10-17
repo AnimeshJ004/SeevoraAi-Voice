@@ -41,7 +41,7 @@ async function updatePipeline() {
         tts: {
           provider: 'rumik',
           api_key: env.RUMIK_API_KEY,
-          model: 'muga',
+          model: env.RUMIK_MODEL || 'mulberry',
           voice: env.RUMIK_VOICE || 'ira'
         }
       }
