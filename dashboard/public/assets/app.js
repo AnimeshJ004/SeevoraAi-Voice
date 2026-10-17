@@ -226,6 +226,11 @@ function skeleton(kind, n) {
 function cleanSpokenText(text) {
   if (!text) return '';
   let s = String(text).trim();
+  // Normalize Roman 'accha'/'achha'/'acha' so TTS voice engines do not pronounce it as 'Aaka'
+  s = s.replace(/\bbahut\s+a[c]+h*a+h*\b/gi, 'बहुत अच्छा');
+  s = s.replace(/\ba[c]+h+a+h*\b/gi, 'अच्छा');
+  s = s.replace(/\baccha\b/gi, 'अच्छा');
+  s = s.replace(/\bacha\b/gi, 'अच्छा');
   s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
   s = s.replace(/\s*&\s*/g, ' and ');
   s = s.replace(/\s*@\s*/g, ' at ');
@@ -238,10 +243,15 @@ function cleanSpokenText(text) {
 }
 
 window.__currentSpeechAudio = null;
+window.__currentSpeechResolver = null;
 function stopAllSpeech() {
   if (window.__currentSpeechAudio) {
     try { window.__currentSpeechAudio.pause(); } catch (_) { }
     window.__currentSpeechAudio = null;
+  }
+  if (typeof window.__currentSpeechResolver === 'function') {
+    try { window.__currentSpeechResolver(); } catch (_) { }
+    window.__currentSpeechResolver = null;
   }
   if ('speechSynthesis' in window) {
     try { window.speechSynthesis.cancel(); } catch (_) { }
@@ -284,13 +294,19 @@ async function speakUtterance(text, ttsOrAgent, callbacks) {
       const audio = new Audio(url);
       window.__currentSpeechAudio = audio;
       await new Promise((resolve) => {
+        let settled = false;
         const done = () => {
+          if (settled) return;
+          settled = true;
           URL.revokeObjectURL(url);
           if (window.__currentSpeechAudio === audio) window.__currentSpeechAudio = null;
+          if (window.__currentSpeechResolver === done) window.__currentSpeechResolver = null;
           resolve();
         };
+        window.__currentSpeechResolver = done;
         audio.onended = done;
         audio.onerror = done;
+        audio.onpause = done;
         audio.play().catch(done);
       });
       played = true;
@@ -3646,13 +3662,11 @@ async function viewTalk(root, customAgent) {
       }
 
       isSpeaking = true;
-      muteMic();
-      setPhase('speaking', 'Agent speaking...');
+      setPhase('speaking', 'Agent speaking (speak to interrupt)...');
       await speakUtterance(reply, Object.assign({}, activeAgent, { tts: Object.assign({}, activeAgent.tts || {}, { tone: activeTone }) }), {
-        onStart: () => { setPhase('speaking', 'Agent speaking...'); },
+        onStart: () => { setPhase('speaking', 'Agent speaking (speak to interrupt)...'); },
         onEnd: () => {
           isSpeaking = false;
-          unmuteMic();
           setPhase(isListening ? 'listening' : 'idle', isListening ? 'Listening...' : 'Ready');
         }
       });
@@ -3663,10 +3677,8 @@ async function viewTalk(root, customAgent) {
       addBubble('bot', safeReply);
       convo.push({ role: 'bot', text: safeReply });
       isSpeaking = true;
-      muteMic();
       await speakUtterance(safeReply, activeAgent);
       isSpeaking = false;
-      unmuteMic();
     } finally {
       isThinking = false;
       if (!isSpeaking) {
@@ -3697,9 +3709,8 @@ async function viewTalk(root, customAgent) {
       }
     }
 
-    // Keep mic tracks disabled during greeting
     if (micStream) {
-      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
     }
 
     // 2. Natural greeting on first start
@@ -3708,7 +3719,7 @@ async function viewTalk(root, customAgent) {
       addBubble('bot', greeting);
       convo.push({ role: 'bot', text: greeting });
       isSpeaking = true;
-      setPhase('speaking', 'Ria speaking greeting...');
+      setPhase('speaking', 'Ria speaking greeting (speak to interrupt)...');
       await speakUtterance(greeting, activeAgent);
       isSpeaking = false;
     }
@@ -3737,8 +3748,8 @@ async function viewTalk(root, customAgent) {
                 : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
               mediaRec = new MediaRecorder(micStream, mime ? { mimeType: mime } : {});
               mediaRec.ondataavailable = (e) => {
-                // Strictly block audio from reaching Deepgram while agent is speaking or in cooldown
-                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !micMuted && !isSpeaking) {
+                // Stream mic audio so user can interrupt at any time
+                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !micMuted) {
                   dgWs.send(e.data);
                 }
               };
@@ -3746,14 +3757,21 @@ async function viewTalk(root, customAgent) {
               return;
             }
 
-            // Drop ALL Deepgram messages while mic is muted or agent is speaking
-            if (micMuted || isSpeaking) return;
+            // Drop audio if mic is muted
+            if (micMuted) return;
 
             if (msg.channel && msg.channel.alternatives && msg.channel.alternatives[0]) {
               const alt = msg.channel.alternatives[0];
               const transcript = (alt.transcript || '').trim();
 
               if (transcript) {
+                // Real-time barge-in: If user interrupts while agent is speaking, instantly silence bot!
+                if (isSpeaking) {
+                  console.log('User barge-in interruption detected:', transcript);
+                  stopAllSpeech();
+                  isSpeaking = false;
+                  setPhase('listening', 'Interrupted • Listening...');
+                }
                 if (msg.is_final) {
                   accumulatedFinalText = (accumulatedFinalText + ' ' + transcript).trim();
                   currentInterimText = '';
@@ -3855,8 +3873,7 @@ async function viewTalk(root, customAgent) {
         };
 
         speechRec.onresult = (e) => {
-          // Drop ALL results while agent is speaking or mic is muted/cooling down
-          if (isSpeaking || micMuted) return;
+          if (micMuted) return;
 
           let interim = '';
           let final = '';
@@ -3868,6 +3885,13 @@ async function viewTalk(root, customAgent) {
 
           const currentSpoken = (final || interim).trim();
           if (currentSpoken) {
+            // Real-time barge-in on browser speech fallback
+            if (isSpeaking) {
+              console.log('WebSpeech user barge-in interruption:', currentSpoken);
+              stopAllSpeech();
+              isSpeaking = false;
+              setPhase('listening', 'Interrupted • Listening...');
+            }
             lastSpokenText = currentSpoken;
             if (!liveUserBubble) {
               liveUserBubble = el('div', { class: 'bubble user live-transcript', style: 'opacity:.7' }, currentSpoken);

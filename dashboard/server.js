@@ -1260,16 +1260,17 @@ const CALLER_INTELLIGENCE_RULES = `
 # HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):
 - TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:
   * NEVER use formal robotic filler phrases like: "Certainly! I'd be happy to assist you with...", "As an AI language model...", "Thank you for reaching out to us today.", "Is there anything else I can assist you with today?".
-  * Use warm, human everyday phrases: "Haanji bilkul!", "Achaa got it!", "Sure thing!", "Haanji boliye!", "Glad to help with that!".
+  * Use warm, human everyday phrases: "Haanji bilkul!", "अच्छा, samajh gayi!", "Sure thing!", "Haanji boliye!", "Glad to help with that!".
 - CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:
   * ALWAYS use contractions: "I'm", "we're", "don't", "can't", "that's", "it's", "we'll", "you'll". Humans never say "I am" or "do not" on a natural phone call.
 - NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:
-  * In Hindi/Hinglish: Start turns naturally with "Haanji", "Achaa", "Bilkul", "Sahi hai", or "Ji".
+  * In Hindi/Hinglish: Start turns naturally with "Haanji", "अच्छा", "Bilkul", "Sahi hai", or "Ji".
   * In English: Start turns naturally with "Got it", "Right", "Sure", "Understood", or "Awesome".
 - BREVITY & BREATHING CADENCE:
   * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).
   * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.
 - PHONETIC PRONUNCIATION FOR TELEPHONY TTS:
+  * NEVER write "accha", "achha", or "acha" in English letters! Speech engines mispronounce "accha" as "Aaka". ALWAYS write "अच्छा" in Devanagari script, or use "theek hai" / "bilkul" / "sahi hai".
   * Always pronounce "24/7" as "twenty-four seven" or "chaubees ghante".
   * Always pronounce "seevora.in" as "seevora dot in".
   * Pronounce "AI" clearly as "A I".
@@ -1282,7 +1283,8 @@ const CALLER_INTELLIGENCE_RULES = `
 - Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).
 - If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.
 
-# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES:
+# CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES (CRITICAL):
+- NEVER REPEAT INTRODUCTORY GREETINGS: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the greeting line if the caller says "Hello", "Namaste", "Haan", or "Ji" during the call! Acknowledge naturally with "Haanji boliye, main sun rahi hoon" and answer their question or ask your follow-up.
 - DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.
 - NEVER badger or loop asking for a phone number on every turn! If the caller greets you ("Hey"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.
 - Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.
@@ -2383,7 +2385,9 @@ async function apiChat(req, res, ctx) {
     if (turnLanguage === 'English') {
       system += `\n\n[CRITICAL MANDATORY INSTRUCTION FOR THIS TURN: The caller spoke in ENGLISH ("${lastUserText.slice(0, 100)}"). You MUST reply 100% in natural, fluent ENGLISH! Do NOT use Hindi or Hinglish words on this turn!]`;
     } else {
-      system += `\n\n[CRITICAL MANDATORY INSTRUCTION FOR THIS TURN: The caller spoke in HINDI / HINGLISH ("${lastUserText.slice(0, 100)}"). You MUST reply in natural conversational Hinglish using Roman script (e.g. "Haanji bilkul..."). Do NOT reply in pure English!]`;
+      system += `\n\n[CRITICAL MANDATORY INSTRUCTION FOR THIS TURN: The caller spoke in HINDI / HINGLISH ("${lastUserText.slice(0, 100)}"). Reply in natural conversational Hindi/Hinglish.
+PRONUNCIATION: NEVER write "accha" or "achha" in Latin letters because TTS voice engines pronounce it as "Aaka". Write "अच्छा" in Devanagari or use "theek hai" / "bilkul".
+ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the greeting line if the caller says "Hello", "Namaste", or "Haan" mid-call. Directly say "Haanji boliye" and proceed with their query!]`;
     }
 
     try {
@@ -2405,13 +2409,22 @@ async function apiChat(req, res, ctx) {
         // Conversational fallback so caller is NEVER left stranded
         const lastUser = (Array.isArray(b.messages) && b.messages.slice().reverse().find(m => m.role === 'user')) || {};
         const userText = String(lastUser.text || '').toLowerCase();
-        let fallbackText = "Thank you for sharing that. I would be happy to help with your inquiry. What day or time works best for you?";
+        const isHindi = turnLanguage === 'Hindi';
+        let fallbackText = isHindi
+          ? "Haanji, main samajh rahi hoon. Main is baare mein aapki poori madad kar sakti hoon. Batayein aage kya janna chahenge?"
+          : "Thank you for sharing that. I would be happy to help with your inquiry. What day or time works best for you?";
         if (userText.includes('price') || userText.includes('cost') || userText.includes('rate') || userText.includes('fee')) {
-          fallbackText = "Our pricing depends on your exact service requirements. I can schedule a quick consultation to give you an exact quote. What day works best?";
+          fallbackText = isHindi
+            ? "Keemat machine ke model aur capacity par depend karti hai. Demo dekhne ke liye kya branch aana chahenge?"
+            : "Our pricing depends on your exact service requirements. I can schedule a quick consultation to give you an exact quote. What day works best?";
         } else if (userText.includes('time') || userText.includes('slot') || userText.includes('tomorrow') || userText.includes('today') || userText.includes('book')) {
-          fallbackText = "We can certainly reserve that slot for you. Could you share your full name and the best phone number to confirm your booking?";
-        } else if (userText.includes('hi') || userText.includes('hello') || userText.includes('hey')) {
-          fallbackText = "Hello! Thanks for connecting. How can I assist you with your inquiry today?";
+          fallbackText = isHindi
+            ? "Bilkul! Kya aap apna shubh naam aur number confirm kar sakte hain?"
+            : "We can certainly reserve that slot for you. Could you share your full name and the best phone number to confirm your booking?";
+        } else if (userText.includes('hi') || userText.includes('hello') || userText.includes('hey') || userText.includes('namaste')) {
+          fallbackText = isHindi
+            ? "Haanji boliye, main sun rahi hoon. Aapki kya sahayata kar sakti hoon?"
+            : "Hello! Thanks for connecting. How can I assist you with your inquiry today?";
         }
         out = {
           text: fallbackText,

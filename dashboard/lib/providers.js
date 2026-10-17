@@ -100,6 +100,11 @@ function normalizeSpokenText(raw) {
   let s = String(raw).trim();
   // Strip muga-style [tone] prefix tags (not needed for mulberry)
   s = s.replace(/^\[[a-z]+\]\s*/i, '');
+  // Normalize Roman 'accha'/'achha'/'acha' so TTS voice engines do not pronounce it as 'Aaka'
+  s = s.replace(/\bbahut\s+a[c]+h*a+h*\b/gi, 'बहुत अच्छा');
+  s = s.replace(/\ba[c]+h+a+h*\b/gi, 'अच्छा');
+  s = s.replace(/\baccha\b/gi, 'अच्छा');
+  s = s.replace(/\bacha\b/gi, 'अच्छा');
   // Convert numbers and symbols to natural spoken forms
   s = s.replace(/\b24\s*[\/*x×]\s*7\b/gi, 'twenty-four seven');
   s = s.replace(/\b(\d+)\s*%/g, (_, n) => n + ' percent');
@@ -210,9 +215,10 @@ const DEFAULT_SYSTEM = 'You are Ria, the warm AI receptionist for Seevora. Reply
 
 // Always appended to every system prompt so the voice loop sounds natural in any language.
 const VOICE_LANG_RULE = ' LANGUAGE & SPEECH RULES (mandatory):' +
-  ' 1. Always reply in the same language the caller spoke in. If Hindi or Hinglish, reply in natural conversational Hinglish using Roman script (e.g., "Haan ji, bilkul! Main aapki madad kar sakti hoon"). Never use Devanagari script.' +
-  ' 2. This is spoken aloud by a voice model: NEVER write mathematical symbols, slashes, or asterisks like "24/7" or "24*7". Always write "twenty-four seven" or "chaubees ghante". Always write "and" instead of "&".' +
-  ' 3. Keep replies strictly to 1 or 2 concise, spoken sentences. No markdown, no bullet points, no asterisks, no emojis.';
+  ' 1. Always reply in the same language the caller spoke in. If Hindi or Hinglish, reply in natural conversational Hinglish or Hindi. When affirming or saying "achha", write "अच्छा" in Devanagari or say "theek hai" / "bilkul" / "sahi hai" — NEVER write "accha" or "achha" in English letters because TTS voice engines pronounce it as "Aaka".' +
+  ' 2. ANTI-REPETITION (CRITICAL): Never re-introduce yourself or repeat introductory greeting lines if the caller says "Namaste", "Hello", or "Haan" mid-call. Acknowledge naturally (e.g. "Haanji boliye") and continue the discussion directly.' +
+  ' 3. This is spoken aloud by a voice model: NEVER write mathematical symbols, slashes, or asterisks like "24/7" or "24*7". Always write "twenty-four seven" or "chaubees ghante". Always write "and" instead of "&".' +
+  ' 4. Keep replies strictly to 1 or 2 concise, spoken sentences. No markdown, no bullet points, no asterisks, no emojis.';
 
 const sttDeepgram = {
   id: 'deepgram',
