@@ -4305,6 +4305,184 @@ function parseTurnsFromTranscript(transcript) {
   return turns;
 }
 
+function renderDrawer(rec, onUpdate) {
+  try {
+    const turns = parseTurnsFromTranscript(rec.transcript);
+
+    // Left Panel: Transcript
+    const transcriptPanel = el('div', { class: 'rec-panel' }, [
+      el('div', { class: 'rec-panel-title' }, [
+        el('span', {}, 'Conversational Transcript'),
+        turns.length ? el('span', { class: 'pill', style: 'font-size:.7rem' }, turns.length + ' speech turns') : null
+      ])
+    ]);
+
+    if (rec.summary) {
+      transcriptPanel.appendChild(el('div', { class: 'rec-summary-box' }, [
+        el('b', {}, 'Call Trace & Intent'),
+        document.createTextNode(rec.summary)
+      ]));
+    }
+
+    if (turns.length) {
+      const scroll = el('div', { class: 'rec-transcript-scroll' });
+      turns.forEach((t) => {
+        scroll.appendChild(el('div', { class: 'rec-turn ' + (t.isAgent ? 'agent' : 'user') }, [
+          el('div', { class: 'rec-turn-role' }, t.role),
+          el('div', { class: 'rec-turn-text' }, t.text)
+        ]));
+      });
+      transcriptPanel.appendChild(scroll);
+    } else {
+      const emptyTranscript = el('div', { style: 'text-align:center;padding:24px 12px;color:var(--ink-dim)' }, [
+        el('div', { style: 'display:flex;justify-content:center;margin-bottom:8px;opacity:.5;color:var(--ink-dim)', html: navIcon('invoice') }),
+        el('p', { class: 'muted text-xs', style: 'margin-bottom:12px' }, 'No transcript cached yet for this call.'),
+        el('button', {
+          class: 'btn btn-primary btn-sm',
+          onclick: async (e) => {
+            const btn = e.target;
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            try {
+              const res = await api('/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/transcribe', { method: 'POST', body: {} });
+              if (res && res.transcript) {
+                rec.transcript = res.transcript;
+                toast('Transcript generated successfully!', 'ok');
+                if (typeof onUpdate === 'function') onUpdate();
+              }
+            } catch (err) {
+              toast('Transcription failed: ' + err.message, 'err');
+              btn.disabled = false;
+              btn.textContent = 'Retry Generation';
+            }
+          }
+        }, 'Generate Transcript')
+      ]);
+      transcriptPanel.appendChild(emptyTranscript);
+    }
+
+    // Right Panel: Audio Replay & Details
+    const audioPanel = el('div', { class: 'rec-panel' }, [
+      el('div', { class: 'rec-panel-title' }, [
+        el('span', {}, 'Audio & Telephony Details')
+      ])
+    ]);
+
+    // Audio Player
+    const playerBox = el('div', { class: 'rec-player-box' });
+    const audioSrc = '/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/audio';
+    const audioEl = el('audio', {
+      src: audioSrc,
+      controls: 'controls',
+      preload: 'none',
+      style: 'width:100%;height:38px;border-radius:var(--r-sm)'
+    });
+    playerBox.appendChild(audioEl);
+
+    // Voice Replay helper (reads dialogue with speech synthesis if audio binary is absent)
+    if (turns.length) {
+      const replayBtn = el('button', { class: 'btn btn-ghost btn-sm flex items-center justify-center gap-2', style: 'width:100%' }, [
+        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
+        el('span', {}, 'Voice AI Replay (Read dialogue)')
+      ]);
+      replayBtn.onclick = () => {
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+          replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+          return;
+        }
+        if (!window.speechSynthesis) {
+          toast('Speech synthesis is not supported in this browser.', 'err');
+          return;
+        }
+        replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Replay';
+        let idx = 0;
+        function speakNext() {
+          if (idx >= turns.length) {
+            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+            return;
+          }
+          const turn = turns[idx++];
+          const utt = new SpeechSynthesisUtterance(turn.text);
+          utt.rate = 1.0;
+          utt.pitch = turn.isAgent ? 1.05 : 0.95;
+          utt.onend = () => speakNext();
+          utt.onerror = () => {
+            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
+          };
+          window.speechSynthesis.speak(utt);
+        }
+        speakNext();
+      };
+      playerBox.appendChild(replayBtn);
+    }
+
+    // Direct download link
+    const dlLink = el('a', {
+      class: 'muted text-xs flex items-center justify-center gap-1',
+      href: audioSrc,
+      download: 'call-' + (rec.dograhRunId || rec.id) + '.mp3',
+      style: 'margin-top:2px'
+    }, [
+      el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>' }),
+      el('span', {}, 'Download call audio')
+    ]);
+    playerBox.appendChild(dlLink);
+
+    audioPanel.appendChild(playerBox);
+
+    // Call Metadata Details
+    const metaList = el('div', { class: 'rec-meta-list' }, [
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Call ID'),
+        el('div', { class: 'rec-meta-val' }, rec.dograhRunId || rec.id)
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Carrier Route'),
+        el('div', { class: 'rec-meta-val' }, (rec.mode === 'web' || rec.mode === 'embed') ? 'Web Browser Audio' : 'Direct Phone Line (+91 80715 82519)')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Direction'),
+        el('div', { class: 'rec-meta-val' }, (rec.direction === 'inbound') ? '↓ Inbound (Incoming)' : '↑ Outbound (Dialed)')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, (rec.direction === 'inbound') ? 'Customer (Caller)' : 'Customer (Dialed)'),
+        el('div', { class: 'rec-meta-val', style: 'font-weight:600;color:var(--accent)' }, rec.phoneNumber || (rec.mode === 'web' ? 'Web Visitor' : '--'))
+      ]),
+      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Caller (From)'),
+        el('div', { class: 'rec-meta-val' }, rec.callerNumber || ((rec.direction === 'inbound') ? rec.phoneNumber : '+918071582519') || '--')
+      ]) : null,
+      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Called (To)'),
+        el('div', { class: 'rec-meta-val' }, rec.calledNumber || ((rec.direction === 'outbound') ? rec.phoneNumber : '+918071582519') || '--')
+      ]) : null,
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Duration'),
+        el('div', { class: 'rec-meta-val' }, fmtDuration(rec.durationSeconds))
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Privacy Policy'),
+        el('div', { class: 'rec-meta-val' }, 'Tenant Isolated')
+      ]),
+      el('div', { class: 'rec-meta-item' }, [
+        el('div', { class: 'rec-meta-label' }, 'Timestamp'),
+        el('div', { class: 'rec-meta-val' }, rec.startedAt ? new Date(rec.startedAt).toLocaleString('en-IN') : '--')
+      ]),
+    ].filter(Boolean));
+    audioPanel.appendChild(metaList);
+
+    return el('div', { class: 'rec-drawer-wrap' }, [
+      el('div', { class: 'rec-drawer-grid' }, [transcriptPanel, audioPanel])
+    ]);
+  } catch (err) {
+    console.error('[renderDrawer] render error:', err);
+    return el('div', { class: 'rec-drawer-wrap', style: 'padding:16px;color:#ef4444;' }, [
+      el('p', {}, 'Error rendering call details: ' + (err.message || err))
+    ]);
+  }
+}
+
 async function viewRecordings(root) {
   _recState.dirFilter = '';
   const head = viewHead('Call Recordings & Transcripts', 'Review every inbound and outbound voice call, complete with full conversational transcripts, audio replay, and caller details.');
@@ -4455,190 +4633,23 @@ async function viewRecordings(root) {
       tbody.appendChild(tr);
 
       if (isExpanded) {
-        const drawerTr = el('tr', {}, [
-          el('td', { colspan: '8', style: 'padding:0' }, [
-            renderDrawer(rec, () => {
-              applyFiltersAndRender();
-            })
-          ])
-        ]);
-        tbody.appendChild(drawerTr);
+        try {
+          const drawerTr = el('tr', { class: 'rec-drawer-row' }, [
+            el('td', { colspan: '8', style: 'padding:0' }, [
+              renderDrawer(rec, () => {
+                applyFiltersAndRender();
+              })
+            ])
+          ]);
+          tbody.appendChild(drawerTr);
+        } catch (err) {
+          console.error('[Recordings] render drawer error:', err);
+        }
       }
     });
 
     table.appendChild(tbody);
     tableHost.appendChild(table);
-  }
-
-  function renderDrawer(rec, onUpdate) {
-    const turns = parseTurnsFromTranscript(rec.transcript);
-
-    // Left Panel: Transcript
-    const transcriptPanel = el('div', { class: 'rec-panel' }, [
-      el('div', { class: 'rec-panel-title' }, [
-        el('span', {}, 'Conversational Transcript'),
-        turns.length ? el('span', { class: 'pill', style: 'font-size:.7rem' }, turns.length + ' speech turns') : null
-      ])
-    ]);
-
-    if (rec.summary) {
-      transcriptPanel.appendChild(el('div', { class: 'rec-summary-box' }, [
-        el('b', {}, 'Call Trace & Intent'),
-        document.createTextNode(rec.summary)
-      ]));
-    }
-
-    if (turns.length) {
-      const scroll = el('div', { class: 'rec-transcript-scroll' });
-      turns.forEach((t) => {
-        scroll.appendChild(el('div', { class: 'rec-turn ' + (t.isAgent ? 'agent' : 'user') }, [
-          el('div', { class: 'rec-turn-role' }, t.role),
-          el('div', { class: 'rec-turn-text' }, t.text)
-        ]));
-      });
-      transcriptPanel.appendChild(scroll);
-    } else {
-      const emptyTranscript = el('div', { style: 'text-align:center;padding:24px 12px;color:var(--ink-dim)' }, [
-        el('div', { style: 'display:flex;justify-content:center;margin-bottom:8px;opacity:.5;color:var(--ink-dim)', html: navIcon('invoice') }),
-        el('p', { class: 'muted text-xs', style: 'margin-bottom:12px' }, 'No transcript cached yet for this call.'),
-        el('button', {
-          class: 'btn btn-primary btn-sm',
-          onclick: async (e) => {
-            const btn = e.target;
-            btn.disabled = true;
-            btn.textContent = 'Generating...';
-            try {
-              const res = await api('/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/transcribe', { method: 'POST', body: {} });
-              if (res && res.transcript) {
-                rec.transcript = res.transcript;
-                toast('Transcript generated successfully!', 'ok');
-                onUpdate();
-              }
-            } catch (err) {
-              toast('Transcription failed: ' + err.message, 'err');
-              btn.disabled = false;
-              btn.textContent = 'Retry Generation';
-            }
-          }
-        }, 'Generate Transcript')
-      ]);
-      transcriptPanel.appendChild(emptyTranscript);
-    }
-
-    // Right Panel: Audio Replay & Details
-    const audioPanel = el('div', { class: 'rec-panel' }, [
-      el('div', { class: 'rec-panel-title' }, [
-        el('span', {}, 'Audio & Telephony Details')
-      ])
-    ]);
-
-    // Audio Player
-    const playerBox = el('div', { class: 'rec-player-box' });
-    const audioSrc = '/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id) + '/audio';
-    const audioEl = el('audio', {
-      src: audioSrc,
-      controls: 'controls',
-      preload: 'none',
-      style: 'width:100%;height:38px;border-radius:var(--r-sm)'
-    });
-    playerBox.appendChild(audioEl);
-
-    // Voice Replay helper (reads dialogue with speech synthesis if audio binary is absent)
-    if (turns.length) {
-      const replayBtn = el('button', { class: 'btn btn-ghost btn-sm flex items-center justify-center gap-2', style: 'width:100%' }, [
-        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
-        el('span', {}, 'Voice AI Replay (Read dialogue)')
-      ]);
-      replayBtn.onclick = () => {
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
-          replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
-          return;
-        }
-        if (!window.speechSynthesis) {
-          toast('Speech synthesis is not supported in this browser.', 'err');
-          return;
-        }
-        replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Replay';
-        let idx = 0;
-        function speakNext() {
-          if (idx >= turns.length) {
-            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
-            return;
-          }
-          const turn = turns[idx++];
-          const utt = new SpeechSynthesisUtterance(turn.text);
-          utt.rate = 1.0;
-          utt.pitch = turn.isAgent ? 1.05 : 0.95;
-          utt.onend = () => speakNext();
-          utt.onerror = () => {
-            replayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Voice AI Replay';
-          };
-          window.speechSynthesis.speak(utt);
-        }
-        speakNext();
-      };
-      playerBox.appendChild(replayBtn);
-    }
-
-    // Direct download link
-    const dlLink = el('a', {
-      class: 'muted text-xs flex items-center justify-center gap-1',
-      href: audioSrc,
-      download: 'call-' + (rec.dograhRunId || rec.id) + '.mp3',
-      style: 'margin-top:2px'
-    }, [
-      el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>' }),
-      el('span', {}, 'Download call audio')
-    ]);
-    playerBox.appendChild(dlLink);
-
-    audioPanel.appendChild(playerBox);
-
-    // Call Metadata Details
-    const metaList = el('div', { class: 'rec-meta-list' }, [
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Call ID'),
-        el('div', { class: 'rec-meta-val' }, rec.dograhRunId || rec.id)
-      ]),
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Carrier Route'),
-        el('div', { class: 'rec-meta-val' }, (rec.mode === 'web' || rec.mode === 'embed') ? 'Web Browser Audio' : 'Direct Phone Line (+91 80715 82519)')
-      ]),
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Direction'),
-        el('div', { class: 'rec-meta-val' }, (rec.direction === 'inbound') ? '↓ Inbound (Incoming)' : '↑ Outbound (Dialed)')
-      ]),
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, (rec.direction === 'inbound') ? 'Customer (Caller)' : 'Customer (Dialed)'),
-        el('div', { class: 'rec-meta-val', style: 'font-weight:600;color:var(--accent)' }, rec.phoneNumber || (rec.mode === 'web' ? 'Web Visitor' : '--'))
-      ]),
-      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Caller (From)'),
-        el('div', { class: 'rec-meta-val' }, rec.callerNumber || ((rec.direction === 'inbound') ? rec.phoneNumber : '+918071582519') || '--')
-      ]) : null,
-      (rec.callerNumber || rec.calledNumber) ? el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Called (To)'),
-        el('div', { class: 'rec-meta-val' }, rec.calledNumber || ((rec.direction === 'outbound') ? rec.phoneNumber : '+918071582519') || '--')
-      ]) : null,
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Duration'),
-        el('div', { class: 'rec-meta-val' }, fmtDuration(rec.durationSeconds))
-      ]),
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Privacy Policy'),
-        el('div', { class: 'rec-meta-val' }, 'Tenant Isolated')
-      ]),
-      el('div', { class: 'rec-meta-item' }, [
-        el('div', { class: 'rec-meta-label' }, 'Timestamp'),
-        el('div', { class: 'rec-meta-val' }, rec.startedAt ? new Date(rec.startedAt).toLocaleString('en-IN') : '--')
-      ]),
-    ].filter(Boolean));
-    audioPanel.appendChild(metaList);
-
-    return el('div', { class: 'rec-drawer-wrap' }, [
-      el('div', { class: 'rec-drawer-grid' }, [transcriptPanel, audioPanel])
-    ]);
   }
 
   // Event handlers
@@ -4816,8 +4827,10 @@ async function viewInbound(root) {
         onclick: async () => {
           if (_recState.expandedId === rec.id) {
             _recState.expandedId = null;
+            renderInboundTable(inboundList);
           } else {
             _recState.expandedId = rec.id;
+            renderInboundTable(inboundList);
             if (!rec.transcript) {
               try {
                 const res = await api('/api/recordings/' + encodeURIComponent(rec.dograhRunId || rec.id));
@@ -4825,12 +4838,10 @@ async function viewInbound(root) {
                   rec.transcript = res.recording.transcript;
                   rec.summary = res.recording.summary || rec.summary;
                   applyInboundFilters();
-                  return;
                 }
               } catch (_) { }
             }
           }
-          renderInboundTable(inboundList);
         }
       }, [
         el('td', {}, chevron),
@@ -4851,12 +4862,16 @@ async function viewInbound(root) {
       tbody.appendChild(tr);
 
       if (isExpanded) {
-        const drawerTr = el('tr', {}, [
-          el('td', { colspan: '8', style: 'padding:0' }, [
-            renderDrawer(rec, () => applyInboundFilters())
-          ])
-        ]);
-        tbody.appendChild(drawerTr);
+        try {
+          const drawerTr = el('tr', { class: 'rec-drawer-row' }, [
+            el('td', { colspan: '8', style: 'padding:0' }, [
+              renderDrawer(rec, () => applyInboundFilters())
+            ])
+          ]);
+          tbody.appendChild(drawerTr);
+        } catch (err) {
+          console.error('[Inbound] render drawer error:', err);
+        }
       }
     });
 
