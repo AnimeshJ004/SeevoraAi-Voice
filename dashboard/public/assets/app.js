@@ -3385,19 +3385,11 @@ async function viewTalk(root, customAgent) {
   function muteMic() {
     micMuted = true;
     if (postSpeakTimer) { clearTimeout(postSpeakTimer); postSpeakTimer = null; }
-    // 1. Hardware track silencing: disable audio packets directly at browser WebRTC layer
+    // Hardware track silencing: disable audio packets directly at browser WebRTC layer (MediaRecorder encodes pure silence)
     if (micStream) {
       try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
     }
-    // 2. Pause MediaRecorder so Deepgram receives zero audio during TTS
-    if (mediaRec && mediaRec.state === 'recording') {
-      try { mediaRec.pause(); } catch (_) {}
-    }
-    // 3. Stop browser SpeechRecognition
-    if (speechRec) {
-      try { if (speechRec.abort) speechRec.abort(); else speechRec.stop(); } catch (_) {}
-    }
-    // 4. Wipe all pending recognition text buffers
+    // Wipe all pending recognition text buffers so zero speaker bleed leaks into user turns
     accumulatedFinalText = '';
     currentInterimText = '';
     lastSpokenText = '';
@@ -3405,31 +3397,33 @@ async function viewTalk(root, customAgent) {
     if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
   }
 
-  function unmuteMic() {
+  function unmuteMic(immediate) {
     if (postSpeakTimer) { clearTimeout(postSpeakTimer); postSpeakTimer = null; }
-    // Enforce 1000ms cooldown after speech finishes so speaker audio completely decays
-    postSpeakTimer = setTimeout(() => {
+    const applyUnmute = () => {
       micMuted = false;
       accumulatedFinalText = '';
       currentInterimText = '';
       lastSpokenText = '';
       if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
-      // Re-enable microphone tracks
+      // Re-enable microphone tracks so user speech is captured
       if (micStream) {
         try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
-      }
-      // Resume MediaRecorder
-      if (mediaRec && mediaRec.state === 'paused') {
-        try { mediaRec.resume(); } catch (_) {}
       }
       // Restart Web Speech if Web Speech is active and Deepgram is not
       if (isListening && speechRec && !mediaRec) {
         try { speechRec.start(); } catch (_) {}
       }
-      if (isListening) {
+      if (isListening && !isSpeaking) {
         setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
       }
-    }, 1000);
+    };
+
+    if (immediate) {
+      applyUnmute();
+    } else {
+      // 400ms decay cooldown so speaker audio completely decays
+      postSpeakTimer = setTimeout(applyUnmute, 400);
+    }
   }
 
   function commitSpeech(text) {
@@ -3709,7 +3703,6 @@ async function viewTalk(root, customAgent) {
   // Voice Recognition Setup: Tier 1 Deepgram Nova-3 Stream via /api/stt/stream with resilient browser fallback
   async function startVoiceListening() {
     stopAllSpeech();
-    muteMic();
 
     // 1. Acquire microphone access immediately on user gesture
     if (window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !micStream) {
@@ -3730,25 +3723,12 @@ async function viewTalk(root, customAgent) {
 
     if (!isListening) return;
 
+    // Ensure audio tracks start active
     if (micStream) {
-      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
     }
 
-    // 2. Natural greeting on first start
-    if (convo.length === 0) {
-      const greeting = activeAgent.greeting || "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
-      addBubble('bot', greeting);
-      convo.push({ role: 'bot', text: greeting });
-      isSpeaking = true;
-      muteMic();
-      setPhase('speaking', 'Agent speaking greeting...');
-      await speakUtterance(greeting, activeAgent);
-      isSpeaking = false;
-    }
-
-    if (!isListening) return;
-
-    // 3. Connect Tier 1 Deepgram Nova Live Streaming WebSocket via /api/stt/stream
+    // 2. Connect Tier 1 Deepgram Nova Live Streaming WebSocket via /api/stt/stream
     if (micStream && window.MediaRecorder) {
       try {
         const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -3759,9 +3739,6 @@ async function viewTalk(root, customAgent) {
           if (!isListening) {
             try { dgWs.close(); } catch (_) {}
             return;
-          }
-          if (!isSpeaking) {
-            unmuteMic();
           }
         };
 
@@ -3775,8 +3752,8 @@ async function viewTalk(root, customAgent) {
                 : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
               mediaRec = new MediaRecorder(micStream, mime ? { mimeType: mime } : {});
               mediaRec.ondataavailable = (e) => {
-                // Only stream audio to Deepgram when mic is unmuted and agent is not speaking
-                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN && !micMuted && !isSpeaking) {
+                // Stream continuously so WebM container and Opus frame continuity is preserved!
+                if (e.data && e.data.size > 0 && dgWs && dgWs.readyState === WebSocket.OPEN) {
                   dgWs.send(e.data);
                 }
               };
@@ -3822,7 +3799,7 @@ async function viewTalk(root, customAgent) {
                   if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
                     commitSpeech(toCommit);
                   }
-                }, 1300);
+                }, 1100);
 
                 if (msg.speech_final) {
                   if (silenceTimer) clearTimeout(silenceTimer);
@@ -3831,7 +3808,7 @@ async function viewTalk(root, customAgent) {
                     if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
                       commitSpeech(toCommit);
                     }
-                  }, 900);
+                  }, 800);
                 }
               }
             }
@@ -3843,7 +3820,7 @@ async function viewTalk(root, customAgent) {
                 if (toCommit && toCommit.length >= 2 && !isThinking && !isSpeaking && !micMuted) {
                   commitSpeech(toCommit);
                 }
-              }, 750);
+              }, 700);
             }
           } catch (_) {}
         };
@@ -3868,15 +3845,32 @@ async function viewTalk(root, customAgent) {
             startWebSpeechFallback();
           }
         };
-
-        return;
       } catch (micErr) {
         console.warn('Deepgram microphone stream unavailable, falling back:', micErr.message);
+        startWebSpeechFallback();
       }
+    } else {
+      startWebSpeechFallback();
     }
 
-    // Tier 2: Browser SpeechRecognition Fallback
-    startWebSpeechFallback();
+    // 3. Natural greeting on first start
+    if (convo.length === 0) {
+      const greeting = activeAgent.greeting || "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
+      addBubble('bot', greeting);
+      convo.push({ role: 'bot', text: greeting });
+      isSpeaking = true;
+      muteMic();
+      setPhase('speaking', 'Agent speaking greeting...');
+      await speakUtterance(greeting, activeAgent);
+      isSpeaking = false;
+      if (isListening) {
+        unmuteMic(false);
+      }
+    } else {
+      if (isListening) {
+        unmuteMic(true);
+      }
+    }
 
     function startWebSpeechFallback() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
