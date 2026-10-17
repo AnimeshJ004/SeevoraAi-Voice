@@ -4650,7 +4650,7 @@ async function viewRecordings(root) {
     try {
       syncBtn.disabled = true;
       syncBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
-      const out = await api('/api/recordings?limit=100&offset=0');
+      const out = await api('/api/recordings?sync=true&limit=100&offset=0');
       _recState.recordings = out.recordings || [];
       applyFiltersAndRender();
       if (showToast) toast('Synced ' + _recState.recordings.length + ' call recordings from Dograh.', 'ok');
@@ -4680,7 +4680,7 @@ async function viewInbound(root) {
       try {
         syncBtn.disabled = true;
         syncBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
-        const res = await api('/api/recordings?limit=100&offset=0');
+        const res = await api('/api/recordings?sync=true&limit=100&offset=0');
         _recState.recordings = (res && Array.isArray(res.recordings)) ? res.recordings : [];
         applyInboundFilters();
         toast('Inbound calls synchronized.', 'ok');
@@ -4871,8 +4871,8 @@ async function viewInbound(root) {
   _recState.recordings = _recState.recordings || [];
   applyInboundFilters();
 
-  // Load recordings in background without stalling the view
-  api('/api/recordings?limit=100&offset=0').then((res) => {
+  // Load recordings with sync=true so latest inbound calls appear immediately
+  api('/api/recordings?sync=true&limit=100&offset=0').then((res) => {
     if (res && Array.isArray(res.recordings)) {
       _recState.recordings = res.recordings;
       applyInboundFilters();

@@ -4192,51 +4192,63 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
     const { runs } = await providers.telephony.fetchRecordings({ limit });
     if (!Array.isArray(runs) || runs.length === 0) return [];
 
+    // 1. Immediately store/update all runs in a single fast mutation so callers see them instantly
+    await core.mutate((mutDb) => {
+      if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
+      for (const run of runs) {
+        const runId = String(run.id || run.run_id);
+        const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === runId && r.tenantId === tenantId);
+        const norm = normalizeRun(run, tenantId);
+        if (idx >= 0) {
+          // Preserve transcript/details if already fetched
+          mutDb.callRecordings[idx] = {
+            ...norm,
+            ...mutDb.callRecordings[idx],
+            status: norm.status || mutDb.callRecordings[idx].status,
+            endedAt: norm.endedAt || mutDb.callRecordings[idx].endedAt,
+            tenantId
+          };
+        } else {
+          mutDb.callRecordings.unshift(norm);
+        }
+      }
+    });
+
+    // 2. Fetch full details / transcripts for top recent runs in parallel
     const d = core.db();
     const existingRecs = d.callRecordings || [];
+    const runsNeedingDetail = runs.slice(0, 10).filter((r) => {
+      const rec = existingRecs.find((x) => x.dograhRunId === String(r.id) && x.tenantId === tenantId);
+      return !rec || !rec.transcript;
+    });
 
-    // Find runs that are not yet stored for this tenant, or whose details/transcripts are pending
-    const runsToFetch = [];
-    for (const run of runs) {
-      const runId = String(run.id || run.run_id);
-      const existing = existingRecs.find((r) => r.dograhRunId === runId && r.tenantId === tenantId);
-      if (!existing || !existing.transcript || existing.status === 'initiated' || existing.status === 'in_progress') {
-        runsToFetch.push(run);
-      }
-    }
+    if (runsNeedingDetail.length > 0) {
+      await Promise.all(runsNeedingDetail.map(async (run) => {
+        try {
+          const detail = await providers.telephony.fetchRunDetail(run.id);
+          if (detail) {
+            const norm = normalizeRun(detail, tenantId);
+            await core.mutate(async (mutDb) => {
+              if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
+              const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === String(run.id) && r.tenantId === tenantId);
+              if (idx >= 0) {
+                mutDb.callRecordings[idx] = { ...mutDb.callRecordings[idx], ...norm, tenantId };
+              } else {
+                mutDb.callRecordings.unshift(norm);
+              }
 
-    if (runsToFetch.length === 0) return [];
-
-    const batch = runsToFetch.slice(0, 15);
-    const updated = [];
-
-    for (const run of batch) {
-      try {
-        const detail = await providers.telephony.fetchRunDetail(run.id);
-        if (detail) {
-          const norm = normalizeRun(detail, tenantId);
-          await core.mutate(async (mutDb) => {
-            if (!Array.isArray(mutDb.callRecordings)) mutDb.callRecordings = [];
-            const idx = mutDb.callRecordings.findIndex((r) => r.dograhRunId === String(run.id) && r.tenantId === tenantId);
-            if (idx >= 0) {
-              mutDb.callRecordings[idx] = { ...mutDb.callRecordings[idx], ...norm, tenantId };
-            } else {
-              mutDb.callRecordings.unshift(norm);
-            }
-
-            // Sync into WACRM leads and timeline
-            if (norm.phoneNumber && (norm.transcript || norm.summary || detail.gathered_context)) {
-              await wacrm.processVoiceCallCompletion(mutDb, tenantId, {
-                ...norm,
-                callerNumber: norm.phoneNumber,
-                gathered_context: detail.gathered_context,
-                logs: detail.logs
-              });
-            }
-          });
-          updated.push(norm);
-        }
-      } catch (_) {}
+              if (norm.phoneNumber && (norm.transcript || norm.summary || detail.gathered_context)) {
+                await wacrm.processVoiceCallCompletion(mutDb, tenantId, {
+                  ...norm,
+                  callerNumber: norm.phoneNumber,
+                  gathered_context: detail.gathered_context,
+                  logs: detail.logs
+                });
+              }
+            });
+          }
+        } catch (_) {}
+      }));
     }
 
     // Ensure all completed calls are reflected in CRM contacts
@@ -4244,7 +4256,7 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
       wacrm.syncCallRecordingsToCrm(mutDb, tenantId);
     });
 
-    return updated;
+    return runs;
   } catch (err) {
     return [];
   }
@@ -4254,16 +4266,13 @@ const _lastDograhSync = {}; // tenantId -> timestamp
 function triggerBackgroundDograhSync(tenantId) {
   if (!tenantId) return;
   const now = Date.now();
-  if (_lastDograhSync[tenantId] && (now - _lastDograhSync[tenantId] < 30000)) {
-    return; // Already synced within last 30s
+  if (_lastDograhSync[tenantId] && (now - _lastDograhSync[tenantId] < 15000)) {
+    return; // Already synced within last 15s
   }
   _lastDograhSync[tenantId] = now;
   setImmediate(async () => {
     try {
       await syncDograhRecordingsForTenant(tenantId, { limit: 50 });
-      await core.mutate((mutDb) => {
-        wacrm.syncCallRecordingsToCrm(mutDb, tenantId);
-      });
     } catch (_) {}
   });
 }
@@ -4277,9 +4286,13 @@ async function apiRecordingsList(req, res, ctx) {
     const q = new URL(req.url, 'http://local').searchParams;
     const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
     const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
+    const forceSync = q.get('sync') === 'true' || q.get('refresh') === 'true';
 
-    // Instant response from DB; trigger background Dograh sync
-    triggerBackgroundDograhSync(ctx.tenant.id);
+    if (forceSync) {
+      await syncDograhRecordingsForTenant(ctx.tenant.id, { limit: 50 });
+    } else {
+      triggerBackgroundDograhSync(ctx.tenant.id);
+    }
 
     let all = (core.db().callRecordings || [])
       .filter((r) => r.tenantId === ctx.tenant.id);
