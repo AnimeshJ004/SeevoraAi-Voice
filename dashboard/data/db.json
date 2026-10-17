@@ -406,7 +406,7 @@
       "status": "active",
       "createdAt": "2026-10-12T06:59:21.626Z",
       "clerkUserId": "user_clerk_test_123",
-      "clerkSyncedAt": 1792224381348
+      "clerkSyncedAt": 1792225748970
     },
     {
       "id": "u_test_rzp_1791788441806",
@@ -421,7 +421,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$26cd32459fd949c0649b9323c615cd1f$8fae67321acc42d56b1304a906efb35911ef77867b9394dec9d84358b70b139bb1bc3fa4c71eba3e2b35cd879d52e33cc039acf77913fb31ced379a3ad5d63ff",
+      "passHash": "scrypt$89ad20088faa2d4beaf5a0feefacc752$f09abb55fb52ab5aac5777e2f548e2b9b0064be3f762c5f4aafc854df5623093031f6565bd185fef0d24993a7b41243d9841d87c0b0fd1b7c5682c2b3f8230db",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -431,7 +431,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$eb43cd4fc1a21054d6308b1791381c7e$cf01469fac69793331c6ba181a66782b4480be740351c8c7b2433eb087c28683ab48751f0e443b1a01a62c59e0f3366e6ce794adee9a93068b4bc1e46a83b32d",
+      "passHash": "scrypt$3d1cc3f047339acc74d2cd62bba98508$cb231e9567c485c3b2266bf62ac88d6133b5b6cb96a0ef75d1261774e909983d897cd4613bce9be463df8c87612e419284729801e20aba52366e92c074c09d40",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
@@ -6461,6 +6461,34 @@
       "currency": "INR",
       "balancePaise": 1000,
       "updatedAt": "2026-10-17T08:06:22.541Z"
+    },
+    {
+      "id": "wal_33a5942d851d7d69",
+      "tenantId": "t_fbd345b1a2e025bb",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "updatedAt": "2026-10-17T08:29:09.728Z"
+    },
+    {
+      "id": "wal_149d0726c88f6656",
+      "tenantId": "t_7778c8dadfa7aa29",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "updatedAt": "2026-10-17T08:29:09.756Z"
+    },
+    {
+      "id": "wal_69d65ce5760aa10b",
+      "tenantId": "t_83fd5c2caa97f457",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "updatedAt": "2026-10-17T08:29:09.899Z"
+    },
+    {
+      "id": "wal_f545f27430165279",
+      "tenantId": "t_3c2e9753aae7eb81",
+      "currency": "INR",
+      "balancePaise": 1000,
+      "updatedAt": "2026-10-17T08:29:09.928Z"
     }
   ],
   "ledger": [

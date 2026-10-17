@@ -272,10 +272,11 @@ const workflowConfigurations = {
   ambient_noise_configuration: { enabled: false, volume: 0.3 },
   max_call_duration: 300,
   max_user_idle_timeout: 10,
-  smart_turn_stop_secs: 1.0,
-  turn_start_strategy: 'default', // VAD-based instant barge-in interruption!
+  smart_turn_stop_secs: 1.2,
+  turn_start_strategy: 'min_words',
+  turn_start_min_words: 1,
   turn_stop_strategy: 'transcription',
-  dictionary: 'accha: अच्छा\nachha: अच्छा\nacha: अच्छा\nAccha: अच्छा\nAchha: अच्छा\nAcha: अच्छा\nbahut accha: बहुत अच्छा\nbahut achha: बहुत अच्छा\nBahut accha: बहुत अच्छा\nBahut achha: बहुत अच्छा',
+  dictionary: '', // CRITICAL: Must be empty. Deepgram Flux STT throws HTTP 400 if dictionary parameters are passed.
   context_compaction_enabled: false,
   tts_cache_enabled: false,
   call_dispositions: [],
