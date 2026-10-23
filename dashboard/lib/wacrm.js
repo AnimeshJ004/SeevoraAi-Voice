@@ -668,7 +668,7 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
     phone,
     direction: 'system',
     type: 'call_summary',
-    text: `📞 Call Completed (${callDetails.durationSec || callDetails.durationSeconds || 0}s): ${summary}`,
+    text: `Call Completed (${callDetails.durationSec || callDetails.durationSeconds || 0}s): ${summary}`,
     status: 'delivered',
     metadata: {
       callId: callDetails.callId || callDetails.dograhRunId || callDetails.id,

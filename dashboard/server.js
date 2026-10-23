@@ -2713,7 +2713,7 @@ async function apiTelephonyDial(req, res, ctx) {
         phone: b.number,
         direction: 'system',
         type: 'call_summary',
-        text: `📞 Outbound AI phone call initiated to ${b.number}`,
+        text: `Outbound phone call initiated to ${b.number}`,
         status: 'sent'
       });
     }).catch(() => {});
@@ -4647,6 +4647,289 @@ async function apiTelephonyWebhook(req, res, body) {
 }
 
 /* ==========================================================================
+   Persistent Campaign Engine -- CRUD + Background Worker
+   ========================================================================== */
+
+// ---- Campaign helpers ----
+const CAMPAIGN_STATUSES = Object.freeze(['draft', 'running', 'paused', 'completed', 'stopped']);
+const TRAI_START_HOUR = 9;  // 9 AM IST
+const TRAI_END_HOUR = 21;   // 9 PM IST
+
+function istHour() {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const istMs = utcMs + 5.5 * 3600000;
+  return new Date(istMs).getHours();
+}
+
+function withinTraiWindow(campaign) {
+  const h = istHour();
+  const startH = Number(campaign.scheduleStartHour ?? TRAI_START_HOUR);
+  const endH   = Number(campaign.scheduleEndHour   ?? TRAI_END_HOUR);
+  if (h < startH || h >= endH) return false;
+  // Weekday check (0=Sun...6=Sat in local IST)
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const istDay = new Date(utcMs + 5.5 * 3600000).getDay();
+  const allowedDays = campaign.activeDays;
+  if (Array.isArray(allowedDays) && allowedDays.length) {
+    if (!allowedDays.includes(istDay)) return false;
+  }
+  return true;
+}
+
+// GET /api/campaigns -- list campaigns for current tenant
+async function apiCampaignsList(req, res, ctx) {
+  const d = core.db();
+  const campaigns = (d.campaigns || []).filter((c) => c.tenantId === ctx.tenant.id);
+  core.sendJson(res, 200, { campaigns });
+}
+
+// POST /api/campaigns -- create a new campaign
+async function apiCampaignsCreate(req, res, ctx) {
+  const b = ctx.body || {};
+  const name = String(b.name || '').trim().slice(0, 80);
+  if (!name) return core.sendJson(res, 422, { error: 'name required', code: 'bad_name' });
+
+  const agents = (core.db().agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  const agentId = String(b.agentId || (agents[0] && agents[0].id) || 'default');
+  const agent   = agents.find((a) => a.id === agentId);
+  const agentName = agent ? agent.name : 'Seevora AI Voice Receptionist';
+
+  // Normalize leads array from wizard step 2
+  const rawLeads = Array.isArray(b.leads) ? b.leads : [];
+  const leads = rawLeads.map((l) => ({
+    id:        l.id        || core.genId('ld_'),
+    name:      String(l.name  || '').trim() || 'Lead',
+    phone:     String(l.phone || '').trim(),
+    rawNumber: String(l.rawNumber || l.phone || '').replace(/\D/g, ''),
+    status:    'pending',
+    retries:   0,
+    error:     null,
+    timestamp: null,
+  }));
+
+  const campaign = {
+    id:                core.genId('cmp_'),
+    tenantId:          ctx.tenant.id,
+    name,
+    agentId,
+    agentName,
+    status:            'draft',
+    leads,
+    // Schedule settings (Step 3)
+    dailyCap:          Number(b.dailyCap)          || 100,
+    intervalSeconds:   Number(b.intervalSeconds)   || 45,
+    retryLimit:        Number(b.retryLimit)         || 2,
+    retryBusyAfterMin: Number(b.retryBusyAfterMin) || 30,
+    retryNoAnsAfterMin:Number(b.retryNoAnsAfterMin)|| 120,
+    activeDays:        Array.isArray(b.activeDays) ? b.activeDays : [1,2,3,4,5], // Mon-Fri
+    scheduleStartHour: Number(b.scheduleStartHour) || TRAI_START_HOUR,
+    scheduleEndHour:   Number(b.scheduleEndHour)   || TRAI_END_HOUR,
+    // Stats
+    dialed:     0,
+    connected:  0,
+    failed:     0,
+    todayDialed:0,
+    createdAt:  new Date().toISOString(),
+    updatedAt:  new Date().toISOString(),
+  };
+
+  await core.mutate((d) => {
+    if (!Array.isArray(d.campaigns)) d.campaigns = [];
+    d.campaigns.unshift(campaign);
+    if (!Array.isArray(d.campaignJobs)) d.campaignJobs = [];
+  });
+
+  core.sendJson(res, 201, { campaign });
+}
+
+// POST /api/campaigns/action -- pause | resume | stop a campaign
+async function apiCampaignsAction(req, res, ctx) {
+  const b = ctx.body || {};
+  const campaignId = String(b.campaignId || '');
+  const action     = String(b.action     || ''); // 'start' | 'pause' | 'stop'
+  const d = core.db();
+  const camp = (d.campaigns || []).find((c) => c.id === campaignId && c.tenantId === ctx.tenant.id);
+  if (!camp) return core.sendJson(res, 404, { error: 'campaign not found', code: 'not_found' });
+
+  let newStatus = camp.status;
+  if (action === 'start' && ['draft','paused'].includes(camp.status)) newStatus = 'running';
+  else if (action === 'pause' && camp.status === 'running') newStatus = 'paused';
+  else if (action === 'stop')  newStatus = 'stopped';
+  else return core.sendJson(res, 422, { error: 'invalid action for current status', code: 'bad_action' });
+
+  await core.mutate((d) => {
+    const c = (d.campaigns || []).find((x) => x.id === campaignId);
+    if (c) { c.status = newStatus; c.updatedAt = new Date().toISOString(); }
+  });
+
+  // Kick the background worker immediately when starting
+  if (newStatus === 'running') setImmediate(campaignWorkerTick);
+
+  core.sendJson(res, 200, { ok: true, status: newStatus });
+}
+
+// DELETE /api/campaigns -- delete a campaign
+async function apiCampaignsDelete(req, res, ctx) {
+  const b = ctx.body || {};
+  const campaignId = String(b.campaignId || '');
+  const d = core.db();
+  if (!(d.campaigns || []).some((c) => c.id === campaignId && c.tenantId === ctx.tenant.id))
+    return core.sendJson(res, 404, { error: 'campaign not found', code: 'not_found' });
+  await core.mutate((d) => {
+    d.campaigns = (d.campaigns || []).filter((c) => c.id !== campaignId);
+    d.campaignJobs = (d.campaignJobs || []).filter((j) => j.campaignId !== campaignId);
+  });
+  core.sendJson(res, 200, { ok: true });
+}
+
+// ---- Background Campaign Worker ----
+let _campaignWorkerBusy = false;
+
+async function campaignWorkerTick() {
+  if (_campaignWorkerBusy) return;
+  _campaignWorkerBusy = true;
+  try {
+    const d = core.db();
+    const running = (d.campaigns || []).filter((c) => c.status === 'running');
+    if (!running.length) return;
+
+    for (const camp of running) {
+      // Re-read latest state each loop to pick up pause/stop mutations
+      const fresh = (core.db().campaigns || []).find((c) => c.id === camp.id);
+      if (!fresh || fresh.status !== 'running') continue;
+      if (!withinTraiWindow(fresh)) {
+        // Auto-pause when outside window; resume next tick when inside
+        await core.mutate((d) => {
+          const c = (d.campaigns || []).find((x) => x.id === fresh.id);
+          if (c && c.status === 'running') c.status = 'paused';
+        });
+        continue;
+      }
+      if ((fresh.todayDialed || 0) >= (fresh.dailyCap || 100)) {
+        logger.info(`Campaign ${fresh.id} hit daily cap (${fresh.dailyCap}). Will resume tomorrow.`);
+        continue;
+      }
+
+      // Find next pending lead
+      const lead = (fresh.leads || []).find((l) => l.status === 'pending');
+      // Also check retry-eligible jobs
+      const now = Date.now();
+      const jobs = (core.db().campaignJobs || []).filter((j) => j.campaignId === fresh.id && j.status === 'retry_pending' && new Date(j.retryAfter).getTime() <= now);
+      const retryLead = jobs.length ? (fresh.leads || []).find((l) => l.id === jobs[0].leadId) : null;
+      const activeLead = retryLead || lead;
+      if (!activeLead) {
+        // All leads exhausted -- mark complete
+        await core.mutate((d) => {
+          const c = (d.campaigns || []).find((x) => x.id === fresh.id);
+          if (c) { c.status = 'completed'; c.updatedAt = new Date().toISOString(); }
+          d.campaignJobs = (d.campaignJobs || []).filter((j) => j.campaignId !== fresh.id);
+        });
+        continue;
+      }
+
+      // Mark lead as dialing
+      await core.mutate((d) => {
+        const c = (d.campaigns || []).find((x) => x.id === fresh.id);
+        if (!c) return;
+        const l = (c.leads || []).find((x) => x.id === activeLead.id);
+        if (l) l.status = 'dialing';
+        c.updatedAt = new Date().toISOString();
+      });
+
+      // Place call via Dograh / VoBiz
+      let callSuccess = false;
+      let callError   = '';
+      let runId       = null;
+      try {
+        const r = await providers.telephony.dial(activeLead.rawNumber, {});
+        callSuccess = r && (r.status === 200 || r.status === 201 || r.ok);
+        runId = r.data && (r.data.run_id || r.data.id || r.data.call_id);
+        bumpUsage(fresh.tenantId, 'calls', 1).catch(() => {});
+      } catch (e) {
+        callError = String(e.message || e);
+      }
+
+      // Update lead status & campaign counters
+      await core.mutate((d) => {
+        const c = (d.campaigns || []).find((x) => x.id === fresh.id);
+        if (!c) return;
+        const l = (c.leads || []).find((x) => x.id === activeLead.id);
+        if (!l) return;
+        const retries = (l.retries || 0) + 1;
+        if (callSuccess) {
+          l.status    = 'initiated';
+          l.timestamp = new Date().toISOString();
+          l.runId     = runId || null;
+          c.dialed    = (c.dialed || 0) + 1;
+          c.connected = (c.connected || 0) + 1;
+          c.todayDialed = (c.todayDialed || 0) + 1;
+          // Remove any retry job for this lead
+          d.campaignJobs = (d.campaignJobs || []).filter((j) => !(j.campaignId === c.id && j.leadId === l.id));
+        } else {
+          const isBusy = /busy|congestion/i.test(callError);
+          const retryAfterMin = isBusy ? (fresh.retryBusyAfterMin || 30) : (fresh.retryNoAnsAfterMin || 120);
+          const maxRetries = fresh.retryLimit || 2;
+          if (retries <= maxRetries) {
+            l.status  = 'pending'; // reset to pending for retry
+            l.retries = retries;
+            l.error   = callError;
+            const retryAfter = new Date(Date.now() + retryAfterMin * 60000).toISOString();
+            if (!Array.isArray(d.campaignJobs)) d.campaignJobs = [];
+            // Upsert retry job
+            const existingJob = d.campaignJobs.find((j) => j.campaignId === c.id && j.leadId === l.id);
+            if (existingJob) {
+              existingJob.retryAfter = retryAfter;
+              existingJob.status = 'retry_pending';
+              existingJob.retries = retries;
+            } else {
+              d.campaignJobs.push({ id: core.genId('cjob_'), campaignId: c.id, leadId: l.id, status: 'retry_pending', retryAfter, retries, error: callError, createdAt: new Date().toISOString() });
+            }
+          } else {
+            l.status    = 'failed';
+            l.error     = callError;
+            l.timestamp = new Date().toISOString();
+            c.failed    = (c.failed || 0) + 1;
+            c.dialed    = (c.dialed || 0) + 1;
+            c.todayDialed = (c.todayDialed || 0) + 1;
+            d.campaignJobs = (d.campaignJobs || []).filter((j) => !(j.campaignId === c.id && j.leadId === l.id));
+          }
+        }
+        c.updatedAt = new Date().toISOString();
+      });
+
+      // Pace: wait intervalSeconds before next lead
+      const intervalMs = (fresh.intervalSeconds || 45) * 1000;
+      await new Promise((r) => setTimeout(r, Math.min(intervalMs, 300000)));
+    }
+  } catch (err) {
+    logger.warn('Campaign worker error: ' + err.message);
+  } finally {
+    _campaignWorkerBusy = false;
+  }
+}
+
+// Reset daily cap counters at midnight IST and run the worker every 60s
+function startCampaignScheduler() {
+  // Run worker every 60 seconds
+  setInterval(campaignWorkerTick, 60000);
+  // Reset todayDialed at midnight IST (check every minute)
+  let _lastResetDay = -1;
+  setInterval(() => {
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istDay = new Date(utcMs + 5.5 * 3600000).getDate();
+    if (istDay !== _lastResetDay) {
+      _lastResetDay = istDay;
+      core.mutate((d) => {
+        (d.campaigns || []).forEach((c) => { c.todayDialed = 0; });
+      }).catch(() => {});
+    }
+  }, 60000);
+}
+
+/* ==========================================================================
    Router
    ========================================================================== */
 
@@ -4761,6 +5044,8 @@ const server = http.createServer(async (req, res) => {
         if (route.startsWith('/api/recordings/') && !route.endsWith('/audio')) return core.requireAuth(req, res, apiRecordingDetail);
         if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactsList);
         if (route === '/api/crm/pipeline') return core.requireAuth(req, res, apiCrmPipelineGet);
+        // Campaign routes
+        if (route === '/api/campaigns') return core.requireAuth(req, res, apiCampaignsList);
         // AI assistant GET routes
         if (route === '/api/assistant/sessions') return core.requireAuth(req, res, apiAssistantSessionsList);
         if (route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionGet);
@@ -4844,6 +5129,10 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/hvac/jobs') return core.requireAuth(req, res, apiHvacJobSave, body);
       if (route === '/api/hvac/book') return core.requireAuth(req, res, apiHvacBook, body);
       if (route.startsWith('/api/recordings/') && route.endsWith('/transcribe')) return core.requireAuth(req, res, apiRecordingTranscribe, body);
+      // Campaign CRUD routes
+      if (route === '/api/campaigns') return core.requireAuth(req, res, apiCampaignsCreate, body);
+      if (route === '/api/campaigns/action') return core.requireAuth(req, res, apiCampaignsAction, body);
+      if (route === '/api/campaigns/delete') return core.requireAuth(req, res, apiCampaignsDelete, body);
       // AI assistant POST routes
       if (route === '/api/assistant/sessions') return core.requireAuth(req, res, apiAssistantSessionCreate, body);
       if (route === '/api/assistant/integrations') return core.requireAuth(req, res, apiAssistantIntegrationSave, body);
@@ -5016,6 +5305,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Boot then listen.
 boot().then(() => {
+  startCampaignScheduler();
   server.listen(PORT, () => {
     const live = providers.describeProviders();
     const flag = (layer, id) => (live[layer].find((p) => p.id === id) || {}).live ? 'ok' : 'MISSING';

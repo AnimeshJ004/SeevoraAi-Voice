@@ -6693,4 +6693,194 @@
 }
 
 
+/* ==========================================================================
+   CAMPAIGN WIZARD & PERSISTENT CAMPAIGN MANAGER (Sprint 1 - Dev 2)
+   ========================================================================== */
+
+.campaigns-page { display: flex; flex-direction: column; gap: 28px; }
+
+/* ---- 4-step Wizard Card ---- */
+.cw-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(230,243,255,0.42) 100%);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1.5px solid rgba(255,255,255,0.88);
+  border-top: 2px solid rgba(255,255,255,0.98);
+  border-radius: 24px;
+  padding: 32px 36px;
+  box-shadow: 0 12px 40px -8px rgba(15,45,90,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+@media (max-width: 768px) { .cw-card { padding: 22px 18px; } }
+
+/* ---- Stepper header ---- */
+.cw-stepper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 36px;
+}
+.cw-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+.cw-step + .cw-step::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+  transition: background 0.3s ease;
+}
+.cw-step.done + .cw-step::before,
+.cw-step.active + .cw-step::before { background: var(--accent); }
+.cw-step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid var(--line);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-dim);
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cw-step.active .cw-step-dot { border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 0 0 0 4px rgba(0,149,255,0.18); }
+.cw-step.done .cw-step-dot   { border-color: #10b981; background: #10b981; color: #fff; }
+.cw-step-label {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.cw-step.active .cw-step-label { color: var(--accent); }
+.cw-step.done .cw-step-label   { color: #10b981; }
+
+/* ---- Wizard body panels ---- */
+.cw-panel { animation: cwFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes cwFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Wizard fields ---- */
+.cw-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.cw-label { font-size: 0.78rem; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ---- Day picker ---- */
+.cw-day-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.cw-day-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: rgba(255,255,255,0.55);
+  font-size: 0.76rem; font-weight: 700;
+  cursor: pointer; transition: all 0.18s ease; color: var(--ink-dim);
+}
+.cw-day-btn.on { border-color: var(--accent); background: rgba(0,149,255,0.12); color: var(--accent); }
+.cw-day-btn:hover { border-color: var(--accent); }
+
+/* ---- Schedule grid ---- */
+.cw-schedule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .cw-schedule-grid { grid-template-columns: 1fr; } }
+
+/* ---- Step 2 tabs ---- */
+.cw-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1.5px solid var(--line); padding-bottom: 12px; }
+.cw-tab {
+  padding: 6px 16px; border-radius: 8px;
+  font-size: 0.82rem; font-weight: 600; color: var(--ink-dim);
+  border: none; background: transparent; cursor: pointer; transition: all 0.18s;
+}
+.cw-tab.active { background: rgba(0,149,255,0.12); color: var(--accent); }
+.cw-lead-count { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #10b981; font-weight: 600; margin-top: 10px; }
+
+/* ---- Wizard footer ---- */
+.cw-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
+}
+
+/* ---- Review step summary ---- */
+.cw-review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+@media (max-width: 600px) { .cw-review-grid { grid-template-columns: 1fr; } }
+.cw-review-item {
+  background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 14px; padding: 14px 16px;
+}
+.cw-review-key { font-size: 0.7rem; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.cw-review-val { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+
+/* ---- Campaign Manager list ---- */
+.camp-manager-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(230,243,255,0.42) 100%);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1.5px solid rgba(255,255,255,0.88);
+  border-radius: 24px; padding: 24px 28px;
+  box-shadow: 0 8px 28px -6px rgba(15,45,90,0.07);
+}
+.camp-list { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+.camp-item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px;
+  background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 16px; padding: 16px 20px; transition: all 0.22s ease;
+}
+.camp-item:hover { background: rgba(255,255,255,0.72); box-shadow: 0 4px 16px rgba(0,149,255,0.08); }
+.camp-item-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.camp-item-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.76rem; color: var(--ink-soft); margin-top: 6px; }
+.camp-item-meta span {
+  display: inline-flex; align-items: center;
+  background: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  padding: 3px 8px; border-radius: 6px;
+  font-weight: 500; color: var(--ink-soft);
+}
+.camp-item-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.camp-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 99px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.camp-status-pill.draft     { background: rgba(100,116,139,0.12); color: #64748b; }
+.camp-status-pill.running   { background: rgba(16,185,129,0.14);  color: #10b981; }
+.camp-status-pill.paused    { background: rgba(245,158,11,0.14);  color: #d97706; }
+.camp-status-pill.stopped   { background: rgba(239,68,68,0.12);   color: #ef4444; }
+.camp-status-pill.completed { background: rgba(0,149,255,0.12);   color: var(--accent); }
+.camp-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.camp-status-pill.running .camp-status-dot { animation: pulseGreen 1.5s infinite; }
+
+/* ---- Progress bar in campaign item ---- */
+.camp-progress-bar { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 10px; }
+.camp-progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), #10b981); transition: width 0.4s ease; }
+
+/* ---- TRAI window notice ---- */
+.trai-notice {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(248, 250, 252, 0.9); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 0.8rem; color: var(--ink-soft); font-weight: 500; margin-top: 14px;
+}
+.trai-notice-badge {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  background: rgba(0, 149, 255, 0.12); color: var(--accent);
+  padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+
+/* ---- Empty state ---- */
+.camp-empty { text-align: center; padding: 36px 20px; color: var(--ink-dim); font-size: 0.88rem; }
 

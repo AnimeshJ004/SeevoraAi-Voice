@@ -1021,22 +1021,22 @@ function openWhatsAppModal(dealOrContact) {
   const templates = [
     {
       id: 'followup',
-      label: '📞 Call Follow-up',
-      text: `Hi ${name}, thank you for speaking with our Seevora Voice Receptionist earlier today. Following up on your inquiry—how can we best assist you next?`
+      label: 'Call Follow-up',
+      text: `Hi ${name}, thank you for speaking with our Seevora Voice Receptionist earlier today. Following up on your inquiry, how can we best assist you next?`
     },
     {
       id: 'appointment',
-      label: '📅 Booking Confirmation',
-      text: `Hi ${name}, confirming your appointment booked via Seevora AI Voice. Please reply to this message if you have any questions or need to reschedule.`
+      label: 'Booking Confirmation',
+      text: `Hi ${name}, confirming your appointment booked via Seevora Voice. Please reply to this message if you have any questions or need to reschedule.`
     },
     {
       id: 'catalog',
-      label: '🏷️ Pricing & Brochure',
-      text: `Hi ${name}, here are the pricing and service details as requested during your call with our AI Voice agent. Feel free to review and chat right here!`
+      label: 'Pricing & Brochure',
+      text: `Hi ${name}, here are the pricing and service details as requested during your call with our voice agent. Feel free to review and chat right here!`
     },
     {
       id: 'callback',
-      label: '💬 Quick Callback',
+      label: 'Quick Callback',
       text: `Hi ${name}, we noticed your recent interaction with our voice receptionist. What would be a convenient time for a quick follow-up conversation?`
     }
   ];
@@ -1180,7 +1180,7 @@ function renderVoiceDashboard(root, opts) {
       ]),
       isAgency
         ? el('button', { class: 'sv-btn-outline', onclick: () => openAddClientModal() }, '+ Add Client')
-        : el('button', { class: 'sv-btn-outline', onclick: () => goto('talk') }, '🎙 Talk to Agent')
+        : el('button', { class: 'sv-btn-outline', onclick: () => goto('talk') }, 'Talk to Agent')
     ])
   ]));
 
@@ -1338,10 +1338,10 @@ function renderVoiceDashboard(root, opts) {
 
   // ── Call Outcomes & Lead Conversion (Replaces Technical Telephony Plumbing) ──
   const outcomes = [
-    { dot: 'green',  title: '📅 Appointments & Consultations Booked', sub: 'Synced to Google Calendar & Cal.com', count: '404 Calls (48%)' },
-    { dot: 'blue',   title: '🎯 Qualified Buyer & Patient Leads',    sub: 'Caller intent, budget & CRM pipeline sync', count: '236 Leads (28%)' },
-    { dot: 'purple', title: '💡 Autonomous Inquiries & FAQs Solved',  sub: 'Operating hours, pricing & triage without wait', count: '152 Calls (18%)' },
-    { dot: 'amber',  title: '👤 Warm Transfer to Human Staff',       sub: 'Escalated on complex or emergency requests', count: '50 Calls (6%)' }
+    { dot: 'green',  title: 'Appointments & Consultations Booked', sub: 'Synced to Google Calendar & Cal.com', count: '404 Calls (48%)' },
+    { dot: 'blue',   title: 'Qualified Buyer & Patient Leads',    sub: 'Caller intent, budget & CRM pipeline sync', count: '236 Leads (28%)' },
+    { dot: 'purple', title: 'Autonomous Inquiries & FAQs Solved',  sub: 'Operating hours, pricing & triage without wait', count: '152 Calls (18%)' },
+    { dot: 'amber',  title: 'Warm Transfer to Human Staff',       sub: 'Escalated on complex or emergency requests', count: '50 Calls (6%)' }
   ];
 
   colCenter.appendChild(el('div', { class: 'sv-card' }, [
@@ -1471,7 +1471,7 @@ function renderVoiceDashboard(root, opts) {
       el('span', { style: 'color:#B45309;font-weight:700;' }, '● 3% Escalated')
     ]),
     el('div', { class: 'sv-latency-pill' }, [
-      el('span', { style: 'font-weight:600;' }, '⚡ Voice Latency (Sub-second)'),
+      el('span', { style: 'font-weight:600;' }, 'Voice Latency (Sub-second)'),
       el('span', { style: 'font-weight:750;color:#047857;' }, '480ms Human-Parity')
     ]),
     el('button', {
@@ -3497,9 +3497,9 @@ async function viewTalk(root, customAgent) {
       }
     }
   }, [
-    el('option', { value: 'en-IN', selected: true }, '🇮🇳 English / Hinglish'),
-    el('option', { value: 'hi' }, '🇮🇳 Hindi (हिन्दी)'),
-    el('option', { value: 'en' }, '🌐 English (General)')
+    el('option', { value: 'en-IN', selected: true }, 'English / Hinglish (India)'),
+    el('option', { value: 'hi' }, 'Hindi (हिन्दी)'),
+    el('option', { value: 'en' }, 'English (General)')
   ]);
 
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
@@ -3659,7 +3659,7 @@ async function viewTalk(root, customAgent) {
         const crmPill = el('div', {
           class: 'bubble sys',
           style: 'background:rgba(46,196,182,0.14);border:1px solid rgba(46,196,182,0.45);color:var(--text);font-size:0.75rem;padding:6px 12px;margin:6px 0;display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-sm);'
-        }, `👤 Lead Synced to CRM: ${c.name || 'Caller'} (${c.phone || 'Phone pending'}) • ${c.stage || 'New Lead'}`);
+        }, `Lead Synced to CRM: ${c.name || 'Caller'} (${c.phone || 'Phone pending'}) • ${c.stage || 'New Lead'}`);
         transcriptHost.appendChild(crmPill);
         transcriptHost.scrollTop = transcriptHost.scrollHeight;
       }
@@ -4684,7 +4684,7 @@ async function viewRecordings(root) {
    =========================================================================== */
 async function viewInbound(root) {
   _recState.dirFilter = 'inbound';
-  const head = viewHead('Inbound Calls', 'Real-time phone calls answered by your Seevora AI Voice Receptionist on your dedicated business line (+91 80715 82519).');
+  const head = viewHead('Inbound Calls', 'Real-time phone calls answered by your Seevora Voice Receptionist on your dedicated business line.');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     onclick: async () => {
@@ -4706,26 +4706,33 @@ async function viewInbound(root) {
     el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
     el('span', {}, 'Sync Inbound Calls')
   ]);
-  const liveBadge = el('span', { class: 'badge-live', style: 'margin-right:8px' }, [el('span', { class: 'd' }), 'Phone Line Live: +91 80715 82519']);
-  head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [liveBadge, syncBtn]));
+  head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [syncBtn]));
   root.appendChild(head);
 
-  // Inbound Receptionist Status Card
-  const phoneLineCard = el('div', { class: 'card card-pad', style: 'margin-bottom:18px;background:linear-gradient(135deg, rgba(255,216,77,0.28), rgba(255,255,255,0.7));border:1px solid rgba(224,174,0,0.3)' }, [
-    el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:14px' }, [
-      el('div', { class: 'flex items-center gap-3' }, [
-        el('div', { style: 'width:44px;height:44px;border-radius:50%;background:#FFD84D;color:#141414;flex:0 0 44px;display:flex;align-items:center;justify-content:center', html: uiIcon('phone', 22) }),
-        el('div', {}, [
-          el('h3', { class: 't-h3', style: 'margin:0' }, 'Direct Inbound Line: +91 80715 82519'),
-          el('p', { class: 'soft', style: 'margin:2px 0 0;font-size:.82rem' }, 'Dedicated 24/7 business telephone line answered by your voice receptionist.')
-        ])
-      ]),
-      el('div', { class: 'flex gap-2' }, [
-        el('button', {
-          class: 'btn btn-primary btn-sm',
-          onclick: () => openMakeCallModal()
-        }, 'Test Dial Inbound Agent')
+  // Inbound Receptionist Status Bar (Compact & Professional)
+  const phoneLineCard = el('div', {
+    class: 'card',
+    style: 'margin-bottom:18px;padding:12px 18px;background:rgba(255,255,255,0.78);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;'
+  }, [
+    el('div', { class: 'flex items-center gap-3' }, [
+      el('div', {
+        style: 'width:34px;height:34px;border-radius:8px;background:rgba(0,149,255,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        html: uiIcon('phone', 16)
+      }),
+      el('div', {}, [
+        el('div', { class: 'flex items-center gap-2' }, [
+          el('span', { style: 'font-weight:700;font-size:0.92rem;color:var(--ink);font-family:var(--mono);letter-spacing:0.3px;' }, '+91 80715 82519'),
+          el('span', { class: 'pill ok', style: 'font-size:0.68rem;padding:1px 7px;font-weight:600;' }, 'Active Line')
+        ]),
+        el('p', { class: 'muted', style: 'margin:2px 0 0;font-size:0.75rem;' }, 'Dedicated business telephone line connected to your voice receptionist.')
       ])
+    ]),
+    el('div', { class: 'flex gap-2' }, [
+      el('button', {
+        class: 'btn btn-ghost btn-sm',
+        style: 'font-size:0.78rem;padding:6px 14px;border:1px solid var(--line);',
+        onclick: () => openMakeCallModal()
+      }, 'Test Dial Line')
     ])
   ]);
   root.appendChild(phoneLineCard);
@@ -4901,7 +4908,7 @@ async function viewInbound(root) {
 }
 
 /* ===========================================================================
-   5c. OUTBOUND LEADS & CAMPAIGNS
+   5c. OUTBOUND LEADS & CAMPAIGNS - 4-Step Wizard + Persistent Campaign Manager
    =========================================================================== */
 function getCampaignStorageKey() {
   const tid = (window.State && window.State.me && window.State.me.tenant && window.State.me.tenant.id) || 'guest';
@@ -4998,73 +5005,50 @@ function parseImportText(text) {
 }
 
 async function viewCampaigns(root) {
-  campaignState.leads = loadCampaignLeads();
-  const head = viewHead('Outbound Calls & Campaigns', 'Place direct phone calls or run automated sequential lead campaigns powered by your AI Voice Receptionist.');
+  await ensureAgents().catch(() => null);
+  await ensureTelephony().catch(() => null);
+
+  /* ---- Page header ---- */
+  const head = viewHead('Outbound Campaigns', 'Create server-side campaigns or place instant direct calls. Campaigns auto-dial within the TRAI 9am-9pm window with retry logic.');
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [
-    el('button', { class: 'btn btn-primary', onclick: () => openMakeCallModal() }, 'Place Direct Call'),
-    el('button', { class: 'btn btn-ghost', onclick: () => goto('recordings') }, 'View Call Recordings & Transcripts →')
+    el('button', { class: 'btn btn-ghost', onclick: () => openMakeCallModal() }, 'Quick Direct Call'),
+    el('button', { class: 'btn btn-ghost', onclick: () => goto('recordings') }, 'Recordings →')
   ]));
   root.appendChild(head);
 
-  ensureTelephony().catch(() => null);
-  ensureAgents().catch(() => null);
-
   const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+918071582519';
 
-  // Direct Outbound Dialer Card
-  const quickDialerInput = el('input', {
-    class: 'input',
-    type: 'tel',
-    inputmode: 'numeric',
-    maxlength: 10,
-    placeholder: '9876543210',
-    style: 'flex:1;border:none;outline:none;padding:10px 14px;font-size:1.05rem;font-weight:600;letter-spacing:1px;background:transparent;'
-  });
+  /* ================================================================
+     QUICK DIALER CARD
+     ================================================================ */
+  const quickDialerInput = el('input', { class: 'input', type: 'tel', inputmode: 'numeric', maxlength: 10, placeholder: '9876543210', style: 'flex:1;border:none;outline:none;padding:10px 14px;font-size:1.05rem;font-weight:600;letter-spacing:1px;background:transparent;' });
   quickDialerInput.addEventListener('input', () => { quickDialerInput.value = quickDialerInput.value.replace(/\D/g, '').slice(0, 10); });
-
-  const quickAgentSelect = el('select', {
-    class: 'select',
-    style: 'margin-bottom:12px;font-size:.9rem;font-weight:600;'
-  }, (State.agents && State.agents.length ? State.agents : [{ id: 'default', name: 'Seevora AI Voice Receptionist' }]).map((a) =>
-    el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name)
-  ));
-
-  const quickDialBtn = el('button', { class: 'btn btn-primary', style: 'padding:10px 20px;font-weight:700;' }, 'Dial Recipient Now');
+  const quickAgentSelect = el('select', { class: 'select', style: 'font-size:.9rem;font-weight:600;' },
+    (State.agents && State.agents.length ? State.agents : [{ id: 'default', name: 'Seevora AI Voice Receptionist' }]).map((a) => el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name))
+  );
+  const quickDialBtn = el('button', { class: 'btn btn-primary', style: 'padding:10px 20px;font-weight:700;' }, 'Dial Now');
   quickDialBtn.addEventListener('click', async () => {
     const num = (quickDialerInput.value || '').replace(/\D/g, '');
-    if (num.length !== 10) { toast('Please enter a valid 10-digit mobile number.', 'err'); quickDialerInput.focus(); return; }
-    quickDialBtn.disabled = true;
-    quickDialBtn.textContent = 'Dialing...';
+    if (num.length !== 10) { toast('Enter a valid 10-digit mobile number.', 'err'); quickDialerInput.focus(); return; }
+    quickDialBtn.disabled = true; quickDialBtn.textContent = 'Dialing...';
     try {
       await api('/api/telephony/dial', { method: 'POST', body: { number: num, confirm: true, agentId: quickAgentSelect.value } });
       toast('Call placed to +91 ' + num + '!', 'ok');
       quickDialerInput.value = '';
     } catch (e) {
       const detail = (e.data && (e.data.detail || e.data.message)) || '';
-      const msg = detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.');
-      toast(msg, 'err');
-    } finally {
-      quickDialBtn.disabled = false;
-      quickDialBtn.textContent = 'Dial Recipient Now';
-    }
+      toast(detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.'), 'err');
+    } finally { quickDialBtn.disabled = false; quickDialBtn.textContent = 'Dial Now'; }
   });
-
-  const directDialerCard = el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(0,149,255,0.3);' }, [
+  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(0,149,255,0.3);' }, [
     el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:10px;' }, [
-      el('h3', { class: 't-h3', style: 'margin-bottom:2px;display:flex;align-items:center;gap:8px;' }, [
-        el('span', { html: uiIcon('phone', 18) }),
-        el('span', {}, 'Instant Outbound Phone Dialer')
-      ]),
-      el('span', { class: 'pill' }, [el('span', { class: 'dot' }), 'Active Business Line: ' + activeDid])
+      el('h3', { class: 't-h3', style: 'display:flex;align-items:center;gap:8px;' }, [el('span', { html: uiIcon('phone', 18) }), 'Instant Outbound Dialer']),
+      el('span', { class: 'pill' }, [el('span', { class: 'dot' }), 'Line: ' + activeDid])
     ]),
-    el('p', { class: 'soft text-xs', style: 'margin-bottom:14px;' }, 'Enter a 10-digit mobile number to initiate a live outbound call immediately. The selected AI voice agent answers as soon as the recipient picks up.'),
     el('div', { style: 'display:grid;grid-template-columns:1fr 1.5fr auto;gap:12px;align-items:end;' }, [
+      el('div', {}, [el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Voice Agent'), quickAgentSelect]),
       el('div', {}, [
-        el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Speaking AI Agent'),
-        quickAgentSelect
-      ]),
-      el('div', {}, [
-        el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Recipient Number (+91)'),
+        el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Recipient (+91)'),
         el('div', { style: 'display:flex;align-items:center;border:1.5px solid rgba(203,213,225,0.8);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);' }, [
           el('span', { style: 'padding:10px 14px;background:rgba(241,245,249,0.7);font-weight:700;border-right:1px solid rgba(203,213,225,0.8);font-size:.92rem;color:#334155;' }, '+91'),
           quickDialerInput
@@ -5072,468 +5056,371 @@ async function viewCampaigns(root) {
       ]),
       quickDialBtn
     ])
-  ]);
-  root.appendChild(directDialerCard);
+  ]));
 
-  // Stats bar
-  const statsHost = el('div', { class: 'campaign-stats-grid' });
-  root.appendChild(statsHost);
+  /* ================================================================
+     4-STEP CAMPAIGN WIZARD
+     ================================================================ */
+  const wizardCard = el('div', { class: 'cw-card' });
+  root.appendChild(wizardCard);
 
-  // Live banner (when campaign is running)
-  const bannerHost = el('div', { id: 'campaignBannerHost' });
-  root.appendChild(bannerHost);
+  /* Wizard state */
+  const wiz = {
+    step: 1,
+    name: '',
+    agentId: (State.agents && State.agents[0] && State.agents[0].id) || '',
+    leads: [],
+    dailyCap: 100, intervalSeconds: 45, retryLimit: 2,
+    retryBusyAfterMin: 30, retryNoAnsAfterMin: 120,
+    activeDays: [1,2,3,4,5], scheduleStartHour: 9, scheduleEndHour: 21,
+  };
 
-  // Main grid: Import box (left) + Settings box (right)
-  const grid = el('div', { class: 'campaign-grid' });
-  root.appendChild(grid);
+  const STEPS = ['Details', 'Contacts', 'Schedule', 'Review & Launch'];
 
-  // Table card (bottom)
-  const tableCard = el('div', { class: 'card card-pad', id: 'campaignTableCard' });
-  root.appendChild(tableCard);
+  /* Stepper header */
+  const stepper = el('div', { class: 'cw-stepper' });
+  const stepEls = STEPS.map((label, i) => {
+    const dot = el('div', { class: 'cw-step-dot' }, String(i + 1));
+    const lbl = el('div', { class: 'cw-step-label' }, label);
+    const s = el('div', { class: 'cw-step' + (i === 0 ? ' active' : '') }, [dot, lbl]);
+    stepper.appendChild(s);
+    return s;
+  });
+  wizardCard.appendChild(el('h3', { class: 't-h3', style: 'margin-bottom:18px' }, '+ New Campaign'));
+  wizardCard.appendChild(stepper);
 
-  function renderStats() {
-    statsHost.innerHTML = '';
-    const total = campaignState.leads.length;
-    const completed = campaignState.leads.filter((l) => l.status === 'initiated' || l.status === 'dry_run').length;
-    const pending = campaignState.leads.filter((l) => l.status === 'pending').length;
-    const failed = campaignState.leads.filter((l) => l.status === 'failed').length;
+  const panelHost = el('div', {});
+  wizardCard.appendChild(panelHost);
 
-    const stats = [
-      { lbl: 'Total Leads', val: total },
-      { lbl: 'Completed Calls', val: completed },
-      { lbl: 'Pending Calls', val: pending },
-      { lbl: 'Failed Attempts', val: failed },
-      { lbl: 'Caller ID (Direct Line)', val: typeof activeDid === 'string' ? activeDid : (activeDid.number || '+918071582519') }
-    ];
+  const backBtn  = el('button', { class: 'btn btn-ghost',   style: 'visibility:hidden' }, '← Back');
+  const nextBtn  = el('button', { class: 'btn btn-primary' }, 'Next Step →');
+  const wizFooter = el('div', { class: 'cw-footer' }, [backBtn, nextBtn]);
+  wizardCard.appendChild(wizFooter);
 
-    stats.forEach((s) => {
-      statsHost.appendChild(el('div', { class: 'campaign-stat-box' }, [
-        el('div', { class: 'lbl' }, s.lbl),
-        el('div', { class: 'val', style: typeof s.val === 'string' && s.val.startsWith('+') ? 'font-size:1.1rem;color:var(--accent)' : '' }, String(s.val))
-      ]));
-    });
-  }
-
-  function renderBanner() {
-    bannerHost.innerHTML = '';
-    if (!campaignState.running) return;
-
-    const total = campaignState.leads.length;
-    const current = campaignState.currentIndex >= 0 && campaignState.currentIndex < total ? campaignState.leads[campaignState.currentIndex] : null;
-    const processed = campaignState.leads.filter((l) => l.status !== 'pending').length;
-    const pct = total ? Math.round((processed / total) * 100) : 0;
-
-    const stopBtn = el('button', { class: 'btn btn-danger', onclick: stopCampaign }, 'Stop Campaign');
-
-    const banner = el('div', { class: 'live-progress-banner' }, [
-      el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:12px' }, [
-        el('div', { class: 'flex items-center gap-2' }, [
-          el('div', { class: 'pulse-badge' }, [el('div', { class: 'pulse-badge-dot' }), 'LIVE CAMPAIGN IN PROGRESS']),
-          current ? el('span', { style: 'font-weight:600;font-size:.9rem;margin-left:6px' }, ['Calling ', esc(current.name), ' (', esc(current.phone), ')']) : null
-        ]),
-        el('div', { class: 'flex items-center gap-3' }, [
-          campaignState.countdown > 0 ? el('span', { style: 'font-size:.85rem;color:#e2e8f0;font-family:var(--mono)' }, 'Next call in ' + campaignState.countdown + 's') : null,
-          stopBtn
-        ])
-      ]),
-      el('div', { class: 'progress-bar-track' }, [
-        el('div', { class: 'progress-bar-fill', style: 'width:' + pct + '%' })
-      ]),
-      el('div', { class: 'flex justify-between', style: 'font-size:.78rem;color:#94a3b8;font-family:var(--mono)' }, [
-        el('span', {}, 'Progress: ' + processed + ' of ' + total + ' leads (' + pct + '%)'),
-        el('span', {}, campaignState.isDryRun ? 'DRY-RUN SIMULATION' : 'LIVE TELEPHONE CALLING')
+  /* Step 1: Details */
+  function buildStep1() {
+    const nameInput = el('input', { class: 'input', type: 'text', id: 'cw_name', maxlength: 80, placeholder: 'e.g. Q4 Patient Follow-up', value: wiz.name, style: 'font-size:1rem;font-weight:600;' });
+    nameInput.addEventListener('input', () => { wiz.name = nameInput.value.trim(); });
+    const agentOpts = (State.agents && State.agents.length) ? State.agents : [{ id: 'default', name: 'Seevora Voice Receptionist' }];
+    const agentSel = el('select', { class: 'input', id: 'cw_agent' }, agentOpts.map((a) => el('option', { value: a.id, selected: a.id === wiz.agentId }, a.name)));
+    agentSel.addEventListener('change', () => { wiz.agentId = agentSel.value; });
+    const p = el('div', { class: 'cw-panel' }, [
+      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:22px' }, 'Give your campaign a name and select which voice agent will handle calls.'),
+      el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label', for: 'cw_name' }, 'Campaign Name'), nameInput]),
+      el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label', for: 'cw_agent' }, 'Voice Agent'), agentSel]),
+      el('div', { class: 'trai-notice' }, [
+        el('span', { class: 'trai-notice-badge' }, 'TRAI Compliance'),
+        el('span', {}, 'Server-side worker strictly enforces 9:00 AM to 9:00 PM IST calling hours.')
       ])
     ]);
-    bannerHost.appendChild(banner);
+    return p;
   }
 
-  // --- Left: Import Card ---
-  const importCard = el('div', { class: 'card card-pad' });
-  grid.appendChild(importCard);
-
-  importCard.appendChild(el('h3', { class: 't-h3' }, 'Import Leads'));
-  importCard.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Upload a CSV spreadsheet or paste phone numbers to queue automated calls.'));
-
-  const tabUploadBtn = el('button', { class: 'btn btn-ghost on', type: 'button' }, 'Upload CSV / TXT');
-  const tabPasteBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Paste Numbers');
-  const tabRow = el('div', { class: 'flex gap-2', style: 'margin-bottom:14px' }, [tabUploadBtn, tabPasteBtn]);
-  importCard.appendChild(tabRow);
-
-  const uploadContainer = el('div', {});
-  const pasteContainer = el('div', { style: 'display:none' });
-  importCard.appendChild(uploadContainer);
-  importCard.appendChild(pasteContainer);
-
-  tabUploadBtn.addEventListener('click', () => {
-    tabUploadBtn.classList.add('on'); tabPasteBtn.classList.remove('on');
-    uploadContainer.style.display = ''; pasteContainer.style.display = 'none';
-  });
-  tabPasteBtn.addEventListener('click', () => {
-    tabPasteBtn.classList.add('on'); tabUploadBtn.classList.remove('on');
-    uploadContainer.style.display = 'none'; pasteContainer.style.display = '';
-  });
-
-  // Dropzone
-  const fileInput = el('input', { type: 'file', accept: '.csv,.txt', style: 'display:none' });
-  const dropzone = el('div', { class: 'dropzone-box' }, [
-    el('div', { class: 'dropzone-icon', html: navIcon('invoice') }),
-    el('div', { style: 'font-weight:600;font-size:.92rem;margin-bottom:4px' }, 'Drop your CSV or TXT file here'),
-    el('div', { class: 'muted', style: 'font-size:.8rem;margin-bottom:14px' }, 'Supports columns: Name, Phone Number (e.g. 9876543210)'),
-    el('button', { type: 'button', class: 'btn btn-primary', onclick: () => fileInput.click() }, 'Browse Files'),
-    fileInput
-  ]);
-
-  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault(); dropzone.classList.remove('drag-over');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
-  });
-
-  function handleFile(file) {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const parsed = parseImportText(ev.target.result);
-      if (!parsed.length) { toast('No valid 10-digit Indian phone numbers found in file.', 'err'); return; }
-      campaignState.leads = campaignState.leads.concat(parsed);
-      saveCampaignLeads();
-      renderAll();
-      toast('Imported ' + parsed.length + ' leads from ' + file.name, 'ok');
+  /* Step 2: Contacts */
+  function buildStep2() {
+    const tabCsv = el('button', { class: 'cw-tab active', type: 'button' }, 'Upload CSV');
+    const tabPaste = el('button', { class: 'cw-tab', type: 'button' }, 'Paste Numbers');
+    const tabCrm = el('button', { class: 'cw-tab', type: 'button' }, 'From CRM');
+    const csvPan = el('div', {}); const pastePan = el('div', { style: 'display:none' }); const crmPan = el('div', { style: 'display:none' });
+    const switchTab = (t, pan) => {
+      [tabCsv,tabPaste,tabCrm].forEach((x) => x.classList.remove('active'));
+      [csvPan,pastePan,crmPan].forEach((x) => { x.style.display = 'none'; });
+      t.classList.add('active'); pan.style.display = '';
     };
-    reader.readAsText(file);
+    tabCsv.addEventListener('click', () => switchTab(tabCsv, csvPan));
+    tabPaste.addEventListener('click', () => switchTab(tabPaste, pastePan));
+    tabCrm.addEventListener('click', () => switchTab(tabCrm, crmPan));
+
+    const countEl = el('div', {});
+    const refreshCount = () => {
+      countEl.innerHTML = '';
+      if (wiz.leads.length) countEl.appendChild(el('div', { class: 'cw-lead-count' }, [el('b', {}, String(wiz.leads.length)), ' contacts queued']));
+    };
+    refreshCount();
+
+    /* CSV drop zone */
+    const fi = el('input', { type: 'file', accept: '.csv,.txt', style: 'display:none' });
+    const dz = el('div', { class: 'dropzone-box' }, [
+      el('div', { style: 'margin-bottom:8px;color:var(--accent);display:flex;justify-content:center;' }, [
+        el('svg', { width: '28', height: '28', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+          el('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+          el('polyline', { points: '17 8 12 3 7 8' }),
+          el('line', { x1: '12', y1: '3', x2: '12', y2: '15' })
+        ])
+      ]),
+      el('div', { style: 'font-weight:600;font-size:.92rem;margin-bottom:4px' }, 'Drop CSV or TXT here'),
+      el('div', { class: 'muted', style: 'font-size:.8rem;margin-bottom:14px' }, 'Columns: Name, Phone (10-digit Indian numbers)'),
+      el('button', { type: 'button', class: 'btn btn-primary', onclick: () => fi.click() }, 'Browse Files'), fi
+    ]);
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) doFile(e.dataTransfer.files[0]); });
+    fi.addEventListener('change', () => { if (fi.files[0]) doFile(fi.files[0]); });
+    function doFile(file) {
+      const r = new FileReader();
+      r.onload = (ev) => { const parsed = parseImportText(ev.target.result); if (!parsed.length) { toast('No valid numbers found.', 'err'); return; } wiz.leads = [...wiz.leads, ...parsed]; refreshCount(); toast('Imported ' + parsed.length + ' contacts.', 'ok'); };
+      r.readAsText(file);
+    }
+    const sBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, 'Load 3 Sample Leads');
+    sBtn.addEventListener('click', () => {
+      wiz.leads = [...wiz.leads,
+        { id: 'ld_s1', name: 'Dr. Sameer Verma', phone: '+91 9820144521', rawNumber: '9820144521', status: 'pending', error: null, timestamp: null },
+        { id: 'ld_s2', name: 'Pooja Agarwal',    phone: '+91 9167288410', rawNumber: '9167288410', status: 'pending', error: null, timestamp: null },
+        { id: 'ld_s3', name: 'Kavita Menon',     phone: '+91 9845012399', rawNumber: '9845012399', status: 'pending', error: null, timestamp: null }
+      ];
+      refreshCount(); toast('3 sample contacts added.', 'ok');
+    });
+    csvPan.appendChild(dz); csvPan.appendChild(sBtn); csvPan.appendChild(countEl);
+
+    /* Paste */
+    const ta = el('textarea', { class: 'textarea', rows: 5, placeholder: '9876543210, Ramesh\n8765432109, Priya\n+919988776655' });
+    const addBtn = el('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:10px' }, 'Add Numbers');
+    addBtn.addEventListener('click', () => { const p = parseImportText(ta.value); if (!p.length) { toast('No valid numbers.', 'err'); return; } wiz.leads = [...wiz.leads, ...p]; refreshCount(); ta.value = ''; toast('Added ' + p.length + ' contacts.', 'ok'); });
+    pastePan.appendChild(ta); pastePan.appendChild(addBtn); pastePan.appendChild(countEl.cloneNode(true));
+
+    /* CRM */
+    const crmBtn = el('button', { type: 'button', class: 'btn btn-primary' }, 'Sync from CRM');
+    crmBtn.addEventListener('click', async () => {
+      crmBtn.disabled = true; crmBtn.textContent = 'Syncing...';
+      try {
+        const res = await api('/api/crm/contacts');
+        const nl = ((res && res.contacts) || []).map((c) => { const n = normalizeLeadNumber(c.phone); return n ? { id: 'ld_' + Math.random().toString(36).slice(2,9), name: c.name || 'Lead', phone: n.formatted, rawNumber: n.raw, status: 'pending', error: null, timestamp: null } : null; }).filter(Boolean);
+        wiz.leads = [...wiz.leads, ...nl]; refreshCount(); toast('Imported ' + nl.length + ' CRM contacts.', 'ok');
+      } catch (e) { toast('CRM sync failed: ' + e.message, 'err'); }
+      finally { crmBtn.disabled = false; crmBtn.textContent = 'Sync from CRM'; }
+    });
+    crmPan.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Pull all active contacts from your CRM.'));
+    crmPan.appendChild(crmBtn); crmPan.appendChild(countEl.cloneNode(true));
+
+    return el('div', { class: 'cw-panel' }, [
+      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:16px' }, 'Upload a CSV, paste numbers, or sync from CRM. Numbers are automatically normalized to Indian national format.'),
+      el('div', { class: 'cw-tabs' }, [tabCsv, tabPaste, tabCrm]),
+      csvPan, pastePan, crmPan
+    ]);
   }
 
-  const sampleBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, 'Load Sample Leads');
-  sampleBtn.addEventListener('click', () => {
-    const samples = [
-      { id: 'ld_1', name: 'Bhavu (Owner Verified)', phone: '+91 8120590466', rawNumber: '8120590466', status: 'pending', error: null, timestamp: null }
+  /* Step 3: Schedule */
+  function buildStep3() {
+    const dayNames = ['S','M','T','W','T','F','S'];
+    const dayLong  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dayPicker = el('div', { class: 'cw-day-picker' });
+    dayNames.forEach((d, i) => {
+      const btn = el('button', { type: 'button', class: 'cw-day-btn' + (wiz.activeDays.includes(i) ? ' on' : ''), title: dayLong[i] }, d);
+      btn.addEventListener('click', () => {
+        if (wiz.activeDays.includes(i)) { if (wiz.activeDays.length <= 1) return; wiz.activeDays = wiz.activeDays.filter((x) => x !== i); btn.classList.remove('on'); }
+        else { wiz.activeDays.push(i); btn.classList.add('on'); }
+      });
+      dayPicker.appendChild(btn);
+    });
+
+    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h-12}:00 PM` : `${h}:00 AM`;
+    const mkHSel = (val, min, max, onChange) => {
+      const s = el('select', { class: 'input' });
+      for (let h = min; h <= max; h++) s.appendChild(el('option', { value: h, selected: h === val }, fmtH(h)));
+      s.addEventListener('change', () => onChange(Number(s.value)));
+      return s;
+    };
+    const startH = mkHSel(wiz.scheduleStartHour, 9,  20, (v) => { wiz.scheduleStartHour = v; });
+    const endH   = mkHSel(wiz.scheduleEndHour,   10, 21, (v) => { wiz.scheduleEndHour   = v; });
+
+    const dailyCapI = el('input', { class: 'input', type: 'number', min: 1, max: 1000, value: wiz.dailyCap });
+    dailyCapI.addEventListener('change', () => { wiz.dailyCap = Math.max(1, Number(dailyCapI.value) || 100); });
+
+    const intervalSel = el('select', { class: 'input' }, [
+      el('option', { value: 30  }, '30 seconds'),
+      el('option', { value: 45  }, '45 seconds (Recommended)'),
+      el('option', { value: 60  }, '60 seconds'),
+      el('option', { value: 90  }, '90 seconds'),
+      el('option', { value: 120 }, '2 minutes'),
+    ]);
+    intervalSel.value = String(wiz.intervalSeconds);
+    intervalSel.addEventListener('change', () => { wiz.intervalSeconds = Number(intervalSel.value); });
+
+    const retrySel = el('select', { class: 'input' }, [
+      el('option', { value: 0 }, 'No retries'),
+      el('option', { value: 1 }, '1 retry'),
+      el('option', { value: 2 }, '2 retries'),
+      el('option', { value: 3 }, '3 retries'),
+    ]);
+    retrySel.value = String(wiz.retryLimit);
+    retrySel.addEventListener('change', () => { wiz.retryLimit = Number(retrySel.value); });
+
+    return el('div', { class: 'cw-panel' }, [
+      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:22px' }, 'Configure calling days, daily limits, and retry behavior. TRAI 9:00 AM to 9:00 PM enforcement is automatic.'),
+      el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label' }, 'Active Days'), dayPicker]),
+      el('div', { class: 'cw-schedule-grid' }, [
+        el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label' }, 'Start Time (IST)'), startH]),
+        el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label' }, 'End Time (IST)'), endH])
+      ]),
+      el('div', { class: 'cw-schedule-grid' }, [
+        el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label' }, 'Daily Cap'), dailyCapI]),
+        el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label' }, 'Interval'), intervalSel])
+      ]),
+      el('div', { class: 'cw-field' }, [
+        el('label', { class: 'cw-label' }, 'Retry Attempts'),
+        retrySel,
+        el('div', { class: 'muted', style: 'font-size:.75rem;margin-top:4px' }, 'Busy calls retry after 30 min, unanswered after 2 hours.')
+      ]),
+      el('div', { class: 'trai-notice' }, [
+        el('span', { class: 'trai-notice-badge' }, 'TRAI Schedule'),
+        el('span', {}, 'Calls placed only during your schedule. System auto-pauses outside permitted hours.')
+      ])
+    ]);
+  }
+
+  /* Step 4: Review */
+  function buildStep4() {
+    const agentName = ((State.agents || []).find((a) => a.id === wiz.agentId) || {}).name || 'Seevora Voice Receptionist';
+    const dayLong   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h-12}:00 PM` : `${h}:00 AM`;
+    const items = [
+      { k: 'Campaign Name',  v: wiz.name || 'None' },
+      { k: 'Voice Agent',    v: agentName },
+      { k: 'Total Contacts', v: wiz.leads.length + ' contacts' },
+      { k: 'Active Days',    v: wiz.activeDays.map((d) => dayLong[d]).join(', ') || 'None' },
+      { k: 'Calling Window', v: fmtH(wiz.scheduleStartHour) + ' to ' + fmtH(wiz.scheduleEndHour) },
+      { k: 'Daily Cap',      v: wiz.dailyCap + ' calls/day' },
+      { k: 'Interval',       v: wiz.intervalSeconds + 's' },
+      { k: 'Retries',        v: String(wiz.retryLimit) },
     ];
-    campaignState.leads = campaignState.leads.concat(samples);
-    saveCampaignLeads();
-    renderAll();
-    toast('Added verified lead (+91 8120590466) for testing.', 'ok');
+    const grid = el('div', { class: 'cw-review-grid' });
+    items.forEach(({ k, v }) => grid.appendChild(el('div', { class: 'cw-review-item' }, [el('div', { class: 'cw-review-key' }, k), el('div', { class: 'cw-review-val' }, v)])));
+    const warns = [];
+    if (!wiz.name) warns.push(el('div', { class: 'danger-note', style: 'margin-top:10px' }, 'Campaign name is required. Return to Step 1.'));
+    if (!wiz.leads.length) warns.push(el('div', { class: 'danger-note', style: 'margin-top:10px' }, 'At least one contact is required. Return to Step 2.'));
+    return el('div', { class: 'cw-panel' }, [
+      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:20px' }, 'Review your campaign settings. The scheduler begins placing calls immediately after launch within TRAI hours.'),
+      grid, ...warns
+    ]);
+  }
+
+  /* Render current wizard step */
+  function renderWizStep() {
+    panelHost.innerHTML = '';
+    stepEls.forEach((s, i) => { s.className = 'cw-step' + (i === wiz.step - 1 ? ' active' : i < wiz.step - 1 ? ' done' : ''); });
+    backBtn.style.visibility = wiz.step > 1 ? 'visible' : 'hidden';
+    nextBtn.textContent = wiz.step < 4 ? 'Next Step →' : 'Save & Launch';
+    const builders = [buildStep1, buildStep2, buildStep3, buildStep4];
+    panelHost.appendChild(builders[wiz.step - 1]());
+  }
+
+  backBtn.addEventListener('click', () => { if (wiz.step > 1) { wiz.step--; renderWizStep(); } });
+  nextBtn.addEventListener('click', async () => {
+    if (wiz.step === 1 && !wiz.name) { toast('Campaign name is required.', 'err'); return; }
+    if (wiz.step === 2 && !wiz.leads.length) { toast('Add at least one contact.', 'err'); return; }
+    if (wiz.step < 4) { wiz.step++; renderWizStep(); return; }
+    /* Launch */
+    if (!wiz.name || !wiz.leads.length) { toast('Name and contacts are required.', 'err'); return; }
+    nextBtn.disabled = true; nextBtn.textContent = 'Saving...';
+    try {
+      const resp = await api('/api/campaigns', {
+        method: 'POST',
+        body: { name: wiz.name, agentId: wiz.agentId, leads: wiz.leads, dailyCap: wiz.dailyCap, intervalSeconds: wiz.intervalSeconds, retryLimit: wiz.retryLimit, retryBusyAfterMin: wiz.retryBusyAfterMin, retryNoAnsAfterMin: wiz.retryNoAnsAfterMin, activeDays: wiz.activeDays, scheduleStartHour: wiz.scheduleStartHour, scheduleEndHour: wiz.scheduleEndHour }
+      });
+      if (resp && resp.campaign) await api('/api/campaigns/action', { method: 'POST', body: { campaignId: resp.campaign.id, action: 'start' } }).catch(() => {});
+      toast('Campaign "' + wiz.name + '" launched!', 'ok');
+      Object.assign(wiz, { step: 1, name: '', leads: [], agentId: (State.agents && State.agents[0] && State.agents[0].id) || '' });
+      renderWizStep();
+      loadCampManager();
+    } catch (e) { toast(e.message || 'Failed to create campaign.', 'err'); }
+    finally { nextBtn.disabled = false; }
   });
 
-  const wacrmBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px;margin-left:8px' }, 'Sync Leads from WACRM');
-  wacrmBtn.addEventListener('click', async () => {
+  renderWizStep();
+
+  /* ================================================================
+     CAMPAIGN MANAGER (server-persisted campaigns list)
+     ================================================================ */
+  const managerCard = el('div', { class: 'camp-manager-card' });
+  root.appendChild(managerCard);
+  managerCard.appendChild(el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:4px' }, [
+    el('h3', { class: 't-h3' }, 'Campaign Manager'),
+    el('button', { class: 'btn btn-ghost', style: 'font-size:.8rem', onclick: loadCampManager }, 'Refresh')
+  ]));
+  managerCard.appendChild(el('p', { class: 'muted', style: 'font-size:.82rem' }, 'Server-persisted campaigns with automated retry and TRAI compliance. Updates every 12 seconds when a campaign is active.'));
+  const campList = el('div', { class: 'camp-list' });
+  managerCard.appendChild(campList);
+
+  async function loadCampManager() {
+    campList.innerHTML = '';
+    campList.appendChild(el('div', { class: 'camp-empty' }, 'Loading...'));
     try {
-      wacrmBtn.disabled = true;
-      const res = await api('/api/crm/contacts');
-      const contacts = (res && Array.isArray(res.contacts)) ? res.contacts : [];
-      if (!contacts.length) {
-        toast('No contacts found in WACRM.', 'info');
-        wacrmBtn.disabled = false;
+      const data = await api('/api/campaigns');
+      const camps = (data && data.campaigns) || [];
+      campList.innerHTML = '';
+      if (!camps.length) {
+        campList.appendChild(el('div', { class: 'camp-empty' }, [
+          el('div', { style: 'font-weight:600;margin-bottom:4px;' }, 'No campaigns yet'),
+          el('div', { class: 'muted' }, 'Use the wizard above to create and launch your first campaign.')
+        ]));
         return;
       }
-      const newLeads = [];
-      for (const c of contacts) {
-        const norm = normalizeLeadNumber(c.phone);
-        if (norm) {
-          newLeads.push({
-            id: 'ld_' + Math.random().toString(36).slice(2, 9),
-            name: c.name || 'Lead ' + norm.raw.slice(-4),
-            phone: norm.formatted,
-            rawNumber: norm.raw,
-            status: 'pending',
-            error: null,
-            timestamp: null
-          });
-        }
-      }
-      campaignState.leads = campaignState.leads.concat(newLeads);
-      saveCampaignLeads();
-      renderAll();
-      toast('Imported ' + newLeads.length + ' leads from WACRM.', 'ok');
-    } catch (err) {
-      toast('Failed to load contacts from WACRM: ' + err.message, 'err');
-    } finally {
-      wacrmBtn.disabled = false;
+      camps.forEach((c) => campList.appendChild(buildCampItem(c)));
+    } catch (e) { campList.innerHTML = ''; campList.appendChild(el('div', { class: 'camp-empty' }, 'Error: ' + e.message)); }
+  }
+
+  function buildCampItem(camp) {
+    const leads = camp.leads || [];
+    const total = leads.length;
+    const done  = leads.filter((l) => l.status === 'initiated').length;
+    const fail  = leads.filter((l) => l.status === 'failed').length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    const st    = camp.status || 'draft';
+
+    const pill = el('div', { class: 'camp-status-pill ' + st }, [el('div', { class: 'camp-status-dot' }), st.charAt(0).toUpperCase() + st.slice(1)]);
+
+    const btns = [];
+    if (st === 'running') {
+      const pb = el('button', { class: 'btn btn-ghost', style: 'font-size:.78rem;padding:5px 12px' }, 'Pause');
+      pb.addEventListener('click', async () => { pb.disabled = true; try { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'pause' } }); toast('Paused.', 'ok'); loadCampManager(); } catch (e) { toast(e.message, 'err'); } finally { pb.disabled = false; } });
+      btns.push(pb);
     }
-  });
+    if (['draft','paused'].includes(st)) {
+      const sb = el('button', { class: 'btn btn-primary', style: 'font-size:.78rem;padding:5px 12px' }, st === 'paused' ? 'Resume' : 'Start');
+      sb.addEventListener('click', async () => { sb.disabled = true; try { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'start' } }); toast('Started.', 'ok'); loadCampManager(); } catch (e) { toast(e.message, 'err'); } finally { sb.disabled = false; } });
+      btns.push(sb);
+    }
+    if (!['completed','stopped'].includes(st)) {
+      const xb = el('button', { class: 'btn btn-danger', style: 'font-size:.78rem;padding:5px 12px' }, 'Stop');
+      xb.addEventListener('click', () => modal({ title: 'Stop Campaign', body: el('div', {}, [el('p', {}, ['Stop ', el('b', {}, esc(camp.name)), '?']), el('div', { class: 'danger-note' }, 'Pending calls cancelled.')]), confirmText: 'Stop', confirmKind: 'danger', onConfirm: async () => { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'stop' } }); toast('Stopped.', 'ok'); loadCampManager(); } }));
+      btns.push(xb);
+    }
+    const db = el('button', { class: 'btn btn-ghost', style: 'font-size:.78rem;padding:5px 10px;color:var(--bad)' }, 'Delete');
+    db.addEventListener('click', () => modal({ title: 'Delete Campaign', body: el('div', {}, el('p', {}, ['Delete ', el('b', {}, esc(camp.name)), '?'])), confirmText: 'Delete', confirmKind: 'danger', onConfirm: async () => { await api('/api/campaigns/delete', { method: 'POST', body: { campaignId: camp.id } }); toast('Deleted.', 'ok'); loadCampManager(); } }));
+    btns.push(db);
 
-  uploadContainer.appendChild(dropzone);
-  uploadContainer.appendChild(sampleBtn);
-  uploadContainer.appendChild(wacrmBtn);
-
-  // Paste container
-  const pasteArea = el('textarea', { class: 'textarea', rows: 6, placeholder: 'Enter numbers or CSV format, one per line:\n9876543210, Ramesh Sharma\n8765432109, Priya Patel\n+919988776655' });
-  const parseBtn = el('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:10px' }, 'Add Pasted Leads');
-  parseBtn.addEventListener('click', () => {
-    const parsed = parseImportText(pasteArea.value);
-    if (!parsed.length) { toast('No valid 10-digit Indian numbers found in text.', 'err'); return; }
-    campaignState.leads = campaignState.leads.concat(parsed);
-    saveCampaignLeads();
-    pasteArea.value = '';
-    renderAll();
-    toast('Added ' + parsed.length + ' leads.', 'ok');
-  });
-  pasteContainer.appendChild(pasteArea);
-  pasteContainer.appendChild(parseBtn);
-
-  // --- Right: Settings Card ---
-  const settingsCard = el('div', { class: 'card card-pad' });
-  grid.appendChild(settingsCard);
-
-  settingsCard.appendChild(el('h3', { class: 't-h3' }, 'Campaign Settings'));
-  settingsCard.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Configure calling cadence, caller ID, and voice persona.'));
-
-  // Delay select
-  const delaySel = el('select', { class: 'select' }, [
-    el('option', { value: '30' }, '30 seconds between calls'),
-    el('option', { value: '45', selected: 'selected' }, '45 seconds between calls (Recommended)'),
-    el('option', { value: '60' }, '60 seconds between calls'),
-    el('option', { value: '90' }, '90 seconds between calls')
-  ]);
-  delaySel.value = String(campaignState.delaySeconds || 45);
-  delaySel.addEventListener('change', () => { campaignState.delaySeconds = parseInt(delaySel.value, 10); });
-
-  // Dry run checkbox
-  const dryRunCheck = el('input', { type: 'checkbox', id: 'dryRunToggle', checked: campaignState.isDryRun ? 'checked' : false });
-  dryRunCheck.addEventListener('change', () => { campaignState.isDryRun = dryRunCheck.checked; renderAll(); });
-  const dryRunLabel = el('label', { for: 'dryRunToggle', style: 'cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:8px' }, [
-    dryRunCheck,
-    el('span', {}, 'Dry-run Mode (simulate calls without placing real telecom calls)')
-  ]);
-
-  settingsCard.appendChild(el('div', { class: 'form-grid' }, [
-    field('Caller ID (Direct Line)', el('input', { class: 'input', readonly: 'readonly', value: typeof activeDid === 'string' ? activeDid : (activeDid.number || '+918071582519') })),
-    field('Interval delay', delaySel),
-    (function () {
-      const f = field('', dryRunLabel);
-      f.style.marginTop = '4px';
-      return f;
-    })()
-  ]));
-
-  settingsCard.appendChild(el('div', { class: 'inbound-note', style: 'margin-top:16px' }, [
-    el('b', {}, 'How it works: '),
-    document.createTextNode('Seevora AI dials each contact in sequence through your verified business line. When answered, the AI speaks first, answers inquiries, and qualifies the lead. Call logs and audio recordings save automatically.')
-  ]));
-
-  // --- Bottom: Table Card ---
-  function renderTable() {
-    tableCard.innerHTML = '';
-
-    const startBtn = el('button', { class: 'btn btn-primary', disabled: campaignState.running || !campaignState.leads.length, onclick: startCampaign }, [
-      el('span', { html: navIcon('phone') }),
-      document.createTextNode(' Start Outbound Campaign')
-    ]);
-    const clearBtn = el('button', { class: 'btn btn-ghost', disabled: campaignState.running || !campaignState.leads.length, onclick: clearLeads }, 'Clear List');
-    const exportBtn = el('button', { class: 'btn btn-ghost', disabled: !campaignState.leads.length, onclick: exportReport }, 'Export CSV Report');
-
-    tableCard.appendChild(el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:12px;margin-bottom:14px' }, [
+    return el('div', { class: 'camp-item' }, [
       el('div', {}, [
-        el('h3', { class: 't-h3' }, ['Queue Contacts ', el('span', { class: 'pill', style: 'margin-left:8px;font-size:.7rem' }, String(campaignState.leads.length))]),
-        el('p', { class: 'muted', style: 'font-size:.82rem' }, 'Leads are dialed sequentially. You can stop or pause at any time.')
+        el('div', { class: 'flex items-center gap-2', style: 'margin-bottom:4px' }, [el('div', { class: 'camp-item-name' }, esc(camp.name)), pill]),
+        el('div', { class: 'camp-item-meta' }, [
+          el('span', {}, esc(camp.agentName || 'Voice Agent')),
+          el('span', {}, total + (total === 1 ? ' contact' : ' contacts')),
+          el('span', {}, done + ' completed'),
+          fail ? el('span', { style: 'color:var(--bad)' }, fail + ' failed') : null,
+          el('span', {}, (camp.intervalSeconds || 45) + 's interval'),
+          el('span', {}, 'Daily cap: ' + (camp.dailyCap || 100))
+        ].filter(Boolean)),
+        el('div', { class: 'camp-progress-bar' }, [el('div', { class: 'camp-progress-fill', style: 'width:' + pct + '%' })]),
+        el('div', { class: 'muted', style: 'font-size:.72rem;margin-top:4px;font-family:var(--mono)' }, pct + '% complete' + (st === 'running' ? ' · Active' : ''))
       ]),
-      el('div', { class: 'flex items-center gap-2' }, [clearBtn, exportBtn, startBtn])
-    ]));
-
-    if (!campaignState.leads.length) {
-      tableCard.appendChild(el('div', { class: 'empty muted', style: 'padding:40px 20px;text-align:center' }, 'No leads in queue. Upload a CSV or click "Load Sample Leads" above.'));
-      return;
-    }
-
-    const tbody = el('tbody', {});
-    campaignState.leads.forEach((l, idx) => {
-      let statusBadge;
-      if (l.status === 'dialing') statusBadge = el('span', { class: 'status-badge status-setup' }, 'Dialing...');
-      else if (l.status === 'initiated') statusBadge = el('span', { class: 'status-badge status-active' }, 'Connected');
-      else if (l.status === 'dry_run') statusBadge = el('span', { class: 'status-badge status-issued' }, 'Simulated (OK)');
-      else if (l.status === 'failed') statusBadge = el('span', { class: 'status-badge status-overdue', title: l.error || '' }, 'Failed');
-      else statusBadge = el('span', { class: 'status-badge status-draft' }, 'Pending');
-
-      const dialSingleBtn = el('button', { class: 'btn btn-ghost', style: 'padding:4px 8px;font-size:.72rem', disabled: campaignState.running, onclick: () => dialSingle(idx) }, 'Call Now');
-      const delBtn = el('button', { class: 'btn btn-ghost', style: 'padding:4px 8px;font-size:.72rem;color:var(--bad)', disabled: campaignState.running, onclick: () => removeLead(idx) }, '✕');
-
-      const tr = el('tr', { style: idx === campaignState.currentIndex ? 'background:#fbf3e0;' : '' }, [
-        el('td', { style: 'width:40px;color:var(--ink-dim);font-family:var(--mono)' }, String(idx + 1)),
-        el('td', { style: 'font-weight:600' }, esc(l.name)),
-        el('td', { class: 'mono-cell' }, esc(l.phone)),
-        el('td', {}, statusBadge),
-        el('td', { style: 'text-align:right' }, [dialSingleBtn, delBtn])
-      ]);
-      tbody.appendChild(tr);
-    });
-
-    const table = el('table', { class: 'data-table' }, [
-      el('thead', {}, el('tr', {}, [
-        el('th', { style: 'width:40px' }, '#'),
-        el('th', {}, 'Name'),
-        el('th', {}, 'Phone Number'),
-        el('th', {}, 'Status'),
-        el('th', { style: 'text-align:right' }, 'Action')
-      ])),
-      tbody
+      el('div', { class: 'camp-item-actions' }, btns)
     ]);
-
-    tableCard.appendChild(el('div', { class: 'leads-table-container' }, table));
   }
 
-  function renderAll() {
-    renderStats();
-    renderBanner();
-    renderTable();
-  }
+  loadCampManager();
 
-  function clearLeads() {
-    if (campaignState.running) return;
-    campaignState.leads = [];
-    saveCampaignLeads();
-    renderAll();
-    toast('Queue cleared.', 'ok');
-  }
+  /* Auto-refresh every 12 s while running */
+  if (window._campPollTimer) clearInterval(window._campPollTimer);
+  window._campPollTimer = setInterval(async () => {
+    const d = await api('/api/campaigns').catch(() => null);
+    if (d && (d.campaigns || []).some((c) => c.status === 'running')) loadCampManager();
+  }, 12000);
 
-  function removeLead(idx) {
-    if (campaignState.running) return;
-    campaignState.leads.splice(idx, 1);
-    saveCampaignLeads();
-    renderAll();
-  }
-
-  function exportReport() {
-    if (!campaignState.leads.length) return;
-    let csv = 'Name,Phone,Status,Timestamp,Error\n';
-    campaignState.leads.forEach((l) => {
-      csv += '"' + (l.name || '').replace(/"/g, '""') + '","' + l.phone + '","' + l.status + '","' + (l.timestamp || '') + '","' + (l.error || '').replace(/"/g, '""') + '"\n';
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'seevora_campaign_' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast('Report downloaded.', 'ok');
-  }
-
-  async function dialSingle(idx) {
-    const lead = campaignState.leads[idx];
-    if (!lead || campaignState.running) return;
-    modal({
-      title: 'Call single lead',
-      body: el('div', {}, [
-        el('p', {}, ['Place a live call to ', el('b', {}, esc(lead.name) + ' (' + esc(lead.phone) + ')'), '?']),
-        el('div', { class: 'danger-note' }, 'This will initiate a live phone call dialed through your active business line.')
-      ]),
-      confirmText: 'Yes, Call Now', confirmKind: 'primary',
-      onConfirm: async () => {
-        lead.status = 'dialing';
-        renderAll();
-        try {
-          if (campaignState.isDryRun) {
-            await new Promise((r) => setTimeout(r, 1000));
-            lead.status = 'dry_run';
-          } else {
-            await api('/api/telephony/dial', { method: 'POST', body: { number: lead.rawNumber, confirm: true } });
-            lead.status = 'initiated';
-          }
-          lead.timestamp = new Date().toISOString();
-          toast('Call initiated to ' + lead.phone, 'ok');
-        } catch (ex) {
-          lead.status = 'failed';
-          lead.error = ex.message || 'Call failed';
-          toast(ex.message || 'Dial failed', 'err');
-        }
-        saveCampaignLeads();
-        renderAll();
-      }
-    });
-  }
-
-  function stopCampaign() {
-    campaignState.abort = true;
-    campaignState.running = false;
-    campaignState.countdown = 0;
-    campaignState.currentIndex = -1;
-    renderAll();
-    toast('Campaign stopped by user.', 'warn');
-  }
-
-  async function startCampaign() {
-    if (campaignState.running) return;
-    const pendingLeads = campaignState.leads.filter((l) => l.status === 'pending');
-    if (!pendingLeads.length) {
-      toast('No pending leads left to call. Add more leads or reset status.', 'warn');
-      return;
-    }
-
-    modal({
-      title: campaignState.isDryRun ? 'Start Dry-run Campaign' : 'Confirm Outbound Campaign',
-      body: el('div', {}, [
-        el('p', {}, [
-          'You are about to dial ',
-          el('b', {}, String(pendingLeads.length) + ' pending leads'),
-          ' sequentially with a ',
-          el('b', {}, String(campaignState.delaySeconds) + 's delay'),
-          ' between calls.'
-        ]),
-        campaignState.isDryRun
-          ? el('div', { class: 'inbound-note' }, 'DRY-RUN MODE: Calls will be simulated without placing live telephone calls.')
-          : el('div', { class: 'danger-note' }, [
-            el('b', {}, 'Live Telephone Calls: '),
-            document.createTextNode('Calls will be placed in sequence through your business line ' + (activeDid.number || activeDid || '+918071582519') + ' to each contact.')
-          ])
-      ]),
-      confirmText: campaignState.isDryRun ? 'Start Simulation' : 'Start Calling Campaign',
-      confirmKind: campaignState.isDryRun ? 'primary' : 'danger',
-      onConfirm: async () => {
-        campaignState.running = true;
-        campaignState.abort = false;
-        renderAll();
-
-        for (let i = 0; i < campaignState.leads.length; i++) {
-          if (campaignState.abort) break;
-          const lead = campaignState.leads[i];
-          if (lead.status !== 'pending') continue;
-
-          campaignState.currentIndex = i;
-          lead.status = 'dialing';
-          renderAll();
-
-          try {
-            if (campaignState.isDryRun) {
-              await new Promise((r) => setTimeout(r, 1200));
-              lead.status = 'dry_run';
-            } else {
-              await api('/api/telephony/dial', { method: 'POST', body: { number: lead.rawNumber, confirm: true } });
-              lead.status = 'initiated';
-            }
-            lead.timestamp = new Date().toISOString();
-          } catch (err) {
-            lead.status = 'failed';
-            lead.error = err.message || 'Call failed';
-          }
-
-          saveCampaignLeads();
-          renderAll();
-
-          // If more pending leads exist, countdown
-          const hasMore = campaignState.leads.slice(i + 1).some((x) => x.status === 'pending');
-          if (hasMore && !campaignState.abort) {
-            campaignState.countdown = campaignState.delaySeconds;
-            while (campaignState.countdown > 0 && !campaignState.abort) {
-              renderBanner();
-              await new Promise((r) => setTimeout(r, 1000));
-              campaignState.countdown -= 1;
-            }
-          }
-        }
-
-        campaignState.running = false;
-        campaignState.currentIndex = -1;
-        campaignState.countdown = 0;
-        renderAll();
-        toast('Campaign finished!', 'ok');
-      }
-    });
-  }
-
-  renderAll();
+  /* Stop polling on navigation */
+  const _prevHash = window.onhashchange;
+  window.onhashchange = (e) => { clearInterval(window._campPollTimer); window._campPollTimer = null; if (_prevHash) _prevHash(e); };
 }
+
 
 /* ===========================================================================
    6. PRESETS, BILLING, SUPPORT, AND SUPER ADMIN
@@ -7715,7 +7602,7 @@ async function viewAssistant(wrap) {
         const sec = $('#wa-meta-creds');
         if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
       }
-    }, '⚙️ Connect via Custom Meta WhatsApp Cloud API Credentials (Optional)');
+    }, 'Connect via Custom Meta WhatsApp Cloud API Credentials (Optional)');
 
     const metaCredsSection = el('div', { id: 'wa-meta-creds', style: 'display:none;margin-top:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;' }, [
       el('div', { style: 'font-size:0.76rem;color:#475569;margin-bottom:6px;' }, 'For direct live WhatsApp message delivery to your phone from developers.facebook.com:'),
@@ -7807,7 +7694,7 @@ async function viewAssistant(wrap) {
 
           if (!checkRes || !checkRes.isBusiness) {
             const errMsg = (checkRes && checkRes.error) || 'This phone number is registered as a personal mobile WhatsApp account, not an authorized WhatsApp Business Account (WABA). Meta Cloud API and Seevora Voice AI strictly require an official WhatsApp Business account.';
-            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">❌ Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#2563eb;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
+            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#2563eb;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
             if (phoneInput) phoneInput.style.borderColor = '#ef4444';
             const link = $('#wa-fill-biz-link');
             if (link) {
