@@ -594,6 +594,20 @@
           <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
         </div>
 
+        <!-- 2. Quick Demo Access (Active when ENABLE_DEMO_LOGIN is true) -->
+        <div id="demoAccessWrap" class="demo-access-wrap" style="display: none; margin-top: 14px;">
+          <div class="demo-divider-row">
+            <div class="demo-line"></div>
+            <span>Demo Access</span>
+            <div class="demo-line"></div>
+          </div>
+          <div class="demo-buttons-row">
+            <button id="btnDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
+            <button id="btnDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
+          </div>
+          <div class="demo-hint">Instant access for workspace evaluation and testing</div>
+        </div>
+
       </div>
     </section>
 
@@ -809,6 +823,52 @@
           console.error('Clerk SSO initialization error:', clerkErr.message);
           showAlert('Clerk authentication service is temporarily unavailable. Please check your network connection.', 'error');
         }
+      }
+
+      // Check if demo login is enabled via server env
+      fetch('/api/billing/config')
+        .then((r) => r.ok ? r.json() : null)
+        .then((cfg) => {
+          if (cfg && cfg.auth && cfg.auth.demoLoginEnabled) {
+            const wrap = document.getElementById('demoAccessWrap');
+            if (wrap) wrap.style.display = 'flex';
+          }
+        })
+        .catch(() => {});
+
+      async function doQuickLogin(email, password, btnElement) {
+        if (!btnElement) return;
+        const origText = btnElement.textContent;
+        btnElement.disabled = true;
+        btnElement.textContent = 'Logging in...';
+        showAlert('Signing in with demo credentials...', 'success');
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include'
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || 'Demo login failed');
+          showAlert('Login successful. Loading workspace...', 'success');
+          setTimeout(() => {
+            window.location.replace('/app.html');
+          }, 250);
+        } catch (err) {
+          showAlert(err.message || 'Demo login failed.', 'error');
+          btnElement.disabled = false;
+          btnElement.textContent = origText;
+        }
+      }
+
+      const btnAdmin = document.getElementById('btnDemoAdmin');
+      if (btnAdmin) {
+        btnAdmin.addEventListener('click', () => doQuickLogin('admin@demo.com', 'admin123', btnAdmin));
+      }
+      const btnClient = document.getElementById('btnDemoClient');
+      if (btnClient) {
+        btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
       }
 
       // Initialize Clerk

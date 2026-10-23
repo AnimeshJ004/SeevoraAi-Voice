@@ -4889,21 +4889,21 @@ async function viewInbound(root) {
   searchInput.addEventListener('input', applyInboundFilters);
   statusSelect.addEventListener('change', applyInboundFilters);
 
-  // Render immediately in 0ms
-  _recState.recordings = _recState.recordings || [];
-  applyInboundFilters();
+  // If cached recordings exist, render them smoothly without layout shift.
+  // Otherwise keep the skeleton visible until the API response arrives.
+  if (_recState.recordings && _recState.recordings.length) {
+    applyInboundFilters();
+  }
 
-  // Load recordings with sync=true so latest inbound calls appear immediately
+  // Load recordings with sync=true so latest calls appear
   api('/api/recordings?sync=true&limit=100&offset=0').then((res) => {
     if (res && Array.isArray(res.recordings)) {
       _recState.recordings = res.recordings;
-      applyInboundFilters();
     }
+    applyInboundFilters();
   }).catch(() => {
-    if (!_recState.recordings || !_recState.recordings.length) {
-      _recState.recordings = [];
-      applyInboundFilters();
-    }
+    if (!_recState.recordings) _recState.recordings = [];
+    applyInboundFilters();
   });
 }
 
@@ -6293,8 +6293,18 @@ function ticketCard(t, admin) {
 }
 
 async function viewAdmin(root) {
-  if (!State.me || !['super_admin', 'admin'].includes(State.me.user.role)) { goto('overview'); return; }
-  const superAdmin = ['super_admin', 'admin'].includes(State.me.user.role);
+  const isSuperAdmin = State.me && State.me.user && ['super_admin', 'admin'].includes(State.me.user.role);
+  if (!isSuperAdmin) {
+    const head = viewHead('Manage Clients', 'Client workspace management is reserved for platform administrators.');
+    root.appendChild(head);
+    root.appendChild(el('div', { class: 'card card-pad', style: 'text-align:center;padding:48px 24px;margin-top:20px;' }, [
+      el('div', { style: 'font-weight:700;font-size:1.1rem;margin-bottom:8px;color:var(--ink);' }, 'Administrator Access Required'),
+      el('p', { class: 'muted', style: 'max-width:460px;margin:0 auto 16px;font-size:0.86rem;line-height:1.5;' }, 'Your account is currently signed in with client permissions. Sign in with an Administrator account or use Admin Demo to manage client workspaces.'),
+      el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('overview') }, 'Go to Dashboard')
+    ]));
+    return;
+  }
+  const superAdmin = true;
   const head = viewHead('Clients', 'Add, approach, inspect, pause, and offboard client workspaces with an immutable activity trail.');
   if (superAdmin) head.appendChild(el('div', { class: 'view-actions' }, [el('button', { class: 'btn btn-primary', onclick: openClientComposer }, 'Add client')]));
   root.appendChild(head);
