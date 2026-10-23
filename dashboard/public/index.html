@@ -463,30 +463,34 @@
       background-repeat: no-repeat;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
-      padding: clamp(36px, 5vw, 64px);
+      justify-content: center;
+      align-items: center;
+      padding: clamp(24px, 4vw, 44px);
       min-height: 100vh;
+      overflow-y: auto;
     }
 
     .showcase-column::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.05) 20%, rgba(15, 23, 42, 0.65) 100%);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.75) 100%);
       pointer-events: none;
     }
 
     .showcase-card {
       position: relative;
       z-index: 2;
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.95);
       border-radius: 20px;
-      padding: 28px 32px;
+      padding: 24px 28px;
       box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
-      max-width: 600px;
+      width: 100%;
+      max-width: 620px;
+      margin: auto 0;
     }
 
     .showcase-tag {
@@ -498,43 +502,301 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #0284C7;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .showcase-card h2 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       color: #0F172A;
       letter-spacing: -0.02em;
       line-height: 1.25;
     }
 
-    .showcase-card p {
-      font-size: 14.5px;
+    .showcase-card p.showcase-desc {
+      font-size: 13.5px;
       color: #475569;
-      margin-top: 8px;
-      line-height: 1.5;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    /* Showcase Tab Switcher */
+    .showcase-switcher {
+      display: flex;
+      background: #F1F5F9;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .showcase-switch-btn {
+      flex: 1;
+      padding: 7px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #64748B;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      font-family: inherit;
+      text-align: center;
+    }
+    .showcase-switch-btn:hover {
+      color: #0F172A;
+    }
+    .showcase-switch-btn.active {
+      background: #FFFFFF;
+      color: #0F172A;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Industry filter pills */
+    .demo-industry-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .demo-ind-btn {
+      padding: 5px 11px;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .demo-ind-btn.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0284C7;
+    }
+
+    /* Live Player Box */
+    .live-player-box {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .player-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .player-meta-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .player-meta-sub {
+      font-size: 11.5px;
+      color: #64748B;
+    }
+    .player-action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .btn-play-demo {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #0095FF;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .btn-play-demo:hover {
+      background: #0080DB;
+    }
+    .waveform-visualizer {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 22px;
+      flex: 1;
+    }
+    .wave-bar {
+      width: 4px;
+      height: 6px;
+      border-radius: 2px;
+      background: #CBD5E1;
+      transition: height 0.15s ease, background 0.15s ease;
+    }
+    .waveform-visualizer.playing .wave-bar {
+      background: #0095FF;
+      animation: wavePulse 0.9s infinite ease-in-out;
+    }
+    .waveform-visualizer.playing .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(6) { animation-delay: 0.2s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(7) { animation-delay: 0.5s; }
+    .waveform-visualizer.playing .wave-bar:nth-child(8) { animation-delay: 0.35s; }
+    @keyframes wavePulse {
+      0%, 100% { height: 6px; }
+      50% { height: 20px; }
+    }
+    .latency-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #EFF6FF;
+      color: #0284C7;
+      border: 1px solid #BFDBFE;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Dialogue Stream */
+    .dialogue-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .dialogue-bubble {
+      padding: 7px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .dialogue-bubble.customer {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+      color: #334155;
+      align-self: flex-start;
+      max-width: 92%;
+    }
+    .dialogue-bubble.agent {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #0F172A;
+      align-self: flex-end;
+      max-width: 92%;
+    }
+    .dialogue-bubble.active-speech {
+      border-color: #0095FF;
+      box-shadow: 0 0 0 2px rgba(0, 149, 255, 0.25);
+    }
+    .bubble-speaker {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+      display: block;
+    }
+    .dialogue-bubble.customer .bubble-speaker { color: #64748B; }
+    .dialogue-bubble.agent .bubble-speaker { color: #0284C7; }
+
+    /* ROI Calculator Controls */
+    .roi-panel {
+      display: none;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .roi-slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .roi-slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .roi-slider-val {
+      font-weight: 700;
+      color: #0095FF;
+    }
+    .roi-range {
+      width: 100%;
+      height: 5px;
+      border-radius: 4px;
+      accent-color: #0095FF;
+      cursor: pointer;
+    }
+    .roi-metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0 6px 0;
+    }
+    .roi-metric-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 9px 11px;
+    }
+    .roi-metric-num {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .roi-metric-num.highlight {
+      color: #16A34A;
+    }
+    .roi-metric-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748B;
+      margin-top: 2px;
     }
 
     .feature-pills {
       display: flex;
-      gap: 10px;
-      margin-top: 18px;
+      gap: 8px;
+      margin-top: 4px;
       flex-wrap: wrap;
     }
 
     .pill {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
-      padding: 5px 12px;
+      padding: 4px 10px;
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.9);
       border: 1px solid rgba(0, 0, 0, 0.08);
       color: #1E293B;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      gap: 5px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }
 
     .pill-dot {
@@ -618,12 +880,104 @@
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0284C7;"></span>
           Autonomous Voice Agents
         </div>
-        <h2>Automate 100% of Front-Desk Calls</h2>
-        <p>Ultra-realistic conversational voice agents that answer callers 24/7 without hold times, qualify leads, and manage bookings instantly.</p>
+        <h2>Enterprise Voice AI Receptionist</h2>
+        <p class="showcase-desc">Human-parity conversational voice AI that answers inbound callers 24/7 without hold times, qualifies leads, and schedules bookings instantly.</p>
+
+        <!-- Showcase Tab Switcher -->
+        <div class="showcase-switcher" role="tablist">
+          <button id="showcaseTabDemo" class="showcase-switch-btn active" type="button">Live Call Player</button>
+          <button id="showcaseTabRoi" class="showcase-switch-btn" type="button">ROI Savings Calculator</button>
+        </div>
+
+        <!-- 1. LIVE CALL DEMO PLAYER -->
+        <div id="showcasePlayerPanel">
+          <div class="demo-industry-bar">
+            <button class="demo-ind-btn active" data-industry="clinic" type="button">Healthcare Clinic</button>
+            <button class="demo-ind-btn" data-industry="realestate" type="button">Real Estate</button>
+            <button class="demo-ind-btn" data-industry="auto" type="button">Auto Service</button>
+          </div>
+
+          <div class="live-player-box">
+            <div class="player-header">
+              <div>
+                <div id="demoTitle" class="player-meta-title">Dr. Sharma Dental Care</div>
+                <div id="demoSub" class="player-meta-sub">Inbound Appointment Scheduling</div>
+              </div>
+              <div class="latency-tag">Latency: 290ms</div>
+            </div>
+
+            <div class="player-action-row">
+              <button id="btnPlayDemo" class="btn-play-demo" type="button">
+                <svg id="playIcon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span id="playLabel">Play Live Call</span>
+              </button>
+              <div id="waveVisualizer" class="waveform-visualizer">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+            </div>
+
+            <div id="dialogueStream" class="dialogue-stream"></div>
+          </div>
+        </div>
+
+        <!-- 2. ROI SAVINGS CALCULATOR -->
+        <div id="showcaseRoiPanel" class="roi-panel">
+          <div class="roi-slider-group">
+            <div class="roi-slider-head">
+              <span>Daily Inbound Calls</span>
+              <span id="valCalls" class="roi-slider-val">80 calls / day</span>
+            </div>
+            <input id="rangeCalls" class="roi-range" type="range" min="20" max="500" step="10" value="80" />
+          </div>
+
+          <div class="roi-slider-group">
+            <div class="roi-slider-head">
+              <span>Avg Call Duration</span>
+              <span id="valDuration" class="roi-slider-val">3 minutes</span>
+            </div>
+            <input id="rangeDuration" class="roi-range" type="range" min="1" max="8" step="1" value="3" />
+          </div>
+
+          <div class="roi-slider-group">
+            <div class="roi-slider-head">
+              <span>Receptionist Staff Headcount</span>
+              <span id="valStaff" class="roi-slider-val">2 full-time reps</span>
+            </div>
+            <input id="rangeStaff" class="roi-range" type="range" min="1" max="6" step="1" value="2" />
+          </div>
+
+          <div class="roi-metrics-grid">
+            <div class="roi-metric-card">
+              <div id="outSavings" class="roi-metric-num highlight">₹44,000 / mo</div>
+              <div class="roi-metric-lbl">Estimated Monthly Savings</div>
+            </div>
+            <div class="roi-metric-card">
+              <div id="outHours" class="roi-metric-num">120+ Hours</div>
+              <div class="roi-metric-lbl">Staff Time Reclaimed</div>
+            </div>
+            <div class="roi-metric-card">
+              <div id="outResolution" class="roi-metric-num">98.4%</div>
+              <div class="roi-metric-lbl">First-Call Resolution</div>
+            </div>
+            <div class="roi-metric-card">
+              <div id="outCostPerCall" class="roi-metric-num">₹2.70</div>
+              <div class="roi-metric-lbl">AI Cost per Call (vs ₹45 manual)</div>
+            </div>
+          </div>
+        </div>
+
         <div class="feature-pills">
           <span class="pill"><span class="pill-dot"></span>Sub-second Latency</span>
           <span class="pill"><span class="pill-dot"></span>24/7 Availability</span>
-          <span class="pill"><span class="pill-dot"></span>Razorpay Powered</span>
+          <span class="pill"><span class="pill-dot"></span>TRAI 9AM-9PM Guard</span>
+          <span class="pill"><span class="pill-dot"></span>DLT Compliant</span>
         </div>
       </div>
     </aside>
@@ -870,6 +1224,219 @@
       if (btnClient) {
         btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
       }
+
+      /* =========================================================================
+         Showcase: Interactive Live Call Player & ROI Calculator
+         ========================================================================= */
+      const tabDemo = document.getElementById('showcaseTabDemo');
+      const tabRoi = document.getElementById('showcaseTabRoi');
+      const playerPanel = document.getElementById('showcasePlayerPanel');
+      const roiPanel = document.getElementById('showcaseRoiPanel');
+
+      if (tabDemo && tabRoi && playerPanel && roiPanel) {
+        tabDemo.addEventListener('click', () => {
+          tabDemo.classList.add('active');
+          tabRoi.classList.remove('active');
+          playerPanel.style.display = 'block';
+          roiPanel.style.display = 'none';
+        });
+        tabRoi.addEventListener('click', () => {
+          tabRoi.classList.add('active');
+          tabDemo.classList.remove('active');
+          playerPanel.style.display = 'none';
+          roiPanel.style.display = 'block';
+          stopDemoPlayback();
+        });
+      }
+
+      // 1. Live Call Player Data & State
+      const demoScenarios = {
+        clinic: {
+          title: 'Dr. Sharma Dental Care',
+          sub: 'Inbound Appointment Scheduling',
+          dialogues: [
+            { speaker: 'Customer', role: 'customer', text: 'Hello, I wanted to schedule a dental checkup and cleaning for tomorrow afternoon.' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Namaste. I can book that for you with Dr. Sharma. We have slots available tomorrow at 2:30 PM and 4:00 PM. Which one suits you best?' },
+            { speaker: 'Customer', role: 'customer', text: '4:00 PM works great for me.' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Confirmed for tomorrow at 4:00 PM. I have sent an SMS confirmation to your number. Is there anything else I can help with?' }
+          ]
+        },
+        realestate: {
+          title: 'Prestige Falcon City',
+          sub: 'Site Visit & Pricing Inquiry',
+          dialogues: [
+            { speaker: 'Customer', role: 'customer', text: 'Hi, I saw your ad for 3BHK residences in Kanakapura Road. What is the current starting price?' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Good afternoon. The 3BHK residences start from 1.45 Crores for 1,800 square feet. Would you like to schedule an executive site visit this weekend?' },
+            { speaker: 'Customer', role: 'customer', text: 'Yes, this Saturday around 11:00 AM.' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Confirmed. Your VIP site visit is scheduled for Saturday at 11:00 AM. Our relationship manager will meet you at the experience lounge.' }
+          ]
+        },
+        auto: {
+          title: 'Nexa Autoworks Central',
+          sub: 'Periodic Maintenance & Doorstep Pickup',
+          dialogues: [
+            { speaker: 'Customer', role: 'customer', text: 'My Grand Vitara is due for its 20,000 km periodic service. Do you offer doorstep vehicle pickup?' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Yes, complimentary doorstep pickup is available across the city. Which date and location would you prefer?' },
+            { speaker: 'Customer', role: 'customer', text: 'Tomorrow morning around 9:30 AM from Indiranagar.' },
+            { speaker: 'Seevora AI', role: 'agent', text: 'Booked. Our certified technician will arrive tomorrow at 9:30 AM. Estimated turnaround time is 5 hours.' }
+          ]
+        }
+      };
+
+      let currentIndustry = 'clinic';
+      let isPlayingDemo = false;
+      let demoTimer = null;
+
+      const demoTitle = document.getElementById('demoTitle');
+      const demoSub = document.getElementById('demoSub');
+      const dialogueStream = document.getElementById('dialogueStream');
+      const btnPlayDemo = document.getElementById('btnPlayDemo');
+      const playLabel = document.getElementById('playLabel');
+      const playIcon = document.getElementById('playIcon');
+      const waveVisualizer = document.getElementById('waveVisualizer');
+
+      function renderDemoScenario(indKey) {
+        currentIndustry = indKey;
+        stopDemoPlayback();
+        const scen = demoScenarios[indKey] || demoScenarios.clinic;
+        if (demoTitle) demoTitle.textContent = scen.title;
+        if (demoSub) demoSub.textContent = scen.sub;
+
+        if (dialogueStream) {
+          dialogueStream.innerHTML = '';
+          scen.dialogues.forEach((d, idx) => {
+            const bubble = document.createElement('div');
+            bubble.className = 'dialogue-bubble ' + d.role;
+            bubble.id = 'bubble_' + idx;
+            const spk = document.createElement('span');
+            spk.className = 'bubble-speaker';
+            spk.textContent = d.speaker;
+            bubble.appendChild(spk);
+            bubble.appendChild(document.createTextNode(d.text));
+            dialogueStream.appendChild(bubble);
+          });
+        }
+      }
+
+      function stopDemoPlayback() {
+        isPlayingDemo = false;
+        if (demoTimer) { clearTimeout(demoTimer); demoTimer = null; }
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+        }
+        if (waveVisualizer) waveVisualizer.classList.remove('playing');
+        if (playLabel) playLabel.textContent = 'Play Live Call';
+        if (playIcon) playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+        if (dialogueStream) {
+          dialogueStream.querySelectorAll('.dialogue-bubble').forEach(b => b.classList.remove('active-speech'));
+        }
+      }
+
+      function playDemoTurn(index) {
+        if (!isPlayingDemo) return;
+        const scen = demoScenarios[currentIndustry] || demoScenarios.clinic;
+        if (index >= scen.dialogues.length) {
+          stopDemoPlayback();
+          return;
+        }
+
+        const turn = scen.dialogues[index];
+
+        if (dialogueStream) {
+          dialogueStream.querySelectorAll('.dialogue-bubble').forEach(b => b.classList.remove('active-speech'));
+          const activeBubble = document.getElementById('bubble_' + index);
+          if (activeBubble) {
+            activeBubble.classList.add('active-speech');
+            activeBubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+
+        if (window.speechSynthesis) {
+          const utt = new SpeechSynthesisUtterance(turn.text);
+          utt.rate = 1.05;
+          utt.pitch = turn.role === 'agent' ? 1.08 : 0.95;
+          utt.onend = () => {
+            demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 600);
+          };
+          utt.onerror = () => {
+            demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 2000);
+          };
+          window.speechSynthesis.speak(utt);
+        } else {
+          demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 2200);
+        }
+      }
+
+      function startDemoPlayback() {
+        isPlayingDemo = true;
+        if (waveVisualizer) waveVisualizer.classList.add('playing');
+        if (playLabel) playLabel.textContent = 'Pause Call';
+        if (playIcon) playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+        playDemoTurn(0);
+      }
+
+      if (btnPlayDemo) {
+        btnPlayDemo.addEventListener('click', () => {
+          if (isPlayingDemo) {
+            stopDemoPlayback();
+          } else {
+            startDemoPlayback();
+          }
+        });
+      }
+
+      document.querySelectorAll('.demo-ind-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.demo-ind-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const ind = btn.getAttribute('data-industry');
+          renderDemoScenario(ind);
+        });
+      });
+
+      renderDemoScenario('clinic');
+
+      // 2. ROI Calculator Logic
+      const rangeCalls = document.getElementById('rangeCalls');
+      const rangeDuration = document.getElementById('rangeDuration');
+      const rangeStaff = document.getElementById('rangeStaff');
+
+      const valCalls = document.getElementById('valCalls');
+      const valDuration = document.getElementById('valDuration');
+      const valStaff = document.getElementById('valStaff');
+
+      const outSavings = document.getElementById('outSavings');
+      const outHours = document.getElementById('outHours');
+      const outResolution = document.getElementById('outResolution');
+      const outCostPerCall = document.getElementById('outCostPerCall');
+
+      function updateRoiOutputs() {
+        const calls = Number(rangeCalls ? rangeCalls.value : 80);
+        const dur = Number(rangeDuration ? rangeDuration.value : 3);
+        const staff = Number(rangeStaff ? rangeStaff.value : 2);
+
+        if (valCalls) valCalls.textContent = calls + ' calls / day';
+        if (valDuration) valDuration.textContent = dur + (dur === 1 ? ' minute' : ' minutes');
+        if (valStaff) valStaff.textContent = staff + (staff === 1 ? ' full-time rep' : ' full-time reps');
+
+        const monthlyCalls = calls * 30;
+        const manualMonthlyCost = staff * 25000;
+        const aiMonthlyCost = Math.round(monthlyCalls * dur * 0.70);
+        const netSavings = Math.max(12000, manualMonthlyCost - aiMonthlyCost);
+        const monthlyHours = Math.round((monthlyCalls * dur) / 60);
+        const costPerCall = (dur * 0.90).toFixed(2);
+        const resolutionRate = (97.2 + ((calls % 10) * 0.15)).toFixed(1);
+
+        if (outSavings) outSavings.textContent = '₹' + netSavings.toLocaleString('en-IN') + ' / mo';
+        if (outHours) outHours.textContent = monthlyHours + '+ Hours';
+        if (outResolution) outResolution.textContent = resolutionRate + '%';
+        if (outCostPerCall) outCostPerCall.textContent = '₹' + costPerCall;
+      }
+
+      if (rangeCalls) rangeCalls.addEventListener('input', updateRoiOutputs);
+      if (rangeDuration) rangeDuration.addEventListener('input', updateRoiOutputs);
+      if (rangeStaff) rangeStaff.addEventListener('input', updateRoiOutputs);
+      updateRoiOutputs();
 
       // Initialize Clerk
       if (document.readyState === 'complete') {

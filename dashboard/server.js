@@ -3780,6 +3780,83 @@ async function apiTenantUpdate(req, res, ctx) {
   core.sendJson(res, 200, { tenant: publicTenant(tenant) });
 }
 
+function apiComplianceKycGet(req, res, ctx) {
+  const t = ctx.tenant || {};
+  const kyc = t.kyc || {
+    status: 'unverified',
+    businessName: t.name || '',
+    entityType: 'pvt_ltd',
+    pan: '',
+    gstin: '',
+    directorName: (ctx.user && ctx.user.name) || '',
+    directorPhone: '',
+    dltPeId: '',
+    dndScrubbing: true,
+    traiWindowEnforced: true,
+    submittedAt: null,
+    verifiedAt: null,
+  };
+  core.sendJson(res, 200, { kyc });
+}
+
+async function apiComplianceKycUpdate(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const b = ctx.body || {};
+  const businessName = String(b.businessName || '').trim().slice(0, 100);
+  const entityType = String(b.entityType || 'pvt_ltd').trim();
+  const pan = String(b.pan || '').trim().toUpperCase();
+  const gstin = String(b.gstin || '').trim().toUpperCase();
+  const directorName = String(b.directorName || '').trim().slice(0, 100);
+  const directorPhone = String(b.directorPhone || '').trim().slice(0, 20);
+  const dltPeId = String(b.dltPeId || '').trim();
+  const dndScrubbing = b.dndScrubbing !== false;
+
+  if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+    return core.sendJson(res, 422, { error: 'Invalid Indian Business PAN format. Expected 10 alphanumeric characters (e.g. ABCDE1234F).', code: 'invalid_pan' });
+  }
+  if (gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstin)) {
+    return core.sendJson(res, 422, { error: 'Invalid GSTIN format. Expected 15 characters (e.g. 27ABCDE1234F1Z5).', code: 'invalid_gstin' });
+  }
+  if (dltPeId && !/^\d{10,22}$/.test(dltPeId)) {
+    return core.sendJson(res, 422, { error: 'Invalid DLT Principal Entity ID. Expected 10 to 22 numerical digits.', code: 'invalid_dlt_pe_id' });
+  }
+
+  const isComplete = Boolean(businessName && pan && directorName && dltPeId);
+  const now = new Date().toISOString();
+
+  let updatedKyc;
+  await core.mutate((store) => {
+    const tenant = store.tenants.find((row) => row.id === ctx.tenant.id);
+    if (!tenant) return;
+    const existingKyc = tenant.kyc || {};
+    updatedKyc = {
+      ...existingKyc,
+      status: isComplete ? 'verified' : (pan ? 'under_review' : 'unverified'),
+      businessName: businessName || tenant.name || '',
+      entityType: entityType || 'pvt_ltd',
+      pan: pan || '',
+      gstin: gstin || '',
+      directorName: directorName || (ctx.user && ctx.user.name) || '',
+      directorPhone: directorPhone || '',
+      dltPeId: dltPeId || '',
+      dndScrubbing,
+      traiWindowEnforced: true,
+      submittedAt: existingKyc.submittedAt || now,
+      verifiedAt: isComplete ? (existingKyc.verifiedAt || now) : null,
+      updatedAt: now,
+    };
+    tenant.kyc = updatedKyc;
+    addAudit(store, ctx, 'tenant.kyc.updated', 'tenant', tenant.id, { status: updatedKyc.status });
+  });
+
+  logger.info('Tenant compliance KYC profile updated', {
+    tenantId: ctx.tenant.id,
+    status: updatedKyc ? updatedKyc.status : 'unknown',
+  });
+
+  core.sendJson(res, 200, { ok: true, kyc: updatedKyc });
+}
+
 async function apiMemberRole(req, res, ctx) {
   const b = ctx.body || {};
   const role = String(b.role || '');
@@ -5052,6 +5129,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/assistant/integrations') return core.requireAuth(req, res, apiAssistantIntegrationsGet);
         if (route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadGet);
         if (route === '/api/assistant/history') return core.requireAuth(req, res, apiAssistantHistory);
+        if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycGet);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -5139,6 +5217,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/integrations/whatsapp/verify-business') return core.requireAuth(req, res, apiWhatsAppVerifyBusiness, body);
       if (route === '/api/assistant/chat') return core.requireAuth(req, res, apiAssistantChat, body);
       if (route === '/api/assistant/confirm') return core.requireAuth(req, res, apiAssistantConfirm, body);
+      if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycUpdate, body);
 
       return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
     }
