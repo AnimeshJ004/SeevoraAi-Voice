@@ -205,10 +205,12 @@
    ========================================================= */
 .shell {
   display: grid;
-  grid-template-columns: 256px 1fr;
+  grid-template-columns: 240px 1fr;
   grid-template-rows: auto 1fr;
   grid-template-areas: "side top" "side main";
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   position: relative;
   z-index: 2;
 }
@@ -481,23 +483,18 @@
 /* ---- Main scroll area + route transition ---- */
 .main {
   grid-area: main;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   padding: clamp(22px, 3.2vw, 40px) var(--gutter) 80px;
   min-width: 0;
 }
 
 .view {
-  animation: viewIn 0.35s var(--ease-out) both;
-}
-
-@keyframes viewIn {
-  from {
-    opacity: 0;
-    /* No translateY — causes scroll jitter when view loads */
-  }
-
-  to {
-    opacity: 1;
-  }
+  animation: none !important;
+  min-height: 100%;
 }
 
 .view-head {

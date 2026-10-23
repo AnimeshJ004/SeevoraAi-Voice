@@ -290,6 +290,19 @@ If asked anything not covered above: say honestly you will have the team follow 
       const callId = 'rec_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + tmpl.refSuffix;
       if (!d.callRecordings.some((r) => r.id === callId)) {
         const startedAt = new Date(Date.now() - (tmpl.dayOffset * 86400000 + tmpl.hourOffset * 3600000)).toISOString();
+        const tmplOutcomes = [
+          { outcome: 'appointment_booked', outcomeLabel: 'Appointment Booked', sentiment: 'positive', score: 96, tier: 'Hot Lead', action: 'Send WhatsApp appointment calendar invite', topics: ['Appointment', 'Doctor Consult'] },
+          { outcome: 'interested', outcomeLabel: 'Interested Lead', sentiment: 'positive', score: 84, tier: 'Hot Lead', action: 'Send digital pricing brochure and packages', topics: ['Pricing', 'WhatsApp Share'] },
+          { outcome: 'inquiry_handled', outcomeLabel: 'Inquiry Handled', sentiment: 'positive', score: 76, tier: 'Warm Lead', action: 'Log resolution in CRM contact history', topics: ['Timings & Location'] },
+          { outcome: 'appointment_booked', outcomeLabel: 'Appointment Booked', sentiment: 'positive', score: 92, tier: 'Hot Lead', action: 'Send 24h SMS & WhatsApp reminder', topics: ['Appointment', 'Follow-up'] },
+          { outcome: 'interested', outcomeLabel: 'Interested Lead', sentiment: 'positive', score: 88, tier: 'Hot Lead', action: 'Connect with B2B Corporate Wellness Manager', topics: ['Corporate Wellness', 'B2B'] },
+          { outcome: 'inquiry_handled', outcomeLabel: 'Inquiry Handled', sentiment: 'positive', score: 79, tier: 'Warm Lead', action: 'Collect 5-star Google review feedback', topics: ['Feedback', 'Patient Care'] },
+          { outcome: 'inquiry_handled', outcomeLabel: 'Inquiry Handled', sentiment: 'neutral', score: 71, tier: 'Warm Lead', action: 'Verify TPA cashless insurance policy eligibility', topics: ['Insurance', 'TPA Cashless'] },
+          { outcome: 'inquiry_handled', outcomeLabel: 'Inquiry Handled', sentiment: 'positive', score: 78, tier: 'Warm Lead', action: 'Deliver lab blood panel report PDF on WhatsApp', topics: ['Diagnostic Tests', 'Lab Report'] },
+          { outcome: 'appointment_booked', outcomeLabel: 'Appointment Booked', sentiment: 'positive', score: 94, tier: 'Hot Lead', action: 'Update calendar slot to Friday 5:00 PM', topics: ['Appointment', 'Reschedule'] },
+          { outcome: 'appointment_booked', outcomeLabel: 'Appointment Booked', sentiment: 'positive', score: 95, tier: 'Hot Lead', action: 'Assign phlebotomist for 8:00 AM home collection', topics: ['Diagnostic Tests', 'Home Visit'] }
+        ];
+        const ot = tmplOutcomes[idx % tmplOutcomes.length];
         d.callRecordings.unshift({
           id: callId,
           tenantId: tid,
@@ -305,7 +318,16 @@ If asked anything not covered above: say honestly you will have the team follow 
           startedAt,
           summary: tmpl.summary,
           transcript: tmpl.transcript,
-          recordingAvailable: true
+          recordingAvailable: true,
+          sentiment: ot.sentiment,
+          sentimentLabel: ot.sentiment === 'positive' ? 'Positive' : (ot.sentiment === 'neutral' ? 'Neutral' : 'Negative'),
+          sentimentScore: ot.sentiment === 'positive' ? { pos: 88, neu: 9, neg: 3 } : { pos: 25, neu: 65, neg: 10 },
+          outcome: ot.outcome,
+          outcomeLabel: ot.outcomeLabel,
+          qualityScore: ot.score,
+          qualityTier: ot.tier,
+          nextAction: ot.action,
+          keyTopics: ot.topics
         });
       }
     });
