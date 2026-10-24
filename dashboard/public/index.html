@@ -18,21 +18,21 @@
 
   <style>
     :root {
-      --bg: #F8FAFC;
+      --bg: #EDF7E8;
       --card: #FFFFFF;
-      --ink: #0F172A;
-      --ink-soft: #334155;
-      --ink-dim: #64748B;
-      --line: #E2E8F0;
-      --primary: #0095FF;
-      --primary-hover: #0080DB;
-      --primary-light: #EFF6FF;
-      --danger: #EF4444;
-      --danger-bg: #FEF2F2;
-      --danger-border: #FECACA;
-      --success: #16A34A;
-      --success-bg: #F0FDF4;
-      --success-border: #BBF7D0;
+      --ink: #1C2B1A;
+      --ink-soft: #2E4429;
+      --ink-dim: #5A7A54;
+      --line: rgba(168, 223, 142, 0.5);
+      --primary: #6DBF5A;
+      --primary-hover: #5AAD48;
+      --primary-light: #F0FFDF;
+      --danger: #EF6177;
+      --danger-bg: #FFF0F3;
+      --danger-border: #FFAAB8;
+      --success: #3D7A30;
+      --success-bg: #F0FFDF;
+      --success-border: #A8DF8E;
       --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -48,7 +48,7 @@
       margin: 0;
       padding: 0;
       font-family: var(--font);
-      background-color: var(--card);
+      background-color: #EDF7E8;
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
@@ -77,12 +77,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      background: #FFFFFF;
+      background: linear-gradient(180deg, #FFFFFF 0%, #F4FBF0 100%);
       min-height: 100vh;
       position: relative;
       z-index: 5;
-      border-right: 1px solid var(--line);
-      box-shadow: 12px 0 40px rgba(15, 23, 42, 0.04);
+      border-right: 1px solid rgba(168, 223, 142, 0.45);
+      box-shadow: 12px 0 40px rgba(40, 80, 30, 0.05);
       overflow-y: auto;
     }
 
@@ -146,7 +146,7 @@
     /* Tab Switcher */
     .auth-tabs-wrap {
       display: flex;
-      background: #F1F5F9;
+      background: #F0FFDF;
       border-radius: 10px;
       padding: 4px;
       width: 100%;
@@ -242,12 +242,93 @@
     #clerk-mount-zone .cl-card {
       width: 100% !important;
       max-width: 400px !important;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
-      border: 1px solid var(--line) !important;
-      border-radius: 14px !important;
-      background: #FFFFFF !important;
+      box-shadow: 0 4px 16px rgba(40, 80, 30, 0.06) !important;
+      border: 1px solid rgba(168, 223, 142, 0.45) !important;
+      border-radius: 18px !important;
+      background: linear-gradient(160deg, #FFFFFF 0%, #F4FBF0 100%) !important;
       margin: 0 !important;
       padding: 18px 16px !important;
+    }
+    #clerk-mount-zone .cl-formButtonPrimary,
+    #clerk-mount-zone .cl-button[data-variant="solid"],
+    .cl-formButtonPrimary,
+    .cl-button[data-variant="solid"] {
+      background: linear-gradient(135deg, #6DBF5A 0%, #3D7A30 100%) !important;
+      color: #FFFFFF !important;
+      border: none !important;
+      border-radius: 99px !important;
+      box-shadow: 0 4px 14px rgba(109, 191, 90, 0.35) !important;
+      font-family: var(--font) !important;
+      font-weight: 700 !important;
+      transition: all 0.2s ease !important;
+    }
+    #clerk-mount-zone .cl-formButtonPrimary:hover,
+    .cl-formButtonPrimary:hover {
+      background: linear-gradient(135deg, #5AAD48 0%, #2E6B22 100%) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 8px 24px rgba(109, 191, 90, 0.45) !important;
+    }
+    #clerk-mount-zone .cl-socialButtonsIconButton,
+    #clerk-mount-zone .cl-socialButtonsBlockButton {
+      border: 1px solid rgba(168, 223, 142, 0.55) !important;
+      border-radius: 12px !important;
+      background: rgba(255, 255, 255, 0.90) !important;
+      transition: all 0.18s ease !important;
+    }
+    #clerk-mount-zone .cl-socialButtonsIconButton:hover,
+    #clerk-mount-zone .cl-socialButtonsBlockButton:hover {
+      border-color: #6DBF5A !important;
+      box-shadow: 0 4px 12px rgba(109, 191, 90, 0.18) !important;
+      transform: translateY(-1px) !important;
+    }
+    #clerk-mount-zone .cl-formFieldInput {
+      border: 1px solid rgba(168, 223, 142, 0.60) !important;
+      border-radius: 12px !important;
+      background: rgba(255, 255, 255, 0.92) !important;
+      font-family: var(--font) !important;
+      color: #1C2B1A !important;
+    }
+    #clerk-mount-zone .cl-formFieldInput:focus {
+      border-color: rgba(109, 191, 90, 0.80) !important;
+      box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.18) !important;
+      outline: none !important;
+    }
+    #clerk-mount-zone .cl-footerActionLink,
+    #clerk-mount-zone .cl-identityPreviewEditButton,
+    #clerk-mount-zone .cl-formFieldAction,
+    .cl-footerActionLink {
+      color: #3D7A30 !important;
+      font-weight: 600 !important;
+    }
+    #clerk-mount-zone .cl-footerActionLink:hover,
+    #clerk-mount-zone .cl-identityPreviewEditButton:hover,
+    .cl-footerActionLink:hover {
+      color: #FF7A94 !important;
+    }
+    #clerk-mount-zone .cl-headerTitle {
+      color: #1C2B1A !important;
+      font-family: var(--font) !important;
+      font-weight: 800 !important;
+    }
+    #clerk-mount-zone .cl-headerSubtitle {
+      color: #5A7A54 !important;
+      font-family: var(--font) !important;
+    }
+    #clerk-mount-zone .cl-dividerLine { background: rgba(168, 223, 142, 0.45) !important; }
+    #clerk-mount-zone .cl-dividerText { color: #93B88C !important; font-family: var(--font) !important; }
+    #clerk-mount-zone .cl-badge,
+    .cl-badge {
+      background: #F0FFDF !important;
+      color: #3D7A30 !important;
+      border: 1px solid #A8DF8E !important;
+    }
+    #clerk-mount-zone a,
+    #clerk-mount-zone button[data-variant="link"] {
+      color: #3D7A30 !important;
+    }
+    #clerk-mount-zone a:hover,
+    #clerk-mount-zone button[data-variant="link"]:hover {
+      color: #FF7A94 !important;
     }
 
     /* Native Auth Form */
@@ -307,9 +388,9 @@
     }
 
     .auth-input:focus {
-      border-color: var(--primary);
+      border-color: rgba(109, 191, 90, 0.80);
       background: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15);
+      box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.18);
     }
 
     .auth-input::placeholder {
@@ -339,9 +420,9 @@
     .btn-submit-primary {
       width: 100%;
       height: 44px;
-      border-radius: 10px;
+      border-radius: 99px;
       border: none;
-      background: var(--primary);
+      background: linear-gradient(135deg, #6DBF5A 0%, #3D7A30 100%);
       color: #FFFFFF;
       font-family: inherit;
       font-size: 13.5px;
@@ -351,15 +432,15 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 2px 10px rgba(0, 149, 255, 0.28);
+      box-shadow: 0 4px 14px rgba(109, 191, 90, 0.32);
       transition: all 0.2s ease;
       margin-top: 2px;
     }
 
     .btn-submit-primary:hover {
-      background: var(--primary-hover);
+      background: linear-gradient(135deg, #5AAD48 0%, #2E6B22 100%);
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(0, 149, 255, 0.35);
+      box-shadow: 0 8px 22px rgba(109, 191, 90, 0.40);
     }
 
     .btn-submit-primary:disabled {
@@ -437,10 +518,10 @@
 
     .btn-demo-sub:hover {
       background: #F8FAFC !important;
-      border-color: #0095FF !important;
-      color: #0095FF !important;
+      border-color: #6DBF5A !important;
+      color: #6DBF5A !important;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 149, 255, 0.12);
+      box-shadow: 0 4px 12px rgba(109, 191, 90, 0.16);
     }
 
     .demo-hint {
@@ -501,7 +582,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #0284C7;
+      color: #FF7A94;
       margin-bottom: 8px;
     }
 
@@ -524,11 +605,7 @@
     /* Showcase Tab Switcher */
     .showcase-switcher {
       display: flex;
-      background: #F1F5F9;
-      border-radius: 10px;
-      padding: 3px;
-      gap: 4px;
-      margin-bottom: 14px;
+      background: #F0FFDF; border-radius: 10px; padding: 3px; gap: 4px; margin-bottom: 14px;
     }
     .showcase-switch-btn {
       flex: 1;
@@ -565,29 +642,21 @@
     .demo-ind-btn {
       padding: 5px 11px;
       border-radius: 16px;
-      border: 1px solid #E2E8F0;
-      background: #FFFFFF;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #475569;
+      border: 1px solid rgba(168,223,142,0.55); background: rgba(240,255,223,0.6); font-size: 11.5px; font-weight: 600; color: #5A7A54;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.15s ease;
       font-family: inherit;
     }
     .demo-ind-btn.active {
-      background: #0284C7;
+      background: #3D7A30;
       color: #FFFFFF;
-      border-color: #0284C7;
+      border-color: #3D7A30;
     }
 
     /* Live Player Box */
     .live-player-box {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
+      background: rgba(240,255,223,0.5); border: 1px solid rgba(168,223,142,0.45); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
     }
     .player-header {
       display: flex;
@@ -614,7 +683,7 @@
       padding: 7px 14px;
       border-radius: 8px;
       border: none;
-      background: #0095FF;
+      background: #6DBF5A;
       color: #FFFFFF;
       font-size: 12px;
       font-weight: 700;
@@ -627,7 +696,7 @@
       flex-shrink: 0;
     }
     .btn-play-demo:hover {
-      background: #0080DB;
+      background: #5AAD48;
     }
     .waveform-visualizer {
       display: flex;
@@ -644,7 +713,7 @@
       transition: height 0.15s ease, background 0.15s ease;
     }
     .waveform-visualizer.playing .wave-bar {
-      background: #0095FF;
+      background: #6DBF5A;
       animation: wavePulse 0.9s infinite ease-in-out;
     }
     .waveform-visualizer.playing .wave-bar:nth-child(2) { animation-delay: 0.15s; }
@@ -663,9 +732,9 @@
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 6px;
-      background: #EFF6FF;
-      color: #0284C7;
-      border: 1px solid #BFDBFE;
+      background: #F0FFDF;
+      color: #3D7A30;
+      border: 1px solid #A8DF8E;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -695,15 +764,15 @@
       max-width: 92%;
     }
     .dialogue-bubble.agent {
-      background: #EFF6FF;
-      border-color: #BFDBFE;
+      background: #F0FFDF;
+      border-color: #A8DF8E;
       color: #0F172A;
       align-self: flex-end;
       max-width: 92%;
     }
     .dialogue-bubble.active-speech {
-      border-color: #0095FF;
-      box-shadow: 0 0 0 2px rgba(0, 149, 255, 0.25);
+      border-color: #6DBF5A;
+      box-shadow: 0 0 0 2px rgba(109, 191, 90, 0.25);
     }
     .bubble-speaker {
       font-size: 10px;
@@ -714,16 +783,12 @@
       display: block;
     }
     .dialogue-bubble.customer .bubble-speaker { color: #64748B; }
-    .dialogue-bubble.agent .bubble-speaker { color: #0284C7; }
+    .dialogue-bubble.agent .bubble-speaker { color: #3D7A30; }
 
     /* ROI Calculator Controls */
     .roi-panel {
       display: none;
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
+      background: rgba(240,255,223,0.5); border: 1px solid rgba(168,223,142,0.45); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
     }
     .roi-slider-group {
       display: flex;
@@ -740,13 +805,13 @@
     }
     .roi-slider-val {
       font-weight: 700;
-      color: #0095FF;
+      color: #6DBF5A;
     }
     .roi-range {
       width: 100%;
       height: 5px;
       border-radius: 4px;
-      accent-color: #0095FF;
+      accent-color: #6DBF5A;
       cursor: pointer;
     }
     .roi-metrics-grid {
@@ -877,7 +942,7 @@
     <aside class="showcase-column" aria-label="Seevora AI Overview">
       <div class="showcase-card">
         <div class="showcase-tag">
-          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0284C7;"></span>
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background: linear-gradient(135deg, #FFAAB8, #FF7A94);"></span>
           Autonomous Voice Agents
         </div>
         <h2>Enterprise Voice AI Receptionist</h2>
@@ -1142,11 +1207,22 @@
             ui: { ClerkUI: window.__internal_ClerkUICtor },
             appearance: {
               variables: {
-                colorPrimary: '#0095FF',
-                colorBackground: '#FFFFFF',
-                colorText: '#0F172A',
-                colorNeutral: '#0F172A',
-                borderRadius: '10px',
+                colorPrimary: '#6DBF5A',
+                colorBackground: '#F4FBF0',
+                colorText: '#1C2B1A',
+                colorNeutral: '#1C2B1A',
+                borderRadius: '14px',
+              },
+              elements: {
+                formButtonPrimary: {
+                  background: 'linear-gradient(135deg, #6DBF5A 0%, #3D7A30 100%) !important',
+                  borderRadius: '99px !important',
+                  boxShadow: '0 4px 14px rgba(109, 191, 90, 0.35) !important',
+                },
+                footerActionLink: {
+                  color: '#3D7A30 !important',
+                  fontWeight: '600 !important',
+                },
               },
             },
           });
@@ -1448,3 +1524,5 @@
   </script>
 </body>
 </html>
+
+

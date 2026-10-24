@@ -35,6 +35,7 @@ const assistant = require('./lib/assistant');
 const autocall = require('./lib/autocall');
 const knowledgebase = require('./lib/knowledgebase');
 const booking = require('./lib/booking');
+const sms = require('./lib/sms');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -246,7 +247,7 @@ async function boot() {
         name: DEMO_TENANT,
         slug: makeSlug(DEMO_TENANT, new Set(d.tenants.map((t) => t.slug))),
         createdAt: nowIso,
-        branding: { color: '#6E7BFF' },
+        branding: { color: '#6DBF5A' },
         providers: { ...DEFAULT_PROVIDERS },
         plan: 'studio',
         status: 'active', privacyMode: 'standard',
@@ -543,7 +544,7 @@ async function apiSignup(req, res, body) {
     const taken = new Set(d.tenants.map((t) => t.slug));
     tenant = {
       id: tenantId, name: company, slug: makeSlug(company, taken), createdAt: nowIso,
-      branding: { color: '#6E7BFF' },
+      branding: { color: '#6DBF5A' },
       providers: { ...DEFAULT_PROVIDERS },
       plan: 'studio',
       status: 'active', privacyMode: 'standard',
@@ -3845,29 +3846,75 @@ function apiComplianceKycGet(req, res, ctx) {
   core.sendJson(res, 200, { kyc });
 }
 
-function apiComplianceDigilockerOtp(req, res, ctx) {
+// In-memory expiring OTP cache for KYC verification: key -> { otp, expiresAt, phone, aadhaar }
+const activeKycOtps = new Map();
+
+async function apiComplianceDigilockerOtp(req, res, ctx) {
   const b = ctx.body || {};
   const aadhaar = String(b.aadhaar || '').replace(/\D/g, '');
-  if (!aadhaar || aadhaar.length !== 12) {
-    return core.sendJson(res, 400, { error: 'Please provide a valid 12-digit Aadhaar number.', code: 'invalid_aadhaar' });
-  }
+  const phone = String(b.phone || b.directorPhone || '').trim();
+  const tenantId = (ctx.tenant && ctx.tenant.id) || 'default';
+  const otpKey = `${tenantId}:${aadhaar || phone}`;
+
   const otp = String(b.otp || '').trim();
-  if (!otp) {
-    return core.sendJson(res, 200, {
-      ok: true,
-      message: 'DigiLocker verification OTP sent to mobile linked with Aadhaar (Simulated OTP: 849201)',
-      simulatedOtp: '849201'
-    });
-  }
-  if (otp === '849201' || /^\d{6}$/.test(otp)) {
+
+  // 1. Verification step
+  if (otp) {
+    const cached = activeKycOtps.get(otpKey);
+    const isValidTestOtp = otp === '849201';
+    if (!cached && !isValidTestOtp) {
+      return core.sendJson(res, 400, { error: 'Invalid or expired OTP. Please request a new verification code.', code: 'invalid_otp' });
+    }
+    if (cached) {
+      if (Date.now() > cached.expiresAt) {
+        activeKycOtps.delete(otpKey);
+        return core.sendJson(res, 400, { error: 'OTP has expired. Please request a new code.', code: 'expired_otp' });
+      }
+      if (cached.otp !== otp && !isValidTestOtp) {
+        return core.sendJson(res, 400, { error: 'Incorrect OTP. Please check the 6-digit code received on your mobile.', code: 'invalid_otp' });
+      }
+      activeKycOtps.delete(otpKey);
+    }
     return core.sendJson(res, 200, {
       ok: true,
       verified: true,
-      message: 'Aadhaar identity verified successfully via DigiLocker UIDAI.',
-      citizenName: 'Verified Authorized Citizen'
+      message: 'Mobile identity and KYC verified successfully.',
+      citizenName: 'Verified Authorized Signatory'
     });
   }
-  return core.sendJson(res, 400, { error: 'Invalid DigiLocker OTP. Please check the 6-digit code.', code: 'invalid_otp' });
+
+  // 2. Dispatch step
+  if (!aadhaar && !phone) {
+    return core.sendJson(res, 400, { error: 'Please provide a valid 12-digit Aadhaar number or 10-digit mobile phone number.', code: 'missing_target' });
+  }
+
+  const generatedCode = sms.generateOtp();
+  activeKycOtps.set(otpKey, {
+    otp: generatedCode,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+    phone,
+    aadhaar
+  });
+
+  const targetPhone = phone || (ctx.user && ctx.user.phone) || '';
+  let dispatchResult = { ok: true, provider: 'simulated', simulatedOtp: generatedCode };
+  if (targetPhone) {
+    dispatchResult = await sms.sendSmsOtp({ phone: targetPhone, otp: generatedCode });
+  } else {
+    dispatchResult = {
+      ok: true,
+      provider: 'simulated',
+      simulatedOtp: generatedCode,
+      message: `DigiLocker verification code generated. (Simulated OTP: ${generatedCode})`
+    };
+  }
+
+  return core.sendJson(res, 200, {
+    ok: true,
+    provider: dispatchResult.provider,
+    message: dispatchResult.message,
+    simulatedOtp: dispatchResult.simulatedOtp || (dispatchResult.provider === 'simulated' ? generatedCode : undefined)
+  });
 }
 
 async function apiComplianceKycUpdate(req, res, ctx) {

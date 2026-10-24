@@ -209,7 +209,7 @@ function brandSVG(size) {
   img.style.borderRadius = '8px';
   img.style.background = '#FFFFFF';
   img.style.padding = '2px';
-  img.style.boxShadow = '0 2px 8px rgba(0, 149, 255, 0.25)';
+  img.style.boxShadow = '0 2px 8px rgba(109, 191, 90, 0.25)';
   return img;
 }
 function fmtInr(n) {
@@ -362,7 +362,7 @@ function fireConfetti() {
     vx: (Math.random() - 0.5) * 6,
     vy: Math.random() * 4 + 2,
     size: Math.random() * 8 + 4,
-    color: ['#0095FF', '#00C6FF', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'][Math.floor(Math.random() * 6)],
+    color: ['#6DBF5A', '#A8DF8E', '#3D7A30', '#F59E0B', '#FFAAB8', '#FF7A94'][Math.floor(Math.random() * 6)],
     tilt: Math.random() * 10
   }));
   let frame = 0;
@@ -413,11 +413,32 @@ async function ensureClerkReady() {
           ui: { ClerkUI: window.__internal_ClerkUICtor },
           appearance: {
             variables: {
-              colorPrimary: '#0095FF',
-              colorBackground: '#FFFFFF',
-              colorText: '#0F172A',
-              colorNeutral: '#0F172A',
-              borderRadius: '10px',
+              colorPrimary:        '#6DBF5A',
+              colorBackground:     '#F4FBF0',
+              colorText:           '#1C2B1A',
+              colorTextSecondary:  '#5A7A54',
+              colorNeutral:        '#1C2B1A',
+              colorInputBackground:'#FFFFFF',
+              colorInputText:      '#1C2B1A',
+              colorSuccess:        '#5AAD48',
+              colorDanger:         '#EF6177',
+              colorWarning:        '#E8A838',
+              borderRadius:        '14px',
+              fontFamily:          "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize:            '15px',
+            },
+            elements: {
+              card:                'background: linear-gradient(160deg,#ffffff,#f4fbf0); border:1px solid rgba(168,223,142,0.45); border-radius:22px; box-shadow:0 20px 60px -12px rgba(40,100,30,0.14)',
+              formButtonPrimary:   'background:linear-gradient(135deg,#6DBF5A,#3D7A30)!important; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(109,191,90,0.35)!important; font-weight:700!important',
+              socialButtonsBlockButton: 'border:1px solid rgba(168,223,142,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
+              footerActionLink:    'color:#3D7A30!important; font-weight:600!important',
+              identityPreviewEditButtonIcon: 'color:#3D7A30',
+              formFieldInput:      'border:1px solid rgba(168,223,142,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
+              dividerLine:         'background:rgba(168,223,142,0.45)!important',
+              dividerText:         'color:#93B88C!important',
+              headerTitle:         'color:#1C2B1A!important; font-weight:800!important',
+              headerSubtitle:      'color:#5A7A54!important',
+              rootBox:             'font-family:"Plus Jakarta Sans",sans-serif',
             },
           },
         });
@@ -955,7 +976,7 @@ async function openMakeCallModal(prefillNumber) {
   const dialRow = el('div', {
     style: 'display:flex;align-items:center;border:1px solid rgba(203,213,225,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);transition:border-color .2s;'
   }, [
-    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#0284C7;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
+    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#3D7A30;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
     numI
   ]);
 
@@ -1336,7 +1357,7 @@ function renderVoiceDashboard(root, opts) {
   const recentList = el('div', { class: 'sv-recent-list', id: 'sv-recent-list-host' }, defaultMockCalls.map(c => {
     const img = el('img', { class: 'sv-avatar', src: c.av, alt: c.name });
     img.onerror = () => {
-      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23DBEAFE"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%230369A1" text-anchor="middle">' + c.name[0] + '</text></svg>';
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23F0FFDF"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%233D7A30" text-anchor="middle">' + c.name[0] + '</text></svg>';
     };
     return el('div', { class: 'sv-recent-item' }, [
       el('div', { class: 'sv-recent-left' }, [
@@ -1500,7 +1521,7 @@ function renderVoiceDashboard(root, opts) {
     el('div', { class: 'sv-agent-list' }, fleet.map(a => {
       const img = el('img', { class: 'sv-agent-av', src: a.av, alt: a.name });
       img.onerror = () => {
-        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23DBEAFE"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%230369A1" text-anchor="middle">' + a.name[0] + '</text></svg>';
+        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"><circle cx="19" cy="19" r="19" fill="%23F0FFDF"/><text x="19" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="%233D7A30" text-anchor="middle">' + a.name[0] + '</text></svg>';
       };
       return el('div', { class: 'sv-agent-item' }, [
         el('div', { class: 'sv-agent-left' }, [
@@ -1513,7 +1534,7 @@ function renderVoiceDashboard(root, opts) {
             el('div', { class: 'sv-agent-meta' }, [
               el('span', {}, a.role),
               el('span', { style: 'opacity:0.5;' }, '•'),
-              el('span', { style: 'font-weight:600;color:#0284c7;' }, a.calls)
+              el('span', { style: 'font-weight:600;color:#3D7A30;' }, a.calls)
             ])
           ])
         ]),
@@ -1527,7 +1548,7 @@ function renderVoiceDashboard(root, opts) {
     })),
     el('button', {
       class: 'sv-submit-btn',
-      style: 'margin-top:14px;background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);box-shadow:0 8px 24px -4px rgba(2,132,199,0.35);',
+      style: 'margin-top:14px;background:linear-gradient(135deg, #3D7A30 0%, #2E6B22 100%);box-shadow:0 8px 24px -4px rgba(61, 122, 48,0.35);',
       onclick: () => goto('agents')
     }, '+ Create New Voice Agent')
   ]));
@@ -1550,7 +1571,7 @@ function renderVoiceDashboard(root, opts) {
     ]),
     el('div', { class: 'sv-sentiment-labels' }, [
       el('span', { style: 'color:#047857;font-weight:700;' }, '● 88% Positive'),
-      el('span', { style: 'color:#0284C7;font-weight:700;' }, '● 9% Neutral'),
+      el('span', { style: 'color:#3D7A30;font-weight:700;' }, '● 9% Neutral'),
       el('span', { style: 'color:#B45309;font-weight:700;' }, '● 3% Escalated')
     ]),
     el('div', { class: 'sv-latency-pill' }, [
@@ -1694,7 +1715,7 @@ async function syncVoiceDashboardData(period = 'today') {
 
         const item = el('div', { class: 'sv-recent-item' }, [
           el('div', { class: 'sv-recent-left' }, [
-            el('div', { class: 'sv-avatar', style: 'display:flex;align-items:center;justify-content:center;background:#E0F2FE;color:#0369A1;font-weight:700;font-size:12px;' }, 'AI'),
+            el('div', { class: 'sv-avatar', style: 'display:flex;align-items:center;justify-content:center;background:#F0FFDF;color:#2E6B22;font-weight:700;font-size:12px;' }, 'AI'),
             el('div', { class: 'sv-recent-info' }, [
               el('span', { class: 'sv-recent-name' }, phone),
               el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
@@ -1907,8 +1928,8 @@ function buildSpark(data) {
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.innerHTML =
     '<defs>' +
-    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#34E7E4"/><stop offset="0.6" stop-color="#6E7BFF"/><stop offset="1" stop-color="#A855F7"/></linearGradient>' +
-    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E7BFF" stop-opacity="0.32"/><stop offset="1" stop-color="#6E7BFF" stop-opacity="0"/></linearGradient>' +
+    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A8DF8E"/><stop offset="0.6" stop-color="#6DBF5A"/><stop offset="1" stop-color="#FFAAB8"/></linearGradient>' +
+    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6DBF5A" stop-opacity="0.25"/><stop offset="1" stop-color="#6DBF5A" stop-opacity="0"/></linearGradient>' +
     '</defs>';
   if (!data.length) {
     const txt = document.createElementNS(ns, 'text');
@@ -1992,7 +2013,7 @@ async function viewAgents(root) {
     style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;'
   }, [
     el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0095FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
+      el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6DBF5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
       el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, 'Dograh Telephony Orchestrator:'),
       el('span', { class: 'muted', style: 'font-size:0.84rem;' }, 'Workflow #13027 (Seevora AI Voice Receptionist • DID +918071582519)')
     ]),
@@ -2221,7 +2242,7 @@ function agentCard(a) {
   ]);
 
   // Human Call Recording Training Studio
-  const trainingStudio = el('details', { class: 'agent-training-studio', style: 'margin-top:12px;border:1px dashed rgba(0,149,255,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(0,149,255,0.02)' }, [
+  const trainingStudio = el('details', { class: 'agent-training-studio', style: 'margin-top:12px;border:1px dashed rgba(109, 191, 90,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(109, 191, 90,0.02)' }, [
     el('summary', { style: 'cursor:pointer;font-size:.78rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;' }, [
       el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
       el('span', {}, 'Train on Call Recording (.mp3 / .wav)')
@@ -2771,7 +2792,7 @@ async function viewOnboarding(root) {
     const nextBtn = el('button', {
       type: 'button',
       class: 'btn btn-primary',
-      style: isLast ? 'padding:12px 28px;font-weight:700;box-shadow:0 6px 20px rgba(0,149,255,0.35)' : '',
+      style: isLast ? 'padding:12px 28px;font-weight:700;box-shadow:0 6px 20px rgba(109, 191, 90,0.35)' : '',
       onclick: () => goNext()
     }, isLast ? 'Save & Generate Voice Agent' : 'Next Step →');
 
@@ -2893,8 +2914,8 @@ async function viewOnboarding(root) {
 
     // Header Celebration Banner
     const businessLabel = answers.businessName ? ` for ${answers.businessName}` : '';
-    const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(0,149,255,0.4);background:radial-gradient(ellipse at top, rgba(0,149,255,0.06), #FFFFFF)' }, [
-      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#EFF6FF;color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
+    const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(109, 191, 90,0.4);background:radial-gradient(ellipse at top, rgba(109, 191, 90,0.06), #FFFFFF)' }, [
+      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#F0FFDF;color:#3D7A30;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
       el('h2', { class: 't-h2', style: 'color:var(--ink);margin-bottom:6px' }, `Your Voice Agent is Ready!`),
       el('p', { class: 'soft', style: 'max-width:540px;margin:0 auto;line-height:1.5' }, `Designed specifically${businessLabel}. Script variants generated, customer objections understood, and voice persona calibrated.`)
     ]);
@@ -3032,7 +3053,7 @@ async function viewOnboarding(root) {
     const saveDeployBtn = el('button', {
       type: 'button',
       class: 'btn btn-primary',
-      style: 'padding:12px 26px;font-weight:700;box-shadow:0 6px 20px rgba(0,149,255,0.35)',
+      style: 'padding:12px 26px;font-weight:700;box-shadow:0 6px 20px rgba(109, 191, 90,0.35)',
       onclick: async () => {
         saveDeployBtn.disabled = true;
         saveDeployBtn.textContent = 'Saving...';
@@ -3286,7 +3307,7 @@ function drawWaveform(samples, canvas) {
   const bars = Math.max(40, Math.min(180, Math.floor(w / 4)));
   const block = Math.floor(samples.length / bars) || 1;
   const grad = ctx.createLinearGradient(0, 0, w, 0);
-  grad.addColorStop(0, '#34E7E4'); grad.addColorStop(0.6, '#6E7BFF'); grad.addColorStop(1, '#A855F7');
+  grad.addColorStop(0, '#A8DF8E'); grad.addColorStop(0.5, '#6DBF5A'); grad.addColorStop(1, '#FFAAB8');
   ctx.fillStyle = grad;
   const bw = w / bars;
   for (let b = 0; b < bars; b++) {
@@ -4689,7 +4710,7 @@ function renderDrawer(rec, onUpdate) {
     const intelCard = el('div', { class: 'rec-intel-hero' }, [
       el('div', { class: 'rec-intel-hero-top' }, [
         el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
-          el('div', { style: 'width:26px;height:26px;border-radius:6px;background:rgba(0,149,255,0.12);color:var(--primary);display:flex;align-items:center;justify-content:center;' }, [
+          el('div', { style: 'width:26px;height:26px;border-radius:6px;background:rgba(109, 191, 90,0.12);color:var(--primary);display:flex;align-items:center;justify-content:center;' }, [
             uiIcon('sparkle', 14)
           ]),
           el('span', { style: 'font-size:0.78rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);' }, 'AI Call Intelligence & Outcome')
@@ -5089,7 +5110,7 @@ async function viewInbound(root) {
   }, [
     el('div', { class: 'flex items-center gap-3' }, [
       el('div', {
-        style: 'width:34px;height:34px;border-radius:8px;background:rgba(0,149,255,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        style: 'width:34px;height:34px;border-radius:8px;background:rgba(109, 191, 90,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
         html: uiIcon('phone', 16)
       }),
       el('div', {}, [
@@ -5479,7 +5500,7 @@ async function viewCampaigns(root) {
       toast(detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.'), 'err');
     } finally { quickDialBtn.disabled = false; quickDialBtn.textContent = 'Dial Now'; }
   });
-  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(0,149,255,0.3);' }, [
+  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(109, 191, 90,0.3);' }, [
     el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:10px;' }, [
       el('h3', { class: 't-h3', style: 'display:flex;align-items:center;gap:8px;' }, [el('span', { html: uiIcon('phone', 18) }), 'Instant Outbound Dialer']),
       el('span', { class: 'pill' }, [el('span', { class: 'dot' }), 'Line: ' + activeDid])
@@ -6958,7 +6979,7 @@ async function viewSettings(root) {
     // 2. 3 Document Summary Cards
     const docGrid = el('div', { class: 'kyc-doc-grid' }, [
       el('div', { class: 'kyc-doc-card' }, [
-        el('div', { class: 'kyc-doc-icon', style: 'background:rgba(2,132,199,0.1);color:#0284C7;' }, [
+        el('div', { class: 'kyc-doc-icon', style: 'background:rgba(61, 122, 48,0.1);color:#3D7A30;' }, [
           el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<rect x="3" y="4" width="18" height="16" rx="3"/><line x1="7" y1="8" x2="12" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><circle cx="15.5" cy="8.5" r="1.5"/>' })
         ]),
         el('div', { class: 'kyc-doc-info' }, [
@@ -7288,7 +7309,7 @@ async function viewSettings(root) {
           value: kycData.directorPhone || ''
         });
 
-        const otpWrap = el('div', { style: 'display:none;margin-top:12px;padding:14px;background:rgba(0,149,255,0.04);border:1px dashed #0095FF;border-radius:12px;' });
+        const otpWrap = el('div', { style: 'display:none;margin-top:12px;padding:14px;background:rgba(109, 191, 90,0.04);border:1px dashed #6DBF5A;border-radius:12px;' });
         const otpIn = el('input', {
           class: 'input',
           placeholder: '6-digit OTP (e.g. 849201)',
@@ -7296,7 +7317,7 @@ async function viewSettings(root) {
           style: 'font-family:var(--mono);max-width:200px;font-size:1.05rem;letter-spacing:3px;text-align:center;'
         });
         const btnVerifyOtp = el('button', { class: 'btn btn-primary btn-sm' }, 'Verify OTP');
-        const otpStatusMsg = el('div', { style: 'font-size:0.82rem;color:#0284C7;margin-top:6px;font-weight:600;' }, 'Simulated DigiLocker OTP: 849201');
+        const otpStatusMsg = el('div', { style: 'font-size:0.82rem;color:#3D7A30;margin-top:6px;font-weight:600;' }, 'Simulated DigiLocker OTP: 849201');
 
         otpWrap.appendChild(el('div', { style: 'font-size:0.84rem;font-weight:700;color:#1E293B;margin-bottom:8px;' }, 'Enter DigiLocker OTP sent to registered mobile'));
         otpWrap.appendChild(el('div', { class: 'flex gap-2 items-center' }, [otpIn, btnVerifyOtp]));
@@ -7305,43 +7326,65 @@ async function viewSettings(root) {
         const btnGetOtp = el('button', {
           class: 'btn btn-ghost btn-sm',
           type: 'button',
-          style: 'color:#0095FF;border-color:rgba(0,149,255,0.4);'
-        }, 'Send DigiLocker OTP');
+          style: 'color:#6DBF5A;border-color:rgba(109, 191, 90,0.4);'
+        }, 'Send Verification OTP');
 
         btnGetOtp.onclick = async () => {
           const rawA = aadhaarIn.value.replace(/\D/g, '');
-          if (rawA.length !== 12) {
+          const pVal = phoneIn.value.trim();
+          if (rawA && rawA.length !== 12) {
             toast('Please enter a valid 12-digit Aadhaar number.', 'err');
             return;
           }
+          if (!rawA && !pVal) {
+            toast('Please enter a mobile phone number or Aadhaar number.', 'err');
+            return;
+          }
           btnGetOtp.disabled = true;
+          btnGetOtp.textContent = 'Sending OTP...';
           try {
-            const res = await api('/api/compliance/digilocker-otp', { method: 'POST', body: { aadhaar: rawA } });
+            const res = await api('/api/compliance/digilocker-otp', {
+              method: 'POST',
+              body: { aadhaar: rawA, phone: pVal }
+            });
             otpWrap.style.display = 'block';
             if (res && res.simulatedOtp) {
               otpIn.value = res.simulatedOtp;
+              otpStatusMsg.textContent = res.message || ('Simulated OTP: ' + res.simulatedOtp);
+            } else if (res && res.message) {
+              otpStatusMsg.textContent = res.message;
             }
-            toast('DigiLocker OTP sent successfully.', 'ok');
+            toast(res.message || 'OTP sent successfully.', 'ok');
           } catch (e) {
             toast(e.message || 'OTP dispatch failed.', 'err');
           } finally {
             btnGetOtp.disabled = false;
+            btnGetOtp.textContent = 'Send Verification OTP';
           }
         };
 
         btnVerifyOtp.onclick = async () => {
           const rawA = aadhaarIn.value.replace(/\D/g, '');
+          const pVal = phoneIn.value.trim();
           const oVal = otpIn.value.trim();
-          if (!oVal) { toast('Please enter the OTP.', 'err'); return; }
+          if (!oVal) { toast('Please enter the 6-digit OTP.', 'err'); return; }
+          btnVerifyOtp.disabled = true;
+          btnVerifyOtp.textContent = 'Verifying...';
           try {
-            const res = await api('/api/compliance/digilocker-otp', { method: 'POST', body: { aadhaar: rawA, otp: oVal } });
+            const res = await api('/api/compliance/digilocker-otp', {
+              method: 'POST',
+              body: { aadhaar: rawA, phone: pVal, otp: oVal }
+            });
             if (res && res.verified) {
               kycData.aadhaarVerified = true;
-              otpWrap.innerHTML = '<div style="color:#10B981;font-weight:700;font-size:0.9rem;display:flex;align-items:center;gap:6px;">✓ UIDAI Aadhaar Verified via DigiLocker</div>';
-              toast('Aadhaar verified via DigiLocker!', 'ok');
+              otpWrap.innerHTML = '<div style="color:#10B981;font-weight:700;font-size:0.9rem;display:flex;align-items:center;gap:6px;">Mobile & Identity Verified</div>';
+              toast('Identity verified successfully!', 'ok');
             }
           } catch (e) {
             toast(e.message || 'Verification failed.', 'err');
+          } finally {
+            btnVerifyOtp.disabled = false;
+            btnVerifyOtp.textContent = 'Verify OTP';
           }
         };
 
@@ -7523,7 +7566,7 @@ async function viewSettings(root) {
 
     // Workspace Identity Card
     const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
-    const colorVal = (t.branding && t.branding.color) || '#0095FF';
+    const colorVal = (t.branding && t.branding.color) || '#6DBF5A';
     const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal });
     const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:130px;font-family:var(--mono)' });
     colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
@@ -8183,10 +8226,10 @@ async function viewAssistant(wrap) {
   const integrationsList = el('div', { class: 'chat-integrations-list' }, [
     createIntegrationItem('calendar', 'Calendar & Planning', '#4285F4', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="#4285F4" stroke-width="2"/></svg>', 'Sync', openCalendarModal),
     createIntegrationItem('file', 'File Reader', '#107C41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#107C41" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#107C41" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="#107C41" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="#107C41" stroke-width="2"/></svg>', 'Active', openFileReaderModal),
-    createIntegrationItem('media', 'Media Files', '#8B5CF6', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#8B5CF6" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#8B5CF6"/></svg>', '31', openMediaFilesModal),
+    createIntegrationItem('media', 'Media Files', '#FFAAB8', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#FFAAB8" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#FFAAB8"/></svg>', '31', openMediaFilesModal),
     createIntegrationItem('gmail', 'Gmail Dispatch', '#EA4335', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#EA4335" stroke-width="2"/><polyline points="22,6 12,13 2,6" stroke="#EA4335" stroke-width="2"/></svg>', 'Active', openGmailModal),
     createIntegrationItem('whatsapp', 'WhatsApp Voice Alerts', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal),
-    createIntegrationItem('crm', 'CRM Pipeline Sync', '#0284C7', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284C7" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
+    createIntegrationItem('crm', 'CRM Pipeline Sync', '#3D7A30', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3D7A30" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
   ]);
   rightPanel.appendChild(integrationsList);
 
@@ -8376,8 +8419,8 @@ async function viewAssistant(wrap) {
       el('div', { class: 'chat-bot-body' }, [
         el('div', { class: 'assistant-typing' }, [
           el('span', { style: 'background:#181920;' }),
-          el('span', { style: 'background:#3b82f6;' }),
-          el('span', { style: 'background:#8b5cf6;' })
+          el('span', { style: 'background:#6DBF5A;' }),
+          el('span', { style: 'background:#FFAAB8;' })
         ])
       ])
     ]);
@@ -8444,14 +8487,14 @@ async function viewAssistant(wrap) {
     return el('div', { class: 'chat-cards-fan' }, [
       el('div', { class: 'fan-card c1', onclick: () => doSendPrompt('Create an AI voice receptionist for a Dental Clinic') }, [
         el('div', {
-          style: 'width:100%;height:100%;background:linear-gradient(135deg,#0284c7,#38bdf8);display:flex;align-items:center;justify-content:center;color:#fff;',
+          style: 'width:100%;height:100%;background:linear-gradient(135deg,#3D7A30,#A8DF8E);display:flex;align-items:center;justify-content:center;color:#fff;',
           html: '<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#ffffff" stroke-width="1.8"><path d="M12 2C9 2 7 4 7 7c0 4 2 9 5 13 3-4 5-9 5-13 0-3-2-5-5-5z"/></svg>'
         }),
         el('div', { class: 'fan-card-overlay' }, 'Dental Clinic')
       ]),
       el('div', { class: 'fan-card c2', onclick: () => doSendPrompt('Build an autonomous AI agent for Real Estate inquiries') }, [
         el('div', {
-          style: 'width:100%;height:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;',
+          style: 'width:100%;height:100%;background:linear-gradient(135deg,#FFAAB8,#FF7A94);display:flex;align-items:center;justify-content:center;color:#fff;',
           html: '<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#ffffff" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="11" x2="9" y2="11.01"/><line x1="15" y1="11" x2="15" y2="11.01"/><path d="M10 22v-4h4v4"/></svg>'
         }),
         el('div', { class: 'fan-card-overlay' }, 'Real Estate AI')
@@ -8483,13 +8526,13 @@ async function viewAssistant(wrap) {
         </defs>
         <rect x="22" y="16" width="56" height="42" rx="16" fill="url(#botHead)" stroke="#cbd5e1" stroke-width="2"/>
         <rect x="30" y="24" width="40" height="26" rx="8" fill="url(#botScreen)"/>
-        <path d="M37 36 C37 32, 43 32, 43 36" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <path d="M57 36 C57 32, 63 32, 63 36" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <path d="M47 43 C49 46, 51 46, 53 43" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M37 36 C37 32, 43 32, 43 36" stroke="#A8DF8E" stroke-width="3" stroke-linecap="round"/>
+        <path d="M57 36 C57 32, 63 32, 63 36" stroke="#A8DF8E" stroke-width="3" stroke-linecap="round"/>
+        <path d="M47 43 C49 46, 51 46, 53 43" stroke="#A8DF8E" stroke-width="2.5" stroke-linecap="round"/>
         <circle cx="18" cy="37" r="4" fill="#94a3b8"/>
         <circle cx="82" cy="37" r="4" fill="#94a3b8"/>
         <ellipse cx="50" cy="74" rx="24" ry="18" fill="url(#botHead)" stroke="#cbd5e1" stroke-width="2"/>
-        <rect x="42" y="68" width="16" height="4" rx="2" fill="#38bdf8"/>
+        <rect x="42" y="68" width="16" height="4" rx="2" fill="#A8DF8E"/>
         <path d="M26 70 C18 73, 16 82, 22 84" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
         <path d="M74 70 C82 73, 84 82, 78 84" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
       </svg>
@@ -8723,10 +8766,10 @@ async function viewAssistant(wrap) {
     };
     if (integrations.calendar) setStatus('calendar', integrations.calendar.status === 'connected' ? 'Sync' : 'Setup', '#4285F4');
     if (integrations.fileReader) setStatus('file', 'Active', '#107C41');
-    if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#8B5CF6');
+    if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#FFAAB8');
     if (integrations.gmail) setStatus('gmail', integrations.gmail.status === 'active' ? 'Active' : 'Setup', '#EA4335');
     if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#25D366');
-    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#0284C7');
+    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#3D7A30');
   }
 
   // =========================================================================
@@ -8799,7 +8842,7 @@ async function viewAssistant(wrap) {
 
     const metaToggleBtn = el('button', {
       type: 'button',
-      style: 'background:none;border:none;color:#0284c7;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
+      style: 'background:none;border:none;color:#3D7A30;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
       onclick: () => {
         const sec = $('#wa-meta-creds');
         if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
@@ -8829,7 +8872,7 @@ async function viewAssistant(wrap) {
         el('span', { style: 'font-size:0.74rem;color:#64748b;' }, 'Only registered WhatsApp Business Accounts (WABA) are accepted.'),
         el('button', {
           type: 'button',
-          style: 'background:none;border:none;color:#0284c7;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
+          style: 'background:none;border:none;color:#3D7A30;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
           onclick: () => {
             const inp = $('#wa-phone');
             if (inp) { inp.value = '+91 80715 82519'; inp.style.borderColor = ''; }
@@ -8882,7 +8925,7 @@ async function viewAssistant(wrap) {
           const metaConfig = (metaToken && phoneId) ? { accessToken: metaToken, phoneNumberId: phoneId } : {};
 
           // Check if number is an official WhatsApp Business Account
-          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#0284c7;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #0284c7;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
+          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#3D7A30;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #3D7A30;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
 
           let checkRes = null;
           try {
@@ -8896,7 +8939,7 @@ async function viewAssistant(wrap) {
 
           if (!checkRes || !checkRes.isBusiness) {
             const errMsg = (checkRes && checkRes.error) || 'This phone number is registered as a personal mobile WhatsApp account, not an authorized WhatsApp Business Account (WABA). Meta Cloud API and Seevora Voice AI strictly require an official WhatsApp Business account.';
-            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#2563eb;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
+            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#3D7A30;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
             if (phoneInput) phoneInput.style.borderColor = '#ef4444';
             const link = $('#wa-fill-biz-link');
             if (link) {
@@ -9354,7 +9397,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCalendarModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'Google Calendar'),
-          el('span', { style: 'font-size:0.75rem;color:#2563eb;font-weight:700;' }, 'Synced'),
+          el('span', { style: 'font-size:0.75rem;color:#3D7A30;font-weight:700;' }, 'Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-books confirmed caller appointments.')
         ]),
         el('div', {
@@ -9378,7 +9421,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCrmModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'CRM Pipeline Sync'),
-          el('span', { style: 'font-size:0.75rem;color:#0284c7;font-weight:700;' }, 'Active & Synced'),
+          el('span', { style: 'font-size:0.75rem;color:#3D7A30;font-weight:700;' }, 'Active & Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-pushes caller contacts, recordings & deals to CRM.')
         ])
       ])
