@@ -3640,18 +3640,28 @@ async function apiSupportReply(req, res, ctx) {
 }
 
 function apiByonList(req, res, ctx) {
-  const connections = (core.db().byonConnections || [])
-    .filter((x) => x.tenantId === ctx.tenant.id)
-    .map((x) => ({
-      id: x.id,
-      tenantId: x.tenantId,
-      provider: x.provider,
-      address: x.address,
-      authId: x.authId,
-      label: x.label,
-      status: x.status || 'active',
-      createdAt: x.createdAt
-    }));
+  const isAdm = ctx.user && ['super_admin', 'admin'].includes(ctx.user.role);
+  const allConnections = core.db().byonConnections || [];
+  const tenants = core.db().tenants || [];
+  const tenantMap = new Map(tenants.map((t) => [t.id, t.name || t.id]));
+
+  let filtered = allConnections;
+  if (!isAdm) {
+    filtered = allConnections.filter((x) => x.tenantId === ctx.tenant.id);
+  }
+
+  const connections = filtered.map((x) => ({
+    id: x.id,
+    tenantId: x.tenantId || null,
+    tenantName: x.tenantId ? (tenantMap.get(x.tenantId) || x.tenantId) : 'Unassigned (Shared Pool)',
+    provider: x.provider,
+    address: x.address,
+    authId: x.authId,
+    label: x.label,
+    status: x.status || 'active',
+    assignedBy: x.assignedBy || (x.createdBy === (ctx.user && ctx.user.id) ? 'client' : 'admin'),
+    createdAt: x.createdAt
+  }));
   core.sendJson(res, 200, { connections });
 }
 
@@ -3659,6 +3669,7 @@ function apiPrivacyGet(req, res, ctx) { core.sendJson(res, 200, { mode: ctx.tena
 
 async function apiByonSave(req, res, ctx) {
   const b = ctx.body || {};
+  const isAdm = ctx.user && ['super_admin', 'admin'].includes(ctx.user.role);
   const provider = String(b.provider || 'vobiz').toLowerCase();
   if (!['vobiz', 'twilio', 'telnyx', 'plivo', 'vonage', 'sip'].includes(provider)) {
     return core.sendJson(res, 422, { error: 'Unsupported telephony provider', code: 'bad_provider' });
@@ -3680,40 +3691,106 @@ async function apiByonSave(req, res, ctx) {
   const authToken = String(b.authToken || b.auth_token || '').trim();
   const label = String(b.label || '').trim().slice(0, 64) || (provider.toUpperCase() + ' · ' + address);
 
+  // If admin provided a specific client tenantId, use that; otherwise client's own tenant
+  let targetTenantId = ctx.tenant.id;
+  if (isAdm) {
+    if (b.tenantId === 'platform' || b.tenantId === 'unassigned' || b.tenantId === '') {
+      targetTenantId = null;
+    } else if (b.tenantId) {
+      targetTenantId = String(b.tenantId).trim();
+    }
+  }
+
   const connection = {
     id: core.genId('byon_'),
-    tenantId: ctx.tenant.id,
+    tenantId: targetTenantId,
     provider,
     address,
     authId: authId ? authId.slice(0, 80) : undefined,
     authToken: authToken ? authToken.slice(0, 160) : undefined,
     label,
-    status: 'active', // Active immediately so client can assign to agent without admin
+    status: 'active', // Active immediately so client can assign to agent without admin delay
+    assignedBy: isAdm ? 'admin' : 'client',
     createdBy: ctx.user.id,
     createdAt: new Date().toISOString()
   };
 
   await core.mutate((d) => {
     if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
-    const idx = d.byonConnections.findIndex((x) => x.tenantId === ctx.tenant.id && x.address === address);
+    const idx = d.byonConnections.findIndex((x) => x.address === address);
     if (idx >= 0) {
-      d.byonConnections[idx] = connection;
+      d.byonConnections[idx] = { ...d.byonConnections[idx], ...connection };
     } else {
       d.byonConnections.push(connection);
     }
-    // Update tenant default telephony DID if needed
-    const t = d.tenants.find((x) => x.id === ctx.tenant.id);
-    if (t) {
-      t.telephony = t.telephony || {};
-      t.telephony.did = address;
-      t.telephony.provider = provider;
+    // Update tenant default telephony DID if assigned to a tenant
+    if (targetTenantId) {
+      const t = d.tenants.find((x) => x.id === targetTenantId);
+      if (t) {
+        t.telephony = t.telephony || {};
+        t.telephony.did = address;
+        t.telephony.provider = provider;
+      }
     }
-    addAudit(d, ctx, 'telephony.byon.saved', 'byon_connection', connection.id, { provider, address, label });
+    addAudit(d, ctx, 'telephony.byon.saved', 'byon_connection', connection.id, { provider, address, label, targetTenantId });
   });
+
+  const tenantObj = targetTenantId ? (core.db().tenants || []).find((t) => t.id === targetTenantId) : null;
+  const assignMsg = targetTenantId
+    ? ` and assigned to ${tenantObj ? tenantObj.name : targetTenantId}`
+    : ' in platform pool';
 
   core.sendJson(res, 201, {
     connection: { ...connection, authToken: connection.authToken ? '••••••••' : undefined },
-    message: `Phone number ${address} connected and ready to assign to AI Agents.`
+    message: `Phone number ${address} connected${assignMsg}. Ready to assign to AI Agents.`
+  });
+}
+
+// POST /api/byon/assign - Admin assigns / reassigns an existing phone number to a specific client
+async function apiByonAssign(req, res, ctx) {
+  const b = ctx.body || {};
+  const id = String(b.id || '').trim();
+  if (!id) return core.sendJson(res, 422, { error: 'Connection ID is required', code: 'missing_id' });
+  let tenantId = b.tenantId ? String(b.tenantId).trim() : null;
+  if (tenantId === 'platform' || tenantId === 'unassigned' || !tenantId) tenantId = null;
+
+  let updated = null;
+  await core.mutate((d) => {
+    if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
+    const conn = d.byonConnections.find((x) => x.id === id);
+    if (!conn) return;
+    const oldTenantId = conn.tenantId;
+    conn.tenantId = tenantId;
+    conn.assignedBy = 'admin';
+    conn.assignedAt = new Date().toISOString();
+    updated = conn;
+
+    // If newly assigned to a tenant, set as tenant's default telephony DID
+    if (tenantId) {
+      const t = d.tenants.find((x) => x.id === tenantId);
+      if (t) {
+        t.telephony = t.telephony || {};
+        t.telephony.did = conn.address;
+        t.telephony.provider = conn.provider || 'vobiz';
+      }
+    }
+    // If old tenant was different, re-point old tenant's default DID
+    if (oldTenantId && oldTenantId !== tenantId) {
+      const oldT = d.tenants.find((x) => x.id === oldTenantId);
+      if (oldT && oldT.telephony && oldT.telephony.did === conn.address) {
+        const next = d.byonConnections.find((x) => x.tenantId === oldTenantId && x.id !== id);
+        oldT.telephony.did = next ? next.address : undefined;
+      }
+    }
+    addAudit(d, ctx, 'telephony.byon.assigned', 'byon_connection', id, { address: conn.address, tenantId, oldTenantId });
+  });
+
+  if (!updated) return core.sendJson(res, 404, { error: 'Phone number connection not found', code: 'not_found' });
+  const targetTenant = tenantId ? (core.db().tenants || []).find((t) => t.id === tenantId) : null;
+  core.sendJson(res, 200, {
+    ok: true,
+    connection: updated,
+    message: tenantId ? `Assigned ${updated.address} to ${targetTenant ? targetTenant.name : tenantId}` : `Unassigned ${updated.address}`
   });
 }
 
@@ -3722,17 +3799,20 @@ async function apiByonDelete(req, res, ctx) {
   const urlObj = new URL(req.url, 'http://localhost');
   const id = b.id || urlObj.searchParams.get('id');
   if (!id) return core.sendJson(res, 422, { error: 'Connection ID is required', code: 'missing_id' });
+  const isAdm = ctx.user && ['super_admin', 'admin'].includes(ctx.user.role);
 
   let removed = null;
   await core.mutate((d) => {
     if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
-    const idx = d.byonConnections.findIndex((x) => x.id === id && x.tenantId === ctx.tenant.id);
+    const idx = d.byonConnections.findIndex((x) => x.id === id && (isAdm || x.tenantId === ctx.tenant.id));
     if (idx >= 0) {
       removed = d.byonConnections.splice(idx, 1)[0];
-      const t = d.tenants.find((x) => x.id === ctx.tenant.id);
-      if (t && t.telephony && t.telephony.did === removed.address) {
-        const next = d.byonConnections.find((x) => x.tenantId === ctx.tenant.id);
-        t.telephony.did = next ? next.address : undefined;
+      if (removed.tenantId) {
+        const t = d.tenants.find((x) => x.id === removed.tenantId);
+        if (t && t.telephony && t.telephony.did === removed.address) {
+          const next = d.byonConnections.find((x) => x.tenantId === removed.tenantId);
+          t.telephony.did = next ? next.address : undefined;
+        }
       }
       addAudit(d, ctx, 'telephony.byon.deleted', 'byon_connection', id, { address: removed.address });
     }
@@ -6790,6 +6870,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
       if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
+      if (route === '/api/byon/assign') return core.requireRole(req, res, 'admin', apiByonAssign, body);
       if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);

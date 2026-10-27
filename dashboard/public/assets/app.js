@@ -7873,7 +7873,7 @@ async function viewSettings(root) {
   // Tab state: default to 'general', or respect URL param
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
   let currentTab = urlParams.get('tab') || 'general';
-  if (!['general', 'integrations', 'crm-webhooks', 'knowledge-base', 'team'].includes(currentTab)) {
+  if (!['general', 'vobiz', 'integrations', 'crm-webhooks', 'knowledge-base', 'team'].includes(currentTab)) {
     currentTab = 'general';
   }
 
@@ -7886,6 +7886,7 @@ async function viewSettings(root) {
 
   const tabs = [
     { id: 'general', label: 'General', icon: 'gear' },
+    { id: 'vobiz', label: 'VoBiz Numbers', icon: 'phone' },
     { id: 'integrations', label: 'Inbound Auto-Call', icon: 'phone' },
     { id: 'crm-webhooks', label: 'CRM Webhooks', icon: 'send' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' },
@@ -7917,6 +7918,8 @@ async function viewSettings(root) {
 
     if (tabId === 'general') {
       renderGeneralTab(panel);
+    } else if (tabId === 'vobiz') {
+      renderVoBizTab(panel);
     } else if (tabId === 'integrations') {
       renderIntegrationsTab(panel);
     } else if (tabId === 'crm-webhooks') {
@@ -8059,126 +8062,181 @@ async function viewSettings(root) {
     ]);
     panel.appendChild(privacyCard);
 
-    // --- Dedicated Buy / Connect VoBiz Phone Number Card (No Admin Required) ---
-    const byonListHost = el('div', { class: 'byon-list-host' });
-    const byonSection = el('section', { class: 'card card-pad', style: 'margin-bottom:16px;' }, [
-      el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px;flex-wrap:wrap;gap:12px;' }, [
-        el('div', {}, [
-          el('span', { class: 'section-kicker' }, 'Telephony & Phone Lines'),
-          el('h3', { class: 't-h3', style: 'margin:2px 0 4px 0;' }, 'Buy or Connect Phone Number (VoBiz / BYON)'),
-          el('p', { class: 'muted', style: 'font-size:0.86rem;margin:0;max-width:640px;line-height:1.5;' },
-            'Attach your own phone number directly to your AI Voice Agents. You can purchase Indian (+91) numbers on VoBiz (console.vobiz.ai) and connect them below. Numbers activate immediately without admin approval.'
+    Promise.all([
+      api('/api/privacy').then((x) => { privacySelect.value = x.mode || 'standard'; })
+    ]).catch(() => { });
+  }
+
+  // --- VOBIZ PHONE NUMBERS TAB (DEDICATED) ---
+  async function renderVoBizTab(panel) {
+    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+
+    // Header Banner
+    const headerBanner = el('div', {
+      class: 'vobiz-header-banner',
+      style: 'background:linear-gradient(135deg, rgba(66,194,255,0.08) 0%, rgba(37,99,235,0.04) 100%);border:1px solid rgba(66,194,255,0.2);border-radius:var(--r-md);padding:20px;margin-bottom:20px;'
+    }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;' }, [
+        el('div', { style: 'max-width:680px;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;margin-bottom:6px;' }, [
+            el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.72rem;letter-spacing:0.04em;text-transform:uppercase;' }, 'Telephony Engine'),
+            el('span', { class: 'pill', style: 'background:rgba(16,185,129,0.12);color:#10B981;font-size:0.72rem;font-weight:700;' }, 'VoBiz Carrier Active ✓')
+          ]),
+          el('h3', { class: 't-h3', style: 'margin:0 0 6px 0;font-size:1.25rem;' }, isPlatformAdmin ? 'VoBiz Phone Numbers (Admin Console)' : 'VoBiz Phone Numbers'),
+          el('p', { class: 'muted', style: 'margin:0;font-size:0.86rem;line-height:1.5;' },
+            isPlatformAdmin
+              ? 'Connect, manage, and assign Indian (+91) virtual numbers & SIP trunks across all client workspaces. You can buy numbers on VoBiz and allocate them to specific clients.'
+              : 'Connect your own Indian (+91) phone number or view numbers assigned to your business by your administrator. Numbers activate immediately and link to your AI Voice Agents.'
           )
         ]),
         el('a', {
           href: 'https://console.vobiz.ai',
           target: '_blank',
           rel: 'noopener noreferrer',
-          class: 'btn btn-primary btn-sm',
-          style: 'display:inline-flex;align-items:center;gap:6px;font-weight:600;padding:8px 16px;'
+          class: 'btn btn-primary',
+          style: 'display:inline-flex;align-items:center;gap:8px;font-weight:600;padding:10px 18px;'
         }, [
-          el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' }),
+          el('span', { html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' }),
           el('span', {}, 'Buy Indian Number on VoBiz ↗')
         ])
-      ]),
-
-      // 3-Step Setup Guide
-      el('div', {
-        style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;margin:14px 0 18px 0;'
-      }, [
-        el('div', { style: 'padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:var(--r-sm);font-size:0.82rem;' }, [
-          el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;' }, '1. Buy on VoBiz'),
-          el('div', { class: 'muted', style: 'line-height:1.4;' }, 'Log in to console.vobiz.ai and buy your 10-digit Indian (+91) phone number.')
-        ]),
-        el('div', { style: 'padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:var(--r-sm);font-size:0.82rem;' }, [
-          el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;' }, '2. Copy Credentials'),
-          el('div', { class: 'muted', style: 'line-height:1.4;' }, 'Copy your Auth ID and Auth Token from your VoBiz console and paste below.')
-        ]),
-        el('div', { style: 'padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:var(--r-sm);font-size:0.82rem;' }, [
-          el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;' }, '3. Assign to AI Agent'),
-          el('div', { class: 'muted', style: 'line-height:1.4;' }, 'Once connected, go to "My AI Agent" and pick this number in "Assigned number".')
-        ])
-      ]),
-
-      // Form
-      (function () {
-        const provider = el('select', { class: 'select' }, [
-          el('option', { value: 'vobiz' }, 'VoBiz (Recommended • Indian +91 Numbers)'),
-          el('option', { value: 'twilio' }, 'Twilio'),
-          el('option', { value: 'telnyx' }, 'Telnyx'),
-          el('option', { value: 'plivo' }, 'Plivo'),
-          el('option', { value: 'sip' }, 'Custom SIP Trunk')
-        ]);
-        const address = el('input', { class: 'input', placeholder: 'e.g. +91 80 7158 2519 or 9876543210' });
-        const authId = el('input', { class: 'input', placeholder: 'e.g. MA_U86WFYDC (from console.vobiz.ai)' });
-        const authToken = el('input', { class: 'input', type: 'password', placeholder: '•••••••• (Auth Token from console.vobiz.ai)' });
-        const label = el('input', { class: 'input', placeholder: 'e.g. Main Clinic Line, Reception Desk' });
-
-        const byonSave = el('button', {
-          class: 'btn btn-primary',
-          style: 'display:inline-flex;align-items:center;gap:6px;font-weight:600;'
-        }, [
-          el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
-          el('span', {}, 'Connect Phone Number')
-        ]);
-
-        byonSave.onclick = async () => {
-          const addr = address.value.trim();
-          if (!addr) { toast('Please enter your phone number.', 'err'); address.focus(); return; }
-          byonSave.disabled = true;
-          byonSave.innerHTML = '<span class="boot-spin"></span><span>Connecting number...</span>';
-          try {
-            const res = await api('/api/byon', {
-              method: 'POST',
-              body: {
-                provider: provider.value,
-                address: addr,
-                authId: authId.value.trim(),
-                authToken: authToken.value.trim(),
-                label: label.value.trim()
-              }
-            });
-            toast(res.message || 'Phone number connected successfully!', 'ok');
-            address.value = '';
-            authId.value = '';
-            authToken.value = '';
-            label.value = '';
-            await ensureTelephony(true);
-            refillDidOptions();
-            await loadByon(byonListHost);
-          } catch (e) {
-            toast(e.message || 'Could not connect number.', 'err');
-          } finally {
-            byonSave.disabled = false;
-            byonSave.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Connect Phone Number</span>';
-          }
-        };
-
-        const formFields = el('div', { class: 'grid grid-12', style: 'gap:12px;margin-bottom:14px;' }, [
-          (function () { const f = field('Carrier Provider', provider); f.style.gridColumn = 'span 4'; return f; })(),
-          (function () { const f = field('Phone Number (E.164 or 10-digit)', address); f.style.gridColumn = 'span 4'; return f; })(),
-          (function () { const f = field('Friendly Label (e.g. Clinic Line)', label); f.style.gridColumn = 'span 4'; return f; })(),
-          (function () { const f = field('VoBiz Auth ID (Optional)', authId); f.style.gridColumn = 'span 6'; return f; })(),
-          (function () { const f = field('VoBiz Auth Token (Optional)', authToken); f.style.gridColumn = 'span 6'; return f; })()
-        ]);
-
-        return el('div', {}, [
-          formFields,
-          el('div', { style: 'margin-bottom:20px;' }, [byonSave]),
-          el('div', { style: 'border-top:1px solid var(--line);padding-top:16px;' }, [
-            el('h4', { style: 'font-size:0.92rem;font-weight:700;color:var(--ink);margin:0 0 4px 0;' }, 'Your Connected Numbers'),
-            el('p', { class: 'muted', style: 'font-size:0.8rem;margin:0 0 10px 0;' }, 'These numbers are live and can be assigned to any of your AI voice agents.'),
-            byonListHost
-          ])
-        ]);
-      })()
+      ])
     ]);
-    panel.appendChild(byonSection);
+    panel.appendChild(headerBanner);
 
-    Promise.all([
-      api('/api/privacy').then((x) => { privacySelect.value = x.mode || 'standard'; }),
-      loadByon(byonListHost)
-    ]).catch(() => { });
+    // 3-Step Setup Guide
+    const guideSection = el('div', {
+      style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;margin-bottom:20px;'
+    }, [
+      el('div', { style: 'padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' }, [
+        el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.88rem;' }, '1. Buy on VoBiz Console'),
+        el('div', { class: 'muted', style: 'font-size:0.8rem;line-height:1.4;' }, 'Log in to console.vobiz.ai, complete KYC, and purchase your 10-digit Indian (+91) phone number.')
+      ]),
+      el('div', { style: 'padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' }, [
+        el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.88rem;' }, isPlatformAdmin ? '2. Connect & Assign Client' : '2. Connect Credentials'),
+        el('div', { class: 'muted', style: 'font-size:0.8rem;line-height:1.4;' }, isPlatformAdmin
+          ? 'Enter Auth ID & Token, then select which client workspace should receive and use this number.'
+          : 'Copy your Auth ID and Auth Token from VoBiz console and connect your number below.')
+      ]),
+      el('div', { style: 'padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' }, [
+        el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.88rem;' }, '3. Instant Agent Dropdown Sync'),
+        el('div', { class: 'muted', style: 'font-size:0.8rem;line-height:1.4;' }, 'The number activates instantly and shows up in "My AI Agent" under Assigned Number (DID).')
+      ])
+    ]);
+    panel.appendChild(guideSection);
+
+    // Form: Connect VoBiz Number
+    const providerSel = el('select', { class: 'select' }, [
+      el('option', { value: 'vobiz' }, 'VoBiz (Recommended • Indian +91 Numbers)'),
+      el('option', { value: 'twilio' }, 'Twilio'),
+      el('option', { value: 'telnyx' }, 'Telnyx'),
+      el('option', { value: 'plivo' }, 'Plivo'),
+      el('option', { value: 'sip' }, 'Custom SIP Trunk')
+    ]);
+    const addressInp = el('input', { class: 'input', placeholder: 'e.g. +91 80 7158 2519 or 9876543210' });
+    const labelInp = el('input', { class: 'input', placeholder: 'e.g. Clinic Reception Desk, Support Line' });
+    const authIdInp = el('input', { class: 'input', placeholder: 'e.g. MA_U86WFYDC (from console.vobiz.ai)' });
+    const authTokenInp = el('input', { class: 'input', type: 'password', placeholder: '•••••••• (Auth Token from console.vobiz.ai)' });
+
+    // Client Assignment Dropdown (for Admin)
+    let tenantSel = null;
+    let allTenants = [];
+    if (isPlatformAdmin) {
+      tenantSel = el('select', { class: 'select' }, [
+        el('option', { value: '' }, '-- Select Client Workspace --'),
+        el('option', { value: 'platform' }, '★ Platform Pool (Unassigned / Shared)')
+      ]);
+      try {
+        const tr = await api('/api/admin/tenants');
+        allTenants = (tr && tr.tenants) || [];
+        allTenants.forEach(t => {
+          tenantSel.appendChild(el('option', { value: t.id }, `${t.name} (${t.id})`));
+        });
+      } catch (_) { }
+    }
+
+    const byonListHost = el('div', { class: 'byon-list-host' });
+
+    const submitBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'display:inline-flex;align-items:center;gap:6px;font-weight:600;'
+    }, [
+      el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
+      el('span', {}, isPlatformAdmin ? 'Connect & Assign Number' : 'Connect Phone Number')
+    ]);
+
+    submitBtn.onclick = async () => {
+      const addr = addressInp.value.trim();
+      if (!addr) { toast('Please enter the phone number.', 'err'); addressInp.focus(); return; }
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="boot-spin"></span><span>Connecting number...</span>';
+      try {
+        const payload = {
+          provider: providerSel.value,
+          address: addr,
+          label: labelInp.value.trim(),
+          authId: authIdInp.value.trim(),
+          authToken: authTokenInp.value.trim()
+        };
+        if (isPlatformAdmin && tenantSel) {
+          payload.tenantId = tenantSel.value;
+        }
+        const res = await api('/api/byon', { method: 'POST', body: payload });
+        toast(res.message || 'Phone number connected successfully!', 'ok');
+        addressInp.value = '';
+        labelInp.value = '';
+        authIdInp.value = '';
+        authTokenInp.value = '';
+        await ensureTelephony(true);
+        refillDidOptions();
+        await loadByon(byonListHost, allTenants);
+      } catch (e) {
+        toast(e.message || 'Could not connect number.', 'err');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>' + (isPlatformAdmin ? 'Connect & Assign Number' : 'Connect Phone Number') + '</span>';
+      }
+    };
+
+    const formGridKids = [
+      (function () { const f = field('Carrier Provider', providerSel); f.style.gridColumn = 'span 4'; return f; })(),
+      (function () { const f = field('Phone Number (E.164 or 10-digit)', addressInp); f.style.gridColumn = 'span 4'; return f; })(),
+      (function () { const f = field('Friendly Label (e.g. Clinic Line)', labelInp); f.style.gridColumn = 'span 4'; return f; })()
+    ];
+    if (isPlatformAdmin && tenantSel) {
+      formGridKids.push(
+        (function () { const f = field('Assign to Client / Workspace', tenantSel); f.style.gridColumn = 'span 12'; return f; })()
+      );
+    }
+    formGridKids.push(
+      (function () { const f = field('VoBiz Auth ID (Optional)', authIdInp); f.style.gridColumn = 'span 6'; return f; })(),
+      (function () { const f = field('VoBiz Auth Token (Optional)', authTokenInp); f.style.gridColumn = 'span 6'; return f; })()
+    );
+
+    const connectCard = el('section', { class: 'card card-pad', style: 'margin-bottom:20px;' }, [
+      el('div', { style: 'margin-bottom:14px;' }, [
+        el('h3', { class: 't-h3', style: 'margin:0 0 4px 0;' }, isPlatformAdmin ? 'Add & Allocate VoBiz Number to Client' : 'Connect VoBiz Number'),
+        el('p', { class: 'muted', style: 'font-size:0.86rem;margin:0;' }, isPlatformAdmin
+          ? 'Enter the number and credentials purchased on console.vobiz.ai and assign to the target client.'
+          : 'Enter your phone number details to connect your dedicated voice line.')
+      ]),
+      el('div', { class: 'grid grid-12', style: 'gap:12px;margin-bottom:14px;' }, formGridKids),
+      el('div', { style: 'margin-top:8px;' }, [submitBtn])
+    ]);
+    panel.appendChild(connectCard);
+
+    // Connected Numbers List Card
+    const listCard = el('section', { class: 'card card-pad' }, [
+      el('div', { style: 'margin-bottom:14px;' }, [
+        el('h3', { class: 't-h3', style: 'margin:0 0 4px 0;' }, isPlatformAdmin ? 'All Platform & Client Phone Numbers' : 'Your Connected Numbers'),
+        el('p', { class: 'muted', style: 'font-size:0.86rem;margin:0;' }, isPlatformAdmin
+          ? 'Manage all phone numbers across clients. You can change client allocation or disconnect numbers at any time.'
+          : 'These numbers are live and can be assigned to any of your AI voice agents in "My AI Agent".')
+      ]),
+      byonListHost
+    ]);
+    panel.appendChild(listCard);
+
+    await loadByon(byonListHost, allTenants);
   }
 
   // --- PLAN & BILLING TAB ---
@@ -8800,68 +8858,118 @@ async function viewSettings(root) {
   switchTab(currentTab);
 }
 
-async function loadByon(host) {
+async function loadByon(host, preloadedTenants) {
   if (!host) return;
   host.innerHTML = '<div class="muted" style="padding:8px 0;font-size:0.84rem;">Loading connected phone numbers...</div>';
   try {
+    const u = (State.me && State.me.user) || {};
+    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+    let tenants = preloadedTenants || [];
+    if (isPlatformAdmin && !tenants.length) {
+      try {
+        const tr = await api('/api/admin/tenants');
+        tenants = (tr && tr.tenants) || [];
+      } catch (_) { }
+    }
+
     const out = await api('/api/byon');
     host.innerHTML = '';
     const conns = out.connections || [];
     if (!conns.length) {
       host.appendChild(el('div', {
         class: 'byon-empty-state',
-        style: 'padding:14px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:var(--r-sm);text-align:center;'
+        style: 'padding:20px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:var(--r-sm);text-align:center;'
       }, [
-        el('div', { style: 'font-weight:600;font-size:0.86rem;color:var(--ink);margin-bottom:2px;' }, 'No phone numbers connected yet'),
-        el('div', { class: 'muted', style: 'font-size:0.8rem;' }, 'Purchase a number on VoBiz (console.vobiz.ai) and connect it using the form above.')
+        el('div', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);margin-bottom:4px;' }, 'No phone numbers connected yet'),
+        el('div', { class: 'muted', style: 'font-size:0.82rem;' }, isPlatformAdmin
+          ? 'Add a phone number above and assign it to a client workspace.'
+          : 'Purchase a number on VoBiz (console.vobiz.ai) or request your administrator to assign one.')
       ]));
       return;
     }
 
-    const list = el('div', { style: 'display:flex;flex-direction:column;gap:8px;' });
+    const list = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' });
     conns.forEach((c) => {
+      // Reassign dropdown for Admin:
+      let assignControl = null;
+      if (isPlatformAdmin) {
+        const reassignSel = el('select', {
+          class: 'select select-sm',
+          style: 'font-size:0.78rem;padding:4px 8px;max-width:210px;'
+        }, [
+          el('option', { value: 'platform', selected: !c.tenantId }, '★ Platform (Unassigned)'),
+          ...tenants.map(t => el('option', { value: t.id, selected: t.id === c.tenantId }, t.name))
+        ]);
+
+        reassignSel.onchange = async () => {
+          const newTid = reassignSel.value;
+          reassignSel.disabled = true;
+          try {
+            const res = await api('/api/byon/assign', { method: 'POST', body: { id: c.id, tenantId: newTid } });
+            toast(res.message || 'Number assigned successfully!', 'ok');
+            await loadByon(host, tenants);
+          } catch (err) {
+            toast(err.message || 'Could not reassign number.', 'err');
+            reassignSel.disabled = false;
+          }
+        };
+
+        assignControl = el('div', { style: 'display:flex;align-items:center;gap:6px;font-size:0.8rem;' }, [
+          el('span', { class: 'muted' }, 'Client:'),
+          reassignSel
+        ]);
+      }
+
       const card = el('div', {
         class: 'byon-item-card',
-        style: 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);gap:12px;flex-wrap:wrap;'
+        style: 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);gap:14px;flex-wrap:wrap;'
       }, [
-        el('div', { style: 'display:flex;align-items:center;gap:10px;min-width:0;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:12px;min-width:0;' }, [
           el('div', {
-            style: 'width:32px;height:32px;border-radius:8px;background:rgba(66,194,255,0.12);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;'
-          }, [uiIcon('phone', 16)]),
+            style: 'width:36px;height:36px;border-radius:8px;background:rgba(66,194,255,0.12);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;'
+          }, [uiIcon('phone', 18)]),
           el('div', { style: 'min-width:0;' }, [
-            el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
-              el('strong', { style: 'font-size:0.92rem;color:var(--ink);letter-spacing:0.02em;' }, c.address),
-              el('span', { class: 'pill', style: 'background:rgba(16,185,129,0.12);color:#10B981;font-size:0.72rem;padding:2px 8px;font-weight:700;' }, 'Active ✓')
+            el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
+              el('strong', { style: 'font-size:0.96rem;color:var(--ink);letter-spacing:0.02em;' }, c.address),
+              el('span', { class: 'pill', style: 'background:rgba(16,185,129,0.12);color:#10B981;font-size:0.72rem;padding:2px 8px;font-weight:700;' }, 'Active ✓'),
+              isPlatformAdmin
+                ? el('span', { class: 'pill', style: 'background:rgba(99,102,241,0.12);color:#6366F1;font-size:0.72rem;padding:2px 8px;font-weight:600;' }, c.tenantName || 'Platform')
+                : (c.assignedBy === 'admin'
+                    ? el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.12);color:#EAB308;font-size:0.72rem;padding:2px 8px;font-weight:700;' }, 'Assigned by Admin ★')
+                    : el('span', { class: 'pill', style: 'background:rgba(59,130,246,0.12);color:#3B82F6;font-size:0.72rem;padding:2px 8px;font-weight:600;' }, 'Self-Connected'))
             ]),
-            el('div', { class: 'muted', style: 'font-size:0.78rem;margin-top:2px;' }, [
-              `${c.label || 'VoBiz Number'} · ${(c.provider || 'vobiz').toUpperCase()}`,
+            el('div', { class: 'muted', style: 'font-size:0.8rem;margin-top:3px;' }, [
+              `${c.label || 'VoBiz Line'} · ${(c.provider || 'vobiz').toUpperCase()}`,
               c.authId ? ` · ID: ${c.authId}` : '',
               ' · ',
               el('span', { style: 'color:var(--success);font-weight:500;' }, 'Ready in Agent Dropdown')
             ])
           ])
         ]),
-        el('button', {
-          class: 'btn btn-outline btn-sm',
-          style: 'color:var(--danger);border-color:rgba(239,68,68,0.3);font-size:0.76rem;padding:4px 10px;',
-          onclick: async (ev) => {
-            if (!confirm(`Disconnect phone number ${c.address}? Your agents will no longer use this number.`)) return;
-            const btn = ev.currentTarget;
-            btn.disabled = true;
-            btn.textContent = 'Removing...';
-            try {
-              await api('/api/byon/delete', { method: 'POST', body: { id: c.id } });
-              toast(`Disconnected ${c.address}`, 'ok');
-              await ensureTelephony(true);
-              refillDidOptions();
-              await loadByon(host);
-            } catch (err) {
-              toast(err.message || 'Could not disconnect number.', 'err');
-              btn.disabled = false;
-              btn.textContent = 'Disconnect';
+        el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+          assignControl,
+          el('button', {
+            class: 'btn btn-outline btn-sm',
+            style: 'color:var(--danger);border-color:rgba(239,68,68,0.3);font-size:0.76rem;padding:5px 12px;',
+            onclick: async (ev) => {
+              if (!confirm(`Disconnect phone number ${c.address}? Agents using this number will be affected.`)) return;
+              const btn = ev.currentTarget;
+              btn.disabled = true;
+              btn.textContent = 'Removing...';
+              try {
+                await api('/api/byon/delete', { method: 'POST', body: { id: c.id } });
+                toast(`Disconnected ${c.address}`, 'ok');
+                await ensureTelephony(true);
+                refillDidOptions();
+                await loadByon(host, tenants);
+              } catch (err) {
+                toast(err.message || 'Could not disconnect number.', 'err');
+                btn.disabled = false;
+                btn.textContent = 'Disconnect';
+              }
             }
-          }
-        }, 'Disconnect')
+          }, 'Disconnect')
+        ].filter(Boolean))
       ]);
       list.appendChild(card);
     });
