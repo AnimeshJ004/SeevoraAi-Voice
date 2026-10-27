@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 const roots = new WeakMap();
-const COLORS = ['#238667', '#B88A2D', '#B96B21', '#BC4B52'];
+const COLORS = ['#7ea9e8', '#4d78b3', '#9bb9e6', '#1b1d21'];
 
 function formatInrPaise(value) {
   return `₹${(Number(value || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -116,20 +116,20 @@ function AgencyDashboard({ data }) {
                 <AreaChart data={days} margin={{ top: 12, right: 8, left: 8, bottom: 0 }}>
                   <defs>
                     <linearGradient id="paidFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor="#238667" stopOpacity="0.24" />
-                      <stop offset="1" stopColor="#238667" stopOpacity="0" />
+                      <stop offset="0" stopColor="#7ea9e8" stopOpacity="0.32" />
+                      <stop offset="1" stopColor="#7ea9e8" stopOpacity="0" />
                     </linearGradient>
                     <linearGradient id="invoiceFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor="#B88A2D" stopOpacity="0.22" />
-                      <stop offset="1" stopColor="#B88A2D" stopOpacity="0" />
+                      <stop offset="0" stopColor="#4d78b3" stopOpacity="0.28" />
+                      <stop offset="1" stopColor="#4d78b3" stopOpacity="0" />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="rgba(25,24,20,.08)" />
-                  <XAxis dataKey="date" tickFormatter={shortDate} axisLine={false} tickLine={false} minTickGap={34} tick={{ fill: '#777064', fontSize: 11 }} />
-                  <YAxis tickFormatter={axisInr} axisLine={false} tickLine={false} width={64} tick={{ fill: '#777064', fontSize: 11 }} />
+                  <CartesianGrid vertical={false} stroke="rgba(34,43,56,.08)" />
+                  <XAxis dataKey="date" tickFormatter={shortDate} axisLine={false} tickLine={false} minTickGap={34} tick={{ fill: '#6c737d', fontSize: 11 }} />
+                  <YAxis tickFormatter={axisInr} axisLine={false} tickLine={false} width={64} tick={{ fill: '#6c737d', fontSize: 11 }} />
                   <Tooltip content={<MoneyTooltip />} />
-                  <Area type="monotone" dataKey="invoicedPaise" name="Invoiced" stroke="#B88A2D" strokeWidth={2} fill="url(#invoiceFill)" />
-                  <Area type="monotone" dataKey="paidPaise" name="Paid" stroke="#238667" strokeWidth={2} fill="url(#paidFill)" />
+                  <Area type="monotone" dataKey="invoicedPaise" name="Invoiced" stroke="#4d78b3" strokeWidth={2} fill="url(#invoiceFill)" />
+                  <Area type="monotone" dataKey="paidPaise" name="Paid" stroke="#7ea9e8" strokeWidth={2} fill="url(#paidFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : <EmptyChart text="Issue the first invoice to start the financial timeline." />}
@@ -143,12 +143,12 @@ function AgencyDashboard({ data }) {
             {hasActivity ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={comparison} layout="vertical" margin={{ top: 6, right: 10, left: 4, bottom: 0 }}>
-                  <CartesianGrid horizontal={false} stroke="rgba(25,24,20,.08)" />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#777064', fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" width={92} axisLine={false} tickLine={false} tick={{ fill: '#4E493F', fontSize: 11 }} />
+                  <CartesianGrid horizontal={false} stroke="rgba(34,43,56,.08)" />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#6c737d', fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" width={92} axisLine={false} tickLine={false} tick={{ fill: '#17191d', fontSize: 11 }} />
                   <Tooltip content={<MoneyTooltip />} />
-                  <Bar dataKey="calls" name="Calls" stackId="a" fill="#356A91" radius={[0, 3, 3, 0]} />
-                  <Bar dataKey="activity" name="Activity" stackId="a" fill="#B88A2D" radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="calls" name="Calls" stackId="a" fill="#7ea9e8" radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="activity" name="Activity" stackId="a" fill="#1b1d21" radius={[0, 3, 3, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <EmptyChart text="Client calls and activity will appear here." />}

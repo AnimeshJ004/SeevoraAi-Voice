@@ -362,7 +362,7 @@ function fireConfetti() {
     vx: (Math.random() - 0.5) * 6,
     vy: Math.random() * 4 + 2,
     size: Math.random() * 8 + 4,
-    color: ['#42C2FF', '#B8FFF9', '#0284C7', '#F59E0B', '#85F4FF', '#F5A623'][Math.floor(Math.random() * 6)],
+    color: ['#7ea9e8', '#dceaff', '#4d78b3', '#9bb9e6', '#1b1d21', '#1a5da9'][Math.floor(Math.random() * 6)],
     tilt: Math.random() * 10
   }));
   let frame = 0;
@@ -413,14 +413,14 @@ async function ensureClerkReady() {
           ui: { ClerkUI: window.__internal_ClerkUICtor },
           appearance: {
             variables: {
-              colorPrimary:        '#42C2FF',
-              colorBackground:     '#EFFFFD',
-              colorText:           '#0C4A6E',
-              colorTextSecondary:  '#0284C7',
-              colorNeutral:        '#0C4A6E',
+              colorPrimary:        '#1b1d21',
+              colorBackground:     '#ffffff',
+              colorText:           '#17191d',
+              colorTextSecondary:  '#6c737d',
+              colorNeutral:        '#6c737d',
               colorInputBackground:'#FFFFFF',
-              colorInputText:      '#0C4A6E',
-              colorSuccess:        '#0284C7',
+              colorInputText:      '#17191d',
+              colorSuccess:        '#10b981',
               colorDanger:         '#EF6177',
               colorWarning:        '#E8A838',
               borderRadius:        '14px',
@@ -428,16 +428,16 @@ async function ensureClerkReady() {
               fontSize:            '15px',
             },
             elements: {
-              card:                'background: linear-gradient(160deg,#ffffff,#EFFFFD); border:1px solid rgba(66, 194, 255,0.45); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
-              formButtonPrimary:   'background:linear-gradient(135deg,#42C2FF,#0284C7)!important; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(66, 194, 255,0.35)!important; font-weight:700!important',
+              card:                'background: #ffffff; border:1px solid rgba(34, 43, 56, 0.10); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
+              formButtonPrimary:   'background:#1b1d21!important; box-shadow:0 8px 20px #10151d16; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(66, 194, 255,0.35)!important; font-weight:700!important',
               socialButtonsBlockButton: 'border:1px solid rgba(66, 194, 255,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
-              footerActionLink:    'color:#0284C7!important; font-weight:600!important',
-              identityPreviewEditButtonIcon: 'color:#0284C7',
+              footerActionLink:    'color:#1a5da9!important; font-weight:600!important',
+              identityPreviewEditButtonIcon: 'color:#1a5da9',
               formFieldInput:      'border:1px solid rgba(66, 194, 255,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
               dividerLine:         'background:rgba(66, 194, 255,0.45)!important',
               dividerText:         'color:#93B88C!important',
-              headerTitle:         'color:#0C4A6E!important; font-weight:800!important',
-              headerSubtitle:      'color:#0284C7!important',
+              headerTitle:         'color:#17191d!important; font-family:"Manrope",sans-serif; font-weight:700!important',
+              headerSubtitle:      'color:#6c737d!important',
               rootBox:             'font-family:"Plus Jakarta Sans",sans-serif',
             },
           },
@@ -1551,7 +1551,7 @@ function renderVoiceDashboard(root, opts) {
     })),
     el('button', {
       class: 'sv-submit-btn',
-      style: 'margin-top:14px;background:linear-gradient(135deg, #42C2FF 0%, #0099FF 100%);box-shadow:0 8px 24px -4px rgba(66, 194, 255, 0.40);',
+      style: 'margin-top:14px;background:#1b1d21;color:#fff;border-radius:999px;box-shadow:0 8px 20px #10151d16;',
       onclick: () => goto('agents')
     }, '+ Create New Voice Agent')
   ]));
@@ -1931,8 +1931,8 @@ function buildSpark(data) {
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.innerHTML =
     '<defs>' +
-    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B8FFF9"/><stop offset="0.6" stop-color="#42C2FF"/><stop offset="1" stop-color="#85F4FF"/></linearGradient>' +
-    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#42C2FF" stop-opacity="0.25"/><stop offset="1" stop-color="#42C2FF" stop-opacity="0"/></linearGradient>' +
+    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#dceaff"/><stop offset="0.6" stop-color="#7ea9e8"/><stop offset="1" stop-color="#85F4FF"/></linearGradient>' +
+    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ea9e8" stop-opacity="0.25"/><stop offset="1" stop-color="#7ea9e8" stop-opacity="0"/></linearGradient>' +
     '</defs>';
   if (!data.length) {
     const txt = document.createElementNS(ns, 'text');
@@ -2918,7 +2918,7 @@ async function viewOnboarding(root) {
     // Header Celebration Banner
     const businessLabel = answers.businessName ? ` for ${answers.businessName}` : '';
     const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(66, 194, 255,0.4);background:radial-gradient(ellipse at top, rgba(66, 194, 255,0.06), #FFFFFF)' }, [
-      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#B8FFF9;color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
+      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#dceaff;color:#1a5da9;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
       el('h2', { class: 't-h2', style: 'color:var(--ink);margin-bottom:6px' }, `Your Voice Agent is Ready!`),
       el('p', { class: 'soft', style: 'max-width:540px;margin:0 auto;line-height:1.5' }, `Designed specifically${businessLabel}. Script variants generated, customer objections understood, and voice persona calibrated.`)
     ]);
@@ -3310,7 +3310,7 @@ function drawWaveform(samples, canvas) {
   const bars = Math.max(40, Math.min(180, Math.floor(w / 4)));
   const block = Math.floor(samples.length / bars) || 1;
   const grad = ctx.createLinearGradient(0, 0, w, 0);
-  grad.addColorStop(0, '#B8FFF9'); grad.addColorStop(0.5, '#42C2FF'); grad.addColorStop(1, '#85F4FF');
+  grad.addColorStop(0, '#dceaff'); grad.addColorStop(0.5, '#7ea9e8'); grad.addColorStop(1, '#4d78b3');
   ctx.fillStyle = grad;
   const bw = w / bars;
   for (let b = 0; b < bars; b++) {
@@ -6359,7 +6359,7 @@ async function viewBilling(root) {
         const curBtn = el('button', {
           class: 'plan-cta-btn btn-ghost',
           disabled: true,
-          style: 'opacity:0.8;background:rgba(16,185,129,0.12);color:#10B981;border:1px solid rgba(16,185,129,0.3)'
+          style: 'background:var(--blue2);color:#1a5da9;border:1px solid rgba(126,169,232,0.35);border-radius:999px;'
         }, 'Current Active Plan');
         card.appendChild(curBtn);
       } else if (p.quoteOnly) {
@@ -6413,9 +6413,9 @@ async function viewBilling(root) {
       el('tr', {}, [el('td', {}, 'AI voice receptionist, 24/7'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
       el('tr', {}, [el('td', {}, 'CRM Leads & Sales Pipeline'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
       el('tr', {}, [el('td', {}, 'Automated call triage & booking'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included'), el('td', {}, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Webhooks and direct API access'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Reports & priority support'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Included')]),
-      el('tr', {}, [el('td', {}, 'Custom development & bespoke flows'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:#10B981;font-weight:700' }, '✓ Dedicated SLA')]),
+      el('tr', {}, [el('td', {}, 'Webhooks and direct API access'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:var(--blue);font-weight:700' }, '✓ Included'), el('td', { style: 'color:var(--blue);font-weight:700' }, '✓ Included')]),
+      el('tr', {}, [el('td', {}, 'Reports & priority support'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:var(--blue);font-weight:700' }, '✓ Included'), el('td', { style: 'color:var(--blue);font-weight:700' }, '✓ Included')]),
+      el('tr', {}, [el('td', {}, 'Custom development & bespoke flows'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { class: 'muted' }, '—'), el('td', { style: 'color:var(--blue);font-weight:700' }, '✓ Dedicated SLA')]),
     ])
   ]);
   matrixWrap.appendChild(matrixTable);
@@ -7216,7 +7216,7 @@ async function viewSettings(root) {
 
     // Workspace Identity Card
     const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
-    const colorVal = (t.branding && t.branding.color) || '#42C2FF';
+    const colorVal = (t.branding && t.branding.color) || '#7ea9e8';
     const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal });
     const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:130px;font-family:var(--mono)' });
     colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
@@ -8868,11 +8868,11 @@ async function viewAssistant(wrap) {
       }
     };
     if (integrations.calendar) setStatus('calendar', integrations.calendar.status === 'connected' ? 'Sync' : 'Setup', '#4285F4');
-    if (integrations.fileReader) setStatus('file', 'Active', '#107C41');
+    if (integrations.fileReader) setStatus('file', 'Active', '#1a5da9');
     if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#85F4FF');
     if (integrations.gmail) setStatus('gmail', integrations.gmail.status === 'active' ? 'Active' : 'Setup', '#EA4335');
-    if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#25D366');
-    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#0284C7');
+    if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#1a5da9');
+    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#1a5da9');
   }
 
   // =========================================================================
@@ -9492,7 +9492,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openWhatsAppModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'WhatsApp Business'),
-          el('span', { style: 'font-size:0.75rem;color:#059669;font-weight:700;' }, 'Live & Connected'),
+          el('span', { style: 'font-size:0.75rem;color:var(--link-hover);font-weight:700;' }, 'Live & Connected'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Number verified with OTP. Missed call responder active.')
         ]),
         el('div', {
@@ -9500,7 +9500,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCalendarModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'Google Calendar'),
-          el('span', { style: 'font-size:0.75rem;color:#0284C7;font-weight:700;' }, 'Synced'),
+          el('span', { style: 'font-size:0.75rem;color:var(--link-hover);font-weight:700;' }, 'Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-books confirmed caller appointments.')
         ]),
         el('div', {
@@ -9524,7 +9524,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCrmModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'CRM Pipeline Sync'),
-          el('span', { style: 'font-size:0.75rem;color:#0284C7;font-weight:700;' }, 'Active & Synced'),
+          el('span', { style: 'font-size:0.75rem;color:var(--link-hover);font-weight:700;' }, 'Active & Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-pushes caller contacts, recordings & deals to CRM.')
         ])
       ])

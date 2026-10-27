@@ -16,24 +16,30 @@
   <script defer crossorigin="anonymous" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js" type="text/javascript"></script>
   <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_test_Y2xlYW4taW1wYWxhLTczMzEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js" type="text/javascript"></script>
 
-  <style>
+    <style>
     :root {
-      --bg: #F4FDFF;
-      --card: #FFFFFF;
-      --ink: #0C4A6E;
-      --ink-soft: #0369A1;
-      --ink-dim: #0284C7;
-      --line: rgba(66, 194, 255, 0.5);
-      --primary: #42C2FF;
-      --primary-hover: #5AAD48;
-      --primary-light: #B8FFF9;
-      --danger: #EF6177;
-      --danger-bg: #FFF0F3;
-      --danger-border: #85F4FF;
-      --success: #0284C7;
-      --success-bg: #B8FFF9;
-      --success-border: #B8FFF9;
-      --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --ink: #17191d;
+      --muted: #6c737d;
+      --line: rgba(34, 43, 56, 0.10);
+      --line-2: rgba(34, 43, 56, 0.16);
+      --blue: #7ea9e8;
+      --blue2: #dceaff;
+      --glass: rgba(255, 255, 255, 0.68);
+      --shadow: 0 24px 70px rgba(45, 62, 86, 0.10);
+      --primary: #1b1d21;
+      --primary-hover: #111215;
+      --primary-light: #dceaff;
+      --link-hover: #1a5da9;
+      --danger: #ef4444;
+      --danger-bg: #fff1f2;
+      --danger-border: #fecaca;
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-heading: 'Manrope', 'DM Sans', sans-serif;
     }
 
     *, *::before, *::after {
@@ -48,16 +54,28 @@
       margin: 0;
       padding: 0;
       font-family: var(--font);
-      background-color: #F4FDFF;
+      background-color: var(--bg);
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      scroll-behavior: smooth;
     }
 
     body {
       display: flex;
       min-height: 100vh;
       width: 100vw;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .noise {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.14;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
     }
 
     /* Split-Screen Edge-to-Edge Container */
@@ -66,8 +84,10 @@
       min-height: 100vh;
       display: grid;
       grid-template-columns: minmax(440px, 500px) 1fr;
-      background: var(--card);
+      background: var(--bg);
       overflow: hidden;
+      position: relative;
+      z-index: 2;
     }
 
     /* Left: Auth Form Column */
@@ -77,12 +97,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      background: linear-gradient(180deg, #FFFFFF 0%, #EFFFFD 100%);
+      background: rgba(255, 255, 255, 0.94);
       min-height: 100vh;
       position: relative;
       z-index: 5;
-      border-right: 1px solid rgba(66, 194, 255, 0.45);
-      box-shadow: 12px 0 40px rgba(40, 80, 30, 0.05);
+      border-right: 1px solid var(--line);
+      box-shadow: 12px 0 40px rgba(45, 62, 86, 0.05);
       overflow-y: auto;
     }
 
@@ -111,13 +131,13 @@
       height: 40px;
       border-radius: 12px;
       background: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--line);
       padding: 3px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 10px rgba(45, 62, 86, 0.06);
     }
 
     .brand-logo img {
@@ -128,6 +148,7 @@
     }
 
     .brand-name {
+      font-family: var(--font-heading);
       font-size: 21px;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -137,7 +158,7 @@
     .brand-subtitle {
       width: 100%;
       font-size: 13px;
-      color: var(--ink-dim);
+      color: var(--muted);
       margin-top: -8px;
       margin-bottom: 2px;
       line-height: 1.4;
@@ -146,8 +167,8 @@
     /* Tab Switcher */
     .auth-tabs-wrap {
       display: flex;
-      background: #B8FFF9;
-      border-radius: 10px;
+      background: var(--blue2);
+      border-radius: 999px;
       padding: 4px;
       width: 100%;
       max-width: 400px;
@@ -157,10 +178,10 @@
     .auth-tab-btn {
       flex: 1;
       padding: 8px 14px;
-      border-radius: 8px;
+      border-radius: 999px;
       border: none;
       background: transparent;
-      color: var(--ink-dim);
+      color: var(--muted);
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
@@ -170,14 +191,14 @@
     }
 
     .auth-tab-btn:hover {
-      color: var(--ink);
+      color: var(--link-hover);
     }
 
     .auth-tab-btn.active {
       background: #FFFFFF;
       color: var(--ink);
       font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 8px rgba(45, 62, 86, 0.08);
     }
 
     /* Alert Banner */
@@ -211,7 +232,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Clerk Mount Zone (Positioned Prominently at the Top) */
+    /* Clerk Mount Zone */
     #clerk-mount-zone {
       width: 100%;
       max-width: 400px;
@@ -228,7 +249,6 @@
       justify-content: center;
     }
 
-    /* Seamless Clerk Embedding */
     #clerk-mount-zone .cl-rootBox,
     #clerk-mount-zone .cl-cardBox,
     #clerk-mount-zone .cl-signIn-root,
@@ -242,10 +262,10 @@
     #clerk-mount-zone .cl-card {
       width: 100% !important;
       max-width: 400px !important;
-      box-shadow: 0 4px 16px rgba(40, 80, 30, 0.06) !important;
-      border: 1px solid rgba(66, 194, 255, 0.45) !important;
+      box-shadow: 0 4px 16px rgba(45, 62, 86, 0.06) !important;
+      border: 1px solid var(--line) !important;
       border-radius: 18px !important;
-      background: linear-gradient(160deg, #FFFFFF 0%, #EFFFFD 100%) !important;
+      background: #FFFFFF !important;
       margin: 0 !important;
       padding: 18px 16px !important;
     }
@@ -253,82 +273,78 @@
     #clerk-mount-zone .cl-button[data-variant="solid"],
     .cl-formButtonPrimary,
     .cl-button[data-variant="solid"] {
-      background: linear-gradient(135deg, #42C2FF 0%, #0284C7 100%) !important;
+      background: #1b1d21 !important;
       color: #FFFFFF !important;
       border: none !important;
-      border-radius: 99px !important;
-      box-shadow: 0 4px 14px rgba(66, 194, 255, 0.35) !important;
+      border-radius: 999px !important;
+      box-shadow: 0 8px 20px #10151d16 !important;
       font-family: var(--font) !important;
-      font-weight: 700 !important;
-      transition: all 0.2s ease !important;
+      font-weight: 600 !important;
+      transition: transform .25s, box-shadow .25s, background .25s !important;
     }
     #clerk-mount-zone .cl-formButtonPrimary:hover,
     .cl-formButtonPrimary:hover {
-      background: linear-gradient(135deg, #5AAD48 0%, #2E6B22 100%) !important;
-      transform: translateY(-1px) !important;
-      box-shadow: 0 8px 24px rgba(66, 194, 255, 0.45) !important;
+      background: #111215 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 26px #10151d24 !important;
     }
     #clerk-mount-zone .cl-socialButtonsIconButton,
     #clerk-mount-zone .cl-socialButtonsBlockButton {
-      border: 1px solid rgba(66, 194, 255, 0.55) !important;
+      border: 1px solid var(--line-2) !important;
       border-radius: 12px !important;
-      background: rgba(255, 255, 255, 0.90) !important;
+      background: rgba(255, 255, 255, 0.95) !important;
       transition: all 0.18s ease !important;
     }
     #clerk-mount-zone .cl-socialButtonsIconButton:hover,
     #clerk-mount-zone .cl-socialButtonsBlockButton:hover {
-      border-color: #42C2FF !important;
-      box-shadow: 0 4px 12px rgba(66, 194, 255, 0.18) !important;
+      border-color: var(--blue) !important;
+      box-shadow: 0 4px 12px rgba(126, 169, 232, 0.18) !important;
       transform: translateY(-1px) !important;
     }
     #clerk-mount-zone .cl-formFieldInput {
-      border: 1px solid rgba(66, 194, 255, 0.60) !important;
+      border: 1px solid var(--line-2) !important;
       border-radius: 12px !important;
-      background: rgba(255, 255, 255, 0.92) !important;
+      background: #FFFFFF !important;
       font-family: var(--font) !important;
-      color: #0C4A6E !important;
+      color: var(--ink) !important;
     }
     #clerk-mount-zone .cl-formFieldInput:focus {
-      border-color: rgba(66, 194, 255, 0.80) !important;
-      box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.18) !important;
+      border-color: var(--blue) !important;
+      box-shadow: 0 0 0 3px rgba(126, 169, 232, 0.22) !important;
       outline: none !important;
     }
     #clerk-mount-zone .cl-footerActionLink,
     #clerk-mount-zone .cl-identityPreviewEditButton,
     #clerk-mount-zone .cl-formFieldAction,
     .cl-footerActionLink {
-      color: #0284C7 !important;
+      color: var(--link-hover) !important;
       font-weight: 600 !important;
     }
     #clerk-mount-zone .cl-footerActionLink:hover,
     #clerk-mount-zone .cl-identityPreviewEditButton:hover,
     .cl-footerActionLink:hover {
-      color: #F5A623 !important;
+      color: #11427c !important;
     }
     #clerk-mount-zone .cl-headerTitle {
-      color: #0C4A6E !important;
-      font-family: var(--font) !important;
-      font-weight: 800 !important;
+      color: var(--ink) !important;
+      font-family: var(--font-heading) !important;
+      font-weight: 700 !important;
     }
     #clerk-mount-zone .cl-headerSubtitle {
-      color: #0284C7 !important;
+      color: var(--muted) !important;
       font-family: var(--font) !important;
     }
-    #clerk-mount-zone .cl-dividerLine { background: rgba(66, 194, 255, 0.45) !important; }
-    #clerk-mount-zone .cl-dividerText { color: #93B88C !important; font-family: var(--font) !important; }
+    #clerk-mount-zone .cl-dividerLine { background: var(--line) !important; }
+    #clerk-mount-zone .cl-dividerText { color: var(--muted) !important; font-family: var(--font) !important; }
     #clerk-mount-zone .cl-badge,
     .cl-badge {
-      background: #B8FFF9 !important;
-      color: #0284C7 !important;
-      border: 1px solid #B8FFF9 !important;
+      background: var(--blue2) !important;
+      color: var(--link-hover) !important;
+      border: 1px solid rgba(126, 169, 232, 0.3) !important;
     }
     #clerk-mount-zone a,
     #clerk-mount-zone button[data-variant="link"] {
-      color: #0284C7 !important;
-    }
-    #clerk-mount-zone a:hover,
-    #clerk-mount-zone button[data-variant="link"]:hover {
-      color: #F5A623 !important;
+      color: var(--link-hover) !important;
     }
 
     /* Native Auth Form */
@@ -349,8 +365,8 @@
 
     .form-label {
       font-size: 12.5px;
-      font-weight: 700;
-      color: #334155;
+      font-weight: 600;
+      color: var(--ink-soft);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -366,7 +382,7 @@
     .input-icon {
       position: absolute;
       left: 13px;
-      color: #94A3B8;
+      color: var(--muted);
       pointer-events: none;
       display: flex;
       align-items: center;
@@ -378,8 +394,8 @@
       height: 42px;
       padding: 0 40px 0 38px;
       border-radius: 10px;
-      border: 1.5px solid #CBD5E1;
-      background: #F8FAFC;
+      border: 1.5px solid var(--line-2);
+      background: #FFFFFF;
       font-family: inherit;
       font-size: 13.5px;
       color: var(--ink);
@@ -388,13 +404,13 @@
     }
 
     .auth-input:focus {
-      border-color: rgba(66, 194, 255, 0.80);
+      border-color: var(--blue);
       background: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.18);
+      box-shadow: 0 0 0 3px rgba(126, 169, 232, 0.22);
     }
 
     .auth-input::placeholder {
-      color: #94A3B8;
+      color: var(--ink-faint);
     }
 
     .btn-toggle-pass {
@@ -404,7 +420,7 @@
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: #94A3B8;
+      color: var(--muted);
       cursor: pointer;
       padding: 6px;
       display: flex;
@@ -417,30 +433,30 @@
       color: var(--ink);
     }
 
-    .btn-submit-primary {
+    .btn-submit-primary, .primary {
       width: 100%;
       height: 44px;
-      border-radius: 99px;
+      border-radius: 999px;
       border: none;
-      background: linear-gradient(135deg, #42C2FF 0%, #0284C7 100%);
+      background: #1b1d21;
       color: #FFFFFF;
       font-family: inherit;
       font-size: 13.5px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 14px rgba(66, 194, 255, 0.32);
-      transition: all 0.2s ease;
+      box-shadow: 0 8px 20px #10151d16;
+      transition: transform .25s, box-shadow .25s, background .25s;
       margin-top: 2px;
     }
 
-    .btn-submit-primary:hover {
-      background: linear-gradient(135deg, #5AAD48 0%, #2E6B22 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 22px rgba(66, 194, 255, 0.40);
+    .btn-submit-primary:hover, .primary:hover {
+      background: #111215;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px #10151d24;
     }
 
     .btn-submit-primary:disabled {
@@ -449,7 +465,6 @@
       transform: none;
     }
 
-    /* Mini spinner for button */
     .mini-spinner {
       width: 15px;
       height: 15px;
@@ -476,7 +491,7 @@
       gap: 10px;
       width: 100%;
       max-width: 400px;
-      color: var(--ink-dim);
+      color: var(--muted);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -503,30 +518,30 @@
       justify-content: center;
       gap: 8px;
       padding: 9px 12px;
-      border-radius: 10px;
-      border: 1.5px solid #CBD5E1;
+      border-radius: 999px;
+      border: 1px solid var(--line);
       background: #FFFFFF;
-      color: #0F172A;
+      color: var(--ink);
       font-family: inherit;
       font-size: 12.5px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.18s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 3px rgba(45, 62, 86, 0.05);
     }
 
     .btn-demo-sub:hover {
-      background: #F8FAFC !important;
-      border-color: #42C2FF !important;
-      color: #42C2FF !important;
+      background: #f7f8fa !important;
+      border-color: var(--blue) !important;
+      color: var(--link-hover) !important;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(66, 194, 255, 0.16);
+      box-shadow: 0 4px 12px rgba(126, 169, 232, 0.16);
     }
 
     .demo-hint {
       font-size: 11px;
-      color: #64748B;
+      color: var(--muted);
       text-align: center;
       line-height: 1.4;
     }
@@ -535,7 +550,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Right: Visual Showcase Column */
+    /* Right: Visual Showcase Column with Seevora Voice Logo in Bottom Left Corner */
     .showcase-column {
       position: relative;
       background-image: url('/assets/receptionist.jpg');
@@ -544,331 +559,87 @@
       background-repeat: no-repeat;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: clamp(24px, 4vw, 44px);
+      justify-content: flex-end;
+      align-items: flex-start;
+      padding: clamp(32px, 5vw, 56px);
       min-height: 100vh;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
     .showcase-column::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.75) 100%);
+      background: linear-gradient(180deg, rgba(23, 25, 29, 0.06) 0%, rgba(23, 25, 29, 0.68) 100%);
       pointer-events: none;
     }
 
-    .showcase-card {
+    .showcase-logo-corner {
       position: relative;
-      z-index: 2;
-      background: rgba(255, 255, 255, 0.95);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+    }
+
+    .showcase-brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 22px 12px 14px;
+      background: rgba(255, 255, 255, 0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      padding: 24px 28px;
-      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
-      width: 100%;
-      max-width: 620px;
-      margin: auto 0;
+      border: 1px solid rgba(255, 255, 255, 0.80);
+      border-radius: 999px;
+      box-shadow: 0 16px 40px rgba(16, 21, 29, 0.22);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .showcase-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #F5A623;
-      margin-bottom: 8px;
+    .showcase-brand-mark:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 50px rgba(16, 21, 29, 0.30);
     }
 
-    .showcase-card h2 {
-      font-size: 22px;
-      font-weight: 800;
-      color: #0F172A;
-      letter-spacing: -0.02em;
-      line-height: 1.25;
-    }
-
-    .showcase-card p.showcase-desc {
-      font-size: 13.5px;
-      color: #475569;
-      margin-top: 6px;
-      margin-bottom: 14px;
-      line-height: 1.45;
-    }
-
-    /* Showcase Tab Switcher */
-    .showcase-switcher {
-      display: flex;
-      background: #B8FFF9; border-radius: 10px; padding: 3px; gap: 4px; margin-bottom: 14px;
-    }
-    .showcase-switch-btn {
-      flex: 1;
-      padding: 7px 12px;
-      border: none;
-      background: transparent;
-      border-radius: 8px;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: #64748B;
-      cursor: pointer;
-      transition: all 0.16s ease;
-      font-family: inherit;
-      text-align: center;
-    }
-    .showcase-switch-btn:hover {
-      color: #0F172A;
-    }
-    .showcase-switch-btn.active {
-      background: #FFFFFF;
-      color: #0F172A;
-      font-weight: 700;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Industry filter pills */
-    .demo-industry-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-    }
-    .demo-ind-btn {
-      padding: 5px 11px;
-      border-radius: 16px;
-      border: 1px solid rgba(66, 194, 255,0.55); background: rgba(240,255,223,0.6); font-size: 11.5px; font-weight: 600; color: #0284C7;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-      font-family: inherit;
-    }
-    .demo-ind-btn.active {
-      background: #0284C7;
-      color: #FFFFFF;
-      border-color: #0284C7;
-    }
-
-    /* Live Player Box */
-    .live-player-box {
-      background: rgba(240,255,223,0.5); border: 1px solid rgba(66, 194, 255,0.45); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
-    }
-    .player-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .player-meta-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #0F172A;
-    }
-    .player-meta-sub {
-      font-size: 11.5px;
-      color: #64748B;
-    }
-    .player-action-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .btn-play-demo {
-      padding: 7px 14px;
-      border-radius: 8px;
-      border: none;
-      background: #42C2FF;
-      color: #FFFFFF;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease;
-      font-family: inherit;
-      flex-shrink: 0;
-    }
-    .btn-play-demo:hover {
-      background: #5AAD48;
-    }
-    .waveform-visualizer {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      height: 22px;
-      flex: 1;
-    }
-    .wave-bar {
-      width: 4px;
-      height: 6px;
-      border-radius: 2px;
-      background: #CBD5E1;
-      transition: height 0.15s ease, background 0.15s ease;
-    }
-    .waveform-visualizer.playing .wave-bar {
-      background: #42C2FF;
-      animation: wavePulse 0.9s infinite ease-in-out;
-    }
-    .waveform-visualizer.playing .wave-bar:nth-child(2) { animation-delay: 0.15s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(3) { animation-delay: 0.3s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(4) { animation-delay: 0.45s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(5) { animation-delay: 0.6s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(6) { animation-delay: 0.2s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(7) { animation-delay: 0.5s; }
-    .waveform-visualizer.playing .wave-bar:nth-child(8) { animation-delay: 0.35s; }
-    @keyframes wavePulse {
-      0%, 100% { height: 6px; }
-      50% { height: 20px; }
-    }
-    .latency-tag {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: #B8FFF9;
-      color: #0284C7;
-      border: 1px solid #B8FFF9;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* Dialogue Stream */
-    .dialogue-stream {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 160px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    .dialogue-bubble {
-      padding: 7px 11px;
-      border-radius: 8px;
-      font-size: 12px;
-      line-height: 1.45;
-      border: 1px solid transparent;
-      transition: all 0.2s ease;
-    }
-    .dialogue-bubble.customer {
-      background: #FFFFFF;
-      border-color: #E2E8F0;
-      color: #334155;
-      align-self: flex-start;
-      max-width: 92%;
-    }
-    .dialogue-bubble.agent {
-      background: #B8FFF9;
-      border-color: #B8FFF9;
-      color: #0F172A;
-      align-self: flex-end;
-      max-width: 92%;
-    }
-    .dialogue-bubble.active-speech {
-      border-color: #42C2FF;
-      box-shadow: 0 0 0 2px rgba(66, 194, 255, 0.25);
-    }
-    .bubble-speaker {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 2px;
-      display: block;
-    }
-    .dialogue-bubble.customer .bubble-speaker { color: #64748B; }
-    .dialogue-bubble.agent .bubble-speaker { color: #0284C7; }
-
-    /* ROI Calculator Controls */
-    .roi-panel {
-      display: none;
-      background: rgba(240,255,223,0.5); border: 1px solid rgba(66, 194, 255,0.45); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
-    }
-    .roi-slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 10px;
-    }
-    .roi-slider-head {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      font-weight: 600;
-      color: #334155;
-    }
-    .roi-slider-val {
-      font-weight: 700;
-      color: #42C2FF;
-    }
-    .roi-range {
-      width: 100%;
-      height: 5px;
-      border-radius: 4px;
-      accent-color: #42C2FF;
-      cursor: pointer;
-    }
-    .roi-metrics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 12px 0 6px 0;
-    }
-    .roi-metric-card {
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      border-radius: 10px;
-      padding: 9px 11px;
-    }
-    .roi-metric-num {
-      font-size: 17px;
-      font-weight: 800;
-      color: #0F172A;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-    }
-    .roi-metric-num.highlight {
-      color: #16A34A;
-    }
-    .roi-metric-lbl {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748B;
-      margin-top: 2px;
-    }
-
-    .feature-pills {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-      flex-wrap: wrap;
-    }
-
-    .pill {
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      color: #1E293B;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-    }
-
-    .pill-dot {
-      width: 6px;
-      height: 6px;
+    .showcase-brand-icon {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: #16A34A;
+      object-fit: cover;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 8px rgba(45, 62, 86, 0.12);
+      flex-shrink: 0;
+      background: #FFFFFF;
+    }
+
+    .showcase-brand-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .showcase-brand-name {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 800;
+      color: #17191d;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .showcase-brand-accent {
+      background: linear-gradient(100deg, #4d78b3, #7ea9e8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-left: 2px;
+    }
+
+    .showcase-brand-desc {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #5d6877;
+      letter-spacing: 0.01em;
     }
 
     /* Responsive */
@@ -890,6 +661,7 @@
   </style>
 </head>
 <body>
+  <div class="noise" aria-hidden="true"></div>
   <main class="auth-wrapper">
     <!-- Left Column: Unified Clerk SSO & Direct Login -->
     <section class="auth-column" aria-label="Authentication">
@@ -938,111 +710,15 @@
       </div>
     </section>
 
-    <!-- Right Column: Visual Showcase -->
+    <!-- Right Column: Visual Showcase with Seevora Voice Logo in Bottom Left Corner -->
     <aside class="showcase-column" aria-label="Seevora AI Overview">
-      <div class="showcase-card">
-        <div class="showcase-tag">
-          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background: linear-gradient(135deg, #85F4FF, #F5A623);"></span>
-          Autonomous Voice Agents
-        </div>
-        <h2>Enterprise Voice AI Receptionist</h2>
-        <p class="showcase-desc">Human-parity conversational voice AI that answers inbound callers 24/7 without hold times, qualifies leads, and schedules bookings instantly.</p>
-
-        <!-- Showcase Tab Switcher -->
-        <div class="showcase-switcher" role="tablist">
-          <button id="showcaseTabDemo" class="showcase-switch-btn active" type="button">Live Call Player</button>
-          <button id="showcaseTabRoi" class="showcase-switch-btn" type="button">ROI Savings Calculator</button>
-        </div>
-
-        <!-- 1. LIVE CALL DEMO PLAYER -->
-        <div id="showcasePlayerPanel">
-          <div class="demo-industry-bar">
-            <button class="demo-ind-btn active" data-industry="clinic" type="button">Healthcare Clinic</button>
-            <button class="demo-ind-btn" data-industry="realestate" type="button">Real Estate</button>
-            <button class="demo-ind-btn" data-industry="auto" type="button">Auto Service</button>
+      <div class="showcase-logo-corner">
+        <div class="showcase-brand-mark">
+          <img src="/assets/seevora-logo.png" alt="Seevora Voice Logo" width="44" height="44" class="showcase-brand-icon" />
+          <div class="showcase-brand-meta">
+            <span class="showcase-brand-name">Seevora<span class="showcase-brand-accent">Voice</span></span>
+            <span class="showcase-brand-desc">Autonomous Conversational AI Receptionist</span>
           </div>
-
-          <div class="live-player-box">
-            <div class="player-header">
-              <div>
-                <div id="demoTitle" class="player-meta-title">Dr. Sharma Dental Care</div>
-                <div id="demoSub" class="player-meta-sub">Inbound Appointment Scheduling</div>
-              </div>
-              <div class="latency-tag">Latency: 290ms</div>
-            </div>
-
-            <div class="player-action-row">
-              <button id="btnPlayDemo" class="btn-play-demo" type="button">
-                <svg id="playIcon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                <span id="playLabel">Play Live Call</span>
-              </button>
-              <div id="waveVisualizer" class="waveform-visualizer">
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-              </div>
-            </div>
-
-            <div id="dialogueStream" class="dialogue-stream"></div>
-          </div>
-        </div>
-
-        <!-- 2. ROI SAVINGS CALCULATOR -->
-        <div id="showcaseRoiPanel" class="roi-panel">
-          <div class="roi-slider-group">
-            <div class="roi-slider-head">
-              <span>Daily Inbound Calls</span>
-              <span id="valCalls" class="roi-slider-val">80 calls / day</span>
-            </div>
-            <input id="rangeCalls" class="roi-range" type="range" min="20" max="500" step="10" value="80" />
-          </div>
-
-          <div class="roi-slider-group">
-            <div class="roi-slider-head">
-              <span>Avg Call Duration</span>
-              <span id="valDuration" class="roi-slider-val">3 minutes</span>
-            </div>
-            <input id="rangeDuration" class="roi-range" type="range" min="1" max="8" step="1" value="3" />
-          </div>
-
-          <div class="roi-slider-group">
-            <div class="roi-slider-head">
-              <span>Receptionist Staff Headcount</span>
-              <span id="valStaff" class="roi-slider-val">2 full-time reps</span>
-            </div>
-            <input id="rangeStaff" class="roi-range" type="range" min="1" max="6" step="1" value="2" />
-          </div>
-
-          <div class="roi-metrics-grid">
-            <div class="roi-metric-card">
-              <div id="outSavings" class="roi-metric-num highlight">₹44,000 / mo</div>
-              <div class="roi-metric-lbl">Estimated Monthly Savings</div>
-            </div>
-            <div class="roi-metric-card">
-              <div id="outHours" class="roi-metric-num">120+ Hours</div>
-              <div class="roi-metric-lbl">Staff Time Reclaimed</div>
-            </div>
-            <div class="roi-metric-card">
-              <div id="outResolution" class="roi-metric-num">98.4%</div>
-              <div class="roi-metric-lbl">First-Call Resolution</div>
-            </div>
-            <div class="roi-metric-card">
-              <div id="outCostPerCall" class="roi-metric-num">₹2.70</div>
-              <div class="roi-metric-lbl">AI Cost per Call (vs ₹45 manual)</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature-pills">
-          <span class="pill"><span class="pill-dot"></span>Sub-second Latency</span>
-          <span class="pill"><span class="pill-dot"></span>24/7 Availability</span>
-          <span class="pill"><span class="pill-dot"></span>TRAI 9AM-9PM Guard</span>
-          <span class="pill"><span class="pill-dot"></span>DLT Compliant</span>
         </div>
       </div>
     </aside>
@@ -1207,20 +883,20 @@
             ui: { ClerkUI: window.__internal_ClerkUICtor },
             appearance: {
               variables: {
-                colorPrimary: '#42C2FF',
-                colorBackground: '#EFFFFD',
-                colorText: '#0C4A6E',
-                colorNeutral: '#0C4A6E',
+                colorPrimary: '#1b1d21',
+                colorBackground: '#ffffff',
+                colorText: '#17191d',
+                colorNeutral: '#6c737d',
                 borderRadius: '14px',
               },
               elements: {
                 formButtonPrimary: {
-                  background: 'linear-gradient(135deg, #42C2FF 0%, #0284C7 100%) !important',
+                  background: '#1b1d21 !important',
                   borderRadius: '99px !important',
                   boxShadow: '0 4px 14px rgba(66, 194, 255, 0.35) !important',
                 },
                 footerActionLink: {
-                  color: '#0284C7 !important',
+                  color: '#1a5da9 !important',
                   fontWeight: '600 !important',
                 },
               },
@@ -1301,218 +977,7 @@
         btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
       }
 
-      /* =========================================================================
-         Showcase: Interactive Live Call Player & ROI Calculator
-         ========================================================================= */
-      const tabDemo = document.getElementById('showcaseTabDemo');
-      const tabRoi = document.getElementById('showcaseTabRoi');
-      const playerPanel = document.getElementById('showcasePlayerPanel');
-      const roiPanel = document.getElementById('showcaseRoiPanel');
-
-      if (tabDemo && tabRoi && playerPanel && roiPanel) {
-        tabDemo.addEventListener('click', () => {
-          tabDemo.classList.add('active');
-          tabRoi.classList.remove('active');
-          playerPanel.style.display = 'block';
-          roiPanel.style.display = 'none';
-        });
-        tabRoi.addEventListener('click', () => {
-          tabRoi.classList.add('active');
-          tabDemo.classList.remove('active');
-          playerPanel.style.display = 'none';
-          roiPanel.style.display = 'block';
-          stopDemoPlayback();
-        });
-      }
-
-      // 1. Live Call Player Data & State
-      const demoScenarios = {
-        clinic: {
-          title: 'Dr. Sharma Dental Care',
-          sub: 'Inbound Appointment Scheduling',
-          dialogues: [
-            { speaker: 'Customer', role: 'customer', text: 'Hello, I wanted to schedule a dental checkup and cleaning for tomorrow afternoon.' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Namaste. I can book that for you with Dr. Sharma. We have slots available tomorrow at 2:30 PM and 4:00 PM. Which one suits you best?' },
-            { speaker: 'Customer', role: 'customer', text: '4:00 PM works great for me.' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Confirmed for tomorrow at 4:00 PM. I have sent an SMS confirmation to your number. Is there anything else I can help with?' }
-          ]
-        },
-        realestate: {
-          title: 'Prestige Falcon City',
-          sub: 'Site Visit & Pricing Inquiry',
-          dialogues: [
-            { speaker: 'Customer', role: 'customer', text: 'Hi, I saw your ad for 3BHK residences in Kanakapura Road. What is the current starting price?' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Good afternoon. The 3BHK residences start from 1.45 Crores for 1,800 square feet. Would you like to schedule an executive site visit this weekend?' },
-            { speaker: 'Customer', role: 'customer', text: 'Yes, this Saturday around 11:00 AM.' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Confirmed. Your VIP site visit is scheduled for Saturday at 11:00 AM. Our relationship manager will meet you at the experience lounge.' }
-          ]
-        },
-        auto: {
-          title: 'Nexa Autoworks Central',
-          sub: 'Periodic Maintenance & Doorstep Pickup',
-          dialogues: [
-            { speaker: 'Customer', role: 'customer', text: 'My Grand Vitara is due for its 20,000 km periodic service. Do you offer doorstep vehicle pickup?' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Yes, complimentary doorstep pickup is available across the city. Which date and location would you prefer?' },
-            { speaker: 'Customer', role: 'customer', text: 'Tomorrow morning around 9:30 AM from Indiranagar.' },
-            { speaker: 'Seevora AI', role: 'agent', text: 'Booked. Our certified technician will arrive tomorrow at 9:30 AM. Estimated turnaround time is 5 hours.' }
-          ]
-        }
-      };
-
-      let currentIndustry = 'clinic';
-      let isPlayingDemo = false;
-      let demoTimer = null;
-
-      const demoTitle = document.getElementById('demoTitle');
-      const demoSub = document.getElementById('demoSub');
-      const dialogueStream = document.getElementById('dialogueStream');
-      const btnPlayDemo = document.getElementById('btnPlayDemo');
-      const playLabel = document.getElementById('playLabel');
-      const playIcon = document.getElementById('playIcon');
-      const waveVisualizer = document.getElementById('waveVisualizer');
-
-      function renderDemoScenario(indKey) {
-        currentIndustry = indKey;
-        stopDemoPlayback();
-        const scen = demoScenarios[indKey] || demoScenarios.clinic;
-        if (demoTitle) demoTitle.textContent = scen.title;
-        if (demoSub) demoSub.textContent = scen.sub;
-
-        if (dialogueStream) {
-          dialogueStream.innerHTML = '';
-          scen.dialogues.forEach((d, idx) => {
-            const bubble = document.createElement('div');
-            bubble.className = 'dialogue-bubble ' + d.role;
-            bubble.id = 'bubble_' + idx;
-            const spk = document.createElement('span');
-            spk.className = 'bubble-speaker';
-            spk.textContent = d.speaker;
-            bubble.appendChild(spk);
-            bubble.appendChild(document.createTextNode(d.text));
-            dialogueStream.appendChild(bubble);
-          });
-        }
-      }
-
-      function stopDemoPlayback() {
-        isPlayingDemo = false;
-        if (demoTimer) { clearTimeout(demoTimer); demoTimer = null; }
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
-        }
-        if (waveVisualizer) waveVisualizer.classList.remove('playing');
-        if (playLabel) playLabel.textContent = 'Play Live Call';
-        if (playIcon) playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
-        if (dialogueStream) {
-          dialogueStream.querySelectorAll('.dialogue-bubble').forEach(b => b.classList.remove('active-speech'));
-        }
-      }
-
-      function playDemoTurn(index) {
-        if (!isPlayingDemo) return;
-        const scen = demoScenarios[currentIndustry] || demoScenarios.clinic;
-        if (index >= scen.dialogues.length) {
-          stopDemoPlayback();
-          return;
-        }
-
-        const turn = scen.dialogues[index];
-
-        if (dialogueStream) {
-          dialogueStream.querySelectorAll('.dialogue-bubble').forEach(b => b.classList.remove('active-speech'));
-          const activeBubble = document.getElementById('bubble_' + index);
-          if (activeBubble) {
-            activeBubble.classList.add('active-speech');
-            activeBubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        }
-
-        if (window.speechSynthesis) {
-          const utt = new SpeechSynthesisUtterance(turn.text);
-          utt.rate = 1.05;
-          utt.pitch = turn.role === 'agent' ? 1.08 : 0.95;
-          utt.onend = () => {
-            demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 600);
-          };
-          utt.onerror = () => {
-            demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 2000);
-          };
-          window.speechSynthesis.speak(utt);
-        } else {
-          demoTimer = setTimeout(() => { playDemoTurn(index + 1); }, 2200);
-        }
-      }
-
-      function startDemoPlayback() {
-        isPlayingDemo = true;
-        if (waveVisualizer) waveVisualizer.classList.add('playing');
-        if (playLabel) playLabel.textContent = 'Pause Call';
-        if (playIcon) playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-        playDemoTurn(0);
-      }
-
-      if (btnPlayDemo) {
-        btnPlayDemo.addEventListener('click', () => {
-          if (isPlayingDemo) {
-            stopDemoPlayback();
-          } else {
-            startDemoPlayback();
-          }
-        });
-      }
-
-      document.querySelectorAll('.demo-ind-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.demo-ind-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const ind = btn.getAttribute('data-industry');
-          renderDemoScenario(ind);
-        });
-      });
-
-      renderDemoScenario('clinic');
-
-      // 2. ROI Calculator Logic
-      const rangeCalls = document.getElementById('rangeCalls');
-      const rangeDuration = document.getElementById('rangeDuration');
-      const rangeStaff = document.getElementById('rangeStaff');
-
-      const valCalls = document.getElementById('valCalls');
-      const valDuration = document.getElementById('valDuration');
-      const valStaff = document.getElementById('valStaff');
-
-      const outSavings = document.getElementById('outSavings');
-      const outHours = document.getElementById('outHours');
-      const outResolution = document.getElementById('outResolution');
-      const outCostPerCall = document.getElementById('outCostPerCall');
-
-      function updateRoiOutputs() {
-        const calls = Number(rangeCalls ? rangeCalls.value : 80);
-        const dur = Number(rangeDuration ? rangeDuration.value : 3);
-        const staff = Number(rangeStaff ? rangeStaff.value : 2);
-
-        if (valCalls) valCalls.textContent = calls + ' calls / day';
-        if (valDuration) valDuration.textContent = dur + (dur === 1 ? ' minute' : ' minutes');
-        if (valStaff) valStaff.textContent = staff + (staff === 1 ? ' full-time rep' : ' full-time reps');
-
-        const monthlyCalls = calls * 30;
-        const manualMonthlyCost = staff * 25000;
-        const aiMonthlyCost = Math.round(monthlyCalls * dur * 0.70);
-        const netSavings = Math.max(12000, manualMonthlyCost - aiMonthlyCost);
-        const monthlyHours = Math.round((monthlyCalls * dur) / 60);
-        const costPerCall = (dur * 0.90).toFixed(2);
-        const resolutionRate = (97.2 + ((calls % 10) * 0.15)).toFixed(1);
-
-        if (outSavings) outSavings.textContent = '₹' + netSavings.toLocaleString('en-IN') + ' / mo';
-        if (outHours) outHours.textContent = monthlyHours + '+ Hours';
-        if (outResolution) outResolution.textContent = resolutionRate + '%';
-        if (outCostPerCall) outCostPerCall.textContent = '₹' + costPerCall;
-      }
-
-      if (rangeCalls) rangeCalls.addEventListener('input', updateRoiOutputs);
-      if (rangeDuration) rangeDuration.addEventListener('input', updateRoiOutputs);
-      if (rangeStaff) rangeStaff.addEventListener('input', updateRoiOutputs);
-      updateRoiOutputs();
+      
 
       // Initialize Clerk
       if (document.readyState === 'complete') {
