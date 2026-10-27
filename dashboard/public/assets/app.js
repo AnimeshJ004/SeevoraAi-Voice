@@ -1178,9 +1178,12 @@ async function openMakeCallModal(prefillNumber) {
       el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Recipient Mobile Number (+91)'),
       dialRow
     ]),
-    el('div', { class: 'danger-note', style: 'margin-top:14px;padding:12px 14px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:.82rem;color:#92400E;' }, [
-      el('b', {}, 'Live Telephony Call: '),
-      document.createTextNode('This places a real outbound phone call to the recipient. The chosen AI voice agent will greet them upon answer.')
+    el('div', { class: 'sv-modal-notice' }, [
+      el('span', { html: uiIcon('phone', 16), style: 'color:#2563eb;flex-shrink:0;margin-top:2px;' }),
+      el('div', {}, [
+        el('strong', { style: 'color:#0f172a;display:block;margin-bottom:2px;' }, 'Live Telephony Call'),
+        el('span', { style: 'color:#475569;' }, 'This connects an instant outbound call from +91 80715 82519. The chosen AI voice receptionist greets the recipient upon answer.')
+      ])
     ])
   ]);
 
@@ -1188,7 +1191,7 @@ async function openMakeCallModal(prefillNumber) {
     title: 'Make Outbound AI Call',
     body,
     confirmText: 'Yes, Place Call',
-    confirmKind: 'danger',
+    confirmKind: 'primary',
     onConfirm: async () => {
       const num = (numI.value || '').replace(/\D/g, '');
       if (num.length !== 10) {
@@ -1533,7 +1536,10 @@ function renderVoiceDashboard(root, opts) {
         el('span', {}, 'Make Outbound Call')
       ]),
       isAgency
-        ? el('button', { class: 'sv-btn-outline', onclick: () => openAddClientModal() }, '+ Add Client')
+        ? el('button', { class: 'sv-btn-add-client', onclick: () => openAddClientModal() }, [
+            el('span', { html: uiIcon('plus', 14) }),
+            el('span', {}, 'Add Client')
+          ])
         : el('button', { class: 'sv-btn-outline', onclick: () => goto('talk') }, 'Talk to Agent')
     ])
   ]));
@@ -2185,22 +2191,38 @@ function renderCallRowAdmin(number, clientName, duration, outcome) {
 }
 
 function openAddClientModal() {
-  const nameI = el('input', { class: 'input', placeholder: 'e.g. Metro Real Estate' });
-  const emailI = el('input', { class: 'input', placeholder: 'client@company.com' });
-  const passI = el('input', { class: 'input', placeholder: '12+ character temporary password', value: 'RapidXDemo1234!' });
+  const nameI = el('input', {
+    class: 'input',
+    placeholder: 'e.g. Metro Real Estate & Health',
+    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+  });
+  const emailI = el('input', {
+    class: 'input',
+    type: 'email',
+    placeholder: 'owner@clientdomain.com',
+    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+  });
+  const passI = el('input', {
+    class: 'input',
+    placeholder: '12+ character temporary password',
+    value: 'RapidXDemo1234!',
+    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+  });
 
-  const body = el('div', {}, [
-    el('p', { class: 'soft text-xs', style: 'margin-bottom:14px' }, 'Create an isolated workspace for a new business client. They get their own AI receptionist, phone numbers, and call logs.'),
-    el('div', { class: 'field', style: 'margin-bottom:12px' }, [
-      el('label', { class: 'field-label' }, 'Business / Workspace Name'),
+  const body = el('div', { class: 'sv-modal-client-body' }, [
+    el('p', { class: 'soft', style: 'margin-bottom:18px;font-size:0.86rem;line-height:1.5;color:#64748B;' },
+      'Provision a secure, isolated workspace for a new business client. They will receive their own dedicated voice receptionist, separate phone lines, and lead analytics.'
+    ),
+    el('div', { style: 'margin-bottom:14px;' }, [
+      el('label', { style: 'display:block;margin-bottom:6px;font-weight:750;font-size:0.76rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;' }, 'Business / Workspace Name'),
       nameI
     ]),
-    el('div', { class: 'field', style: 'margin-bottom:12px' }, [
-      el('label', { class: 'field-label' }, 'Owner Work Email'),
+    el('div', { style: 'margin-bottom:14px;' }, [
+      el('label', { style: 'display:block;margin-bottom:6px;font-weight:750;font-size:0.76rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;' }, 'Client Owner Work Email'),
       emailI
     ]),
-    el('div', { class: 'field', style: 'margin-bottom:14px' }, [
-      el('label', { class: 'field-label' }, 'Temporary Password'),
+    el('div', { style: 'margin-bottom:14px;' }, [
+      el('label', { style: 'display:block;margin-bottom:6px;font-weight:750;font-size:0.76rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;' }, 'Temporary Password'),
       passI
     ])
   ]);
@@ -2208,7 +2230,8 @@ function openAddClientModal() {
   modal({
     title: 'Onboard New Client Workspace',
     body,
-    confirmText: 'Create Client Workspace',
+    confirmText: '+ Create Client Workspace',
+    confirmKind: 'primary',
     onConfirm: async () => {
       const name = (nameI.value || '').trim();
       const email = (emailI.value || '').trim();
@@ -5750,130 +5773,6 @@ async function viewInbound(root) {
   ]);
   root.appendChild(phoneLineCard);
 
-  // 2. Inbound Receptionist Answering Rules & Routing Controls Grid (3 Cards)
-  const ringStrategySelect = el('select', { class: 'inbound-rule-input' }, [
-    el('option', { value: 'zero_ring' }, 'Instant Zero-Ring Pickup (0s wait · Sub-800ms)'),
-    el('option', { value: 'standard_2_ring' }, 'Standard Delay (2 rings / ~6s wait)')
-  ]);
-  const transferNumberInput = el('input', {
-    class: 'inbound-rule-input',
-    placeholder: '+91 98765 43210',
-    value: '+91 98765 43210'
-  });
-  const emergencyTransferCheck = el('input', { type: 'checkbox', checked: true });
-
-  const operatingHoursSelect = el('select', { class: 'inbound-rule-input' }, [
-    el('option', { value: '24_7' }, '24/7 Autonomous AI Receptionist (Always Active)'),
-    el('option', { value: 'business_hours' }, 'Business Hours Only (9:00 AM – 8:00 PM IST)')
-  ]);
-
-  const whatsappConfirmCheck = el('input', { type: 'checkbox', checked: true });
-  const missedCallRecoveryCheck = el('input', { type: 'checkbox', checked: true });
-
-  const saveRulesBtn = el('button', {
-    class: 'btn btn-primary',
-    style: 'width:100%;margin-top:12px;font-size:0.82rem;font-weight:700;padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:6px;',
-    onclick: async () => {
-      try {
-        saveRulesBtn.disabled = true;
-        saveRulesBtn.textContent = 'Saving Rules...';
-        await api('/api/inbound/config', {
-          method: 'POST',
-          body: {
-            assignedAgentId: agentSelect.value,
-            assignedAgentName: agentSelect.options[agentSelect.selectedIndex] ? agentSelect.options[agentSelect.selectedIndex].text : '',
-            ringStrategy: ringStrategySelect.value,
-            transferNumber: transferNumberInput.value.trim(),
-            autoTransferOnEmergency: emergencyTransferCheck.checked,
-            operatingHours: operatingHoursSelect.value,
-            whatsappConfirmation: whatsappConfirmCheck.checked,
-            missedCallRecovery: missedCallRecoveryCheck.checked
-          }
-        });
-        toast('Inbound receptionist rules saved successfully!', 'ok');
-      } catch (err) {
-        toast('Failed to save rules: ' + err.message, 'err');
-      } finally {
-        saveRulesBtn.disabled = false;
-        saveRulesBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg><span>Save Inbound Rules</span>';
-      }
-    }
-  }, [
-    el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>' }),
-    el('span', {}, 'Save Inbound Rules')
-  ]);
-
-  const rulesGrid = el('div', { class: 'inbound-rules-grid' }, [
-    // Card 1: Answering Speed & Call Routing
-    el('div', { class: 'inbound-rule-card' }, [
-      el('div', {}, [
-        el('div', { class: 'inbound-rule-title' }, [
-          el('span', { html: uiIcon('phone', 16), style: 'color:#2563eb;display:flex;' }),
-          el('span', {}, 'Answering Speed & Call Routing')
-        ]),
-        el('div', { class: 'inbound-rule-desc' }, 'Define incoming call pickup strategy and human escalation phone number.'),
-        el('div', { class: 'inbound-rule-options' }, [
-          el('div', {}, [
-            el('label', { style: 'font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;' }, 'Pickup Speed'),
-            ringStrategySelect
-          ]),
-          el('div', { style: 'margin-top:6px;' }, [
-            el('label', { style: 'font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;' }, 'Emergency Escalation Number'),
-            transferNumberInput
-          ]),
-          el('label', { class: 'inbound-rule-option', style: 'margin-top:4px;' }, [
-            emergencyTransferCheck,
-            el('span', { style: 'font-size:0.78rem;line-height:1.3;' }, 'Auto-transfer call to human if emergency or urgent escalation')
-          ])
-        ])
-      ])
-    ]),
-
-    // Card 2: Operating Schedule & Availability
-    el('div', { class: 'inbound-rule-card' }, [
-      el('div', {}, [
-        el('div', { class: 'inbound-rule-title' }, [
-          el('span', { html: uiIcon('clock', 16), style: 'color:#10b981;display:flex;' }),
-          el('span', {}, 'Operating Schedule & Availability')
-        ]),
-        el('div', { class: 'inbound-rule-desc' }, 'Control operating hours and automated after-hours caller support mode.'),
-        el('div', { class: 'inbound-rule-options' }, [
-          el('div', {}, [
-            el('label', { style: 'font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;' }, 'Active Hours Mode'),
-            operatingHoursSelect
-          ]),
-          el('div', { style: 'font-size:0.76rem;padding:9px 11px;border-radius:9px;background:rgba(126,169,232,0.12);border:1px solid rgba(126,169,232,0.30);color:#1e3a8a;line-height:1.45;margin-top:8px;' }, [
-            el('strong', {}, '🌙 24/7 Zero Missed Calls: '),
-            el('span', {}, 'AI greets every caller instantly day or night, answers FAQs, and books appointments.')
-          ])
-        ])
-      ])
-    ]),
-
-    // Card 3: Post-Call Automations & Follow-up
-    el('div', { class: 'inbound-rule-card' }, [
-      el('div', {}, [
-        el('div', { class: 'inbound-rule-title' }, [
-          el('span', { html: uiIcon('zap', 16), style: 'color:#f59e0b;display:flex;' }),
-          el('span', {}, 'Automated Caller Follow-up')
-        ]),
-        el('div', { class: 'inbound-rule-desc' }, 'Trigger instant WhatsApp notifications and recover dropped callers.'),
-        el('div', { class: 'inbound-rule-options' }, [
-          el('label', { class: 'inbound-rule-option' }, [
-            whatsappConfirmCheck,
-            el('span', { style: 'font-size:0.78rem;line-height:1.3;' }, 'Send instant WhatsApp booking confirmation & summary to caller')
-          ]),
-          el('label', { class: 'inbound-rule-option' }, [
-            missedCallRecoveryCheck,
-            el('span', { style: 'font-size:0.78rem;line-height:1.3;' }, 'Send WhatsApp recovery message if caller drops before completion')
-          ])
-        ])
-      ]),
-      saveRulesBtn
-    ])
-  ]);
-  root.appendChild(rulesGrid);
-
   // Load Inbound Config & Agents
   Promise.all([
     api('/api/inbound/config').catch(() => null),
@@ -5893,12 +5792,6 @@ async function viewInbound(root) {
     if (cfgRes && cfgRes.config) {
       const cfg = cfgRes.config;
       if (cfg.assignedAgentId) agentSelect.value = cfg.assignedAgentId;
-      if (cfg.ringStrategy) ringStrategySelect.value = cfg.ringStrategy;
-      if (cfg.transferNumber) transferNumberInput.value = cfg.transferNumber;
-      if (cfg.autoTransferOnEmergency !== undefined) emergencyTransferCheck.checked = Boolean(cfg.autoTransferOnEmergency);
-      if (cfg.operatingHours) operatingHoursSelect.value = cfg.operatingHours;
-      if (cfg.whatsappConfirmation !== undefined) whatsappConfirmCheck.checked = Boolean(cfg.whatsappConfirmation);
-      if (cfg.missedCallRecovery !== undefined) missedCallRecoveryCheck.checked = Boolean(cfg.missedCallRecovery);
     }
   });
 
@@ -7545,7 +7438,7 @@ async function viewAdmin(root) {
   }
   const superAdmin = true;
   const head = viewHead('Clients', 'Add, approach, inspect, pause, and offboard client workspaces with an immutable activity trail.');
-  if (superAdmin) head.appendChild(el('div', { class: 'view-actions' }, [el('button', { class: 'btn btn-primary', onclick: openClientComposer }, 'Add client')]));
+  if (superAdmin) head.appendChild(el('div', { class: 'view-actions' }, [el('button', { class: 'sv-btn-add-client', onclick: openClientComposer }, [el('span', { html: uiIcon('plus', 14) }), el('span', {}, 'Add Client')])]));
   root.appendChild(head);
 
   const hasCache = _adminDataCache != null;
@@ -7569,7 +7462,7 @@ async function viewAdmin(root) {
     stats.innerHTML = '';
     const totals = o.totals || {};
     [['Active clients', totals.activeTenants != null ? totals.activeTenants : 'Restricted', 'Live workspaces'], ['Revenue recorded', superAdmin ? '₹' + fmtInr((totals.invoicedPaise || 0) / 100) : 'Restricted', 'Issued invoices'], ['Outstanding', superAdmin ? '₹' + fmtInr((totals.outstandingPaise || 0) / 100) : 'Restricted', 'Receivables'], ['Open tickets', totals.openTickets != null ? totals.openTickets : (tickets.tickets || []).filter((t) => t.status !== 'closed').length, 'Needs attention'], ['Calls', superAdmin ? totals.calls : 'Restricted', 'Tracked usage']].forEach((x) => stats.appendChild(el('article', { class: 'agency-metric' }, [el('div', { class: 'agency-metric-label' }, x[0]), el('div', { class: 'agency-metric-value' }, String(x[1] || 0)), el('div', { class: 'agency-metric-note' }, x[2])])));
-    tenantHost.innerHTML = ''; tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Portfolio'), el('h3', {}, 'Client workspaces')]), superAdmin ? el('button', { class: 'btn btn-ghost btn-sm', onclick: openClientComposer }, 'Add client') : null]));
+    tenantHost.innerHTML = ''; tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Portfolio'), el('h3', {}, 'Client workspaces')]), superAdmin ? el('button', { class: 'sv-btn-outline', style: 'padding:6px 14px;font-size:0.78rem;', onclick: openClientComposer }, [el('span', { html: uiIcon('plus', 12) }), el('span', {}, 'Add Client')]) : null]));
     if (superAdmin) (ts.tenants || []).forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
     else tenantHost.appendChild(el('div', { class: 'muted' }, 'Tenant controls require super admin access.'));
     ticketHost.innerHTML = '';
@@ -7798,12 +7691,22 @@ function adminTenantRow(t, users) {
 }
 
 function openClientComposer() {
-  const name = el('input', { class: 'input', placeholder: 'Client or company name' });
-  const ownerName = el('input', { class: 'input', placeholder: 'Primary owner name, optional' });
-  const ownerEmail = el('input', { class: 'input', type: 'email', placeholder: 'owner@client.com, optional' });
-  const password = el('input', { class: 'input', type: 'password', placeholder: '12+ character temporary password' });
+  const name = el('input', { class: 'input', placeholder: 'Client or company name', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
+  const ownerName = el('input', { class: 'input', placeholder: 'Primary owner name (e.g. Rahul Sharma)', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
+  const ownerEmail = el('input', { class: 'input', type: 'email', placeholder: 'owner@clientdomain.com', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
+  const password = el('input', { class: 'input', type: 'password', placeholder: '12+ character temporary password', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(126,169,232,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
   modal({
-    title: 'Add client workspace', body: el('div', { class: 'invoice-form' }, [field('Workspace name', name), field('Owner name', ownerName), field('Owner email', ownerEmail), field('Temporary password', password), el('p', { class: 'form-note' }, 'Leave owner fields empty to create an onboarding workspace. No invitation email will be sent.')]), confirmText: 'Create workspace', onConfirm: async () => {
+    title: 'Add Client Workspace',
+    body: el('div', { class: 'invoice-form' }, [
+      field('Workspace name', name),
+      field('Owner name', ownerName),
+      field('Owner email', ownerEmail),
+      field('Temporary password', password),
+      el('p', { class: 'soft', style: 'font-size:0.80rem;margin-top:10px;color:#64748B;' }, 'Provision an isolated client workspace. Leave owner fields empty to create a self-onboarding workspace.')
+    ]),
+    confirmText: '+ Create Workspace',
+    confirmKind: 'primary',
+    onConfirm: async () => {
       const out = await api('/api/admin/tenants', { method: 'POST', body: { name: name.value.trim(), ownerName: ownerName.value.trim(), ownerEmail: ownerEmail.value.trim(), password: password.value } });
       toast((out.tenant || {}).name + ' created. ' + out.note, 'ok'); onRoute();
     }
