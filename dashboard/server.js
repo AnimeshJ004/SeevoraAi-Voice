@@ -815,7 +815,7 @@ async function apiAgentsCreate(req, res, ctx) {
     guardrails: Array.isArray(b.guardrails) ? b.guardrails.map(String).slice(0, 30) : (preset ? preset.guardrails : []),
     sampleTranscript: Array.isArray(b.sampleTranscript) ? b.sampleTranscript.slice(0, 30) : null,
     transcriptUnderstanding: (b.transcriptUnderstanding && typeof b.transcriptUnderstanding === 'object') ? b.transcriptUnderstanding : null,
-    telephony: { did: String(b.did || providers.telephony.did).replace(/[^0-9]/g, '') || providers.telephony.did },
+    telephony: { did: String(b.did || providers.telephony.did).replace(/[^0-9+]/g, '') || providers.telephony.did },
     createdAt: new Date().toISOString(),
   };
   await core.mutate((d) => {
@@ -865,7 +865,7 @@ async function apiAgentsUpdate(req, res, ctx) {
     if (b.knowledge != null) a.knowledge = String(b.knowledge).slice(0, 10000);
     if (b.greeting != null) a.greeting = String(b.greeting).slice(0, 500);
     if (b.did != null) {
-      const did = String(b.did).replace(/[^0-9]/g, '');
+      const did = String(b.did).replace(/[^0-9+]/g, '');
       a.telephony = { ...(a.telephony || {}), did: did || providers.telephony.did };
     }
     if (Array.isArray(b.fields)) a.fields = b.fields.map(String).slice(0, 30);
@@ -2868,11 +2868,50 @@ async function apiPublicDemoSession(req, res, token) {
   }
 }
 
-// GET /api/telephony/status -> VoBiz configuration status from Dograh.
-async function apiTelephonyStatus(req, res) {
+// GET /api/telephony/status -> VoBiz configuration status from Dograh merged with tenant-owned numbers.
+async function apiTelephonyStatus(req, res, ctx) {
   try {
-    const status = await providers.telephony.status();
-    core.sendJson(res, 200, { ...status, provider: 'vobiz', orchestrator: 'dograh' });
+    let status = { connected: true, dids: [], provider: 'vobiz', orchestrator: 'dograh' };
+    try {
+      status = await providers.telephony.status();
+    } catch (_) {
+      // Global provider may not be configured in local/test; fallback gracefully
+    }
+
+    const tenantId = ctx && ctx.tenant ? ctx.tenant.id : null;
+    const tenantConnections = (core.db().byonConnections || [])
+      .filter((x) => tenantId && x.tenantId === tenantId && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
+
+    const tenantDids = tenantConnections.map((x) => ({
+      id: x.id,
+      number: x.address,
+      status: 'active',
+      label: x.label || `${(x.provider || 'vobiz').toUpperCase()} (${x.address})`,
+      provider: x.provider || 'vobiz',
+      isCustom: true
+    }));
+
+    // Merge tenant's own numbers first, followed by platform DIDs
+    const existingDids = (status && Array.isArray(status.dids)) ? status.dids : [];
+    const uniqueDids = [...tenantDids];
+    for (const d of existingDids) {
+      const num = typeof d === 'string' ? d : (d.number || d.did);
+      if (num && !uniqueDids.some((x) => x.number === num)) {
+        uniqueDids.push(typeof d === 'string' ? { id: num, number: num, label: num, provider: 'vobiz' } : d);
+      }
+    }
+
+    const primaryDid = tenantDids.length > 0 ? tenantDids[0].number : (status.did || (uniqueDids[0] && uniqueDids[0].number));
+
+    core.sendJson(res, 200, {
+      ...status,
+      connected: true,
+      dids: uniqueDids,
+      did: primaryDid,
+      customDids: tenantDids,
+      provider: tenantDids.length > 0 ? tenantDids[0].provider : (status.provider || 'vobiz'),
+      orchestrator: 'dograh'
+    });
   } catch (e) {
     handleProviderError(res, e);
   }
@@ -3601,7 +3640,18 @@ async function apiSupportReply(req, res, ctx) {
 }
 
 function apiByonList(req, res, ctx) {
-  const connections = core.db().byonConnections.filter((x) => x.tenantId === ctx.tenant.id).map((x) => ({ ...x, credentials: undefined }));
+  const connections = (core.db().byonConnections || [])
+    .filter((x) => x.tenantId === ctx.tenant.id)
+    .map((x) => ({
+      id: x.id,
+      tenantId: x.tenantId,
+      provider: x.provider,
+      address: x.address,
+      authId: x.authId,
+      label: x.label,
+      status: x.status || 'active',
+      createdAt: x.createdAt
+    }));
   core.sendJson(res, 200, { connections });
 }
 
@@ -3609,13 +3659,87 @@ function apiPrivacyGet(req, res, ctx) { core.sendJson(res, 200, { mode: ctx.tena
 
 async function apiByonSave(req, res, ctx) {
   const b = ctx.body || {};
-  const provider = String(b.provider || '').toLowerCase();
-  if (!['vobiz', 'twilio', 'telnyx', 'plivo', 'vonage', 'sip'].includes(provider)) return core.sendJson(res, 422, { error: 'unsupported BYON provider', code: 'bad_provider' });
-  const address = String(b.address || '').replace(/[^0-9+]/g, '').slice(0, 32);
-  if (!address) return core.sendJson(res, 422, { error: 'phone address required', code: 'bad_address' });
-  const connection = { id: core.genId('byon_'), tenantId: ctx.tenant.id, provider, address, label: String(b.label || '').slice(0, 64), status: 'pending_verification', createdBy: ctx.user.id, createdAt: new Date().toISOString() };
-  await core.mutate((d) => { d.byonConnections.push(connection); addAudit(d, ctx, 'telephony.byon.created', 'byon_connection', connection.id, { provider, address }); });
-  core.sendJson(res, 201, { connection });
+  const provider = String(b.provider || 'vobiz').toLowerCase();
+  if (!['vobiz', 'twilio', 'telnyx', 'plivo', 'vonage', 'sip'].includes(provider)) {
+    return core.sendJson(res, 422, { error: 'Unsupported telephony provider', code: 'bad_provider' });
+  }
+  let address = String(b.address || '').trim().replace(/[\s()-]/g, '');
+  if (!address) {
+    return core.sendJson(res, 422, { error: 'Phone number or SIP address is required', code: 'bad_address' });
+  }
+  // Standardize Indian phone numbers: +91 prefix
+  if (/^[6-9]\d{9}$/.test(address)) {
+    address = '+91' + address;
+  } else if (/^91[6-9]\d{9}$/.test(address)) {
+    address = '+' + address;
+  } else if (!address.startsWith('+') && /^\d{10,15}$/.test(address)) {
+    address = '+' + address;
+  }
+
+  const authId = String(b.authId || b.auth_id || '').trim();
+  const authToken = String(b.authToken || b.auth_token || '').trim();
+  const label = String(b.label || '').trim().slice(0, 64) || (provider.toUpperCase() + ' · ' + address);
+
+  const connection = {
+    id: core.genId('byon_'),
+    tenantId: ctx.tenant.id,
+    provider,
+    address,
+    authId: authId ? authId.slice(0, 80) : undefined,
+    authToken: authToken ? authToken.slice(0, 160) : undefined,
+    label,
+    status: 'active', // Active immediately so client can assign to agent without admin
+    createdBy: ctx.user.id,
+    createdAt: new Date().toISOString()
+  };
+
+  await core.mutate((d) => {
+    if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
+    const idx = d.byonConnections.findIndex((x) => x.tenantId === ctx.tenant.id && x.address === address);
+    if (idx >= 0) {
+      d.byonConnections[idx] = connection;
+    } else {
+      d.byonConnections.push(connection);
+    }
+    // Update tenant default telephony DID if needed
+    const t = d.tenants.find((x) => x.id === ctx.tenant.id);
+    if (t) {
+      t.telephony = t.telephony || {};
+      t.telephony.did = address;
+      t.telephony.provider = provider;
+    }
+    addAudit(d, ctx, 'telephony.byon.saved', 'byon_connection', connection.id, { provider, address, label });
+  });
+
+  core.sendJson(res, 201, {
+    connection: { ...connection, authToken: connection.authToken ? '••••••••' : undefined },
+    message: `Phone number ${address} connected and ready to assign to AI Agents.`
+  });
+}
+
+async function apiByonDelete(req, res, ctx) {
+  const b = ctx.body || {};
+  const urlObj = new URL(req.url, 'http://localhost');
+  const id = b.id || urlObj.searchParams.get('id');
+  if (!id) return core.sendJson(res, 422, { error: 'Connection ID is required', code: 'missing_id' });
+
+  let removed = null;
+  await core.mutate((d) => {
+    if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
+    const idx = d.byonConnections.findIndex((x) => x.id === id && x.tenantId === ctx.tenant.id);
+    if (idx >= 0) {
+      removed = d.byonConnections.splice(idx, 1)[0];
+      const t = d.tenants.find((x) => x.id === ctx.tenant.id);
+      if (t && t.telephony && t.telephony.did === removed.address) {
+        const next = d.byonConnections.find((x) => x.tenantId === ctx.tenant.id);
+        t.telephony.did = next ? next.address : undefined;
+      }
+      addAudit(d, ctx, 'telephony.byon.deleted', 'byon_connection', id, { address: removed.address });
+    }
+  });
+
+  if (!removed) return core.sendJson(res, 404, { error: 'Phone number connection not found', code: 'not_found' });
+  core.sendJson(res, 200, { ok: true, message: `Disconnected phone number ${removed.address}` });
 }
 
 async function apiPrivacyMode(req, res, ctx) {
@@ -6547,6 +6671,7 @@ const server = http.createServer(async (req, res) => {
       // ---- DELETE routes ----
       if (req.method === 'DELETE' && route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionDelete);
       if (req.method === 'DELETE' && route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadDelete);
+      if (req.method === 'DELETE' && (route === '/api/byon' || route.startsWith('/api/byon/'))) return core.requireRole(req, res, 'owner', apiByonDelete);
 
       // ---- Authed GET routes ----
       if (req.method === 'GET') {
@@ -6665,6 +6790,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
       if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
+      if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
       if (route === '/api/tenant/update') return core.requireRole(req, res, 'owner', apiTenantUpdate, body);
