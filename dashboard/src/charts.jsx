@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 const roots = new WeakMap();
-const COLORS = ['#7ea9e8', '#4d78b3', '#9bb9e6', '#1b1d21'];
+const COLORS = ['#7ea9e8', '#4d78b3', '#9bb9e6', '#5b8cd6'];
 
 function formatInrPaise(value) {
   return `₹${(Number(value || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -148,7 +148,7 @@ function AgencyDashboard({ data }) {
                   <YAxis type="category" dataKey="name" width={92} axisLine={false} tickLine={false} tick={{ fill: '#17191d', fontSize: 11 }} />
                   <Tooltip content={<MoneyTooltip />} />
                   <Bar dataKey="calls" name="Calls" stackId="a" fill="#7ea9e8" radius={[0, 3, 3, 0]} />
-                  <Bar dataKey="activity" name="Activity" stackId="a" fill="#1b1d21" radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="activity" name="Activity" stackId="a" fill="#5b8cd6" radius={[0, 3, 3, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <EmptyChart text="Client calls and activity will appear here." />}

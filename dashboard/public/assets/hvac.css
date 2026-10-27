@@ -34,8 +34,8 @@ input:focus, select:focus, textarea:focus { border-color:var(--blue); outline:no
 textarea { min-height:76px; resize:vertical; } .wide { grid-column:1/-1; }
 .actions { display:flex; justify-content:flex-end; gap:9px; margin-top:15px; }
 .primary, .secondary { border-radius:999px; padding:11px 18px; border:1px solid transparent; font-weight:600; font-size:13px; transition:all 0.2s; }
-.primary { background:#1b1d21; color:#fff; box-shadow:0 8px 20px #10151d16; }
-.primary:hover { transform:translateY(-2px); box-shadow:0 12px 26px #10151d24; background:#111215; }
+.primary { background:linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%); color:#fff; box-shadow:0 4px 14px rgba(126, 169, 232, 0.35); border:1px solid rgba(255, 255, 255, 0.35); }
+.primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(126, 169, 232, 0.45); background:linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%); }
 .secondary { background:#ffffff; border-color:var(--line); color:var(--ink); }
 .secondary:hover { background:#f7f8fa; border-color:var(--blue); color:#1a5da9; }
 .booking { margin-top:16px; border-top:1px solid var(--line); padding-top:16px; }
@@ -56,5 +56,5 @@ td { padding:13px 9px; border-bottom:1px solid var(--line); font-size:13px; vert
 .status.follow_up { background:#fffbeb; color:#92400e; }
 .status.abandoned { background:#fff1f2; color:#b91c1c; }
 .empty { padding:36px 0; color:var(--muted); text-align:center; }
-.toast { position:fixed; right:20px; bottom:20px; max-width:350px; padding:12px 16px; border-radius:12px; background:#1b1d21; color:#fff; box-shadow:var(--shadow); }
+.toast { position:fixed; right:20px; bottom:20px; max-width:350px; padding:12px 16px; border-radius:12px; background:rgba(23, 25, 29, 0.95); color:#fff; box-shadow:var(--shadow); }
 @media (max-width:820px) { .stats { grid-template-columns:repeat(2,1fr); } .grid { grid-template-columns:1fr; } .topline { align-items:flex-start; flex-direction:column; } .form-grid { grid-template-columns:1fr; } .wide { grid-column:auto; } .jobs { overflow:auto; } table { min-width:720px; } }

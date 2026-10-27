@@ -28,8 +28,8 @@
       --blue2: #dceaff;
       --glass: rgba(255, 255, 255, 0.68);
       --shadow: 0 24px 70px rgba(45, 62, 86, 0.10);
-      --primary: #1b1d21;
-      --primary-hover: #111215;
+      --primary: #7ea9e8;
+      --primary-hover: #6897db;
       --primary-light: #dceaff;
       --link-hover: #1a5da9;
       --danger: #ef4444;
@@ -273,20 +273,20 @@
     #clerk-mount-zone .cl-button[data-variant="solid"],
     .cl-formButtonPrimary,
     .cl-button[data-variant="solid"] {
-      background: #1b1d21 !important;
+      background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
       color: #FFFFFF !important;
-      border: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.35) !important;
       border-radius: 999px !important;
-      box-shadow: 0 8px 20px #10151d16 !important;
+      box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
       font-family: var(--font) !important;
       font-weight: 600 !important;
       transition: transform .25s, box-shadow .25s, background .25s !important;
     }
     #clerk-mount-zone .cl-formButtonPrimary:hover,
     .cl-formButtonPrimary:hover {
-      background: #111215 !important;
+      background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
       transform: translateY(-2px) !important;
-      box-shadow: 0 12px 26px #10151d24 !important;
+      box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45) !important;
     }
     #clerk-mount-zone .cl-socialButtonsIconButton,
     #clerk-mount-zone .cl-socialButtonsBlockButton {
@@ -437,8 +437,8 @@
       width: 100%;
       height: 44px;
       border-radius: 999px;
-      border: none;
-      background: #1b1d21;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);
       color: #FFFFFF;
       font-family: inherit;
       font-size: 13.5px;
@@ -448,15 +448,15 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 8px 20px #10151d16;
+      box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35);
       transition: transform .25s, box-shadow .25s, background .25s;
       margin-top: 2px;
     }
 
     .btn-submit-primary:hover, .primary:hover {
-      background: #111215;
+      background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%);
       transform: translateY(-2px);
-      box-shadow: 0 12px 26px #10151d24;
+      box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45);
     }
 
     .btn-submit-primary:disabled {
@@ -883,7 +883,7 @@
             ui: { ClerkUI: window.__internal_ClerkUICtor },
             appearance: {
               variables: {
-                colorPrimary: '#1b1d21',
+                colorPrimary: '#7ea9e8',
                 colorBackground: '#ffffff',
                 colorText: '#17191d',
                 colorNeutral: '#6c737d',
@@ -891,9 +891,9 @@
               },
               elements: {
                 formButtonPrimary: {
-                  background: '#1b1d21 !important',
+                  background: 'linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important',
                   borderRadius: '99px !important',
-                  boxShadow: '0 4px 14px rgba(66, 194, 255, 0.35) !important',
+                  boxShadow: '0 4px 14px rgba(126, 169, 232, 0.35) !important',
                 },
                 footerActionLink: {
                   color: '#1a5da9 !important',

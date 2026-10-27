@@ -144,17 +144,17 @@
 }
 
 .auth-form .btn-primary {
-  background: #1b1d21;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);
   color: #fff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
-  box-shadow: 0 8px 20px #10151d16;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35);
   transition: transform .25s, box-shadow .25s, background .25s;
 }
 .btn-primary:hover {
-  background: #111215;
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%);
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px #10151d24;
+  box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45);
 }
 
 .btn-danger {
@@ -3402,7 +3402,7 @@
   top: -11px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1b1d21;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -3410,7 +3410,7 @@
   letter-spacing: 0.08em;
   padding: 4px 16px;
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(27, 29, 33, 0.25);
+  box-shadow: 0 4px 12px rgba(126, 169, 232, 0.35);
 }
 
 .plan-head-name {

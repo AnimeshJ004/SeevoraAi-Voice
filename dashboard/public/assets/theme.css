@@ -25,12 +25,12 @@
   --glass:        rgba(255, 255, 255, 0.68);
   --shadow:       0 24px 70px rgba(45, 62, 86, 0.10);
 
-  /* Primary Button / Actions: Dark button #1b1d21 */
-  --primary:         #1b1d21;
-  --primary-hover:   #111215;
-  --primary-dark:    #000000;
+  /* Primary Button / Actions: Light Sky Cerulean System (#7ea9e8) */
+  --primary:         #7ea9e8;
+  --primary-hover:   #6897db;
+  --primary-dark:    #5082cb;
   --primary-light:   #dceaff;
-  --primary-soft:    rgba(126, 169, 232, 0.14);
+  --primary-soft:    rgba(126, 169, 232, 0.18);
 
   /* Accent Blue (#7ea9e8) & Light Blue (#dceaff) */
   --accent:          #7ea9e8;
@@ -631,8 +631,9 @@ body.grain {
 }
 
 .btn-dark {
-  background: #334155 !important;
-  color: #F8FAFC !important;
+  background: #dceaff !important;
+  color: #1a5da9 !important;
+  border: 1px solid #bdd7fc !important;
 }
 
 /* Segmented */
@@ -650,9 +651,9 @@ body.grain {
 }
 
 .seg button.on {
-  background: var(--primary) !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 8px rgba(0,149,255,0.25) !important;
+  box-shadow: 0 2px 8px rgba(126, 169, 232, 0.32) !important;
 }
 
 /* ==========================================================================
@@ -925,9 +926,9 @@ select option {
 }
 
 .sv-btn-primary {
-  background: #1b1d21 !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #FFFFFF !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 999px !important;
   padding: 10px 22px !important;
   font-size: 0.86rem !important;
@@ -936,15 +937,15 @@ select option {
   align-items: center !important;
   gap: 8px !important;
   cursor: pointer !important;
-  box-shadow: 0 8px 20px #10151d16 !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
   transition: transform .25s, box-shadow .25s, background .25s !important;
   font-family: var(--font) !important;
 }
 
 .sv-btn-primary:hover {
-  background: #111215 !important;
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 12px 26px #10151d24 !important;
+  box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45) !important;
 }
 
 .sv-btn-outline {
@@ -1770,22 +1771,23 @@ select option {
 
 .sv-submit-btn {
   width: 100%;
-  background: #1b1d21 !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #FFFFFF !important;
-  border: 1px solid #1b1d21 !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 99px;
   padding: 14px 22px;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(27, 29, 33, 0.16) !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--font);
   letter-spacing: -0.01em;
 }
 .sv-submit-btn:hover {
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(16, 21, 29, 0.24) !important;
+  box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45) !important;
 }
 
 
@@ -1986,9 +1988,9 @@ select option {
 }
 
 .sv-agent-test-btn:hover {
-  background: #1b1d21;
-  color: #FFFFFF;
-  border-color: #1b1d21;
+  background: #dceaff;
+  color: #1a5da9;
+  border-color: #7ea9e8;
   transform: translateY(-1px);
 }
 
@@ -2254,10 +2256,10 @@ tr:hover td { background: #F8FAFC; }
 }
 
 .chat-rail-btn.primary-plus {
-  background: #1b1d21 !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(27, 29, 33, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
 }
 
 /* Center Stream */
@@ -2342,14 +2344,15 @@ input.chat-text-input {
 }
 
 .chat-send-btn {
-  background: #1b1d21 !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(27, 29, 33, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: #111215 !important;
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
   transform: scale(1.05) !important;
+  box-shadow: 0 6px 18px rgba(126, 169, 232, 0.45) !important;
 }
 
 /* Right Connectivity & History Panel */
@@ -2858,16 +2861,16 @@ input.chat-text-input {
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  background: linear-gradient(135deg, #6c737d 0%, #7ea9e8 100%) !important;
-  box-shadow: 0 4px 14px rgba(0, 149, 255, 0.28) !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.32) !important;
   border: none !important;
   color: #FFFFFF !important;
   transition: all 0.2s ease !important;
 }
 
 .ac-actions-row-main .btn:hover {
-  background: linear-gradient(135deg, #6c737d 0%, #6c737d 100%) !important;
-  box-shadow: 0 6px 18px rgba(0, 149, 255, 0.38) !important;
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
+  box-shadow: 0 6px 18px rgba(126, 169, 232, 0.42) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -3693,7 +3696,7 @@ input.chat-text-input {
 
 .cl-formButtonPrimary,
 .cl-button[data-variant="solid"] {
-  background: linear-gradient(135deg, #7ea9e8 0%, #6c737d 100%) !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #FFFFFF !important;
   border: none !important;
   border-radius: 99px !important;
@@ -3879,21 +3882,21 @@ h1 .blue, .blue-grad, .t-blue {
 .navlinks a:hover { color: #1a5da9; }
 
 .nav-cta, .primary, .btn-primary, .btn-brand, .btn-submit-primary, .plan-cta-btn.btn-primary {
-  background: #1b1d21 !important;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
   color: #FFFFFF !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 999px !important;
   padding: 11px 22px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
-  box-shadow: 0 8px 20px #10151d16 !important;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
   transition: transform .25s, box-shadow .25s, background .25s !important;
 }
 
 .nav-cta:hover, .primary:hover, .btn-primary:hover, .btn-brand:hover, .btn-submit-primary:hover, .plan-cta-btn.btn-primary:hover {
-  background: #111215 !important;
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 12px 26px #10151d24 !important;
+  box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45) !important;
 }
 
 .eyebrow {

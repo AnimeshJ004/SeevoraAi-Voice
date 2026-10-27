@@ -33,7 +33,7 @@
   --ink-faint:    #8a929d;
 
   /* Buttons & Actions */
-  --dark-btn:     #1b1d21;
+  --dark-btn:     #7ea9e8;
   --link-hover:   #1a5da9;
   --accent:       #7ea9e8;
   --accent-light: #dceaff;
@@ -165,14 +165,14 @@ h1 .blue, .grad-text, .t-blue {
 .navlinks a:hover { color: #1a5da9; }
 
 .nav-cta, .primary, .btn-primary {
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   padding: 13px 19px;
-  background: #1b1d21;
+  background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 8px 20px #10151d16;
+  box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35);
   transition: transform .25s, box-shadow .25s, background .25s;
   display: inline-flex;
   align-items: center;
@@ -181,8 +181,8 @@ h1 .blue, .grad-text, .t-blue {
 }
 .nav-cta:hover, .primary:hover, .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px #10151d24;
-  background: #111215;
+  box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45);
+  background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%);
   color: #fff;
 }
 

@@ -362,7 +362,7 @@ function fireConfetti() {
     vx: (Math.random() - 0.5) * 6,
     vy: Math.random() * 4 + 2,
     size: Math.random() * 8 + 4,
-    color: ['#7ea9e8', '#dceaff', '#4d78b3', '#9bb9e6', '#1b1d21', '#1a5da9'][Math.floor(Math.random() * 6)],
+    color: ['#7ea9e8', '#dceaff', '#4d78b3', '#9bb9e6', '#5b8cd6', '#1a5da9'][Math.floor(Math.random() * 6)],
     tilt: Math.random() * 10
   }));
   let frame = 0;
@@ -413,7 +413,7 @@ async function ensureClerkReady() {
           ui: { ClerkUI: window.__internal_ClerkUICtor },
           appearance: {
             variables: {
-              colorPrimary:        '#1b1d21',
+              colorPrimary:        '#7ea9e8',
               colorBackground:     '#ffffff',
               colorText:           '#17191d',
               colorTextSecondary:  '#6c737d',
@@ -429,7 +429,7 @@ async function ensureClerkReady() {
             },
             elements: {
               card:                'background: #ffffff; border:1px solid rgba(34, 43, 56, 0.10); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
-              formButtonPrimary:   'background:#1b1d21!important; box-shadow:0 8px 20px #10151d16; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(66, 194, 255,0.35)!important; font-weight:700!important',
+              formButtonPrimary:   'background:linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%)!important; box-shadow:0 4px 14px rgba(126, 169, 232,0.35)!important; color:#fff!important; border-radius:99px!important; font-weight:700!important',
               socialButtonsBlockButton: 'border:1px solid rgba(66, 194, 255,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
               footerActionLink:    'color:#1a5da9!important; font-weight:600!important',
               identityPreviewEditButtonIcon: 'color:#1a5da9',
@@ -1551,7 +1551,7 @@ function renderVoiceDashboard(root, opts) {
     })),
     el('button', {
       class: 'sv-submit-btn',
-      style: 'margin-top:14px;background:#1b1d21;color:#fff;border-radius:999px;box-shadow:0 8px 20px #10151d16;',
+      style: 'margin-top:14px;background:linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);color:#fff;border-radius:999px;box-shadow:0 4px 14px rgba(126, 169, 232, 0.35);',
       onclick: () => goto('agents')
     }, '+ Create New Voice Agent')
   ]));
