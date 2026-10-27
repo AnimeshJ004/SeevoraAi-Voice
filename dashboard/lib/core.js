@@ -202,6 +202,8 @@ function defaultDb() {
     dograhOrgs: [],
     // Sprint-6: Booking engine
     bookingSchedules: [], bookingSlots: [],
+    // Inbound telephony receptionist config
+    inboundConfigs: [],
   };
 }
 
@@ -222,6 +224,7 @@ const COLLECTIONS = [
   'crmWebhooks', 'crmWebhookLogs',
   'dograhOrgs',
   'bookingSchedules', 'bookingSlots',
+  'inboundConfigs',
 ];
 
 function migrateDb(parsed) {

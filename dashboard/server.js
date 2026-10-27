@@ -1751,12 +1751,14 @@ async function verifyWhatsAppBusinessNumber(rawPhone, metaConfig = {}) {
 }
 
 // ---- handle: connect_integration (AI Voice Agent to WhatsApp/CRM/Email/Calendar) ----
+// ---- handle: connect_integration (AI Voice Agent to WhatsApp/CRM/Email/Calendar/FileReader) ----
 async function handleConnectIntegration(text, agentId, ctx, db) {
   const agents = (db.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
   const targetAgent = agentId ? agents.find((a) => a.id === agentId) : agents[0];
   const agentName = targetAgent ? targetAgent.name : 'AI Voice Receptionist';
 
   const t = text.toLowerCase();
+  const isDisconnect = /\b(disconnect|unlink|remove|disable|deactivate|band\s*karo|hatao|disconnect\s*karo|hatana|band)\b/i.test(t);
 
   // Detect channel
   let channel = 'custom';
@@ -1764,116 +1766,279 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
 
   if (/whatsapp/i.test(t)) {
     channel = 'whatsapp';
-    providerTitle = 'WhatsApp Voice Dispatch & Alerts';
+    providerTitle = 'WhatsApp Voice Alerts';
   } else if (/gmail|email|smtp|mail/i.test(t)) {
     channel = 'gmail';
-    providerTitle = 'Gmail & Email Dispatch';
-  } else if (/crm|hubspot|zoho|salesforce|lead/i.test(t)) {
+    providerTitle = 'Gmail Dispatch';
+  } else if (/crm|hubspot|zoho|salesforce|pipeline/i.test(t)) {
     channel = 'crm';
-    providerTitle = 'CRM Pipeline & Lead Webhook';
-  } else if (/calendar|cal\.com|schedule|appointment/i.test(t)) {
+    providerTitle = 'CRM Pipeline Sync';
+  } else if (/calendar|cal\.com|schedule|appointment|booking/i.test(t)) {
     channel = 'calendar';
-    providerTitle = 'Google Calendar & Scheduling';
+    providerTitle = 'Google Calendar & Planning';
+  } else if (/file|reader|document|knowledge|pdf|kb/i.test(t)) {
+    channel = 'fileReader';
+    providerTitle = 'File Reader & Knowledge Base';
+  } else if (/media|audio|recording|mp3|wav/i.test(t)) {
+    channel = 'mediaFiles';
+    providerTitle = 'Media Files & Audio Manager';
   } else if (/webhook|api|zapier|make/i.test(t)) {
     channel = 'webhook';
     providerTitle = 'Marketplace Webhook API';
   }
 
-  // Check if user provided details (e.g. phone number, email, URL)
-  const phoneMatch = text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+91\d{10}|\b\d{10}\b/);
+  // 1. Handle Disconnect Flow
+  if (isDisconnect) {
+    await core.mutate((d) => {
+      assistant.updateTenantIntegration(d, ctx.tenant.id, channel, {
+        status: 'disconnected',
+        disconnectedAt: new Date().toISOString()
+      });
+      if (targetAgent && targetAgent.integrations && targetAgent.integrations[channel]) {
+        targetAgent.integrations[channel].enabled = false;
+      }
+    });
+
+    const reply = `✓ **${providerTitle}** ko successfully disconnect kar diya gaya hai.\n\n` +
+      `• Status: **Disconnected**\n` +
+      `• Automation: Is channel par real-time message dispatch disable ho gaya hai.\n\n` +
+      `Right panel par status badge ab **Disconnected** show hoga. Aap jab chahein ise dobara connect kar sakte hain.`;
+
+    return {
+      reply,
+      action: { type: 'integration_disconnected', channel, status: 'disconnected', agentName }
+    };
+  }
+
+  // 2. Handle Connect Flow with Guided Steps
+  const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\b\d{10}\b/);
   const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   const urlMatch = text.match(/https?:\/\/[^\s]+/);
 
-  let updatedData = {
-    status: 'active',
-    connectedAgentId: targetAgent ? targetAgent.id : null,
-    connectedAgentName: agentName,
-    lastSync: new Date().toISOString()
-  };
-
+  // A. WhatsApp Flow
   if (channel === 'whatsapp') {
-    const rawPhone = phoneMatch ? phoneMatch[0] : (t.includes('personal') ? '9999900000' : '+91 98765 43210');
+    if (!phoneMatch) {
+      const reply = `**WhatsApp Voice Alerts connect karne ke liye ye steps follow karein:**\n\n` +
+        `1. **WhatsApp Business Number**: Apna registered business mobile number country code ke saath provide karein (e.g. \`+91 98765 43210\`).\n` +
+        `2. **Account Verification**: Meta Cloud API se verify hoga ki number official WhatsApp Business Account (WABA) hai.\n` +
+        `3. **OTP & Activation**: 6-digit verification code enter hote hi bot live dispatch ke liye active ho jayega.\n\n` +
+        `Aap apna phone number yahan type karke reply kar sakte hain (jaise: \`Connect WhatsApp to +91 80715 82519\`) ya direct setup modal open karein:`;
+      return {
+        reply,
+        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Configure WhatsApp Alerts ⚙' }
+      };
+    }
+
+    const rawPhone = phoneMatch[0];
     const waCheck = await verifyWhatsAppBusinessNumber(rawPhone);
 
     if (!waCheck.isBusiness) {
-      const reply = `Verification Failed: The phone number **${rawPhone}** is not a registered WhatsApp Business Account (WABA).\n\n` +
-        `• Detected Account Type: **Personal WhatsApp Account**\n` +
-        `• Requirement: Seevora Voice AI can only bind to official **WhatsApp Business** accounts to automate post-call audio transcripts and booking confirmations.\n\n` +
-        `Please provide an active WhatsApp Business number (e.g. \`Connect this voice agent to my WhatsApp account +91 98765 43210\`).`;
+      const reply = `⚠️ **Personal WhatsApp Account Detected**: **${rawPhone}**\n\n` +
+        `Seevora Voice AI production-grade automated call transcripts aur booking alerts dispatch karne ke liye official **WhatsApp Business Account (WABA)** require karta hai.\n\n` +
+        `Aap official business number use karein (testing ke liye verified number: \`+91 80715 82519\`) ya right panel se WhatsApp modal open karke custom Meta Cloud API credentials configure karein.`;
       return {
         reply,
-        action: { type: 'integration_rejected', channel: 'whatsapp', reason: waCheck.error }
+        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Open WhatsApp Modal ⚙' }
       };
     }
 
     const phone = waCheck.phoneNumber;
-    updatedData = {
-      ...updatedData,
+    const updatedData = {
+      status: 'connected',
       provider: 'WhatsApp Voice Alerts',
       phoneNumber: phone,
       wabaId: waCheck.wabaId,
       verifiedAt: new Date().toISOString(),
+      botActive: true,
       dispatchOnCallEnd: true,
+      connectedAgentId: targetAgent ? targetAgent.id : null,
+      connectedAgentName: agentName,
+      lastSync: new Date().toISOString(),
       description: `Auto-sends booking summary & call transcript to caller from ${phone} (${waCheck.wabaId})`
     };
-  } else if (channel === 'gmail') {
-    const email = emailMatch ? emailMatch[0] : (ctx.user.email || 'dispatch@seevora.ai');
-    updatedData = {
-      ...updatedData,
-      provider: 'Gmail Voice Dispatch',
-      senderEmail: email,
-      dispatchOnCallEnd: true,
-      description: `Dispatches instant call notifications & MP3 recording links to ${email}`
-    };
-  } else if (channel === 'crm') {
-    const hook = urlMatch ? urlMatch[0] : 'https://api.seevora.ai/v1/crm/lead-sync';
-    updatedData = {
-      ...updatedData,
-      provider: 'CRM Lead & Deal Sync',
-      webhookUrl: hook,
-      syncOnCallEnd: true,
-      description: `Creates CRM contact and deal card on every answered voice call`
-    };
-  } else if (channel === 'calendar') {
-    updatedData = {
-      ...updatedData,
-      provider: 'Google Calendar Scheduling',
-      email: ctx.user.email || 'team@seevora.ai',
-      autoBookSlots: true,
-      description: 'Voice agent checks real-time availability and blocks slots automatically'
-    };
-  } else {
-    const hook = urlMatch ? urlMatch[0] : 'https://webhook.site/seevora-call-events';
-    updatedData = {
-      ...updatedData,
-      provider: 'Marketplace Integration Webhook',
-      endpoint: hook,
-      events: ['call.completed', 'transcript.ready', 'lead.captured'],
-      description: 'Pushes real-time voice call payloads to your external marketplace tool'
+
+    await core.mutate((d) => {
+      assistant.updateTenantIntegration(d, ctx.tenant.id, 'whatsapp', updatedData);
+    });
+
+    const reply = `✓ **WhatsApp Voice Alerts Successfully Connected!**\n\n` +
+      `• Connected Phone: **${phone}**\n` +
+      `• WABA ID: \`${waCheck.wabaId}\`\n` +
+      `• Status: **Connected & Live**\n` +
+      `• Triggers: Missed call recovery aur voice booking summary messages ab is number se live dispatch honge.\n\n` +
+      `Right panel par status badge update ho kar **Connected** ho gaya hai.`;
+
+    return {
+      reply,
+      action: { type: 'integration_connected', channel: 'whatsapp', status: 'connected', details: updatedData }
     };
   }
 
-  // Mutate integration in db
-  await core.mutate((d) => {
-    assistant.updateTenantIntegration(d, ctx.tenant.id, channel, updatedData);
-    if (targetAgent) {
-      const a = d.agents.find(x => x.id === targetAgent.id);
-      if (a) {
-        if (!a.integrations) a.integrations = {};
-        a.integrations[channel] = { enabled: true, connectedAt: new Date().toISOString() };
-      }
+  // B. Calendar Flow
+  if (channel === 'calendar') {
+    if (!emailMatch) {
+      const reply = `**Google Calendar & Planning connect karne ke liye ye details required hain:**\n\n` +
+        `1. **Calendar Provider**: Google Calendar, Cal.com, ya Outlook 365 select karein.\n` +
+        `2. **Connected Email**: Wo calendar email address provide karein jisme caller appointments book hone hain (e.g. \`team@seevora.ai\`).\n` +
+        `3. **Appointment Auto-Schedule**: Voice caller dwara slot confirm hote hi calendar par slot block ho jayega.\n\n` +
+        `Aap apna email yahan reply kar sakte hain (jaise: \`Connect calendar to team@myclinic.com\`) ya direct modal open karein:`;
+      return {
+        reply,
+        action: { type: 'open_modal', modal: 'calendar', channel: 'calendar', buttonText: 'Configure Calendar & Planning 📅' }
+      };
     }
+
+    const email = emailMatch[0];
+    const updatedData = {
+      status: 'connected',
+      provider: 'Google Calendar',
+      email,
+      autoBook: true,
+      eventsCount: 16,
+      lastSync: new Date().toISOString(),
+      connectedAgentId: targetAgent ? targetAgent.id : null,
+      connectedAgentName: agentName
+    };
+
+    await core.mutate((d) => {
+      assistant.updateTenantIntegration(d, ctx.tenant.id, 'calendar', updatedData);
+    });
+
+    const reply = `✓ **Google Calendar & Planning Successfully Connected!**\n\n` +
+      `• Provider: **Google Calendar**\n` +
+      `• Connected Email: **${email}**\n` +
+      `• Status: **Connected & Synced**\n` +
+      `• Auto-Booking: **Active** (Callers ke confirmed slots calendar mein sync honge)\n\n` +
+      `Right panel par badge ab **Connected** show ho raha hai.`;
+
+    return {
+      reply,
+      action: { type: 'integration_connected', channel: 'calendar', status: 'connected', details: updatedData }
+    };
+  }
+
+  // C. Gmail Flow
+  if (channel === 'gmail') {
+    if (!emailMatch) {
+      const reply = `**Gmail Call Summary Dispatch connect karne ke liye ye steps follow karein:**\n\n` +
+        `1. **Lead Summary Destination**: Wo email address provide karein jahan caller transcripts, call notes, aur audio links deliver karne hain (e.g. \`founder@company.com\`).\n` +
+        `2. **Dispatch Automations**: Har call end hone par instant formatted email note trigger hoga.\n\n` +
+        `Aap apna destination email yahan type kar sakte hain (jaise: \`Connect gmail to founder@company.com\`) ya setup modal open karein:`;
+      return {
+        reply,
+        action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Configure Gmail Dispatch ✉' }
+      };
+    }
+
+    const email = emailMatch[0];
+    const updatedData = {
+      status: 'connected',
+      provider: 'Gmail Dispatch',
+      senderEmail: 'dispatch@seevora.ai',
+      recipientEmail: email,
+      dispatchOnCallEnd: true,
+      lastDispatchedAt: new Date().toISOString(),
+      connectedAgentId: targetAgent ? targetAgent.id : null,
+      connectedAgentName: agentName
+    };
+
+    await core.mutate((d) => {
+      assistant.updateTenantIntegration(d, ctx.tenant.id, 'gmail', updatedData);
+    });
+
+    const reply = `✓ **Gmail Dispatch Successfully Connected!**\n\n` +
+      `• Destination Email: **${email}**\n` +
+      `• Status: **Connected & Active**\n` +
+      `• Dispatch: Completed voice calls ke transcripts aur caller notes ab is inbox par dispatch honge.\n\n` +
+      `Right panel par badge update ho kar **Connected** ho gaya hai.`;
+
+    return {
+      reply,
+      action: { type: 'integration_connected', channel: 'gmail', status: 'connected', details: updatedData }
+    };
+  }
+
+  // D. CRM Flow
+  if (channel === 'crm') {
+    if (!urlMatch) {
+      const reply = `**CRM Pipeline Sync connect karne ke liye ye steps follow karein:**\n\n` +
+        `1. **CRM Platform**: HubSpot CRM, Zoho CRM, Salesforce, ya Custom Webhook.\n` +
+        `2. **Lead Intake Webhook URL**: Zapier, Make, Pabbly ya CRM ka direct webhook endpoint provide karein.\n` +
+        `3. **Pipeline Automations**: Inbound & outbound calls ke lead records automatically CRM stage par push honge.\n\n` +
+        `Aap webhook URL yahan share kar sakte hain (jaise: \`Connect CRM https://hooks.zapier.com/...\`) ya setup modal open karein:`;
+      return {
+        reply,
+        action: { type: 'open_modal', modal: 'crm', channel: 'crm', buttonText: 'Configure CRM Pipeline Sync ⚡' }
+      };
+    }
+
+    const hook = urlMatch[0];
+    const updatedData = {
+      status: 'connected',
+      provider: 'HubSpot CRM',
+      webhookUrl: hook,
+      syncOnCallEnd: true,
+      lastSync: new Date().toISOString(),
+      connectedAgentId: targetAgent ? targetAgent.id : null,
+      connectedAgentName: agentName
+    };
+
+    await core.mutate((d) => {
+      assistant.updateTenantIntegration(d, ctx.tenant.id, 'crm', updatedData);
+    });
+
+    const reply = `✓ **CRM Pipeline Sync Successfully Connected!**\n\n` +
+      `• Webhook URL: \`${hook}\`\n` +
+      `• Status: **Connected & Synced**\n` +
+      `• Pipeline Sync: Caller contact, conversation summary, aur appointment time automatically sync hoga.\n\n` +
+      `Right panel par badge update ho kar **Connected** ho gaya hai.`;
+
+    return {
+      reply,
+      action: { type: 'integration_connected', channel: 'crm', status: 'connected', details: updatedData }
+    };
+  }
+
+  // E. File Reader Flow
+  if (channel === 'fileReader') {
+    const reply = `**File Reader & Knowledge Base setup karne ke steps:**\n\n` +
+      `1. **Document Upload**: Business FAQs, catalog, ya pricing policies (.pdf, .txt, .docx) upload karein.\n` +
+      `2. **Knowledge Ingestion**: Content voice agent ki conversational memory mein index ho jayega.\n` +
+      `3. **Accurate Caller Q&A**: Caller ke sawalo ka exact jawab is knowledge base se deliver hoga.\n\n` +
+      `Niche diye gaye button se File Reader modal open karein aur document upload karein:`;
+    return {
+      reply,
+      action: { type: 'open_modal', modal: 'fileReader', channel: 'fileReader', buttonText: 'Open File Reader 📄' }
+    };
+  }
+
+  // F. Media Files Flow
+  if (channel === 'mediaFiles') {
+    const reply = `**Media Files & Audio Manager:**\n\n` +
+      `• Inbound aur outbound voice call recordings real MP3 format mein sun sakte hain.\n` +
+      `• Custom voice prompt audio (greeting, hold music) upload kar sakte hain.\n\n` +
+      `Media Files manager open karne ke liye niche button par click karein:`;
+    return {
+      reply,
+      action: { type: 'open_modal', modal: 'media', channel: 'media', buttonText: 'Open Media Files 🎵' }
+    };
+  }
+
+  // Fallback Webhook
+  const hook = urlMatch ? urlMatch[0] : 'https://webhook.site/seevora-call-events';
+  const updatedData = {
+    status: 'connected',
+    provider: 'Marketplace Integration Webhook',
+    endpoint: hook,
+    events: ['call.completed', 'transcript.ready', 'lead.captured'],
+    lastSync: new Date().toISOString()
+  };
+  await core.mutate((d) => {
+    assistant.updateTenantIntegration(d, ctx.tenant.id, 'webhook', updatedData);
   });
-
-  const reply = `Connected! Your AI voice agent **${agentName}** has been linked to **${providerTitle}**.\n\n` +
-    `• Channel: **${channel.toUpperCase()}** (${updatedData.phoneNumber || updatedData.senderEmail || updatedData.webhookUrl || updatedData.email || updatedData.endpoint})\n` +
-    `• Status: **Live & Active**\n` +
-    `• Automation: When an AI voice call ends, the caller's details, conversation summary, and booking are dispatched immediately.\n\n` +
-    `You can monitor connected channels anytime in the Connected Apps panel!`;
-
   return {
-    reply,
-    action: { type: 'integration_connected', channel, agentName, details: updatedData }
+    reply: `✓ **${providerTitle}** connected successfully to \`${hook}\`!`,
+    action: { type: 'integration_connected', channel: 'webhook', status: 'connected', details: updatedData }
   };
 }
 
@@ -4899,6 +5064,79 @@ async function apiRecordingAudio(req, res, ctx) {
 }
 
 /* ==========================================================================
+   Inbound Receptionist & Telephony Routing Handlers
+   ========================================================================== */
+
+// GET /api/inbound/config - fetch active receptionist line & routing configuration
+async function apiInboundConfigGet(req, res, ctx) {
+  const d = core.db();
+  const configs = d.inboundConfigs || [];
+  let cfg = configs.find((c) => c.tenantId === ctx.tenant.id);
+  const tenantAgents = (d.agents || []).filter((a) => a.tenantId === ctx.tenant.id);
+  const defaultAgent = tenantAgents[0];
+
+  if (!cfg) {
+    cfg = {
+      tenantId: ctx.tenant.id,
+      phoneNumber: '+91 80715 82519',
+      carrier: 'VoBiz Enterprise SIP Trunk',
+      status: 'active',
+      assignedAgentId: defaultAgent ? defaultAgent.id : 'agent_ria_default',
+      assignedAgentName: defaultAgent ? defaultAgent.name : 'Ria (Medical Receptionist)',
+      ringStrategy: 'zero_ring', // 'zero_ring' | 'standard_2_ring'
+      operatingHours: '24_7', // '24_7' | 'business_hours'
+      transferNumber: '+91 98765 43210',
+      autoTransferOnEmergency: true,
+      whatsappConfirmation: true,
+      missedCallRecovery: true,
+      updatedAt: new Date().toISOString()
+    };
+  }
+  core.sendJson(res, 200, { config: cfg });
+}
+
+// POST /api/inbound/config - update receptionist line & routing configuration
+async function apiInboundConfigSave(req, res, ctx) {
+  const b = ctx.body || {};
+  let savedCfg = null;
+  await core.mutate((d) => {
+    if (!Array.isArray(d.inboundConfigs)) d.inboundConfigs = [];
+    let idx = d.inboundConfigs.findIndex((c) => c.tenantId === ctx.tenant.id);
+    const existing = idx >= 0 ? d.inboundConfigs[idx] : { tenantId: ctx.tenant.id };
+
+    let agentName = b.assignedAgentName;
+    if (b.assignedAgentId && !agentName) {
+      const ag = (d.agents || []).find((a) => a.id === b.assignedAgentId && a.tenantId === ctx.tenant.id);
+      if (ag) agentName = ag.name;
+    }
+
+    savedCfg = {
+      ...existing,
+      phoneNumber: b.phoneNumber ? String(b.phoneNumber).trim() : (existing.phoneNumber || '+91 80715 82519'),
+      carrier: existing.carrier || 'VoBiz Enterprise SIP Trunk',
+      status: 'active',
+      assignedAgentId: b.assignedAgentId !== undefined ? String(b.assignedAgentId).trim() : (existing.assignedAgentId || ''),
+      assignedAgentName: agentName !== undefined ? String(agentName).trim() : (existing.assignedAgentName || 'Ria (Medical Receptionist)'),
+      ringStrategy: b.ringStrategy || existing.ringStrategy || 'zero_ring',
+      operatingHours: b.operatingHours || existing.operatingHours || '24_7',
+      transferNumber: b.transferNumber !== undefined ? String(b.transferNumber).trim() : (existing.transferNumber || '+91 98765 43210'),
+      autoTransferOnEmergency: b.autoTransferOnEmergency !== undefined ? Boolean(b.autoTransferOnEmergency) : (existing.autoTransferOnEmergency !== false),
+      whatsappConfirmation: b.whatsappConfirmation !== undefined ? Boolean(b.whatsappConfirmation) : (existing.whatsappConfirmation !== false),
+      missedCallRecovery: b.missedCallRecovery !== undefined ? Boolean(b.missedCallRecovery) : (existing.missedCallRecovery !== false),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (idx >= 0) {
+      d.inboundConfigs[idx] = savedCfg;
+    } else {
+      d.inboundConfigs.push(savedCfg);
+    }
+  });
+
+  core.sendJson(res, 200, { ok: true, config: savedCfg });
+}
+
+/* ==========================================================================
    WACRM & CRM Pipeline Handlers
    ========================================================================== */
 
@@ -6370,6 +6608,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/assistant/integrations') return core.requireAuth(req, res, apiAssistantIntegrationsGet);
         if (route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadGet);
         if (route === '/api/assistant/history') return core.requireAuth(req, res, apiAssistantHistory);
+        if (route === '/api/inbound/config') return core.requireAuth(req, res, apiInboundConfigGet);
         if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycGet);
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
@@ -6458,6 +6697,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/integrations/whatsapp/verify-business') return core.requireAuth(req, res, apiWhatsAppVerifyBusiness, body);
       if (route === '/api/assistant/chat') return core.requireAuth(req, res, apiAssistantChat, body);
       if (route === '/api/assistant/confirm') return core.requireAuth(req, res, apiAssistantConfirm, body);
+      if (route === '/api/inbound/config') return core.requireAuth(req, res, apiInboundConfigSave, body);
       if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycUpdate, body);
       if (route === '/api/compliance/digilocker-otp') return core.requireAuth(req, res, apiComplianceDigilockerOtp, body);
       // Feature 1: Speed-to-Lead Auto-Call Webhook Listener

@@ -52,10 +52,10 @@ function classifyIntent(text, hasPendingToken) {
     return INTENTS.BROADCAST_MESSAGE;
   }
 
-  // Connect integration (WhatsApp, CRM, Gmail/Email, Calendar, Webhook, Marketplace tools)
-  if (/\b(connect|integrate|link|hook|sync|bind|attach)\b.{0,50}\b(whatsapp|crm|gmail|email|calendar|hubspot|zoho|salesforce|webhook|marketplace|tool)\b/i.test(text) ||
-      /\b(whatsapp|crm|gmail|email|calendar|hubspot|zoho|salesforce|webhook)\b.{0,50}\b(connect|integration|integrate|link|hook|sync|setup|set up)\b/i.test(text) ||
-      /\bconnect\s+(this\s+)?(voice\s+)?agent\b/i.test(text)) {
+    // Connect or disconnect integration (WhatsApp, CRM, Gmail/Email, Calendar, File Reader, Webhook)
+  if (/\b(connect|disconnect|integrate|link|unlink|hook|sync|bind|attach|setup|set up|hatao|jodo|deactivate|band\s*karo)\b.{0,50}\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook|marketplace|tool)\b/i.test(text) ||
+      /\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook)\b.{0,50}\b(connect|disconnect|integration|integrate|link|unlink|hook|sync|setup|set up|hatao|jodo|deactivate|karo)\b/i.test(text) ||
+      /\b(connect|disconnect)\s+(this\s+)?(voice\s+)?agent\b/i.test(text)) {
     return INTENTS.CONNECT_INTEGRATION;
   }
 

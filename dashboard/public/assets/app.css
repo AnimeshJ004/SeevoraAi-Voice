@@ -24,8 +24,9 @@
 }
 
 .boot-mark {
-  opacity: 0.9;
-  filter: drop-shadow(0 10px 20px rgba(128, 88, 21, 0.22));
+  opacity: 1;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .boot-text {
@@ -3596,11 +3597,13 @@
 }
 
 .chat-workspace-card {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.45) 100%) !important;
-  border-radius: 20px !important;
-  border: 1px solid rgba(186, 214, 242, 0.75) !important;
-  border-top: 1.5px solid rgba(220, 235, 252, 0.95) !important;
-  box-shadow: 0 10px 32px -4px rgba(15, 45, 90, 0.06), 0 2px 8px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(126, 169, 232, 0.35) !important;
+  border-top: 1.5px solid rgba(126, 169, 232, 0.50) !important;
+  box-shadow: 0 10px 30px -8px rgba(45, 62, 86, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   display: flex !important;
   width: 100% !important;
   height: 100% !important;
@@ -3613,8 +3616,8 @@
 /* ---- 1. Left Icon Rail ---- */
 .chat-left-rail {
   width: 66px;
-  background: rgba(255, 255, 255, 0.32);
-  border-right: 1px solid rgba(186, 214, 242, 0.55);
+  background: transparent !important;
+  border-right: 1px solid rgba(126, 169, 232, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3682,7 +3685,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.20);
+  background: transparent !important;
   position: relative;
   min-width: 0;
 }
@@ -4005,8 +4008,8 @@
 /* ---- 3. Right Connectivity & History Panel ---- */
 .chat-right-panel {
   width: 320px;
-  background: rgba(255, 255, 255, 0.35);
-  border-left: 1px solid rgba(186, 214, 242, 0.55);
+  background: transparent !important;
+  border-left: 1px solid rgba(126, 169, 232, 0.25);
   padding: 22px 18px 24px;
   display: flex;
   flex-direction: column;
