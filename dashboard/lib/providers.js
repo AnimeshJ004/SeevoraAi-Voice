@@ -462,10 +462,13 @@ const telVobiz = {
   get did() { return String(process.env.VOBIZ_NUMBER || '').replace(/[^0-9+]/g, ''); },
   get dashboard() { return dograhConnection().dashboard; },
 
-  async request(method, pathname, payload) {
+  async request(method, pathname, payload, tenantOpts) {
     if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
     const connection = dograhConnection();
-    const headers = { 'X-API-Key': process.env.DOGRAH_API_KEY };
+    const apiKey = (tenantOpts && (tenantOpts.dograh_api_key || tenantOpts.dograhApiKey)) || process.env.DOGRAH_API_KEY;
+    const orgId = (tenantOpts && (tenantOpts.dograh_org_id || tenantOpts.dograhOrgId));
+    const headers = { 'X-API-Key': apiKey };
+    if (orgId) headers['X-Dograh-Org-Id'] = orgId;
     let up;
     if (method === 'POST') {
       const buf = Buffer.from(JSON.stringify(payload || {}));
@@ -536,21 +539,25 @@ const telVobiz = {
 
   // Place one real paid call through Dograh. The HTTP route above this adapter
   // is the sole confirm guard, and this method makes exactly one initiate call.
-  async dial(rawNumber, options = {}) {
+  async dial(rawNumber, options = {}, tenantOpts) {
     if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
     let num = String(rawNumber || '').replace(/[^0-9]/g, '');
     if (num.length === 12 && num.startsWith('91')) num = num.slice(2);
     if (num.length !== 10) {
       throw new ProviderError('need a 10-digit Indian mobile (national format)', 422, 'bad_number');
     }
-    const result = await this.request('POST', '/api/v1/telephony/initiate-call', {
+    const payload = {
       workflow_id: Number.isInteger(options.workflowId) && options.workflowId > 0 ? options.workflowId : positiveIntEnv('DOGRAH_WORKFLOW_ID'),
       telephony_configuration_id: positiveIntEnv('DOGRAH_TELEPHONY_CONFIG_ID'),
       from_phone_number_id: positiveIntEnv('DOGRAH_PHONE_NUMBER_ID'),
       phone_number: '+91' + num,
       record: true,
       record_call: true,
-    });
+    };
+    if (options.variables || options.context || options.initial_context) {
+      payload.initial_context = options.variables || options.context || options.initial_context;
+    }
+    const result = await this.request('POST', '/api/v1/telephony/initiate-call', payload, tenantOpts);
     if (result.up.status < 200 || result.up.status >= 300) {
       const msg = upstreamMessage(result.data, 'The call was not placed.');
       throw new ProviderError(`Dograh could not initiate the VoBiz call: ${msg}`, upstreamStatus(result.up.status),

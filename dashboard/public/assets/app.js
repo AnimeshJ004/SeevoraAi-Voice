@@ -209,7 +209,7 @@ function brandSVG(size) {
   img.style.borderRadius = '8px';
   img.style.background = '#FFFFFF';
   img.style.padding = '2px';
-  img.style.boxShadow = '0 2px 8px rgba(109, 191, 90, 0.25)';
+  img.style.boxShadow = '0 2px 8px rgba(66, 194, 255, 0.25)';
   return img;
 }
 function fmtInr(n) {
@@ -362,7 +362,7 @@ function fireConfetti() {
     vx: (Math.random() - 0.5) * 6,
     vy: Math.random() * 4 + 2,
     size: Math.random() * 8 + 4,
-    color: ['#6DBF5A', '#A8DF8E', '#3D7A30', '#F59E0B', '#FFAAB8', '#FF7A94'][Math.floor(Math.random() * 6)],
+    color: ['#42C2FF', '#B8FFF9', '#0284C7', '#F59E0B', '#85F4FF', '#F5A623'][Math.floor(Math.random() * 6)],
     tilt: Math.random() * 10
   }));
   let frame = 0;
@@ -413,14 +413,14 @@ async function ensureClerkReady() {
           ui: { ClerkUI: window.__internal_ClerkUICtor },
           appearance: {
             variables: {
-              colorPrimary:        '#6DBF5A',
-              colorBackground:     '#F4FBF0',
-              colorText:           '#1C2B1A',
-              colorTextSecondary:  '#5A7A54',
-              colorNeutral:        '#1C2B1A',
+              colorPrimary:        '#42C2FF',
+              colorBackground:     '#EFFFFD',
+              colorText:           '#0C4A6E',
+              colorTextSecondary:  '#0284C7',
+              colorNeutral:        '#0C4A6E',
               colorInputBackground:'#FFFFFF',
-              colorInputText:      '#1C2B1A',
-              colorSuccess:        '#5AAD48',
+              colorInputText:      '#0C4A6E',
+              colorSuccess:        '#0284C7',
               colorDanger:         '#EF6177',
               colorWarning:        '#E8A838',
               borderRadius:        '14px',
@@ -428,16 +428,16 @@ async function ensureClerkReady() {
               fontSize:            '15px',
             },
             elements: {
-              card:                'background: linear-gradient(160deg,#ffffff,#f4fbf0); border:1px solid rgba(168,223,142,0.45); border-radius:22px; box-shadow:0 20px 60px -12px rgba(40,100,30,0.14)',
-              formButtonPrimary:   'background:linear-gradient(135deg,#6DBF5A,#3D7A30)!important; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(109,191,90,0.35)!important; font-weight:700!important',
-              socialButtonsBlockButton: 'border:1px solid rgba(168,223,142,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
-              footerActionLink:    'color:#3D7A30!important; font-weight:600!important',
-              identityPreviewEditButtonIcon: 'color:#3D7A30',
-              formFieldInput:      'border:1px solid rgba(168,223,142,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
-              dividerLine:         'background:rgba(168,223,142,0.45)!important',
+              card:                'background: linear-gradient(160deg,#ffffff,#EFFFFD); border:1px solid rgba(66, 194, 255,0.45); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
+              formButtonPrimary:   'background:linear-gradient(135deg,#42C2FF,#0284C7)!important; color:#fff!important; border-radius:99px!important; box-shadow:0 4px 14px rgba(66, 194, 255,0.35)!important; font-weight:700!important',
+              socialButtonsBlockButton: 'border:1px solid rgba(66, 194, 255,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
+              footerActionLink:    'color:#0284C7!important; font-weight:600!important',
+              identityPreviewEditButtonIcon: 'color:#0284C7',
+              formFieldInput:      'border:1px solid rgba(66, 194, 255,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
+              dividerLine:         'background:rgba(66, 194, 255,0.45)!important',
               dividerText:         'color:#93B88C!important',
-              headerTitle:         'color:#1C2B1A!important; font-weight:800!important',
-              headerSubtitle:      'color:#5A7A54!important',
+              headerTitle:         'color:#0C4A6E!important; font-weight:800!important',
+              headerSubtitle:      'color:#0284C7!important',
               rootBox:             'font-family:"Plus Jakarta Sans",sans-serif',
             },
           },
@@ -851,7 +851,7 @@ function currentRoute() {
     if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
       return 'overview';
     }
-    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings'];
+    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
     if (hash && adminAllowed.includes(hash)) {
       return hash;
     }
@@ -873,7 +873,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -916,11 +916,14 @@ function onRoute() {
     support: viewSupport,
     admin: viewAdmin,
     settings: viewSettings,
+    kb: () => { location.hash = '#/settings?tab=knowledge-base'; },
+    'knowledge-base': () => { location.hash = '#/settings?tab=knowledge-base'; },
+    'crm-webhooks': () => { location.hash = '#/settings?tab=crm-webhooks'; },
     presets: () => { goto('agents'); },
     studio: () => { goto('talk'); },
     demos: () => { goto('agents'); },
     telephony: () => { goto('settings'); },
-    integrations: () => { goto('settings'); },
+    integrations: () => { goto('settings?tab=integrations'); },
     'agency-prompt': () => { goto('settings'); }
   }[id] || viewOverview)(wrap);
 }
@@ -976,7 +979,7 @@ async function openMakeCallModal(prefillNumber) {
   const dialRow = el('div', {
     style: 'display:flex;align-items:center;border:1px solid rgba(203,213,225,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);transition:border-color .2s;'
   }, [
-    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#3D7A30;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
+    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#0284C7;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
     numI
   ]);
 
@@ -1534,7 +1537,7 @@ function renderVoiceDashboard(root, opts) {
             el('div', { class: 'sv-agent-meta' }, [
               el('span', {}, a.role),
               el('span', { style: 'opacity:0.5;' }, '•'),
-              el('span', { style: 'font-weight:600;color:#3D7A30;' }, a.calls)
+              el('span', { style: 'font-weight:600;color:#0284C7;' }, a.calls)
             ])
           ])
         ]),
@@ -1548,7 +1551,7 @@ function renderVoiceDashboard(root, opts) {
     })),
     el('button', {
       class: 'sv-submit-btn',
-      style: 'margin-top:14px;background:linear-gradient(135deg, #3D7A30 0%, #2E6B22 100%);box-shadow:0 8px 24px -4px rgba(61, 122, 48,0.35);',
+      style: 'margin-top:14px;background:linear-gradient(135deg, #42C2FF 0%, #0099FF 100%);box-shadow:0 8px 24px -4px rgba(66, 194, 255, 0.40);',
       onclick: () => goto('agents')
     }, '+ Create New Voice Agent')
   ]));
@@ -1571,7 +1574,7 @@ function renderVoiceDashboard(root, opts) {
     ]),
     el('div', { class: 'sv-sentiment-labels' }, [
       el('span', { style: 'color:#047857;font-weight:700;' }, '● 88% Positive'),
-      el('span', { style: 'color:#3D7A30;font-weight:700;' }, '● 9% Neutral'),
+      el('span', { style: 'color:#0284C7;font-weight:700;' }, '● 9% Neutral'),
       el('span', { style: 'color:#B45309;font-weight:700;' }, '● 3% Escalated')
     ]),
     el('div', { class: 'sv-latency-pill' }, [
@@ -1715,7 +1718,7 @@ async function syncVoiceDashboardData(period = 'today') {
 
         const item = el('div', { class: 'sv-recent-item' }, [
           el('div', { class: 'sv-recent-left' }, [
-            el('div', { class: 'sv-avatar', style: 'display:flex;align-items:center;justify-content:center;background:#F0FFDF;color:#2E6B22;font-weight:700;font-size:12px;' }, 'AI'),
+            el('div', { class: 'sv-avatar', style: 'display:flex;align-items:center;justify-content:center;background:#B8FFF9;color:#0C4A6E;font-weight:700;font-size:12px;' }, 'AI'),
             el('div', { class: 'sv-recent-info' }, [
               el('span', { class: 'sv-recent-name' }, phone),
               el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
@@ -1928,8 +1931,8 @@ function buildSpark(data) {
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.innerHTML =
     '<defs>' +
-    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A8DF8E"/><stop offset="0.6" stop-color="#6DBF5A"/><stop offset="1" stop-color="#FFAAB8"/></linearGradient>' +
-    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6DBF5A" stop-opacity="0.25"/><stop offset="1" stop-color="#6DBF5A" stop-opacity="0"/></linearGradient>' +
+    '<linearGradient id="sparkline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B8FFF9"/><stop offset="0.6" stop-color="#42C2FF"/><stop offset="1" stop-color="#85F4FF"/></linearGradient>' +
+    '<linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#42C2FF" stop-opacity="0.25"/><stop offset="1" stop-color="#42C2FF" stop-opacity="0"/></linearGradient>' +
     '</defs>';
   if (!data.length) {
     const txt = document.createElementNS(ns, 'text');
@@ -2013,7 +2016,7 @@ async function viewAgents(root) {
     style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;'
   }, [
     el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6DBF5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
+      el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#42C2FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' }),
       el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, 'Dograh Telephony Orchestrator:'),
       el('span', { class: 'muted', style: 'font-size:0.84rem;' }, 'Workflow #13027 (Seevora AI Voice Receptionist • DID +918071582519)')
     ]),
@@ -2242,7 +2245,7 @@ function agentCard(a) {
   ]);
 
   // Human Call Recording Training Studio
-  const trainingStudio = el('details', { class: 'agent-training-studio', style: 'margin-top:12px;border:1px dashed rgba(109, 191, 90,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(109, 191, 90,0.02)' }, [
+  const trainingStudio = el('details', { class: 'agent-training-studio', style: 'margin-top:12px;border:1px dashed rgba(66, 194, 255,0.3);border-radius:var(--r-sm);padding:8px 12px;background:rgba(66, 194, 255,0.02)' }, [
     el('summary', { style: 'cursor:pointer;font-size:.78rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;' }, [
       el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
       el('span', {}, 'Train on Call Recording (.mp3 / .wav)')
@@ -2792,7 +2795,7 @@ async function viewOnboarding(root) {
     const nextBtn = el('button', {
       type: 'button',
       class: 'btn btn-primary',
-      style: isLast ? 'padding:12px 28px;font-weight:700;box-shadow:0 6px 20px rgba(109, 191, 90,0.35)' : '',
+      style: isLast ? 'padding:12px 28px;font-weight:700;box-shadow:0 6px 20px rgba(66, 194, 255,0.35)' : '',
       onclick: () => goNext()
     }, isLast ? 'Save & Generate Voice Agent' : 'Next Step →');
 
@@ -2914,8 +2917,8 @@ async function viewOnboarding(root) {
 
     // Header Celebration Banner
     const businessLabel = answers.businessName ? ` for ${answers.businessName}` : '';
-    const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(109, 191, 90,0.4);background:radial-gradient(ellipse at top, rgba(109, 191, 90,0.06), #FFFFFF)' }, [
-      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#F0FFDF;color:#3D7A30;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
+    const celebrationHeader = el('div', { class: 'onboard-step-card', style: 'text-align:center;padding:32px 20px;border-color:rgba(66, 194, 255,0.4);background:radial-gradient(ellipse at top, rgba(66, 194, 255,0.06), #FFFFFF)' }, [
+      el('div', { style: 'width:56px;height:56px;border-radius:50%;background:#B8FFF9;color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px', html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' }),
       el('h2', { class: 't-h2', style: 'color:var(--ink);margin-bottom:6px' }, `Your Voice Agent is Ready!`),
       el('p', { class: 'soft', style: 'max-width:540px;margin:0 auto;line-height:1.5' }, `Designed specifically${businessLabel}. Script variants generated, customer objections understood, and voice persona calibrated.`)
     ]);
@@ -3053,7 +3056,7 @@ async function viewOnboarding(root) {
     const saveDeployBtn = el('button', {
       type: 'button',
       class: 'btn btn-primary',
-      style: 'padding:12px 26px;font-weight:700;box-shadow:0 6px 20px rgba(109, 191, 90,0.35)',
+      style: 'padding:12px 26px;font-weight:700;box-shadow:0 6px 20px rgba(66, 194, 255,0.35)',
       onclick: async () => {
         saveDeployBtn.disabled = true;
         saveDeployBtn.textContent = 'Saving...';
@@ -3307,7 +3310,7 @@ function drawWaveform(samples, canvas) {
   const bars = Math.max(40, Math.min(180, Math.floor(w / 4)));
   const block = Math.floor(samples.length / bars) || 1;
   const grad = ctx.createLinearGradient(0, 0, w, 0);
-  grad.addColorStop(0, '#A8DF8E'); grad.addColorStop(0.5, '#6DBF5A'); grad.addColorStop(1, '#FFAAB8');
+  grad.addColorStop(0, '#B8FFF9'); grad.addColorStop(0.5, '#42C2FF'); grad.addColorStop(1, '#85F4FF');
   ctx.fillStyle = grad;
   const bw = w / bars;
   for (let b = 0; b < bars; b++) {
@@ -4710,7 +4713,7 @@ function renderDrawer(rec, onUpdate) {
     const intelCard = el('div', { class: 'rec-intel-hero' }, [
       el('div', { class: 'rec-intel-hero-top' }, [
         el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
-          el('div', { style: 'width:26px;height:26px;border-radius:6px;background:rgba(109, 191, 90,0.12);color:var(--primary);display:flex;align-items:center;justify-content:center;' }, [
+          el('div', { style: 'width:26px;height:26px;border-radius:6px;background:rgba(66, 194, 255,0.12);color:var(--primary);display:flex;align-items:center;justify-content:center;' }, [
             uiIcon('sparkle', 14)
           ]),
           el('span', { style: 'font-size:0.78rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);' }, 'AI Call Intelligence & Outcome')
@@ -5110,7 +5113,7 @@ async function viewInbound(root) {
   }, [
     el('div', { class: 'flex items-center gap-3' }, [
       el('div', {
-        style: 'width:34px;height:34px;border-radius:8px;background:rgba(109, 191, 90,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        style: 'width:34px;height:34px;border-radius:8px;background:rgba(66, 194, 255,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
         html: uiIcon('phone', 16)
       }),
       el('div', {}, [
@@ -5500,7 +5503,7 @@ async function viewCampaigns(root) {
       toast(detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.'), 'err');
     } finally { quickDialBtn.disabled = false; quickDialBtn.textContent = 'Dial Now'; }
   });
-  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(109, 191, 90,0.3);' }, [
+  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(66, 194, 255,0.3);' }, [
     el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:10px;' }, [
       el('h3', { class: 't-h3', style: 'display:flex;align-items:center;gap:8px;' }, [el('span', { html: uiIcon('phone', 18) }), 'Instant Outbound Dialer']),
       el('span', { class: 'pill' }, [el('span', { class: 'dot' }), 'Line: ' + activeDid])
@@ -6776,8 +6779,14 @@ async function viewAdmin(root) {
   const tenantHost = el('div', { class: 'card admin-client-card' }, hasCache ? [] : skeleton('sk-card', 1));
   const ticketHost = el('div', { class: 'ticket-list' }, hasCache ? [] : skeleton('sk-card', 1));
   const eventHost = el('div', { class: 'card card-pad admin-table agency-events-card' }, hasCache ? [] : skeleton('sk-card', 1));
+  const carrierHost = el('div', { class: 'card card-pad', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
+  const kycHost = el('div', { class: 'card card-pad admin-table', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
+  const watchdogHost = el('div', { class: 'card card-pad admin-table', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
   root.appendChild(stats);
   root.appendChild(tenantHost);
+  root.appendChild(carrierHost);
+  root.appendChild(kycHost);
+  root.appendChild(watchdogHost);
   root.appendChild(ticketHost);
   root.appendChild(eventHost);
 
@@ -6800,6 +6809,8 @@ async function viewAdmin(root) {
     eventHost.innerHTML = ''; eventHost.appendChild(el('div', { class: 'agency-card-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Financial operations'), el('h3', {}, 'PayU event log')])]));
     (events.events || []).slice(0, 25).forEach((e) => eventHost.appendChild(el('div', { class: 'admin-row' }, [el('div', {}, [el('b', {}, e.txnid || 'Unknown transaction'), el('small', { class: 'muted' }, (e.reason || '') + ' · ' + (e.createdAt || ''))]), el('span', { class: 'pill' }, e.status || 'received')])));
     if (!(events.events || []).length) eventHost.appendChild(el('div', { class: 'muted' }, 'No PayU webhooks received yet.'));
+
+    loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
   }
 
   if (hasCache) {
@@ -6820,6 +6831,168 @@ async function viewAdmin(root) {
   }
 }
 
+async function loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost) {
+  // 1. Carrier Health Monitor
+  try {
+    const health = await api('/api/admin/carriers/health');
+    carrierHost.innerHTML = '';
+    carrierHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
+      el('div', {}, [
+        el('span', { class: 'section-kicker' }, 'Telephony Infrastructure'),
+        el('h3', {}, 'Carrier Health & SIP Trunk Monitor')
+      ]),
+      el('span', { class: 'badge-live' }, [el('span', { class: 'd' }), 'Telemetry active'])
+    ]));
+
+    const grid = el('div', { class: 'grid grid-3', style: 'gap:14px;' });
+    (health.carriers || []).forEach((c) => {
+      const isHealthy = c.status === 'healthy';
+      grid.appendChild(el('div', {
+        class: 'card card-pad',
+        style: 'background:var(--bg-2);border:1px solid ' + (isHealthy ? 'rgba(16,185,129,0.3)' : 'var(--line-2)') + ';'
+      }, [
+        el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:8px;' }, [
+          el('b', { style: 'font-size:0.92rem;color:var(--ink);' }, c.name),
+          el('span', { class: 'pill', style: isHealthy ? 'background:rgba(16,185,129,0.15);color:#10B981;' : 'background:rgba(245,158,11,0.15);color:#F59E0B;' }, c.status.toUpperCase())
+        ]),
+        el('div', { class: 'muted text-xs', style: 'margin-bottom:12px;' }, c.carrier),
+        el('div', { class: 'grid grid-2', style: 'gap:8px;font-size:0.82rem;' }, [
+          el('div', {}, [el('span', { class: 'muted block' }, 'Latency'), el('b', { style: 'color:#00e5ff;' }, c.latencyMs + ' ms')]),
+          el('div', {}, [el('span', { class: 'muted block' }, 'Jitter'), el('b', {}, c.jitterMs + ' ms')]),
+          el('div', {}, [el('span', { class: 'muted block' }, 'Packet Loss'), el('b', {}, (c.packetLossPct * 100).toFixed(1) + '%')]),
+          el('div', {}, [el('span', { class: 'muted block' }, 'Channels'), el('b', {}, c.activeChannels + ' / ' + c.channelCapacity)])
+        ])
+      ]));
+    });
+    carrierHost.appendChild(grid);
+  } catch (_) {}
+
+  // 2. DigiLocker KYC Queue
+  try {
+    const kycRes = await api('/api/admin/kyc/queue');
+    kycHost.innerHTML = '';
+    kycHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
+      el('div', {}, [
+        el('span', { class: 'section-kicker' }, 'Indian Regulatory Compliance'),
+        el('h3', {}, 'DigiLocker KYC Verification Queue')
+      ]),
+      el('span', { class: 'pill badge-gold' }, (kycRes.queue || []).length + ' in queue')
+    ]));
+
+    if (!(kycRes.queue || []).length) {
+      kycHost.appendChild(el('div', { class: 'muted', style: 'font-size:0.88rem;padding:12px 0;' }, 'No pending KYC requests. All active Indian DID workspaces are compliant.'));
+    } else {
+      const table = el('table', { class: 'admin-table' }, [
+        el('thead', {}, el('tr', {}, [
+          el('th', {}, 'Workspace'),
+          el('th', {}, 'Entity Type'),
+          el('th', {}, 'PAN / Aadhaar'),
+          el('th', {}, 'DLT PE ID'),
+          el('th', {}, 'Status'),
+          el('th', { style: 'text-align:right;' }, 'Verification Action')
+        ])),
+        el('tbody', {}, (kycRes.queue || []).map((row) => {
+          const k = row.kyc || {};
+          const isVer = k.status === 'verified';
+          const approveBtn = el('button', { class: 'btn btn-primary btn-sm' }, 'Approve KYC');
+          const rejectBtn = el('button', { class: 'btn btn-ghost btn-sm', style: 'color:#EF4444;' }, 'Reject');
+
+          approveBtn.onclick = async () => {
+            await api('/api/admin/kyc/' + encodeURIComponent(row.tenantId) + '/action', { method: 'POST', body: { action: 'approve' } });
+            toast('KYC verified for ' + row.tenantName, 'ok');
+            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
+          };
+          rejectBtn.onclick = async () => {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+            await api('/api/admin/kyc/' + encodeURIComponent(row.tenantId) + '/action', { method: 'POST', body: { action: 'reject', reason } });
+            toast('KYC rejected for ' + row.tenantName, 'err');
+            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
+          };
+
+          return el('tr', {}, [
+            el('td', {}, [el('b', {}, row.tenantName), el('div', { class: 'muted text-xs' }, row.tenantId)]),
+            el('td', {}, el('span', { class: 'pill' }, k.entityType || 'pvt_ltd')),
+            el('td', {}, [
+              el('div', { class: 'text-xs' }, 'PAN: ' + (k.pan || 'Not provided')),
+              el('div', { class: 'text-xs muted' }, 'Aadhaar: ' + (k.aadhaarVerified ? '✓ DigiLocker' : (k.aadhaar ? 'Pending OTP' : 'Missing')))
+            ]),
+            el('td', {}, el('code', { class: 'text-xs' }, k.dltPeId || 'TRAI-DLT-PENDING')),
+            el('td', {}, el('span', { class: 'pill ' + (isVer ? 'badge-ok' : 'badge-gold') }, k.status || 'unverified')),
+            el('td', { style: 'text-align:right;' }, isVer ? el('span', { class: 'muted text-xs' }, 'Verified') : el('div', { class: 'flex gap-2 justify-end' }, [approveBtn, rejectBtn]))
+          ]);
+        }))
+      ]);
+      kycHost.appendChild(table);
+    }
+  } catch (_) {}
+
+  // 3. Compliance Watchdog
+  try {
+    const wd = await api('/api/admin/watchdog');
+    watchdogHost.innerHTML = '';
+    watchdogHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
+      el('div', {}, [
+        el('span', { class: 'section-kicker' }, 'TRAI & Anti-Spam Guard'),
+        el('h3', {}, 'Dialing Watchdog & Tenant Compliance Monitor')
+      ]),
+      el('div', { class: 'flex items-center gap-2' }, [
+        el('span', { class: 'pill ' + (wd.isOutsideTrai ? 'badge-gold' : 'badge-ok') }, wd.isOutsideTrai ? 'TRAI Window: CLOSED (09:00-21:00)' : 'TRAI Window: OPEN (Calling Allowed)'),
+        el('span', { class: 'pill ' + (wd.flaggedCount > 0 ? 'badge-err' : 'badge-ok') }, wd.flaggedCount + ' flagged')
+      ])
+    ]));
+
+    const tenants = wd.allTenants || [];
+    if (!tenants.length) {
+      watchdogHost.appendChild(el('div', { class: 'muted' }, 'No call activity recorded across tenants yet.'));
+    } else {
+      const table = el('table', { class: 'admin-table' }, [
+        el('thead', {}, el('tr', {}, [
+          el('th', {}, 'Workspace'),
+          el('th', {}, 'Total Calls'),
+          el('th', {}, 'Short Calls (<5s)'),
+          el('th', {}, 'Outside TRAI'),
+          el('th', {}, 'Status'),
+          el('th', { style: 'text-align:right;' }, 'Enforcement')
+        ])),
+        el('tbody', {}, tenants.map((row) => {
+          const isFrozen = !!row.campaignFrozen;
+          const freezeBtn = el('button', {
+            class: 'btn btn-sm ' + (isFrozen ? 'btn-ghost' : 'btn-primary'),
+            style: isFrozen ? 'color:#10B981;' : 'background:#EF4444;border-color:#EF4444;'
+          }, isFrozen ? 'Unfreeze' : 'Freeze');
+
+          freezeBtn.onclick = async () => {
+            const nextFreeze = !isFrozen;
+            await api('/api/admin/watchdog/freeze', {
+              method: 'POST',
+              body: { tenantId: row.tenantId, freeze: nextFreeze, reason: 'Admin enforcement' }
+            });
+            toast(nextFreeze ? 'Campaigns frozen for ' + row.tenantName : 'Campaigns unfrozen for ' + row.tenantName, nextFreeze ? 'err' : 'ok');
+            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
+          };
+
+          return el('tr', { style: row.flagged ? 'background:rgba(239,68,68,0.04);' : '' }, [
+            el('td', {}, [el('b', {}, row.tenantName), el('div', { class: 'text-xs muted' }, row.tenantId)]),
+            el('td', {}, String(row.totalCalls)),
+            el('td', {}, [el('b', { style: row.shortCallRatePct >= 40 ? 'color:#EF4444;' : '' }, row.shortCalls + ' (' + row.shortCallRatePct + '%)')]),
+            el('td', {}, [el('span', { style: row.outsideTraiCalls > 0 ? 'color:#F59E0B;font-weight:700;' : '' }, String(row.outsideTraiCalls))]),
+            el('td', {}, [
+              isFrozen
+                ? el('span', { class: 'pill badge-err' }, '❄ FROZEN')
+                : row.flagged
+                  ? el('span', { class: 'pill badge-err' }, '⚠ FLAGGED')
+                  : el('span', { class: 'pill badge-ok' }, '✓ COMPLIANT')
+            ]),
+            el('td', { style: 'text-align:right;' }, freezeBtn)
+          ]);
+        }))
+      ]);
+      watchdogHost.appendChild(table);
+    }
+  } catch (_) {}
+}
+
 function adminTenantRow(t, users) {
   const wallet = t.wallet || {};
   const toggle = el('button', { class: 'btn btn-ghost btn-sm' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
@@ -6831,8 +7004,17 @@ function adminTenantRow(t, users) {
   const credit = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => adjustWallet(t) }, 'Adjust credit');
   const inspect = el('button', { class: 'btn btn-primary btn-sm', onclick: () => inspectTenant(t, users || []) }, 'Open workspace');
   const approach = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openClientApproach(t) }, 'Log approach');
+  const dograhSlug = t.dograhOrgId || t.dograh_org_id || ('org_' + t.id.replace(/[^a-z0-9]/gi, '_').toLowerCase());
   return el('div', { class: 'admin-client-row' }, [
-    el('div', { class: 'admin-client-identity' }, [el('span', { class: 'client-avatar' }, initials(t.name)), el('div', {}, [el('b', {}, t.name), el('small', { class: 'muted' }, (t.users || 0) + ' users, ' + (t.agents || 0) + ' agents')])]),
+    el('div', { class: 'admin-client-identity' }, [
+      el('span', { class: 'client-avatar' }, initials(t.name)),
+      el('div', {}, [
+        el('b', {}, t.name),
+        el('small', { class: 'muted' }, (t.users || 0) + ' users, ' + (t.agents || 0) + ' agents'),
+        el('span', { class: 'pill', style: 'font-size:0.7rem;background:rgba(255,255,255,0.06);margin-left:6px;' }, dograhSlug),
+        t.campaignFrozen ? el('span', { class: 'pill badge-err', style: 'font-size:0.7rem;margin-left:4px;' }, '❄ Frozen') : null
+      ])
+    ]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Activity'), el('strong', {}, fmtInr((t.calls || 0)) + ' calls')]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Outstanding'), el('strong', {}, '₹' + fmtInr((t.outstandingPaise || 0) / 100))]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Wallet'), el('strong', {}, '₹' + fmtInr((wallet.balancePaise || 0) / 100))]),
@@ -6908,17 +7090,17 @@ function adjustWallet(t) {
    7. SETTINGS
    =========================================================================== */
 async function viewSettings(root) {
-  root.appendChild(viewHead('Settings', 'Workspace configuration, Vaaad AI regulatory KYC compliance, booking engine, and integrations.'));
+  root.appendChild(viewHead('Settings', 'Workspace configuration, telephony providers, booking engine, and integrations.'));
 
   const t = (State.me && State.me.tenant) || {};
   const u = (State.me && State.me.user) || {};
   const isAdm = ['super_admin', 'admin'].includes(u.role);
 
-  // Tab state: default to 'kyc' as requested by the user, or respect URL param
+  // Tab state: default to 'general', or respect URL param
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
-  let currentTab = urlParams.get('tab') || 'kyc';
-  if (!['general', 'integrations', 'kyc', 'team'].includes(currentTab)) {
-    currentTab = 'kyc';
+  let currentTab = urlParams.get('tab') || 'general';
+  if (!['general', 'integrations', 'crm-webhooks', 'knowledge-base', 'team'].includes(currentTab)) {
+    currentTab = 'general';
   }
 
   const layout = el('div', { class: 'settings-layout' });
@@ -6930,8 +7112,9 @@ async function viewSettings(root) {
 
   const tabs = [
     { id: 'general', label: 'General', icon: 'gear' },
-    { id: 'integrations', label: 'Integrations', icon: 'link' },
-    { id: 'kyc', label: 'KYC Verification', icon: 'shield' },
+    { id: 'integrations', label: 'Inbound Auto-Call', icon: 'phone' },
+    { id: 'crm-webhooks', label: 'CRM Webhooks', icon: 'send' },
+    { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' },
     { id: 'team', label: 'Team', icon: 'users' }
   ];
 
@@ -6951,557 +7134,24 @@ async function viewSettings(root) {
   }
 
   function switchTab(tabId) {
-    if (!tabs.some(t => t.id === tabId)) tabId = 'kyc';
+    if (!tabs.some(t => t.id === tabId)) tabId = 'general';
     currentTab = tabId;
     renderSubnav();
     contentHost.innerHTML = '';
     const panel = el('div', { class: 'settings-tab-panel' });
     contentHost.appendChild(panel);
 
-    if (tabId === 'kyc') {
-      renderKycTab(panel);
-    } else if (tabId === 'general') {
+    if (tabId === 'general') {
       renderGeneralTab(panel);
     } else if (tabId === 'integrations') {
       renderIntegrationsTab(panel);
+    } else if (tabId === 'crm-webhooks') {
+      renderCrmWebhooksTab(panel);
+    } else if (tabId === 'knowledge-base') {
+      renderKnowledgeBaseTab(panel);
     } else if (tabId === 'team') {
       renderTeamTab(panel);
     }
-  }
-
-  // --- KYC VERIFICATION TAB (VAAAD AI FULL COMPLIANCE STEPPER) ---
-  async function renderKycTab(panel) {
-    const kycBox = el('div', { class: 'kyc-verify-box' });
-
-    // 1. Kicker
-    kycBox.appendChild(el('div', { class: 'kyc-kicker' }, 'DOCUMENTS WE VERIFY'));
-
-    // 2. 3 Document Summary Cards
-    const docGrid = el('div', { class: 'kyc-doc-grid' }, [
-      el('div', { class: 'kyc-doc-card' }, [
-        el('div', { class: 'kyc-doc-icon', style: 'background:rgba(61, 122, 48,0.1);color:#3D7A30;' }, [
-          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<rect x="3" y="4" width="18" height="16" rx="3"/><line x1="7" y1="8" x2="12" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><circle cx="15.5" cy="8.5" r="1.5"/>' })
-        ]),
-        el('div', { class: 'kyc-doc-info' }, [
-          el('h4', {}, 'PAN'),
-          el('p', {}, '10-digit tax ID from Income Tax Dept. Format: ABCDE1234F.')
-        ])
-      ]),
-      el('div', { class: 'kyc-doc-card' }, [
-        el('div', { class: 'kyc-doc-icon', style: 'background:rgba(16,185,129,0.1);color:#10B981;' }, [
-          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/>' })
-        ]),
-        el('div', { class: 'kyc-doc-info' }, [
-          el('h4', {}, 'GSTIN'),
-          el('p', {}, '15-character business tax ID. Links your entity to the GST network.')
-        ])
-      ]),
-      el('div', { class: 'kyc-doc-card' }, [
-        el('div', { class: 'kyc-doc-icon', style: 'background:rgba(245,158,11,0.1);color:#F59E0B;' }, [
-          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M12 2a10 10 0 0 0-7.07 17.07M12 2a10 10 0 0 1 7.07 17.07M12 6a6 6 0 0 0-4.24 10.24M12 6a6 6 0 0 1 4.24 10.24M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>' })
-        ]),
-        el('div', { class: 'kyc-doc-info' }, [
-          el('h4', {}, 'Aadhaar'),
-          el('p', {}, '12-digit UIDAI identity. Verify via DigiLocker.')
-        ])
-      ])
-    ]);
-    kycBox.appendChild(docGrid);
-
-    // Live KYC State
-    let kycData = {
-      status: 'unverified',
-      businessType: 'individual',
-      pan: '',
-      panName: '',
-      dob: '',
-      gstin: '',
-      businessName: '',
-      entityType: 'proprietorship',
-      dltPeId: '',
-      dndScrubbing: true,
-      aadhaar: '',
-      aadhaarVerified: false,
-      directorName: '',
-      directorPhone: ''
-    };
-    let currentStep = 1;
-
-    try {
-      const res = await api('/api/compliance/kyc');
-      if (res && res.kyc) {
-        Object.assign(kycData, res.kyc);
-      }
-    } catch (e) {}
-
-    const stepperHost = el('div', { class: 'kyc-stepper-bar' });
-    const stepContentHost = el('div', { class: 'kyc-step-content-host' });
-
-    function renderStepper() {
-      stepperHost.innerHTML = '';
-      const isBiz = kycData.businessType === 'business';
-      const stepList = isBiz
-        ? [
-            { step: 1, label: 'Business type' },
-            { step: 2, label: 'PAN' },
-            { step: 3, label: 'GSTIN & DLT' },
-            { step: 4, label: 'Aadhaar' }
-          ]
-        : [
-            { step: 1, label: 'Business type' },
-            { step: 2, label: 'PAN' },
-            { step: 3, label: 'Aadhaar' }
-          ];
-
-      stepList.forEach((s, idx) => {
-        const isCurrent = currentStep === s.step;
-        const isDone = currentStep > s.step;
-        const pillClass = isCurrent ? 'active' : (isDone ? 'completed' : 'inactive');
-        const pill = el('button', {
-          class: 'kyc-step-pill ' + pillClass,
-          type: 'button',
-          onclick: () => {
-            currentStep = s.step;
-            renderStepper();
-            renderStepContent();
-          }
-        }, [
-          el('span', { class: 'kyc-step-num' }, isDone ? '✓' : String(s.step)),
-          el('span', {}, s.label)
-        ]);
-        stepperHost.appendChild(pill);
-        if (idx < stepList.length - 1) {
-          stepperHost.appendChild(el('span', { class: 'kyc-step-sep' }, '›'));
-        }
-      });
-    }
-
-    function renderStepContent() {
-      stepContentHost.innerHTML = '';
-      const isBiz = kycData.businessType === 'business';
-
-      if (currentStep === 1) {
-        // STEP 1: Select business type
-        const header = el('div', { class: 'kyc-step-header' }, [
-          el('h3', {}, 'Select business type'),
-          el('p', {}, 'Choose the option that matches your account.')
-        ]);
-
-        const cardInd = el('div', {
-          class: 'kyc-type-card' + (kycData.businessType === 'individual' ? ' selected' : ''),
-          onclick: () => {
-            kycData.businessType = 'individual';
-            renderStepContent();
-            renderStepper();
-          }
-        }, [
-          el('div', { class: 'kyc-type-icon' }, [
-            el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' })
-          ]),
-          el('div', { class: 'kyc-type-meta' }, [
-            el('h4', {}, 'Individual'),
-            el('p', {}, 'Freelancer or sole proprietor. Verify with PAN and Aadhaar.')
-          ]),
-          el('div', { class: 'kyc-type-check', html: kycData.businessType === 'individual' ? '✓' : '' })
-        ]);
-
-        const cardBiz = el('div', {
-          class: 'kyc-type-card' + (kycData.businessType === 'business' ? ' selected' : ''),
-          onclick: () => {
-            kycData.businessType = 'business';
-            renderStepContent();
-            renderStepper();
-          }
-        }, [
-          el('div', { class: 'kyc-type-icon' }, [
-            el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/>' })
-          ]),
-          el('div', { class: 'kyc-type-meta' }, [
-            el('h4', {}, 'Business'),
-            el('p', {}, 'Company, LLP, or firm. Verify PAN, GST, and Aadhaar.')
-          ]),
-          el('div', { class: 'kyc-type-check', html: kycData.businessType === 'business' ? '✓' : '' })
-        ]);
-
-        const grid = el('div', { class: 'kyc-type-grid' }, [cardInd, cardBiz]);
-        const btnContinue = el('button', {
-          class: 'btn btn-primary',
-          style: 'padding:10px 28px;',
-          onclick: () => {
-            currentStep = 2;
-            renderStepper();
-            renderStepContent();
-          }
-        }, 'Continue');
-
-        stepContentHost.appendChild(header);
-        stepContentHost.appendChild(grid);
-        stepContentHost.appendChild(btnContinue);
-
-      } else if (currentStep === 2) {
-        // STEP 2: PAN Verification
-        const header = el('div', { class: 'kyc-step-header' }, [
-          el('h3', {}, 'PAN Verification'),
-          el('p', {}, 'Enter the 10-character Permanent Account Number issued by the Income Tax Department.')
-        ]);
-
-        const panIn = el('input', {
-          class: 'input',
-          placeholder: 'ABCDE1234F',
-          maxlength: '10',
-          value: kycData.pan || '',
-          style: 'text-transform:uppercase;font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:1px;'
-        });
-
-        const nameIn = el('input', {
-          class: 'input',
-          placeholder: isBiz ? 'Registered Business / Entity Name' : 'Full Legal Name as on PAN card',
-          value: kycData.panName || kycData.businessName || ''
-        });
-
-        const dobIn = el('input', {
-          class: 'input',
-          type: 'date',
-          value: kycData.dob || ''
-        });
-
-        const actions = el('div', { class: 'flex gap-2 items-center', style: 'margin-top:20px;' }, [
-          el('button', {
-            class: 'btn btn-ghost',
-            onclick: () => { currentStep = 1; renderStepper(); renderStepContent(); }
-          }, 'Back'),
-          el('button', {
-            class: 'btn btn-primary',
-            onclick: () => {
-              const val = panIn.value.trim().toUpperCase();
-              if (!val || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val)) {
-                toast('Please enter a valid 10-character PAN (e.g. ABCDE1234F).', 'err');
-                return;
-              }
-              kycData.pan = val;
-              kycData.panName = nameIn.value.trim();
-              kycData.dob = dobIn.value.trim();
-              if (isBiz) kycData.businessName = kycData.panName;
-              currentStep = 3;
-              renderStepper();
-              renderStepContent();
-            }
-          }, 'Continue')
-        ]);
-
-        const form = el('div', { class: 'settings-form', style: 'max-width:540px;' }, [
-          field('PAN Number', panIn),
-          field(isBiz ? 'Entity Name on PAN' : 'Full Name on PAN', nameIn),
-          field(isBiz ? 'Date of Incorporation' : 'Date of Birth', dobIn),
-          actions
-        ]);
-
-        stepContentHost.appendChild(header);
-        stepContentHost.appendChild(form);
-
-      } else if (currentStep === 3 && isBiz) {
-        // STEP 3 for Business: GSTIN & TRAI DLT Verification
-        const header = el('div', { class: 'kyc-step-header' }, [
-          el('h3', {}, 'GSTIN & TRAI DLT Compliance'),
-          el('p', {}, 'Enter your business GSTIN and Distributed Ledger PE ID for telephony whitelisting.')
-        ]);
-
-        const gstinIn = el('input', {
-          class: 'input',
-          placeholder: '27ABCDE1234F1Z5',
-          maxlength: '15',
-          value: kycData.gstin || '',
-          style: 'text-transform:uppercase;font-family:var(--mono);font-size:1.02rem;letter-spacing:1px;'
-        });
-
-        const entitySelect = el('select', { class: 'select' }, [
-          el('option', { value: 'pvt_ltd', selected: kycData.entityType === 'pvt_ltd' }, 'Private Limited Company (Pvt Ltd)'),
-          el('option', { value: 'public_ltd', selected: kycData.entityType === 'public_ltd' }, 'Public Limited Company'),
-          el('option', { value: 'llp', selected: kycData.entityType === 'llp' }, 'Limited Liability Partnership (LLP)'),
-          el('option', { value: 'partnership', selected: kycData.entityType === 'partnership' }, 'Partnership Firm'),
-          el('option', { value: 'proprietorship', selected: kycData.entityType === 'proprietorship' }, 'Sole Proprietorship')
-        ]);
-
-        const dltIn = el('input', {
-          class: 'input',
-          placeholder: '19-digit DLT Principal Entity ID (e.g. 1101552340000012345)',
-          maxlength: '22',
-          value: kycData.dltPeId || '',
-          style: 'font-family:var(--mono);'
-        });
-
-        const dndToggle = el('input', {
-          type: 'checkbox',
-          checked: kycData.dndScrubbing !== false,
-          style: 'accent-color:var(--primary);width:16px;height:16px;cursor:pointer;'
-        });
-
-        const actions = el('div', { class: 'flex gap-2 items-center', style: 'margin-top:20px;' }, [
-          el('button', {
-            class: 'btn btn-ghost',
-            onclick: () => { currentStep = 2; renderStepper(); renderStepContent(); }
-          }, 'Back'),
-          el('button', {
-            class: 'btn btn-primary',
-            onclick: () => {
-              const gVal = gstinIn.value.trim().toUpperCase();
-              if (gVal && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gVal)) {
-                toast('Invalid GSTIN format. Expected 15 characters (e.g. 27ABCDE1234F1Z5).', 'err');
-                return;
-              }
-              const dVal = dltIn.value.trim();
-              if (dVal && !/^\d{10,22}$/.test(dVal)) {
-                toast('DLT Principal Entity ID must be 10 to 22 numerical digits.', 'err');
-                return;
-              }
-              kycData.gstin = gVal;
-              kycData.entityType = entitySelect.value;
-              kycData.dltPeId = dVal;
-              kycData.dndScrubbing = dndToggle.checked;
-              currentStep = 4;
-              renderStepper();
-              renderStepContent();
-            }
-          }, 'Continue')
-        ]);
-
-        const form = el('div', { class: 'settings-form', style: 'max-width:540px;' }, [
-          field('GSTIN (15 characters)', gstinIn),
-          field('Legal Entity Structure', entitySelect),
-          field('TRAI DLT Principal Entity ID', dltIn),
-          el('div', { class: 'field' }, [
-            el('label', {}, 'National DND / NCPR Scrubbing'),
-            el('div', { class: 'flex items-center gap-2', style: 'height:38px;' }, [
-              dndToggle,
-              el('span', { style: 'font-size:0.86rem;color:#1E293B;font-weight:600;' }, 'Auto-scrub campaign dial lists against 1909 DND register')
-            ])
-          ]),
-          actions
-        ]);
-
-        stepContentHost.appendChild(header);
-        stepContentHost.appendChild(form);
-
-      } else {
-        // STEP 3 (Individual) or STEP 4 (Business): Aadhaar Verification
-        const header = el('div', { class: 'kyc-step-header' }, [
-          el('h3', {}, isBiz ? 'Authorized Signatory Aadhaar Verification' : 'Aadhaar Verification (UIDAI)'),
-          el('p', {}, '12-digit UIDAI identity. Fast verification via simulated DigiLocker OTP.')
-        ]);
-
-        const aadhaarIn = el('input', {
-          class: 'input',
-          placeholder: '1234 5678 9012',
-          maxlength: '14',
-          value: kycData.aadhaar || '',
-          style: 'font-family:var(--mono);font-size:1.05rem;letter-spacing:2px;font-weight:700;'
-        });
-
-        const directorIn = el('input', {
-          class: 'input',
-          placeholder: isBiz ? 'Full Name of Authorized Director / Partner' : 'Full Name',
-          value: kycData.directorName || (State.me && State.me.user && State.me.user.name) || ''
-        });
-
-        const phoneIn = el('input', {
-          class: 'input',
-          placeholder: '+91 98765 43210',
-          value: kycData.directorPhone || ''
-        });
-
-        const otpWrap = el('div', { style: 'display:none;margin-top:12px;padding:14px;background:rgba(109, 191, 90,0.04);border:1px dashed #6DBF5A;border-radius:12px;' });
-        const otpIn = el('input', {
-          class: 'input',
-          placeholder: '6-digit OTP (e.g. 849201)',
-          maxlength: '6',
-          style: 'font-family:var(--mono);max-width:200px;font-size:1.05rem;letter-spacing:3px;text-align:center;'
-        });
-        const btnVerifyOtp = el('button', { class: 'btn btn-primary btn-sm' }, 'Verify OTP');
-        const otpStatusMsg = el('div', { style: 'font-size:0.82rem;color:#3D7A30;margin-top:6px;font-weight:600;' }, 'Simulated DigiLocker OTP: 849201');
-
-        otpWrap.appendChild(el('div', { style: 'font-size:0.84rem;font-weight:700;color:#1E293B;margin-bottom:8px;' }, 'Enter DigiLocker OTP sent to registered mobile'));
-        otpWrap.appendChild(el('div', { class: 'flex gap-2 items-center' }, [otpIn, btnVerifyOtp]));
-        otpWrap.appendChild(otpStatusMsg);
-
-        const btnGetOtp = el('button', {
-          class: 'btn btn-ghost btn-sm',
-          type: 'button',
-          style: 'color:#6DBF5A;border-color:rgba(109, 191, 90,0.4);'
-        }, 'Send Verification OTP');
-
-        btnGetOtp.onclick = async () => {
-          const rawA = aadhaarIn.value.replace(/\D/g, '');
-          const pVal = phoneIn.value.trim();
-          if (rawA && rawA.length !== 12) {
-            toast('Please enter a valid 12-digit Aadhaar number.', 'err');
-            return;
-          }
-          if (!rawA && !pVal) {
-            toast('Please enter a mobile phone number or Aadhaar number.', 'err');
-            return;
-          }
-          btnGetOtp.disabled = true;
-          btnGetOtp.textContent = 'Sending OTP...';
-          try {
-            const res = await api('/api/compliance/digilocker-otp', {
-              method: 'POST',
-              body: { aadhaar: rawA, phone: pVal }
-            });
-            otpWrap.style.display = 'block';
-            if (res && res.simulatedOtp) {
-              otpIn.value = res.simulatedOtp;
-              otpStatusMsg.textContent = res.message || ('Simulated OTP: ' + res.simulatedOtp);
-            } else if (res && res.message) {
-              otpStatusMsg.textContent = res.message;
-            }
-            toast(res.message || 'OTP sent successfully.', 'ok');
-          } catch (e) {
-            toast(e.message || 'OTP dispatch failed.', 'err');
-          } finally {
-            btnGetOtp.disabled = false;
-            btnGetOtp.textContent = 'Send Verification OTP';
-          }
-        };
-
-        btnVerifyOtp.onclick = async () => {
-          const rawA = aadhaarIn.value.replace(/\D/g, '');
-          const pVal = phoneIn.value.trim();
-          const oVal = otpIn.value.trim();
-          if (!oVal) { toast('Please enter the 6-digit OTP.', 'err'); return; }
-          btnVerifyOtp.disabled = true;
-          btnVerifyOtp.textContent = 'Verifying...';
-          try {
-            const res = await api('/api/compliance/digilocker-otp', {
-              method: 'POST',
-              body: { aadhaar: rawA, phone: pVal, otp: oVal }
-            });
-            if (res && res.verified) {
-              kycData.aadhaarVerified = true;
-              otpWrap.innerHTML = '<div style="color:#10B981;font-weight:700;font-size:0.9rem;display:flex;align-items:center;gap:6px;">Mobile & Identity Verified</div>';
-              toast('Identity verified successfully!', 'ok');
-            }
-          } catch (e) {
-            toast(e.message || 'Verification failed.', 'err');
-          } finally {
-            btnVerifyOtp.disabled = false;
-            btnVerifyOtp.textContent = 'Verify OTP';
-          }
-        };
-
-        const consentBox = el('input', { type: 'checkbox', checked: true, style: 'accent-color:var(--primary);width:16px;height:16px;margin-top:2px;' });
-
-        const btnSubmit = el('button', {
-          class: 'btn btn-primary',
-          style: 'padding:10px 32px;font-weight:700;',
-          onclick: async () => {
-            const rawA = aadhaarIn.value.replace(/\D/g, '');
-            if (rawA && rawA.length !== 12) {
-              toast('Please enter a valid 12-digit Aadhaar number.', 'err');
-              return;
-            }
-            kycData.aadhaar = rawA;
-            kycData.directorName = directorIn.value.trim();
-            kycData.directorPhone = phoneIn.value.trim();
-
-            btnSubmit.disabled = true;
-            btnSubmit.textContent = 'Submitting KYC...';
-            try {
-              const res = await api('/api/compliance/kyc', {
-                method: 'POST',
-                body: {
-                  businessType: kycData.businessType,
-                  businessName: kycData.businessName || kycData.panName,
-                  entityType: kycData.entityType,
-                  pan: kycData.pan,
-                  panName: kycData.panName,
-                  dob: kycData.dob,
-                  gstin: kycData.gstin,
-                  dltPeId: kycData.dltPeId,
-                  dndScrubbing: kycData.dndScrubbing,
-                  aadhaar: kycData.aadhaar,
-                  aadhaarVerified: kycData.aadhaarVerified,
-                  directorName: kycData.directorName,
-                  directorPhone: kycData.directorPhone
-                }
-              });
-              if (res && res.kyc) {
-                Object.assign(kycData, res.kyc);
-                updateStatusBanner();
-                toast('KYC Verification submitted successfully!', 'ok');
-              }
-            } catch (err) {
-              toast(err.message || 'Submission failed.', 'err');
-            } finally {
-              btnSubmit.disabled = false;
-              btnSubmit.textContent = 'Submit KYC Verification';
-            }
-          }
-        }, 'Submit KYC Verification');
-
-        const actions = el('div', { class: 'flex gap-2 items-center', style: 'margin-top:24px;' }, [
-          el('button', {
-            class: 'btn btn-ghost',
-            onclick: () => { currentStep = isBiz ? 3 : 2; renderStepper(); renderStepContent(); }
-          }, 'Back'),
-          btnSubmit
-        ]);
-
-        const form = el('div', { class: 'settings-form', style: 'max-width:540px;' }, [
-          field(isBiz ? 'Authorized Director / Partner Name' : 'Full Name', directorIn),
-          field('Mobile Number', phoneIn),
-          el('div', { class: 'field' }, [
-            el('label', {}, '12-digit Aadhaar Number'),
-            el('div', { class: 'flex gap-2' }, [aadhaarIn, btnGetOtp]),
-            otpWrap
-          ]),
-          el('div', { class: 'flex items-start gap-2', style: 'margin-top:10px;' }, [
-            consentBox,
-            el('span', { style: 'font-size:0.8rem;color:#64748B;line-height:1.4;' },
-              'I authorize Seevora AI Voice to securely verify my identity through UIDAI DigiLocker for regulatory telecommunication compliance under TRAI regulations.'
-            )
-          ]),
-          actions
-        ]);
-
-        stepContentHost.appendChild(header);
-        stepContentHost.appendChild(form);
-      }
-    }
-
-    // 4. Status Banner at Bottom
-    const statusBanner = el('div', { class: 'kyc-status-banner pending' });
-
-    function updateStatusBanner() {
-      statusBanner.innerHTML = '';
-      const st = kycData.status || 'unverified';
-      const isVerified = st === 'verified';
-      const isReview = st === 'under_review';
-      const bannerClass = isVerified ? 'verified' : (isReview ? 'under_review' : 'pending');
-      statusBanner.className = 'kyc-status-banner ' + bannerClass;
-
-      const dotClass = isVerified ? 'verified' : (isReview ? 'under_review' : 'pending');
-      const labelText = isVerified ? 'Verified Compliant' : (isReview ? 'Under Review' : 'Pending');
-
-      const left = el('div', { class: 'kyc-status-title' }, [
-        el('span', { class: 'kyc-status-dot ' + dotClass }),
-        el('span', {}, 'KYC Verification'),
-        kycData.pan ? el('span', { class: 'muted', style: 'font-size:0.82rem;font-weight:500;margin-left:8px;' }, '· PAN: ' + kycData.pan) : null
-      ].filter(Boolean));
-
-      const right = el('span', { class: 'kyc-status-pill ' + bannerClass }, labelText);
-
-      statusBanner.appendChild(left);
-      statusBanner.appendChild(right);
-    }
-
-    renderStepper();
-    renderStepContent();
-    updateStatusBanner();
-
-    kycBox.appendChild(stepperHost);
-    kycBox.appendChild(stepContentHost);
-    kycBox.appendChild(statusBanner);
-    panel.appendChild(kycBox);
   }
 
   // --- GENERAL TAB (PROFILE, WORKSPACE, PRIVACY, BYON, PROVIDERS) ---
@@ -7566,7 +7216,7 @@ async function viewSettings(root) {
 
     // Workspace Identity Card
     const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
-    const colorVal = (t.branding && t.branding.color) || '#6DBF5A';
+    const colorVal = (t.branding && t.branding.color) || '#42C2FF';
     const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal });
     const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:130px;font-family:var(--mono)' });
     colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
@@ -7828,6 +7478,459 @@ async function viewSettings(root) {
       ])
     ]);
     panel.appendChild(teamCard);
+  }
+
+  // --- OUTBOUND CRM WEBHOOKS TAB ---
+  async function renderCrmWebhooksTab(panel) {
+    const configCard = el('div', { class: 'card card-pad', style: 'margin-bottom:16px;' }, [
+      el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:12px;' }, [
+        el('div', {}, [
+          el('span', { class: 'section-kicker' }, 'Real-Time Integrations'),
+          el('h3', { class: 't-h3' }, 'Outbound CRM Webhooks Engine')
+        ]),
+        el('span', { class: 'pill badge-gold' }, 'HMAC SHA-256 Signed')
+      ]),
+      el('p', { class: 'muted', style: 'font-size:0.86rem;line-height:1.5;margin-bottom:16px;' },
+        'Automatically delivers webhook POST notifications with verified HMAC signatures to HubSpot, Zoho, Zapier, Make, or custom CRM pipelines upon voice call completion or lead qualification.'
+      )
+    ]);
+
+    const urlInput = el('input', { class: 'input', placeholder: 'https://api.yourcrm.com/v1/voice-leads-webhook', style: 'margin-bottom:12px;' });
+    const labelInput = el('input', { class: 'input', placeholder: 'HubSpot Production Pipeline', style: 'margin-bottom:12px;' });
+    const secretInput = el('input', { class: 'input', readonly: true, style: 'font-family:monospace;font-size:0.82rem;background:rgba(255,255,255,0.03);margin-bottom:12px;' });
+
+    const evCallEnded = el('input', { type: 'checkbox', checked: true, id: 'ev_call_ended' });
+    const evLeadQual = el('input', { type: 'checkbox', checked: true, id: 'ev_lead_qual' });
+    const evRecReady = el('input', { type: 'checkbox', checked: true, id: 'ev_rec_ready' });
+    const evCampDone = el('input', { type: 'checkbox', checked: false, id: 'ev_camp_done' });
+
+    const eventsRow = el('div', { class: 'flex flex-wrap gap-4 items-center', style: 'margin-bottom:18px;font-size:0.86rem;' }, [
+      el('label', { class: 'flex items-center gap-2 cursor-pointer' }, [evCallEnded, el('span', {}, 'call_ended (Every call)')]),
+      el('label', { class: 'flex items-center gap-2 cursor-pointer' }, [evLeadQual, el('span', {}, 'lead_qualified (Score ≥ 70)')]),
+      el('label', { class: 'flex items-center gap-2 cursor-pointer' }, [evRecReady, el('span', {}, 'recording_ready (Audio + Transcript)')]),
+      el('label', { class: 'flex items-center gap-2 cursor-pointer' }, [evCampDone, el('span', {}, 'campaign_completed')])
+    ]);
+
+    let activeWebhook = null;
+    const saveBtn = el('button', { class: 'btn btn-primary btn-sm' }, 'Save Webhook');
+    const testBtn = el('button', { class: 'btn btn-ghost btn-sm' }, 'Send Test Webhook');
+    const deleteBtn = el('button', { class: 'btn btn-ghost btn-sm', style: 'color:#EF4444;display:none;' }, 'Delete Webhook');
+
+    const formGrid = el('div', { class: 'grid grid-2', style: 'gap:12px;' }, [
+      el('div', {}, [el('label', { class: 'muted text-xs block mb-1' }, 'Webhook Friendly Label'), labelInput]),
+      el('div', {}, [el('label', { class: 'muted text-xs block mb-1' }, 'Destination Endpoint URL (HTTPS recommended)'), urlInput])
+    ]);
+
+    const secretRow = el('div', { style: 'margin-bottom:16px;' }, [
+      el('label', { class: 'muted text-xs block mb-1' }, 'HMAC-SHA256 Signing Secret (Payloads signed with X-Seevora-Signature)'),
+      el('div', { class: 'flex gap-2' }, [
+        secretInput,
+        el('button', {
+          class: 'btn btn-ghost btn-sm',
+          type: 'button',
+          onclick: () => {
+            navigator.clipboard.writeText(secretInput.value);
+            toast('Signing secret copied to clipboard!', 'ok');
+          }
+        }, 'Copy')
+      ])
+    ]);
+
+    configCard.appendChild(formGrid);
+    configCard.appendChild(secretRow);
+    configCard.appendChild(el('label', { class: 'muted text-xs block mb-2' }, 'Subscribed Lifecycle Events'));
+    configCard.appendChild(eventsRow);
+    configCard.appendChild(el('div', { class: 'flex gap-2' }, [saveBtn, testBtn, deleteBtn]));
+    panel.appendChild(configCard);
+
+    // Delivery Logs Card
+    const logsCard = el('div', { class: 'card card-pad admin-table', style: 'margin-bottom:16px;' }, [
+      el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px;' }, [
+        el('div', {}, [
+          el('span', { class: 'section-kicker' }, 'Audit & Delivery Trail'),
+          el('h3', { class: 't-h3' }, 'Recent Webhook Dispatches')
+        ]),
+        el('button', {
+          class: 'btn btn-ghost btn-sm',
+          onclick: () => loadWebhookData()
+        }, 'Refresh Logs')
+      ])
+    ]);
+    const logsHost = el('div', {}, skeleton('sk-card', 1));
+    logsCard.appendChild(logsHost);
+    panel.appendChild(logsCard);
+
+    // Developer Code Example Card
+    const devCard = el('div', { class: 'card card-pad' }, [
+      el('div', { style: 'margin-bottom:10px;' }, [
+        el('span', { class: 'section-kicker' }, 'Developer Quickstart'),
+        el('h3', { class: 't-h3' }, 'HMAC Signature Verification (Node.js & Python)')
+      ]),
+      el('p', { class: 'muted text-xs', style: 'margin-bottom:12px;' }, 'Every webhook payload sent by Seevora includes the header X-Seevora-Signature: sha256=<hex_digest>. Verify it to prevent spoofing:'),
+      el('pre', { style: 'background:rgba(0,0,0,0.4);border:1px solid var(--line-2);border-radius:10px;padding:12px;font-size:0.78rem;color:#00e5ff;overflow-x:auto;' },
+        `const crypto = require('crypto');\n// In your Express / HTTP handler:\nfunction verifySeevoraWebhook(rawBody, secret, signatureHeader) {\n  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\n  return crypto.timingSafeEqual(Buffer.from(signatureHeader), Buffer.from(expected));\n}`
+      )
+    ]);
+    panel.appendChild(devCard);
+
+    async function loadWebhookData() {
+      try {
+        const res = await api('/api/crm/webhooks');
+        const hooks = res.webhooks || [];
+        if (hooks.length > 0) {
+          activeWebhook = hooks[0];
+          urlInput.value = activeWebhook.url || '';
+          labelInput.value = activeWebhook.label || '';
+          secretInput.value = activeWebhook.secret || '';
+          evCallEnded.checked = (activeWebhook.events || []).includes('call_ended');
+          evLeadQual.checked = (activeWebhook.events || []).includes('lead_qualified');
+          evRecReady.checked = (activeWebhook.events || []).includes('recording_ready');
+          evCampDone.checked = (activeWebhook.events || []).includes('campaign_completed');
+          deleteBtn.style.display = 'inline-block';
+        } else {
+          activeWebhook = null;
+          secretInput.value = '(Secret will be generated automatically upon save)';
+          deleteBtn.style.display = 'none';
+        }
+
+        const logsRes = await api('/api/crm/webhooks/logs');
+        const logs = logsRes.logs || [];
+        logsHost.innerHTML = '';
+        if (!logs.length) {
+          logsHost.appendChild(el('div', { class: 'muted', style: 'padding:16px 0;font-size:0.86rem;' }, 'No webhooks dispatched yet. Click "Send Test Webhook" to verify your endpoint.'));
+        } else {
+          const table = el('table', { class: 'admin-table' }, [
+            el('thead', {}, el('tr', {}, [
+              el('th', {}, 'Timestamp'),
+              el('th', {}, 'Event'),
+              el('th', {}, 'HTTP Status'),
+              el('th', {}, 'Delivery Result'),
+              el('th', {}, 'Log ID')
+            ])),
+            el('tbody', {}, logs.slice(0, 20).map((l) => {
+              const isOk = l.ok || (l.status >= 200 && l.status < 300);
+              return el('tr', {}, [
+                el('td', {}, new Date(l.firedAt).toLocaleTimeString()),
+                el('td', {}, el('span', { class: 'pill badge-gold' }, l.eventType)),
+                el('td', {}, el('span', { class: 'pill ' + (isOk ? 'badge-ok' : 'badge-err') }, (l.status ? l.status + ' ' : '') + (isOk ? 'OK' : 'FAIL'))),
+                el('td', { style: 'max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;' }, l.body || '(empty)'),
+                el('td', { class: 'muted text-xs' }, l.id)
+              ]);
+            }))
+          ]);
+          logsHost.appendChild(table);
+        }
+      } catch (err) {
+        logsHost.innerHTML = '';
+        logsHost.appendChild(el('div', { class: 'muted' }, 'Failed loading webhooks: ' + err.message));
+      }
+    }
+
+    saveBtn.onclick = async () => {
+      const url = urlInput.value.trim();
+      const label = labelInput.value.trim() || 'Primary CRM Webhook';
+      if (!url) return toast('Please enter a valid webhook URL.', 'err');
+      const selectedEvents = [];
+      if (evCallEnded.checked) selectedEvents.push('call_ended');
+      if (evLeadQual.checked) selectedEvents.push('lead_qualified');
+      if (evRecReady.checked) selectedEvents.push('recording_ready');
+      if (evCampDone.checked) selectedEvents.push('campaign_completed');
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      try {
+        if (activeWebhook) {
+          await api('/api/crm/webhooks/update', {
+            method: 'POST',
+            body: { id: activeWebhook.id, url, label, events: selectedEvents }
+          });
+          toast('CRM Webhook configuration updated.', 'ok');
+        } else {
+          await api('/api/crm/webhooks', {
+            method: 'POST',
+            body: { url, label, events: selectedEvents }
+          });
+          toast('CRM Webhook created successfully!', 'ok');
+        }
+        await loadWebhookData();
+      } catch (e) {
+        toast('Save failed: ' + e.message, 'err');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Webhook';
+      }
+    };
+
+    testBtn.onclick = async () => {
+      testBtn.disabled = true;
+      testBtn.textContent = 'Firing test...';
+      try {
+        const res = await api('/api/crm/webhooks/test', { method: 'POST', body: {} });
+        toast(res.message || 'Test webhook fired!', 'ok');
+        await loadWebhookData();
+      } catch (e) {
+        toast('Test failed: ' + e.message, 'err');
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Send Test Webhook';
+      }
+    };
+
+    deleteBtn.onclick = async () => {
+      if (!activeWebhook || !confirm('Are you sure you want to delete this webhook configuration?')) return;
+      try {
+        await api('/api/crm/webhooks/delete', { method: 'POST', body: { webhookId: activeWebhook.id } });
+        toast('Webhook deleted.', 'ok');
+        urlInput.value = '';
+        labelInput.value = '';
+        await loadWebhookData();
+      } catch (e) {
+        toast('Delete failed: ' + e.message, 'err');
+      }
+    };
+
+    loadWebhookData();
+  }
+
+  // --- KNOWLEDGE BASE (RAG) TAB ---
+  async function renderKnowledgeBaseTab(panel) {
+    const kbCard = el('div', { class: 'card card-pad', style: 'margin-bottom:16px;' }, [
+      el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:12px;' }, [
+        el('div', {}, [
+          el('span', { class: 'section-kicker' }, 'RAG Document Grounding'),
+          el('h3', { class: 't-h3' }, 'Lightweight Knowledge Base (RAG) Chunker')
+        ]),
+        el('span', { class: 'pill badge-gold' }, 'Sub-15ms Cosine Retrieval')
+      ]),
+      el('p', { class: 'muted', style: 'font-size:0.86rem;line-height:1.5;margin-bottom:16px;' },
+        'Ground your voice receptionists in verified company manuals, FAQs, pricing tables, and clinical procedures. Ingested documents are chunked into 500-character segments with 50-character sliding overlap and matched dynamically during live calls.'
+      )
+    ]);
+
+    const agentSelect = el('select', { class: 'rec-filter-select', style: 'width:100%;margin-bottom:16px;' }, [
+      el('option', { value: '' }, 'Loading agents...')
+    ]);
+
+    const ingestTextarea = el('textarea', {
+      class: 'input',
+      placeholder: 'Paste FAQ, clinic timings, pricing packages, cancellation policy, or service descriptions here...',
+      style: 'height:110px;font-size:0.84rem;margin-bottom:10px;'
+    });
+    const docSourceInput = el('input', { class: 'input', placeholder: 'Document Source Label (e.g. Clinic FAQ v2.pdf)', style: 'margin-bottom:10px;' });
+    const ingestBtn = el('button', { class: 'btn btn-primary btn-sm' }, 'Chunk & Ingest Text');
+
+    const crawlUrlInput = el('input', { class: 'input', placeholder: 'https://example.com/services', style: 'margin-bottom:10px;' });
+    const crawlBtn = el('button', { class: 'btn btn-ghost btn-sm' }, 'Crawl & Index URL');
+
+    const ingestGrid = el('div', { class: 'grid grid-2', style: 'gap:16px;margin-bottom:16px;' }, [
+      el('div', { class: 'card card-pad', style: 'background:var(--bg-2);' }, [
+        el('b', { style: 'font-size:0.9rem;display:block;margin-bottom:8px;' }, 'Direct Text / Document Ingestion'),
+        docSourceInput,
+        ingestTextarea,
+        ingestBtn
+      ]),
+      el('div', { class: 'card card-pad', style: 'background:var(--bg-2);' }, [
+        el('b', { style: 'font-size:0.9rem;display:block;margin-bottom:8px;' }, 'Live Website Web Crawler (Deep Crawl)'),
+        el('p', { class: 'muted text-xs', style: 'margin-bottom:12px;' }, 'Extracts clean readable body text from public website pages and chunks it automatically.'),
+        crawlUrlInput,
+        crawlBtn
+      ])
+    ]);
+
+    kbCard.appendChild(el('label', { class: 'muted text-xs block mb-1' }, 'Select Voice Agent Knowledge Scope'));
+    kbCard.appendChild(agentSelect);
+    kbCard.appendChild(ingestGrid);
+    panel.appendChild(kbCard);
+
+    // Semantic Vector Search Playground Card
+    const searchPlaygroundCard = el('div', { class: 'card card-pad', style: 'margin-bottom:16px;' }, [
+      el('div', { style: 'margin-bottom:12px;' }, [
+        el('span', { class: 'section-kicker' }, 'Live RAG Verification'),
+        el('h3', { class: 't-h3' }, 'Semantic Vector Search Playground')
+      ]),
+      el('p', { class: 'muted text-xs', style: 'margin-bottom:12px;' }, 'Test how the voice agent retrieves relevant chunks for customer questions before live calls:'),
+      el('div', { class: 'flex gap-2', style: 'margin-bottom:14px;' }, [
+        el('input', { id: 'kb_test_query', class: 'input', placeholder: 'Ask a test question (e.g. What is the cancellation policy or consultation fee?)' }),
+        el('button', { id: 'kb_test_btn', class: 'btn btn-primary btn-sm' }, 'Test Retrieval')
+      ]),
+      el('div', { id: 'kb_test_results', style: 'display:flex;flex-direction:column;gap:8px;' })
+    ]);
+    panel.appendChild(searchPlaygroundCard);
+
+    // Chunks Table Card
+    const chunksCard = el('div', { class: 'card card-pad admin-table' }, [
+      el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px;' }, [
+        el('div', {}, [
+          el('span', { class: 'section-kicker' }, 'Indexed Segments'),
+          el('h3', { class: 't-h3' }, 'Active Knowledge Base Chunks')
+        ]),
+        el('button', { class: 'btn btn-ghost btn-sm', style: 'color:#EF4444;', id: 'kb_clear_btn' }, 'Clear Knowledge Base')
+      ]),
+      el('div', { id: 'kb_chunks_host' }, skeleton('sk-card', 1))
+    ]);
+    panel.appendChild(chunksCard);
+
+    let currentAgentId = null;
+
+    async function initAgentList() {
+      try {
+        const res = await api('/api/agents');
+        const agents = res.agents || [];
+        agentSelect.innerHTML = '';
+        if (!agents.length) {
+          agentSelect.appendChild(el('option', { value: '' }, 'No agents found'));
+          return;
+        }
+        agents.forEach((a) => {
+          agentSelect.appendChild(el('option', { value: a.id }, a.name + ' (' + (a.telephony ? a.telephony.phoneNumber || 'WebRTC' : 'Agent') + ')'));
+        });
+        currentAgentId = agents[0].id;
+        agentSelect.value = currentAgentId;
+        loadChunks(currentAgentId);
+      } catch (err) {
+        agentSelect.innerHTML = '<option value="">Error loading agents</option>';
+      }
+    }
+
+    agentSelect.onchange = () => {
+      currentAgentId = agentSelect.value;
+      if (currentAgentId) loadChunks(currentAgentId);
+    };
+
+    async function loadChunks(agentId) {
+      const host = $('#kb_chunks_host');
+      if (!host) return;
+      host.innerHTML = '';
+      try {
+        const res = await api('/api/kb/' + encodeURIComponent(agentId));
+        const chunks = res.chunks || [];
+        if (!chunks.length) {
+          host.appendChild(el('div', { class: 'muted', style: 'padding:16px 0;font-size:0.86rem;' }, 'No knowledge chunks indexed for this agent yet. Paste text or crawl a page above to train your agent.'));
+          return;
+        }
+        const table = el('table', { class: 'admin-table' }, [
+          el('thead', {}, el('tr', {}, [
+            el('th', {}, 'Chunk ID'),
+            el('th', {}, 'Source Document'),
+            el('th', {}, 'Length'),
+            el('th', {}, 'Indexed Text Snippet')
+          ])),
+          el('tbody', {}, chunks.slice(0, 30).map((c) => {
+            return el('tr', {}, [
+              el('td', {}, el('code', { class: 'text-xs' }, c.id)),
+              el('td', {}, el('span', { class: 'pill badge-gold' }, c.source || 'manual')),
+              el('td', {}, (c.charCount || (c.text || '').length) + ' chars'),
+              el('td', { style: 'max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;' }, c.text)
+            ]);
+          }))
+        ]);
+        host.appendChild(table);
+      } catch (e) {
+        host.appendChild(el('div', { class: 'muted' }, 'Failed loading chunks: ' + e.message));
+      }
+    }
+
+    ingestBtn.onclick = async () => {
+      const text = ingestTextarea.value.trim();
+      const source = docSourceInput.value.trim() || 'Manual FAQ Text';
+      if (!text) return toast('Please enter or paste text to ingest.', 'err');
+      if (!currentAgentId) return toast('Please select an agent first.', 'err');
+
+      ingestBtn.disabled = true;
+      ingestBtn.textContent = 'Chunking & Vectorizing...';
+      try {
+        const res = await api('/api/kb/' + encodeURIComponent(currentAgentId) + '/ingest', {
+          method: 'POST',
+          body: { text, source }
+        });
+        toast('Ingested ' + (res.added || 0) + ' chunks successfully!', 'ok');
+        ingestTextarea.value = '';
+        loadChunks(currentAgentId);
+      } catch (err) {
+        toast('Ingestion failed: ' + err.message, 'err');
+      } finally {
+        ingestBtn.disabled = false;
+        ingestBtn.textContent = 'Chunk & Ingest Text';
+      }
+    };
+
+    crawlBtn.onclick = async () => {
+      const url = crawlUrlInput.value.trim();
+      if (!url) return toast('Please enter a valid website URL to crawl.', 'err');
+      if (!currentAgentId) return toast('Please select an agent first.', 'err');
+
+      crawlBtn.disabled = true;
+      crawlBtn.textContent = 'Crawling & Indexing...';
+      try {
+        const res = await api('/api/kb/' + encodeURIComponent(currentAgentId) + '/crawl', {
+          method: 'POST',
+          body: { url, maxPages: 3 }
+        });
+        toast('Crawled ' + (res.pagesVisited || 1) + ' page(s), added ' + (res.added || 0) + ' chunks!', 'ok');
+        crawlUrlInput.value = '';
+        loadChunks(currentAgentId);
+      } catch (err) {
+        toast('Crawl failed: ' + err.message, 'err');
+      } finally {
+        crawlBtn.disabled = false;
+        crawlBtn.textContent = 'Crawl & Index URL';
+      }
+    };
+
+    const testBtn = $('#kb_test_btn');
+    if (testBtn) {
+      testBtn.onclick = async () => {
+        const qInput = $('#kb_test_query');
+        const query = (qInput ? qInput.value : '').trim();
+        if (!query) return toast('Enter a test question to evaluate semantic search.', 'err');
+        if (!currentAgentId) return toast('Please select an agent.', 'err');
+
+        const resultsHost = $('#kb_test_results');
+        if (resultsHost) resultsHost.innerHTML = '<div class="muted text-xs">Searching knowledge vectors...</div>';
+        try {
+          const res = await api('/api/kb/' + encodeURIComponent(currentAgentId) + '/search?q=' + encodeURIComponent(query) + '&topK=3');
+          if (resultsHost) resultsHost.innerHTML = '';
+          const matches = res.chunks || [];
+          if (!matches.length) {
+            if (resultsHost) resultsHost.appendChild(el('div', { class: 'muted text-xs' }, 'No relevant chunks found above similarity threshold.'));
+            return;
+          }
+          matches.forEach((m, idx) => {
+            const scorePct = Math.round((m.score || 0) * 100);
+            if (resultsHost) {
+              resultsHost.appendChild(el('div', {
+                class: 'card card-pad',
+                style: 'background:rgba(255,255,255,0.02);border:1px solid rgba(0,229,255,0.2);padding:10px 14px;'
+              }, [
+                el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:6px;' }, [
+                  el('b', { style: 'font-size:0.82rem;color:#00e5ff;' }, 'Rank #' + (idx + 1) + ' · ' + (m.source || 'Document')),
+                  el('span', { class: 'pill badge-ok', style: 'font-size:0.72rem;' }, 'Similarity: ' + scorePct + '%')
+                ]),
+                el('p', { style: 'font-size:0.82rem;color:var(--ink);line-height:1.45;margin:0;' }, m.text)
+              ]));
+            }
+          });
+        } catch (err) {
+          if (resultsHost) resultsHost.innerHTML = '<div class="muted text-xs">Search error: ' + err.message + '</div>';
+        }
+      };
+    }
+
+    const clearBtn = $('#kb_clear_btn');
+    if (clearBtn) {
+      clearBtn.onclick = async () => {
+        if (!currentAgentId || !confirm('Are you sure you want to clear all indexed chunks for this agent?')) return;
+        try {
+          await api('/api/kb/' + encodeURIComponent(currentAgentId) + '/clear', { method: 'POST', body: {} });
+          toast('Knowledge base cleared.', 'ok');
+          loadChunks(currentAgentId);
+        } catch (err) {
+          toast('Clear failed: ' + err.message, 'err');
+        }
+      };
+    }
+
+    initAgentList();
   }
 
   // Mount active tab
@@ -8226,10 +8329,10 @@ async function viewAssistant(wrap) {
   const integrationsList = el('div', { class: 'chat-integrations-list' }, [
     createIntegrationItem('calendar', 'Calendar & Planning', '#4285F4', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="#4285F4" stroke-width="2"/></svg>', 'Sync', openCalendarModal),
     createIntegrationItem('file', 'File Reader', '#107C41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#107C41" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#107C41" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="#107C41" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="#107C41" stroke-width="2"/></svg>', 'Active', openFileReaderModal),
-    createIntegrationItem('media', 'Media Files', '#FFAAB8', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#FFAAB8" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#FFAAB8"/></svg>', '31', openMediaFilesModal),
+    createIntegrationItem('media', 'Media Files', '#85F4FF', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#85F4FF" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#85F4FF"/></svg>', '31', openMediaFilesModal),
     createIntegrationItem('gmail', 'Gmail Dispatch', '#EA4335', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#EA4335" stroke-width="2"/><polyline points="22,6 12,13 2,6" stroke="#EA4335" stroke-width="2"/></svg>', 'Active', openGmailModal),
     createIntegrationItem('whatsapp', 'WhatsApp Voice Alerts', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Live', openWhatsAppModal),
-    createIntegrationItem('crm', 'CRM Pipeline Sync', '#3D7A30', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3D7A30" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
+    createIntegrationItem('crm', 'CRM Pipeline Sync', '#0284C7', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284C7" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Active', openCrmModal)
   ]);
   rightPanel.appendChild(integrationsList);
 
@@ -8419,8 +8522,8 @@ async function viewAssistant(wrap) {
       el('div', { class: 'chat-bot-body' }, [
         el('div', { class: 'assistant-typing' }, [
           el('span', { style: 'background:#181920;' }),
-          el('span', { style: 'background:#6DBF5A;' }),
-          el('span', { style: 'background:#FFAAB8;' })
+          el('span', { style: 'background:#42C2FF;' }),
+          el('span', { style: 'background:#85F4FF;' })
         ])
       ])
     ]);
@@ -8487,14 +8590,14 @@ async function viewAssistant(wrap) {
     return el('div', { class: 'chat-cards-fan' }, [
       el('div', { class: 'fan-card c1', onclick: () => doSendPrompt('Create an AI voice receptionist for a Dental Clinic') }, [
         el('div', {
-          style: 'width:100%;height:100%;background:linear-gradient(135deg,#3D7A30,#A8DF8E);display:flex;align-items:center;justify-content:center;color:#fff;',
+          style: 'width:100%;height:100%;background:linear-gradient(135deg,#0284C7,#B8FFF9);display:flex;align-items:center;justify-content:center;color:#fff;',
           html: '<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#ffffff" stroke-width="1.8"><path d="M12 2C9 2 7 4 7 7c0 4 2 9 5 13 3-4 5-9 5-13 0-3-2-5-5-5z"/></svg>'
         }),
         el('div', { class: 'fan-card-overlay' }, 'Dental Clinic')
       ]),
       el('div', { class: 'fan-card c2', onclick: () => doSendPrompt('Build an autonomous AI agent for Real Estate inquiries') }, [
         el('div', {
-          style: 'width:100%;height:100%;background:linear-gradient(135deg,#FFAAB8,#FF7A94);display:flex;align-items:center;justify-content:center;color:#fff;',
+          style: 'width:100%;height:100%;background:linear-gradient(135deg,#85F4FF,#F5A623);display:flex;align-items:center;justify-content:center;color:#fff;',
           html: '<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#ffffff" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="11" x2="9" y2="11.01"/><line x1="15" y1="11" x2="15" y2="11.01"/><path d="M10 22v-4h4v4"/></svg>'
         }),
         el('div', { class: 'fan-card-overlay' }, 'Real Estate AI')
@@ -8526,13 +8629,13 @@ async function viewAssistant(wrap) {
         </defs>
         <rect x="22" y="16" width="56" height="42" rx="16" fill="url(#botHead)" stroke="#cbd5e1" stroke-width="2"/>
         <rect x="30" y="24" width="40" height="26" rx="8" fill="url(#botScreen)"/>
-        <path d="M37 36 C37 32, 43 32, 43 36" stroke="#A8DF8E" stroke-width="3" stroke-linecap="round"/>
-        <path d="M57 36 C57 32, 63 32, 63 36" stroke="#A8DF8E" stroke-width="3" stroke-linecap="round"/>
-        <path d="M47 43 C49 46, 51 46, 53 43" stroke="#A8DF8E" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M37 36 C37 32, 43 32, 43 36" stroke="#B8FFF9" stroke-width="3" stroke-linecap="round"/>
+        <path d="M57 36 C57 32, 63 32, 63 36" stroke="#B8FFF9" stroke-width="3" stroke-linecap="round"/>
+        <path d="M47 43 C49 46, 51 46, 53 43" stroke="#B8FFF9" stroke-width="2.5" stroke-linecap="round"/>
         <circle cx="18" cy="37" r="4" fill="#94a3b8"/>
         <circle cx="82" cy="37" r="4" fill="#94a3b8"/>
         <ellipse cx="50" cy="74" rx="24" ry="18" fill="url(#botHead)" stroke="#cbd5e1" stroke-width="2"/>
-        <rect x="42" y="68" width="16" height="4" rx="2" fill="#A8DF8E"/>
+        <rect x="42" y="68" width="16" height="4" rx="2" fill="#B8FFF9"/>
         <path d="M26 70 C18 73, 16 82, 22 84" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
         <path d="M74 70 C82 73, 84 82, 78 84" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
       </svg>
@@ -8766,10 +8869,10 @@ async function viewAssistant(wrap) {
     };
     if (integrations.calendar) setStatus('calendar', integrations.calendar.status === 'connected' ? 'Sync' : 'Setup', '#4285F4');
     if (integrations.fileReader) setStatus('file', 'Active', '#107C41');
-    if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#FFAAB8');
+    if (integrations.mediaFiles) setStatus('media', integrations.mediaFiles.count || '31', '#85F4FF');
     if (integrations.gmail) setStatus('gmail', integrations.gmail.status === 'active' ? 'Active' : 'Setup', '#EA4335');
     if (integrations.whatsapp) setStatus('whatsapp', integrations.whatsapp.status === 'live' ? 'Live' : 'Setup', '#25D366');
-    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#3D7A30');
+    if (integrations.crm) setStatus('crm', integrations.crm.status === 'active' ? 'Active' : 'Setup', '#0284C7');
   }
 
   // =========================================================================
@@ -8842,7 +8945,7 @@ async function viewAssistant(wrap) {
 
     const metaToggleBtn = el('button', {
       type: 'button',
-      style: 'background:none;border:none;color:#3D7A30;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
+      style: 'background:none;border:none;color:#0284C7;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
       onclick: () => {
         const sec = $('#wa-meta-creds');
         if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
@@ -8872,7 +8975,7 @@ async function viewAssistant(wrap) {
         el('span', { style: 'font-size:0.74rem;color:#64748b;' }, 'Only registered WhatsApp Business Accounts (WABA) are accepted.'),
         el('button', {
           type: 'button',
-          style: 'background:none;border:none;color:#3D7A30;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
+          style: 'background:none;border:none;color:#0284C7;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
           onclick: () => {
             const inp = $('#wa-phone');
             if (inp) { inp.value = '+91 80715 82519'; inp.style.borderColor = ''; }
@@ -8925,7 +9028,7 @@ async function viewAssistant(wrap) {
           const metaConfig = (metaToken && phoneId) ? { accessToken: metaToken, phoneNumberId: phoneId } : {};
 
           // Check if number is an official WhatsApp Business Account
-          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#3D7A30;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #3D7A30;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
+          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#0284C7;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #0284C7;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
 
           let checkRes = null;
           try {
@@ -8939,7 +9042,7 @@ async function viewAssistant(wrap) {
 
           if (!checkRes || !checkRes.isBusiness) {
             const errMsg = (checkRes && checkRes.error) || 'This phone number is registered as a personal mobile WhatsApp account, not an authorized WhatsApp Business Account (WABA). Meta Cloud API and Seevora Voice AI strictly require an official WhatsApp Business account.';
-            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#3D7A30;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
+            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>${errMsg}<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#0284C7;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a> or configure Meta credentials above.</div></div>`;
             if (phoneInput) phoneInput.style.borderColor = '#ef4444';
             const link = $('#wa-fill-biz-link');
             if (link) {
@@ -9397,7 +9500,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCalendarModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'Google Calendar'),
-          el('span', { style: 'font-size:0.75rem;color:#3D7A30;font-weight:700;' }, 'Synced'),
+          el('span', { style: 'font-size:0.75rem;color:#0284C7;font-weight:700;' }, 'Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-books confirmed caller appointments.')
         ]),
         el('div', {
@@ -9421,7 +9524,7 @@ async function viewAssistant(wrap) {
           onclick: () => { $('#modal-host').classList.add('hide'); openCrmModal(); }
         }, [
           el('strong', { style: 'color:#0f172a;display:block;' }, 'CRM Pipeline Sync'),
-          el('span', { style: 'font-size:0.75rem;color:#3D7A30;font-weight:700;' }, 'Active & Synced'),
+          el('span', { style: 'font-size:0.75rem;color:#0284C7;font-weight:700;' }, 'Active & Synced'),
           el('span', { style: 'display:block;font-size:0.74rem;color:#64748b;margin-top:4px;' }, 'Auto-pushes caller contacts, recordings & deals to CRM.')
         ])
       ])

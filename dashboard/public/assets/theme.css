@@ -1,10 +1,10 @@
 /* ==========================================================================
    Seevora AI Voice Console — Premium Designer UI Theme
-   Palette: Sage Green (#A8DF8E) + Mint (#F0FFDF) + Blush (#FFD8DF) + Rose (#FFAAB8)
-   - Soft mint-cream ambient background
-   - Floating glass cards with warm botanical glow
-   - Sage green primary + rose pink accent system
-   - ZERO BLACK anywhere — all deep forest ink
+   Palette: Ice Mint (#EFFFFD) + Aquamarine (#B8FFF9) + Sky Cyan (#85F4FF) + Cerulean Sky (#42C2FF)
+   - Ice Mint & Pure White ambient canvas
+   - Floating glass cards with brilliant cyan & sky blue glow
+   - Cerulean Sky primary (#42C2FF) + Aquamarine accent system
+   - Deep Ocean Cyan Slate ink (#0C4A6E) for crystal-clear WCAG AAA readability
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
@@ -12,68 +12,68 @@
 :root {
   color-scheme: light;
 
-  /* Canvas — mint cream ambient */
-  --bg:           #EDF7E8;
-  --bg-inner:     #F4FBF0;
+  /* Canvas — Ice Mint (#EFFFFD) & Pure White */
+  --bg:           #F4FDFF;
+  --bg-inner:     #EFFFFD;
 
-  /* Surfaces (Translucent Glassmorphic — warm mint glass) */
-  --panel:        rgba(255, 255, 255, 0.72);
-  --panel-2:      rgba(240, 255, 223, 0.45);
-  --raised:       rgba(255, 255, 255, 0.85);
+  /* Surfaces (Translucent Glassmorphic — pristine ice glass) */
+  --panel:        rgba(255, 255, 255, 0.94);
+  --panel-2:      #B8FFF9;
+  --raised:       #FFFFFF;
 
-  /* Borders — subtle sage tint */
-  --line:         rgba(168, 223, 142, 0.45);
-  --line-2:       rgba(168, 223, 142, 0.65);
-  --line-strong:  rgba(100, 180, 80, 0.28);
+  /* Borders — subtle cerulean sky tint (#42C2FF) */
+  --line:         rgba(66, 194, 255, 0.25);
+  --line-2:       rgba(66, 194, 255, 0.50);
+  --line-strong:  rgba(0, 153, 255, 0.40);
 
-  /* Ink — Deep forest slate, NO BLACK */
-  --ink:          #1C2B1A;
-  --ink-soft:     #2E4429;
-  --ink-dim:      #5A7A54;
-  --ink-faint:    #93B88C;
+  /* Ink — Deep Ocean Cyan Slate, NO MURKY COLORS, NO BLACK */
+  --ink:          #0C4A6E;
+  --ink-soft:     #0369A1;
+  --ink-dim:      #0284C7;
+  --ink-faint:    #7DD3FC;
 
-  /* Primary: Sage Green */
-  --primary:         #6DBF5A;
-  --primary-hover:   #5AAD48;
-  --primary-dark:    #3D7A30;
-  --primary-light:   #F0FFDF;
-  --primary-soft:    rgba(109, 191, 90, 0.12);
+  /* Primary: Cerulean Sky (#42C2FF) & Vibrant Cyan */
+  --primary:         #42C2FF;
+  --primary-hover:   #0099FF;
+  --primary-dark:    #0077CC;
+  --primary-light:   #B8FFF9;
+  --primary-soft:    rgba(66, 194, 255, 0.16);
 
-  /* Accent: Rose Pink */
-  --accent:          #FF7A94;
-  --accent-light:    #FFD8DF;
+  /* Accent: Sky Cyan (#85F4FF) & Aquamarine (#B8FFF9) */
+  --accent:          #42C2FF;
+  --accent-light:    #B8FFF9;
   --accent-ink:      #FFFFFF;
 
-  /* Green palette (brand) */
-  --green:           #6DBF5A;
-  --green-dark:      #3D7A30;
-  --green-light:     #F0FFDF;
-  --green-line:      #A8DF8E;
+  /* Cyan palette (brand) */
+  --green:           #42C2FF;
+  --green-dark:      #0099FF;
+  --green-light:     #B8FFF9;
+  --green-line:      #85F4FF;
 
-  /* Gradients — sage to forest */
-  --grad-blue:       linear-gradient(135deg, #6DBF5A 0%, #3D7A30 100%);
-  --grad-blue-soft:  linear-gradient(135deg, rgba(109,191,90,0.12), rgba(61,122,48,0.04));
-  --grad-card:       linear-gradient(135deg, #3D7A30 0%, #6DBF5A 50%, #A8DF8E 100%);
-  --grad-rose:       linear-gradient(135deg, #FFAAB8 0%, #FF7A94 100%);
-  --grad-rose-soft:  linear-gradient(135deg, rgba(255,170,184,0.15), rgba(255,122,148,0.05));
+  /* Gradients — Cerulean to Vibrant Blue, Ice to Sky Cyan */
+  --grad-blue:       linear-gradient(135deg, #42C2FF 0%, #0099FF 100%);
+  --grad-blue-soft:  linear-gradient(135deg, rgba(66,194,255,0.20), rgba(0,153,255,0.06));
+  --grad-card:       linear-gradient(135deg, #42C2FF 0%, #85F4FF 50%, #B8FFF9 100%);
+  --grad-rose:       linear-gradient(135deg, #B8FFF9 0%, #85F4FF 100%);
+  --grad-rose-soft:  linear-gradient(135deg, rgba(184,255,249,0.35), rgba(133,244,255,0.12));
 
   /* Status */
-  --ok:      #5AAD48;
-  --ok-bg:   #F0FFDF;
-  --ok-line: #A8DF8E;
-  --ok-ink:  #2E6B22;
-  --warn:    #E8A838;
-  --warn-bg: #FFF8ED;
-  --bad:     #EF6177;
-  --bad-bg:  #FFF0F3;
+  --ok:      #10B981;
+  --ok-bg:   #EAF9EE;
+  --ok-line: #86EFAC;
+  --ok-ink:  #14532D;
+  --warn:    #F59E0B;
+  --warn-bg: #FFFBEB;
+  --bad:     #EF4444;
+  --bad-bg:  #FFF1F2;
 
-  /* Shadows — warm botanical glow */
-  --shadow-sm:    0 1px 4px rgba(40, 80, 30, 0.07);
-  --shadow-card:  0 4px 24px -4px rgba(40, 100, 30, 0.10), 0 1px 4px rgba(40,80,30,0.05);
-  --shadow-hover: 0 12px 32px -6px rgba(109, 191, 90, 0.22), 0 2px 8px rgba(40,80,30,0.06);
-  --shadow-pop:   0 20px 60px -12px rgba(109, 191, 90, 0.28);
-  --shadow-outer: 0 8px 40px -4px rgba(100, 180, 80, 0.22), 0 2px 8px rgba(80,140,60,0.10);
-  --shadow-rose:  0 8px 32px -6px rgba(255, 122, 148, 0.22);
+  /* Shadows — brilliant cyan glow */
+  --shadow-sm:    0 1px 3px rgba(12, 74, 110, 0.05);
+  --shadow-card:  0 4px 20px -2px rgba(66, 194, 255, 0.20), 0 1px 4px rgba(12, 74, 110, 0.04);
+  --shadow-hover: 0 12px 32px -4px rgba(66, 194, 255, 0.35), 0 2px 8px rgba(12, 74, 110, 0.05);
+  --shadow-pop:   0 20px 60px -12px rgba(0, 153, 255, 0.30);
+  --shadow-outer: 0 8px 40px -4px rgba(66, 194, 255, 0.30), 0 2px 8px rgba(12, 74, 110, 0.06);
+  --shadow-rose:  0 8px 32px -6px rgba(133, 244, 255, 0.35);
 
   /* Radii */
   --r-xs:   6px;
@@ -103,14 +103,14 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #EDF7E8;
+  background-color: #F4FDFF;
   color: var(--ink);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Zero-cost fixed ambient background layer — NEVER causes scroll repaint */
+/* Zero-cost fixed ambient background layer from Palette 3 */
 body::before {
   content: "";
   position: fixed;
@@ -118,10 +118,10 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 1100px 750px at 80% -10%, rgba(255, 216, 223, 0.50) 0%, transparent 60%),
-    radial-gradient(ellipse 900px 650px at 0% 100%, rgba(168, 223, 142, 0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 750px 500px at 55% 50%, rgba(240, 255, 223, 0.50) 0%, transparent 70%),
-    linear-gradient(155deg, #EDF7E8 0%, #F4FBF0 40%, #FFF4F6 100%);
+    radial-gradient(ellipse 1100px 750px at 80% -10%, rgba(66, 194, 255, 0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 900px 650px at 0% 100%, rgba(184, 255, 249, 0.50) 0%, transparent 60%),
+    radial-gradient(ellipse 750px 500px at 55% 50%, rgba(133, 244, 255, 0.28) 0%, transparent 70%),
+    linear-gradient(155deg, #FFFFFF 0%, #EFFFFD 40%, #E0F8FF 100%);
   transform: translateZ(0);
 }
 
@@ -134,11 +134,11 @@ body::before {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #A8DF8E; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #6DBF5A; }
+::-webkit-scrollbar-thumb { background: #42C2FF; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #0099FF; }
 
 /* Selection */
-::selection { background: rgba(168, 223, 142, 0.45); color: #1C2B1A; }
+::selection { background: rgba(133, 244, 255, 0.50); color: #0C4A6E; }
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
@@ -200,8 +200,8 @@ body.grain {
   flex-direction: column;
   align-items: stretch;
   padding: 20px 14px;
-  background: linear-gradient(180deg, #F0FFDF 0%, #F6FCF3 50%, #FFF5F7 100%);
-  border-right: 1px solid rgba(168, 223, 142, 0.45);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4FDFF 60%, #EFFFFD 100%);
+  border-right: 1px solid rgba(66, 194, 255, 0.25);
   position: relative;
   height: 100vh;
   max-height: 100vh;
@@ -217,7 +217,7 @@ body.grain {
   align-items: center;
   gap: 12px;
   padding: 2px 8px 18px;
-  border-bottom: 1px solid rgba(168, 223, 142, 0.40);
+  border-bottom: 1px solid rgba(66, 194, 255, 0.25);
   width: 100%;
   margin-bottom: 6px;
   flex-shrink: 0;
@@ -228,7 +228,7 @@ body.grain {
   font-size: 0.96rem;
   font-weight: 800;
   letter-spacing: 0.03em;
-  color: #1C2B1A;
+  color: #0C4A6E;
 }
 
 /* Brand logo circle */
@@ -239,7 +239,7 @@ body.grain {
   height: 36px;
   border-radius: 10px;
   background: var(--grad-blue);
-  box-shadow: 0 4px 12px rgba(109, 191, 90, 0.35);
+  box-shadow: 0 4px 12px rgba(66, 194, 255, 0.35);
   background-image: url('/assets/seevora-logo.png');
   background-size: cover;
   background-position: center;
@@ -264,7 +264,7 @@ body.grain {
   height: auto;
   padding: 10px 14px;
   border-radius: 12px;
-  color: #64748B;
+  color: #0369A1;
   transition: all 0.18s ease;
   cursor: pointer;
   position: relative;
@@ -289,32 +289,32 @@ body.grain {
 }
 
 .nav a:hover {
-  background: rgba(109, 191, 90, 0.10);
-  color: #3D7A30;
+  background: rgba(66, 194, 255, 0.12);
+  color: #0284C7;
 }
 
 .nav a:hover .ic {
   opacity: 1;
 }
 
-/* Active pill with rose accent */
+/* Active pill with Aquamarine (#B8FFF9) & Cerulean Border */
 .nav a.active {
-  background: #FFFFFF !important;
-  color: #3D7A30 !important;
-  border-left: 3.5px solid #FF7A94 !important;
+  background: #B8FFF9 !important;
+  color: #0C4A6E !important;
+  border-left: 3.5px solid #0099FF !important;
   padding-left: 11px !important;
-  box-shadow: 0 4px 16px rgba(255, 122, 148, 0.16), 0 1px 3px rgba(40, 80, 30, 0.05) !important;
+  box-shadow: 0 4px 14px rgba(66, 194, 255, 0.25), 0 1px 3px rgba(12, 74, 110, 0.05) !important;
   font-weight: 700 !important;
 }
 
 .nav a.active span {
-  color: #1C2B1A !important;
+  color: #0C4A6E !important;
   font-weight: 700 !important;
 }
 
 .nav a.active .ic {
   opacity: 1 !important;
-  color: #FF7A94 !important;
+  color: #0284C7 !important;
 }
 
 .nav a.active::before { display: none; }
@@ -324,7 +324,7 @@ body.grain {
 .side-foot {
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid rgba(168, 223, 142, 0.40);
+  border-top: 1px solid rgba(66, 194, 255, 0.25);
   flex-shrink: 0;
   width: 100%;
   display: flex;
@@ -337,20 +337,20 @@ body.grain {
   height: auto;
   padding: 8px 10px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(168, 223, 142, 0.55);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(66, 194, 255, 0.35);
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
   transition: all 0.18s ease;
-  box-shadow: 0 1px 4px rgba(40, 80, 30, 0.05);
+  box-shadow: 0 1px 4px rgba(12, 74, 110, 0.05);
 }
 
 .tenant-chip:hover {
   background: #FFFFFF;
-  border-color: #A8DF8E;
-  box-shadow: 0 3px 10px rgba(109, 191, 90, 0.18);
+  border-color: #42C2FF;
+  box-shadow: 0 3px 10px rgba(66, 194, 255, 0.25);
 }
 
 .tenant-chip .av {
@@ -363,7 +363,7 @@ body.grain {
   font-size: 0.82rem;
   font-weight: 800;
   color: #FFFFFF;
-  background: linear-gradient(135deg, #6DBF5A, #3D7A30);
+  background: linear-gradient(135deg, #42C2FF, #0099FF);
 }
 
 .tenant-chip .meta {
@@ -375,7 +375,7 @@ body.grain {
 .tenant-chip .tn {
   font-size: 0.84rem;
   font-weight: 700;
-  color: #1C2B1A;
+  color: #0C4A6E;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -576,12 +576,12 @@ body.grain {
 .btn-primary {
   background: var(--grad-blue) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 3px 12px rgba(109,191,90,0.32) !important;
+  box-shadow: 0 3px 12px rgba(66, 194, 255,0.32) !important;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(109,191,90,0.40) !important;
+  box-shadow: 0 6px 20px rgba(66, 194, 255,0.40) !important;
 }
 
 .btn-ghost {
@@ -592,15 +592,15 @@ body.grain {
 
 .btn-ghost:hover {
   background: #FFFFFF !important;
-  border-color: #A8DF8E !important;
-  color: #3D7A30 !important;
+  border-color: #B8FFF9 !important;
+  color: #0284C7 !important;
   transform: translateY(-1px);
 }
 
 .btn-quiet {
   background: transparent !important;
   border: none !important;
-  color: #6DBF5A !important;
+  color: #42C2FF !important;
   font-weight: 600 !important;
 }
 
@@ -661,8 +661,8 @@ body.grain {
 
 .input:focus, .textarea:focus, .select:focus, input:focus, select:focus, textarea:focus {
   background: rgba(255, 255, 255, 0.72) !important;
-  border-color: rgba(109, 191, 90, 0.65) !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(66, 194, 255, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
   outline: none !important;
 }
 
@@ -676,8 +676,8 @@ select option {
    CARDS (Translucent Glassmorphic Matching Background)
    ========================================================================== */
 .card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 22px !important;
   box-shadow: 0 10px 30px -4px rgba(15, 45, 90, 0.06), 0 2px 8px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
@@ -687,7 +687,7 @@ select option {
 
 .card:hover {
   border-color: rgba(160, 200, 240, 0.85) !important;
-  box-shadow: 0 16px 40px -6px rgba(109, 191, 90, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 16px 40px -6px rgba(66, 194, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 /* Campaign & Analytics Stat Cards */
@@ -695,7 +695,7 @@ select option {
 .stat-card,
 .rec-stat-card {
   background: linear-gradient(160deg, #FFFFFF 0%, #EDFBE4 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.50) !important;
+  border: 1px solid rgba(66, 194, 255, 0.50) !important;
   border-top: 1.5px solid rgba(220, 235, 252, 0.9) !important;
   border-radius: 18px !important;
   padding: 16px 20px !important;
@@ -706,14 +706,14 @@ select option {
 .campaign-stat-box:hover,
 .stat-card:hover,
 .rec-stat-card:hover {
-  box-shadow: 0 14px 32px -4px rgba(109, 191, 90, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 14px 32px -4px rgba(66, 194, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(160, 200, 240, 0.85) !important;
 }
 
 /* Dropzone & Import Area */
 .dropzone-box {
-  background: #F0FFDF !important;
-  border: 2px dashed rgba(109, 191, 90, 0.35) !important;
+  background: #B8FFF9 !important;
+  border: 2px dashed rgba(66, 194, 255, 0.35) !important;
   border-radius: 18px !important;
   padding: 36px 24px !important;
   /* NO backdrop-filter — causes scroll flicker */
@@ -721,14 +721,14 @@ select option {
 
 .dropzone-box:hover {
   background: rgba(255, 255, 255, 0.55) !important;
-  border-color: rgba(109, 191, 90, 0.65) !important;
+  border-color: rgba(66, 194, 255, 0.65) !important;
 }
 
 /* Table Card & Container */
 .rec-card-table,
 .table-card {
   background: #F8FDF5 !important;
-  border: 1px solid rgba(168, 223, 142, 0.45) !important;
+  border: 1px solid rgba(66, 194, 255, 0.45) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.70) !important;
   border-radius: 20px !important;
   box-shadow: 0 8px 28px -4px rgba(15, 45, 90, 0.05) !important;
@@ -755,10 +755,10 @@ select option {
   background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid #A8DF8E !important;
+  border: 1px solid #B8FFF9 !important;
   border-radius: 14px !important;
   box-shadow: 0 8px 24px rgba(0,149,255,0.12) !important;
-  color: #3D7A30 !important;
+  color: #0284C7 !important;
   font-weight: 600 !important;
 }
 
@@ -784,15 +784,15 @@ select option {
 .pill.inprogress {
   background: rgba(239, 246, 255, 0.95) !important;
   border-color: #C8EFB0 !important;
-  color: #3D7A30 !important;
+  color: #0284C7 !important;
 }
 
 /* ==========================================================================
    VOICE CALL STAGE (Talk to Agent)
    ========================================================================== */
 .voice-call-stage {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 24px !important;
   box-shadow: 0 12px 36px -6px rgba(15, 45, 90, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
@@ -805,7 +805,7 @@ select option {
   height: 72px;
   margin: 0 auto;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #A8DF8E 0%, #6DBF5A 55%, #3D7A30 100%) !important;
+  background: radial-gradient(circle at 35% 35%, #B8FFF9 0%, #42C2FF 55%, #0284C7 100%) !important;
   box-shadow: 0 0 32px rgba(0,149,255,0.35) !important;
 }
 
@@ -910,8 +910,8 @@ select option {
 }
 
 .sv-btn-primary {
-  background: linear-gradient(135deg, #3D7A30 0%, #3D7A30 60%, #047857 100%);
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #42C2FF 0%, #0099FF 100%) !important;
+  color: #FFFFFF !important;
   border: none;
   border-radius: 99px;
   padding: 10px 22px;
@@ -921,14 +921,15 @@ select option {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.28);
+  box-shadow: 0 4px 16px rgba(66, 194, 255, 0.40) !important;
   transition: all 0.2s ease;
   font-family: var(--font);
 }
 
 .sv-btn-primary:hover {
+  background: linear-gradient(135deg, #00B4FF 0%, #0088EE 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.38);
+  box-shadow: 0 8px 24px rgba(0, 153, 255, 0.50) !important;
 }
 
 .sv-btn-outline {
@@ -986,8 +987,8 @@ select option {
 
 /* Frosted Bento Cards */
 .sv-card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 24px;
   padding: 22px;
@@ -1068,9 +1069,9 @@ select option {
 }
 
 .sv-icon-btn:hover {
-  background: #3D7A30;
+  background: #0284C7;
   color: #FFFFFF;
-  border-color: #3D7A30;
+  border-color: #0284C7;
   transform: scale(1.06);
   box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
 }
@@ -1103,7 +1104,7 @@ select option {
   transition: color 0.15s;
 }
 
-.sv-eye-btn:hover { color: #3D7A30; }
+.sv-eye-btn:hover { color: #0284C7; }
 
 .sv-limit-pill {
   display: inline-flex;
@@ -1182,11 +1183,11 @@ select option {
   font-size: 1.1rem;
   box-shadow: 0 2px 8px rgba(15, 45, 90, 0.04);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #3D7A30;
+  color: #0284C7;
 }
 
 .sv-action-item:hover .sv-action-circle {
-  background: linear-gradient(135deg, #3D7A30, #10B981);
+  background: linear-gradient(135deg, #0284C7, #10B981);
   color: #FFFFFF;
   border-color: transparent;
   transform: translateY(-3px) scale(1.04);
@@ -1200,13 +1201,13 @@ select option {
   white-space: nowrap;
 }
 
-.sv-action-item:hover .sv-action-lbl { color: #3D7A30; }
+.sv-action-item:hover .sv-action-lbl { color: #0284C7; }
 
 /* Recent calls */
 .sv-link-btn {
   background: none;
   border: none;
-  color: #3D7A30;
+  color: #0284C7;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -1243,8 +1244,8 @@ select option {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  background: #F0FFDF;
-  border: 1.5px solid rgba(168, 223, 142, 0.85);
+  background: #B8FFF9;
+  border: 1.5px solid rgba(66, 194, 255, 0.85);
   flex-shrink: 0;
 }
 
@@ -1283,8 +1284,8 @@ select option {
 }
 
 .sv-recent-dur.out {
-  color: #3D7A30;
-  background: #F0FFDF;
+  color: #0284C7;
+  background: #B8FFF9;
   border-color: #C8EFB0;
 }
 
@@ -1339,8 +1340,8 @@ select option {
 }
 
 .sv-trend-pill.blue {
-  background: #F0FFDF;
-  color: #3D7A30;
+  background: #B8FFF9;
+  color: #0284C7;
   border: 1px solid #C8EFB0;
 }
 
@@ -1355,8 +1356,8 @@ select option {
 .sv-tag-pill {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #3D7A30;
-  background: #F0FFDF;
+  color: #0284C7;
+  background: #B8FFF9;
   border: 1px solid #C8EFB0;
   padding: 1px 6px;
   border-radius: 6px;
@@ -1372,8 +1373,8 @@ select option {
   gap: 4px;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #3D7A30;
-  background: #F0FFDF;
+  color: #0284C7;
+  background: #B8FFF9;
   border: 1px solid #C8EFB0;
   padding: 4px 12px;
   border-radius: 99px;
@@ -1440,13 +1441,13 @@ select option {
 
 .sv-bar-fill {
   width: 100%;
-  background: linear-gradient(180deg, #A8DF8E, #3D7A30);
+  background: linear-gradient(180deg, #B8FFF9, #0284C7);
   border-radius: 99px;
   transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sv-bar-track.active {
-  background: linear-gradient(180deg, #3D7A30 0%, #10B981 100%);
+  background: linear-gradient(180deg, #0284C7 0%, #10B981 100%);
   box-shadow: 0 0 16px rgba(2, 132, 199, 0.38);
 }
 
@@ -1471,7 +1472,7 @@ select option {
 }
 
 .sv-bar-lbl.active {
-  color: #3D7A30;
+  color: #0284C7;
   font-weight: 800;
 }
 
@@ -1557,8 +1558,8 @@ select option {
 }
 
 .sv-status-pill.blue {
-  background: #F0FFDF;
-  color: #3D7A30;
+  background: #B8FFF9;
+  color: #0284C7;
   border: 1px solid #C8EFB0;
 }
 
@@ -1573,8 +1574,8 @@ select option {
   display: flex;
   align-items: center;
   gap: 11px;
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 16px !important;
   padding: 12px 14px !important;
@@ -1591,7 +1592,7 @@ select option {
   height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid #A8DF8E;
+  border: 1.5px solid #B8FFF9;
   flex-shrink: 0;
 }
 
@@ -1617,7 +1618,7 @@ select option {
 .sv-change-btn {
   background: none;
   border: none;
-  color: #3D7A30;
+  color: #0284C7;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
@@ -1629,8 +1630,8 @@ select option {
 .sv-change-btn:hover { color: #047857; text-decoration: underline; }
 
 .sv-input-box {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 16px !important;
   padding: 14px 16px !important;
@@ -1639,8 +1640,8 @@ select option {
 }
 
 .sv-input-box:focus-within {
-  border-color: rgba(109, 191, 90, 0.60) !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(66, 194, 255, 0.60) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .sv-country-pill {
@@ -1669,7 +1670,7 @@ select option {
 .sv-input-prefix {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #3D7A30;
+  color: #0284C7;
   flex-shrink: 0;
 }
 
@@ -1689,8 +1690,8 @@ select option {
 .sv-input-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #3D7A30;
-  background: #F0FFDF;
+  color: #0284C7;
+  background: #B8FFF9;
   padding: 4px 9px;
   border-radius: 99px;
   border: 1px solid #C8EFB0;
@@ -1751,24 +1752,24 @@ select option {
 
 .sv-submit-btn {
   width: 100%;
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #42C2FF 0%, #0099FF 100%) !important;
+  color: #FFFFFF !important;
   border: none;
   border-radius: 99px;
   padding: 14px 22px;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 6px 20px -2px rgba(66, 194, 255, 0.45) !important;
   transition: all 0.22s ease;
   font-family: var(--font);
   letter-spacing: -0.01em;
 }
 
 .sv-submit-btn:hover {
-  background: linear-gradient(135deg, #3D7A30 0%, #3D7A30 100%);
+  background: linear-gradient(135deg, #00B4FF 0%, #0088EE 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 153, 255, 0.55) !important;
 }
 
 /* Executive Call Outcomes Progress & Legend */
@@ -1787,9 +1788,9 @@ select option {
   transition: all 0.3s ease;
 }
 
-.sv-outcomes-seg.green { background: linear-gradient(90deg, #3D7A30, #6DBF5A); }
-.sv-outcomes-seg.blue { background: linear-gradient(90deg, #5AAD48, #A8DF8E); }
-.sv-outcomes-seg.purple { background: linear-gradient(90deg, #FFAAB8, #FF7A94); }
+.sv-outcomes-seg.green { background: linear-gradient(90deg, #0284C7, #42C2FF); }
+.sv-outcomes-seg.blue { background: linear-gradient(90deg, #0284C7, #B8FFF9); }
+.sv-outcomes-seg.purple { background: linear-gradient(90deg, #85F4FF, #F5A623); }
 .sv-outcomes-seg.amber { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
 
 .sv-outcome-list {
@@ -1812,7 +1813,7 @@ select option {
 .sv-outcome-item:hover {
   background: rgba(255, 255, 255, 0.85);
   transform: translateX(2px);
-  border-color: rgba(168, 223, 142, 0.55);
+  border-color: rgba(66, 194, 255, 0.55);
 }
 
 .sv-outcome-left {
@@ -1829,9 +1830,9 @@ select option {
   flex-shrink: 0;
 }
 
-.sv-outcome-dot.green { background: #3D7A30; box-shadow: 0 0 6px rgba(61, 122, 48, 0.6); }
-.sv-outcome-dot.blue { background: #6DBF5A; box-shadow: 0 0 6px rgba(109, 191, 90, 0.6); }
-.sv-outcome-dot.purple { background: #FFAAB8; box-shadow: 0 0 6px rgba(255, 170, 184, 0.7); }
+.sv-outcome-dot.green { background: #0284C7; box-shadow: 0 0 6px rgba(0, 153, 255, 0.6); }
+.sv-outcome-dot.blue { background: #42C2FF; box-shadow: 0 0 6px rgba(66, 194, 255, 0.6); }
+.sv-outcome-dot.purple { background: #85F4FF; box-shadow: 0 0 6px rgba(133, 244, 255, 0.7); }
 .sv-outcome-dot.amber { background: #F59E0B; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
 
 .sv-outcome-title {
@@ -1905,7 +1906,7 @@ select option {
   height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid #A8DF8E;
+  border: 1.5px solid #B8FFF9;
   display: block;
 }
 
@@ -1953,9 +1954,9 @@ select option {
 }
 
 .sv-agent-test-btn {
-  background: #F0FFDF;
+  background: #B8FFF9;
   border: 1px solid #C8EFB0;
-  color: #3D7A30;
+  color: #0284C7;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 4px 10px;
@@ -1968,9 +1969,9 @@ select option {
 }
 
 .sv-agent-test-btn:hover {
-  background: #3D7A30;
+  background: #0284C7;
   color: #FFFFFF;
-  border-color: #3D7A30;
+  border-color: #0284C7;
 }
 
 /* Voice AI Health & Satisfaction (CSAT) */
@@ -2012,7 +2013,7 @@ select option {
 }
 
 .sv-sentiment-seg.pos { background: #10B981; }
-.sv-sentiment-seg.neu { background: #A8DF8E; }
+.sv-sentiment-seg.neu { background: #B8FFF9; }
 .sv-sentiment-seg.neg { background: #F59E0B; }
 
 .sv-sentiment-labels {
@@ -2165,8 +2166,8 @@ tr:hover td { background: #F8FAFC; }
 .profile-card,
 .stage-col,
 .ticket-layout .card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F0FFDF 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #B8FFF9 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   box-shadow: 0 8px 24px -4px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
 }
@@ -2180,12 +2181,12 @@ tr:hover td { background: #F8FAFC; }
 .pricing-plan-card:hover,
 .meter-card:hover {
   border-color: rgba(160, 200, 240, 0.85) !important;
-  box-shadow: 0 14px 34px -4px rgba(109, 191, 90, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 14px 34px -4px rgba(66, 194, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .rec-toolbar {
   background: #FFFFFF !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-radius: 16px !important;
   padding: 12px 16px !important;
   box-shadow: 0 4px 16px -2px rgba(15, 45, 90, 0.04) !important;
@@ -2205,7 +2206,7 @@ tr:hover td { background: #F8FAFC; }
    ========================================================================== */
 .chat-workspace-card {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.45) 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 22px !important;
   box-shadow: 0 12px 36px -4px rgba(15, 45, 90, 0.06), 0 2px 8px rgba(15, 45, 90, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
@@ -2215,20 +2216,20 @@ tr:hover td { background: #F8FAFC; }
 /* Left Icon Rail */
 .chat-left-rail {
   background: rgba(255, 255, 255, 0.32) !important;
-  border-right: 1px solid rgba(168, 223, 142, 0.40) !important;
+  border-right: 1px solid rgba(66, 194, 255, 0.40) !important;
 }
 
 .chat-rail-btn {
   background: rgba(255, 255, 255, 0.65) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   color: #475569 !important;
   box-shadow: 0 2px 6px rgba(15, 45, 90, 0.04) !important;
 }
 
 .chat-rail-btn:hover {
   background: rgba(255, 255, 255, 0.95) !important;
-  color: #6DBF5A !important;
-  border-color: rgba(109, 191, 90, 0.40) !important;
+  color: #42C2FF !important;
+  border-color: rgba(66, 194, 255, 0.40) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -2236,7 +2237,7 @@ tr:hover td { background: #F8FAFC; }
   background: var(--grad-blue) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(109, 191, 90, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(66, 194, 255, 0.35) !important;
 }
 
 /* Center Stream */
@@ -2246,7 +2247,7 @@ tr:hover td { background: #F8FAFC; }
 
 .chat-center-header {
   background: transparent !important;
-  border-bottom: 1px solid rgba(168, 223, 142, 0.35) !important;
+  border-bottom: 1px solid rgba(66, 194, 255, 0.35) !important;
 }
 
 .chat-center-title {
@@ -2268,7 +2269,7 @@ tr:hover td { background: #F8FAFC; }
 /* Assistant Chat Bubble */
 .chat-bubble-assistant {
   background: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 22px 22px 22px 6px !important;
   color: #1E293B !important;
@@ -2278,7 +2279,7 @@ tr:hover td { background: #F8FAFC; }
 /* Chat Input Capsule & Completely Transparent Field */
 .chat-input-capsule {
   background: rgba(255, 255, 255, 0.50) !important;
-  border: 1.5px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1.5px solid rgba(66, 194, 255, 0.60) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 36px !important;
   box-shadow: 0 8px 24px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
@@ -2287,8 +2288,8 @@ tr:hover td { background: #F8FAFC; }
 
 .chat-input-capsule:focus-within {
   background: rgba(255, 255, 255, 0.78) !important;
-  border-color: rgba(109, 191, 90, 0.65) !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.15), 0 10px 30px rgba(15, 45, 90, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(66, 194, 255, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.15), 0 10px 30px rgba(15, 45, 90, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 /* Overriding global input[type="text"] so the assistant input field remains 100% transparent without inner borders */
@@ -2310,36 +2311,36 @@ input.chat-text-input {
 
 .chat-attach-btn {
   background: rgba(255, 255, 255, 0.65) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   color: #475569 !important;
 }
 
 .chat-attach-btn:hover {
   background: rgba(255, 255, 255, 0.95) !important;
-  color: #6DBF5A !important;
-  border-color: rgba(109, 191, 90, 0.40) !important;
+  color: #42C2FF !important;
+  border-color: rgba(66, 194, 255, 0.40) !important;
 }
 
 .chat-send-btn {
   background: var(--grad-blue) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(109, 191, 90, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(66, 194, 255, 0.35) !important;
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5AAD48 0%, #2E6B22 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #0C4A6E 100%) !important;
   transform: scale(1.05) !important;
 }
 
 /* Right Connectivity & History Panel */
 .chat-right-panel {
   background: rgba(255, 255, 255, 0.35) !important;
-  border-left: 1px solid rgba(168, 223, 142, 0.40) !important;
+  border-left: 1px solid rgba(66, 194, 255, 0.40) !important;
 }
 
 .chat-assistant-dropdown {
   background: rgba(255, 255, 255, 0.60) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   box-shadow: 0 2px 8px rgba(15, 45, 90, 0.03) !important;
 }
 
@@ -2350,7 +2351,7 @@ input.chat-text-input {
 
 .chat-integration-item:hover {
   background: rgba(255, 255, 255, 0.55) !important;
-  border-color: rgba(168, 223, 142, 0.45) !important;
+  border-color: rgba(66, 194, 255, 0.45) !important;
 }
 
 .history-item {
@@ -2365,21 +2366,21 @@ input.chat-text-input {
 
 .history-item.active {
   background: rgba(255, 255, 255, 0.80) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   box-shadow: 0 2px 8px rgba(15, 45, 90, 0.04) !important;
   color: #0F172A !important;
 }
 
 .robot-speech-bubble {
   background: rgba(255, 255, 255, 0.78) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   box-shadow: 0 6px 18px rgba(15, 45, 90, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 .assistant-typing {
   background: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   box-shadow: 0 4px 14px rgba(15, 45, 90, 0.04) !important;
 }
 
@@ -2392,7 +2393,7 @@ input.chat-text-input {
 
 .template-card {
   background: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   box-shadow: 0 4px 14px rgba(15, 45, 90, 0.04) !important;
 }
@@ -2400,7 +2401,7 @@ input.chat-text-input {
 .template-card:hover {
   background: rgba(255, 255, 255, 0.92) !important;
   border-color: rgba(0, 149, 255, 0.5) !important;
-  box-shadow: 0 10px 28px rgba(109, 191, 90, 0.12) !important;
+  box-shadow: 0 10px 28px rgba(66, 194, 255, 0.12) !important;
 }
 
 /* ===========================================================================
@@ -2450,16 +2451,16 @@ input.chat-text-input {
 
 /* Call Button - Professional Tech Voice Blue */
 .wacrm-card-btn.btn-call {
-  background: linear-gradient(135deg, #F0FFDF 0%, #E0F0FE 100%) !important;
-  color: #3D7A30 !important;
+  background: linear-gradient(135deg, #B8FFF9 0%, #E0F0FE 100%) !important;
+  color: #0284C7 !important;
   border: 1px solid rgba(186, 214, 242, 0.95) !important;
   box-shadow: 0 1px 3px rgba(2, 132, 199, 0.08) !important;
 }
 
 .wacrm-card-btn.btn-call:hover {
-  background: linear-gradient(135deg, #3D7A30 0%, #6DBF5A 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #42C2FF 100%) !important;
   color: #FFFFFF !important;
-  border-color: #3D7A30 !important;
+  border-color: #0284C7 !important;
   box-shadow: 0 4px 14px rgba(0, 149, 255, 0.28) !important;
   transform: translateY(-1.5px) !important;
 }
@@ -2515,9 +2516,9 @@ input.chat-text-input {
 
 .wacrm-stage-select:hover,
 .wacrm-stage-select:focus {
-  border-color: #6DBF5A !important;
+  border-color: #42C2FF !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.12) !important;
 }
 
 /* WhatsApp Composer Modal Styles */
@@ -2621,7 +2622,7 @@ input.chat-text-input {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 16px !important;
   padding: 12px 18px !important;
@@ -2632,7 +2633,7 @@ input.chat-text-input {
 .dograh-sync-bar .btn-secondary {
   background: rgba(255, 255, 255, 0.85) !important;
   border: 1px solid rgba(186, 214, 242, 0.9) !important;
-  color: #3D7A30 !important;
+  color: #0284C7 !important;
   font-weight: 600 !important;
   border-radius: 10px !important;
   padding: 6px 14px !important;
@@ -2641,9 +2642,9 @@ input.chat-text-input {
 
 .dograh-sync-bar .sync-btn:hover,
 .dograh-sync-bar .btn-secondary:hover {
-  background: #3D7A30 !important;
+  background: #0284C7 !important;
   color: #FFFFFF !important;
-  border-color: #3D7A30 !important;
+  border-color: #0284C7 !important;
   box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
   transform: translateY(-1px) !important;
 }
@@ -2653,7 +2654,7 @@ input.chat-text-input {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 20px !important;
   padding: 24px 28px !important;
@@ -2678,14 +2679,14 @@ input.chat-text-input {
 .card.builder .textarea:focus,
 .card.builder .select:focus {
   background: #FFFFFF !important;
-  border-color: #6DBF5A !important;
+  border-color: #42C2FF !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.15) !important;
 }
 
 .card.builder .seg {
   background: rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-radius: 12px !important;
   padding: 4px !important;
 }
@@ -2701,7 +2702,7 @@ input.chat-text-input {
 }
 
 .card.builder .seg button.on {
-  background: linear-gradient(135deg, #3D7A30 0%, #6DBF5A 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #42C2FF 100%) !important;
   color: #FFFFFF !important;
   box-shadow: 0 2px 8px rgba(0, 149, 255, 0.3) !important;
 }
@@ -2720,7 +2721,7 @@ input.chat-text-input {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.65) 0%, rgba(235, 244, 255, 0.42) 100%) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   border-radius: 20px !important;
   padding: 24px !important;
@@ -2732,8 +2733,8 @@ input.chat-text-input {
 }
 
 .agent-card:hover {
-  border-color: rgba(109, 191, 90, 0.65) !important;
-  box-shadow: 0 16px 42px -6px rgba(109, 191, 90, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(66, 194, 255, 0.65) !important;
+  box-shadow: 0 16px 42px -6px rgba(66, 194, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -2754,7 +2755,7 @@ input.chat-text-input {
   font-weight: 700 !important;
   font-size: 1.05rem !important;
   color: #FFFFFF !important;
-  background: linear-gradient(135deg, #3D7A30 0%, #6DBF5A 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #42C2FF 100%) !important;
   box-shadow: 0 4px 14px rgba(0, 149, 255, 0.3) !important;
 }
 
@@ -2768,9 +2769,9 @@ input.chat-text-input {
 .agent-card .ac-voice {
   font-family: var(--mono) !important;
   font-size: 0.74rem !important;
-  color: #3D7A30 !important;
+  color: #0284C7 !important;
   background: rgba(2, 132, 199, 0.08) !important;
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   display: inline-block !important;
   padding: 3px 8px !important;
   border-radius: 6px !important;
@@ -2782,7 +2783,7 @@ input.chat-text-input {
   color: #334155 !important;
   line-height: 1.55 !important;
   background: rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(168, 223, 142, 0.45) !important;
+  border: 1px solid rgba(66, 194, 255, 0.45) !important;
   border-radius: 12px !important;
   padding: 12px 14px !important;
   margin: 0 !important;
@@ -2807,7 +2808,7 @@ input.chat-text-input {
 /* Training Studio Details */
 .agent-card .agent-training-studio {
   background: rgba(255, 255, 255, 0.45) !important;
-  border: 1px dashed rgba(109, 191, 90, 0.35) !important;
+  border: 1px dashed rgba(66, 194, 255, 0.35) !important;
   border-radius: 12px !important;
   padding: 10px 14px !important;
 }
@@ -2819,7 +2820,7 @@ input.chat-text-input {
   gap: 10px !important;
   margin-top: auto !important;
   padding-top: 12px !important;
-  border-top: 1px dashed rgba(168, 223, 142, 0.60) !important;
+  border-top: 1px dashed rgba(66, 194, 255, 0.60) !important;
   width: 100% !important;
 }
 
@@ -2837,7 +2838,7 @@ input.chat-text-input {
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  background: linear-gradient(135deg, #3D7A30 0%, #6DBF5A 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #42C2FF 100%) !important;
   box-shadow: 0 4px 14px rgba(0, 149, 255, 0.28) !important;
   border: none !important;
   color: #FFFFFF !important;
@@ -2845,7 +2846,7 @@ input.chat-text-input {
 }
 
 .ac-actions-row-main .btn:hover {
-  background: linear-gradient(135deg, #3D7A30 0%, #3D7A30 100%) !important;
+  background: linear-gradient(135deg, #0284C7 0%, #0284C7 100%) !important;
   box-shadow: 0 6px 18px rgba(0, 149, 255, 0.38) !important;
   transform: translateY(-1px) !important;
 }
@@ -2874,9 +2875,9 @@ input.chat-text-input {
 
 .ac-actions-row-sub .btn:hover {
   background: #FFFFFF !important;
-  border-color: #6DBF5A !important;
-  color: #6DBF5A !important;
-  box-shadow: 0 2px 8px rgba(109, 191, 90, 0.15) !important;
+  border-color: #42C2FF !important;
+  color: #42C2FF !important;
+  box-shadow: 0 2px 8px rgba(66, 194, 255, 0.15) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -2943,10 +2944,10 @@ input.chat-text-input {
 }
 
 .settings-subnav-btn.active {
-  color: #6DBF5A;
+  color: #42C2FF;
   background: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 2px 10px rgba(109, 191, 90, 0.14);
+  box-shadow: 0 2px 10px rgba(66, 194, 255, 0.14);
 }
 
 .settings-subnav-btn.active::before {
@@ -2957,7 +2958,7 @@ input.chat-text-input {
   bottom: 18%;
   width: 4px;
   border-radius: 99px;
-  background: #6DBF5A;
+  background: #42C2FF;
 }
 
 .settings-subnav-icon {
@@ -3043,7 +3044,7 @@ input.chat-text-input {
   justify-content: center;
   flex-shrink: 0;
   background: rgba(0, 149, 255, 0.08);
-  color: #6DBF5A;
+  color: #42C2FF;
 }
 
 .kyc-doc-info h4 {
@@ -3083,9 +3084,9 @@ input.chat-text-input {
 }
 
 .kyc-step-pill.active {
-  background: #6DBF5A;
+  background: #42C2FF;
   color: #FFFFFF;
-  box-shadow: 0 3px 12px rgba(109, 191, 90, 0.35);
+  box-shadow: 0 3px 12px rgba(66, 194, 255, 0.35);
 }
 
 .kyc-step-pill.completed {
@@ -3180,9 +3181,9 @@ input.chat-text-input {
 }
 
 .kyc-type-card.selected {
-  border: 2px solid #6DBF5A;
+  border: 2px solid #42C2FF;
   background: rgba(0, 149, 255, 0.035);
-  box-shadow: 0 4px 18px rgba(109, 191, 90, 0.14);
+  box-shadow: 0 4px 18px rgba(66, 194, 255, 0.14);
 }
 
 .kyc-type-icon {
@@ -3190,7 +3191,7 @@ input.chat-text-input {
   height: 44px;
   border-radius: 12px;
   background: rgba(0, 149, 255, 0.08);
-  color: #6DBF5A;
+  color: #42C2FF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3224,8 +3225,8 @@ input.chat-text-input {
 }
 
 .kyc-type-card.selected .kyc-type-check {
-  border-color: #6DBF5A;
-  background: #6DBF5A;
+  border-color: #42C2FF;
+  background: #42C2FF;
   color: #FFFFFF;
 }
 
@@ -3320,11 +3321,11 @@ input.chat-text-input {
 }
 .badge-sentiment-neu {
   background: rgba(2, 132, 199, 0.10);
-  color: #3D7A30;
+  color: #0284C7;
   border: 1px solid rgba(2, 132, 199, 0.25);
 }
 .badge-sentiment-neu .badge-sentiment-dot {
-  background: #3D7A30;
+  background: #0284C7;
   box-shadow: 0 0 6px rgba(2, 132, 199, 0.4);
 }
 .badge-sentiment-neg {
@@ -3356,8 +3357,8 @@ input.chat-text-input {
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 .badge-outcome-interested {
-  background: rgba(109, 191, 90, 0.12);
-  color: #3D7A30;
+  background: rgba(66, 194, 255, 0.12);
+  color: #0284C7;
   border: 1px solid rgba(0, 149, 255, 0.26);
 }
 .badge-outcome-callback,
@@ -3368,9 +3369,9 @@ input.chat-text-input {
 }
 .badge-outcome-inquiry,
 .badge-outcome-inquiry_handled {
-  background: rgba(255, 170, 184, 0.18);
+  background: rgba(133, 244, 255, 0.18);
   color: #B23B50;
-  border: 1px solid rgba(255, 170, 184, 0.45);
+  border: 1px solid rgba(133, 244, 255, 0.45);
 }
 .badge-outcome-not_interested {
   background: rgba(239, 68, 68, 0.12);
@@ -3406,9 +3407,9 @@ input.chat-text-input {
   border: 1px solid #A7F3D0;
 }
 .quality-score-pill.med {
-  background: #F0FFDF;
+  background: #B8FFF9;
   color: #2E5A24;
-  border: 1px solid #A8DF8E;
+  border: 1px solid #B8FFF9;
 }
 .quality-score-pill.low {
   background: #FEF2F2;
@@ -3455,7 +3456,7 @@ input.chat-text-input {
   transition: width 0.4s ease;
 }
 .rec-intel-score-fill.pos { background: linear-gradient(90deg, #10B981, #059669); }
-.rec-intel-score-fill.neu { background: linear-gradient(90deg, #3D7A30, #3D7A30); }
+.rec-intel-score-fill.neu { background: linear-gradient(90deg, #0284C7, #0284C7); }
 .rec-intel-score-fill.neg { background: linear-gradient(90deg, #EF4444, #DC2626); }
 
 .rec-next-action-card {
@@ -3471,7 +3472,7 @@ input.chat-text-input {
   color: var(--ink);
 }
 .rec-next-action-card b {
-  color: #3D7A30;
+  color: #0284C7;
   font-weight: 700;
 }
 .rec-topics-row {
@@ -3515,7 +3516,7 @@ input.chat-text-input {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.78) 0%, rgba(235, 244, 255, 0.52) 100%) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-top: 1.5px solid rgba(200, 240, 180, 0.80) !important;
   border-radius: 24px;
   padding: 20px 22px 18px;
@@ -3564,7 +3565,7 @@ input.chat-text-input {
   border-top-right-radius: 24px;
 }
 
-.sv-kpi-blue::before { background: linear-gradient(90deg, #3D7A30 0%, #A8DF8E 100%); }
+.sv-kpi-blue::before { background: linear-gradient(90deg, #0284C7 0%, #B8FFF9 100%); }
 .sv-kpi-green::before { background: linear-gradient(90deg, #10B981 0%, #34D399 100%); }
 .sv-kpi-amber::before { background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%); }
 .sv-kpi-slate::before { background: linear-gradient(90deg, #64748B 0%, #94A3B8 100%); }
@@ -3609,13 +3610,13 @@ input.chat-text-input {
 }
 
 .sv-kpi-trend.green { color: #16A34A; font-weight: 600; }
-.sv-kpi-trend.blue { color: #3D7A30; font-weight: 600; }
+.sv-kpi-trend.blue { color: #0284C7; font-weight: 600; }
 
 .sv-time-dropdown {
   background: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-radius: 99px;
   padding: 7px 16px;
   font-size: 0.82rem;
@@ -3630,7 +3631,7 @@ input.chat-text-input {
 
 .sv-time-dropdown:hover {
   background: #FFFFFF !important;
-  border-color: #3D7A30 !important;
+  border-color: #0284C7 !important;
   color: #0F172A;
 }
 
@@ -3638,7 +3639,7 @@ input.chat-text-input {
   background: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -3653,8 +3654,8 @@ input.chat-text-input {
 
 .sv-refresh-icon-btn:hover {
   background: #FFFFFF !important;
-  color: #3D7A30;
-  border-color: #3D7A30 !important;
+  color: #0284C7;
+  border-color: #0284C7 !important;
   transform: rotate(45deg);
 }
 
@@ -3664,19 +3665,19 @@ input.chat-text-input {
 .cl-card,
 .cl-signIn-root .cl-card,
 .cl-signUp-root .cl-card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F4FBF0 100%) !important;
-  border: 1px solid rgba(168, 223, 142, 0.45) !important;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EFFFFD 100%) !important;
+  border: 1px solid rgba(66, 194, 255, 0.45) !important;
   border-radius: 22px !important;
-  box-shadow: 0 20px 60px -12px rgba(40, 100, 30, 0.14), 0 4px 16px rgba(40, 80, 30, 0.06) !important;
+  box-shadow: 0 20px 60px -12px rgba(12, 74, 110, 0.14), 0 4px 16px rgba(12, 74, 110, 0.06) !important;
 }
 
 .cl-formButtonPrimary,
 .cl-button[data-variant="solid"] {
-  background: linear-gradient(135deg, #6DBF5A 0%, #3D7A30 100%) !important;
+  background: linear-gradient(135deg, #42C2FF 0%, #0284C7 100%) !important;
   color: #FFFFFF !important;
   border: none !important;
   border-radius: 99px !important;
-  box-shadow: 0 4px 14px rgba(109, 191, 90, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(66, 194, 255, 0.35) !important;
   font-family: var(--font) !important;
   font-weight: 700 !important;
   transition: all 0.2s ease !important;
@@ -3684,12 +3685,12 @@ input.chat-text-input {
 
 .cl-formButtonPrimary:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 8px 24px rgba(109, 191, 90, 0.45) !important;
+  box-shadow: 0 8px 24px rgba(66, 194, 255, 0.45) !important;
 }
 
 .cl-socialButtonsIconButton,
 .cl-socialButtonsBlockButton {
-  border: 1px solid rgba(168, 223, 142, 0.55) !important;
+  border: 1px solid rgba(66, 194, 255, 0.55) !important;
   border-radius: 12px !important;
   background: rgba(255, 255, 255, 0.90) !important;
   transition: all 0.18s ease !important;
@@ -3697,56 +3698,56 @@ input.chat-text-input {
 
 .cl-socialButtonsIconButton:hover,
 .cl-socialButtonsBlockButton:hover {
-  border-color: #6DBF5A !important;
-  box-shadow: 0 4px 12px rgba(109, 191, 90, 0.18) !important;
+  border-color: #42C2FF !important;
+  box-shadow: 0 4px 12px rgba(66, 194, 255, 0.18) !important;
   transform: translateY(-1px) !important;
 }
 
 .cl-formFieldInput {
-  border: 1px solid rgba(168, 223, 142, 0.60) !important;
+  border: 1px solid rgba(66, 194, 255, 0.60) !important;
   border-radius: 12px !important;
   background: rgba(255, 255, 255, 0.92) !important;
   font-family: var(--font) !important;
-  color: #1C2B1A !important;
+  color: #0C4A6E !important;
 }
 
 .cl-formFieldInput:focus {
-  border-color: rgba(109, 191, 90, 0.80) !important;
-  box-shadow: 0 0 0 3px rgba(109, 191, 90, 0.18) !important;
+  border-color: rgba(66, 194, 255, 0.80) !important;
+  box-shadow: 0 0 0 3px rgba(66, 194, 255, 0.18) !important;
   outline: none !important;
 }
 
 .cl-tabButton[aria-selected="true"] {
-  color: #3D7A30 !important;
-  border-bottom-color: #6DBF5A !important;
+  color: #0284C7 !important;
+  border-bottom-color: #42C2FF !important;
 }
 
 .cl-footerActionLink,
 .cl-identityPreviewEditButton,
 .cl-formFieldAction {
-  color: #3D7A30 !important;
+  color: #0284C7 !important;
   font-weight: 600 !important;
 }
 
 .cl-footerActionLink:hover,
 .cl-identityPreviewEditButton:hover {
-  color: #FF7A94 !important;
+  color: #F5A623 !important;
 }
 
 .cl-headerTitle {
-  color: #1C2B1A !important;
+  color: #0C4A6E !important;
   font-family: var(--font) !important;
   font-weight: 800 !important;
 }
 
 .cl-headerSubtitle {
-  color: #5A7A54 !important;
+  color: #0284C7 !important;
   font-family: var(--font) !important;
 }
 
-.cl-dividerLine { background: rgba(168, 223, 142, 0.45) !important; }
-.cl-dividerText { color: #93B88C !important; font-family: var(--font) !important; }
-.cl-backLink { color: #5A7A54 !important; }
+.cl-dividerLine { background: rgba(66, 194, 255, 0.45) !important; }
+.cl-dividerText { color: #7DD3FC !important; font-family: var(--font) !important; }
+.cl-backLink { color: #0284C7 !important; }
 
 /* ==========================================================================
    SIDEBAR — Rose Pink Accent Enhancements
@@ -3760,29 +3761,29 @@ input.chat-text-input {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #A8DF8E 0%, #FFD8DF 55%, #FFAAB8 100%);
+  background: linear-gradient(90deg, #B8FFF9 0%, #EFFFFD 55%, #85F4FF 100%);
   z-index: 2;
 }
 
 /* Active nav item: rose left-border + blush tint */
 .nav a.active {
-  border-left: 3px solid #FFAAB8 !important;
+  border-left: 3px solid #85F4FF !important;
   padding-left: 11px !important;
-  background: linear-gradient(90deg, rgba(255, 216, 223, 0.32) 0%, rgba(255, 255, 255, 0.96) 60%) !important;
-  color: #3D7A30 !important;
-  box-shadow: 0 2px 12px rgba(255, 122, 148, 0.14) !important;
+  background: linear-gradient(90deg, rgba(133, 244, 255, 0.32) 0%, rgba(255, 255, 255, 0.96) 60%) !important;
+  color: #0284C7 !important;
+  box-shadow: 0 2px 12px rgba(66, 194, 255, 0.14) !important;
 }
 
 /* Nav hover: gentle rose-to-green tint */
 .nav a:hover {
-  background: linear-gradient(90deg, rgba(255, 216, 223, 0.18) 0%, rgba(109, 191, 90, 0.08) 100%) !important;
-  color: #3D7A30 !important;
+  background: linear-gradient(90deg, rgba(133, 244, 255, 0.18) 0%, rgba(66, 194, 255, 0.08) 100%) !important;
+  color: #0284C7 !important;
 }
 
 /* Sidebar logout hover */
 .side-logout:hover {
   background: #FFF0F3 !important;
-  border-color: #FFAAB8 !important;
+  border-color: #85F4FF !important;
   color: #EF6177 !important;
 }
 
@@ -3794,15 +3795,15 @@ input.chat-text-input {
   justify-content: center;
   height: 100vh;
   gap: 18px;
-  background: linear-gradient(155deg, #EDF7E8 0%, #F4FBF0 40%, #FFF4F6 100%);
+  background: linear-gradient(155deg, #F4FDFF 0%, #EFFFFD 40%, #EFFFFD 100%);
 }
 
 .boot-mark {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #6DBF5A, #3D7A30);
-  box-shadow: 0 8px 24px rgba(109, 191, 90, 0.38);
+  background: linear-gradient(135deg, #42C2FF, #0284C7);
+  box-shadow: 0 8px 24px rgba(66, 194, 255, 0.38);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3811,7 +3812,7 @@ input.chat-text-input {
 
 .boot-text {
   font-size: 0.9rem;
-  color: #5A7A54;
+  color: #0284C7;
   font-family: var(--font);
   font-weight: 600;
   display: flex;

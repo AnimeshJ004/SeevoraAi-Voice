@@ -15,7 +15,7 @@
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Brand voltage stops, read from one place so we never refork colors.
-  var VOLT = ["#A8DF8E", "#6DBF5A", "#FFAAB8", "#FF7A94"];
+  var VOLT = ["#B8FFF9", "#42C2FF", "#85F4FF", "#F5A623"];
 
   function ready(fn) {
     if (document.readyState === "loading") {
@@ -64,8 +64,8 @@
     var svg =
       "<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400' viewBox='0 0 640 400'>" +
       "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>" +
-      "<stop offset='0' stop-color='#A8DF8E'/><stop offset='0.55' stop-color='#6DBF5A'/>" +
-      "<stop offset='1' stop-color='#FFAAB8'/></linearGradient></defs>" +
+      "<stop offset='0' stop-color='#B8FFF9'/><stop offset='0.55' stop-color='#42C2FF'/>" +
+      "<stop offset='1' stop-color='#85F4FF'/></linearGradient></defs>" +
       "<rect width='640' height='400' fill='#0A0C12'/>" +
       "<rect width='640' height='400' fill='url(#g)' opacity='0.16'/>" +
       "<circle cx='320' cy='168' r='54' fill='none' stroke='url(#g)' stroke-width='3'/>" +

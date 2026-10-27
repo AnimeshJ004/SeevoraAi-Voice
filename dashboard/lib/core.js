@@ -178,7 +178,7 @@ const DB_TMP = `${DB_FILE}.tmp`;
 
 function defaultDb() {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     tenants: [], users: [], agents: [], usage: [], sessions: [],
     wallets: [], ledger: [], paymentIntents: [], supportTickets: [],
     supportMessages: [], auditEvents: [], presets: [], byonConnections: [],
@@ -190,6 +190,18 @@ function defaultDb() {
     // AI assistant collections (added for assistant chatbot feature)
     assistantThreads: [], assistantActions: [], pendingConfirmations: [],
     assistantSessions: [], assistantIntegrations: [],
+    // Sprint-1: Auto-Call (Speed-to-Lead) Webhook Engine
+    autoCallWebhooks: [], autoCallSources: [], autoCallLeads: [],
+    // Sprint-2: Outbound Voice Campaign + Dialing Queue
+    campaigns: [], campaignJobs: [],
+    // Sprint-3: Lightweight Knowledge Base (RAG)
+    knowledgeBases: [],
+    // Sprint-4: Outbound CRM Webhooks Engine
+    crmWebhooks: [], crmWebhookLogs: [],
+    // Sprint-5: Per-Tenant Dograh Organization Isolation
+    dograhOrgs: [],
+    // Sprint-6: Booking engine
+    bookingSchedules: [], bookingSlots: [],
   };
 }
 
@@ -203,15 +215,26 @@ const COLLECTIONS = [
   'waTemplates', 'waBroadcasts', 'wacrmConfig',
   'assistantThreads', 'assistantActions', 'pendingConfirmations',
   'assistantSessions', 'assistantIntegrations',
+  // Sprint collections
+  'autoCallWebhooks', 'autoCallSources', 'autoCallLeads',
+  'campaigns', 'campaignJobs',
+  'knowledgeBases',
+  'crmWebhooks', 'crmWebhookLogs',
+  'dograhOrgs',
+  'bookingSchedules', 'bookingSlots',
 ];
 
 function migrateDb(parsed) {
   const out = Object.assign(defaultDb(), parsed || {});
   for (const k of COLLECTIONS) if (!Array.isArray(out[k])) out[k] = [];
-  out.schemaVersion = 4;
+  out.schemaVersion = 5;
   for (const tenant of out.tenants) {
     if (!tenant.status) tenant.status = 'active';
     if (!tenant.privacyMode) tenant.privacyMode = 'standard';
+    // Sprint-5: Provision a Dograh org slug per tenant (deterministic, idempotent)
+    if (!tenant.dograhOrgId) {
+      tenant.dograhOrgId = 'org_' + tenant.id.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    }
   }
   for (const user of out.users) {
     if (!['super_admin', 'admin', 'owner', 'member', 'client'].includes(user.role)) user.role = 'member';
