@@ -581,7 +581,6 @@ function getVisibleRoutes() {
       { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
       { id: 'agents', label: 'My AI Agent', icon: 'users' },
       { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
-      { id: 'billing', label: 'Billing & Wallet', icon: 'wallet' },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
@@ -617,7 +616,6 @@ const ROUTES = [
   { id: 'agents', label: 'Agents', icon: 'users' },
   { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
   { id: 'invoices', label: 'Invoices', icon: 'invoice' },
-  { id: 'billing', label: 'Billing & Wallet', icon: 'wallet' },
   { id: 'support', label: 'Support', icon: 'support' },
   { id: 'admin', label: 'Clients', icon: 'shield' },
   { id: 'settings', label: 'Settings', icon: 'gear' }
@@ -873,7 +871,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'billing', 'support', 'admin', 'invoices', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -1314,15 +1312,19 @@ function renderVoiceDashboard(root, opts) {
         el('div', { class: 'sv-icon-sq' }, [ uiIcon('wallet', 15) ]),
         el('span', { class: 'sv-card-label' }, 'Available Voice Balance')
       ]),
-      el('button', { class: 'sv-icon-btn', onclick: () => goto('billing'), title: 'Top Up' }, [
+      isAgency ? el('button', { class: 'sv-icon-btn', onclick: () => goto('billing'), title: 'Top Up' }, [
         uiIcon('arrowUpRight', 14)
-      ])
+      ]) : null
     ]),
     el('div', { class: 'sv-balance-val-row' }, [balEl, eyeBtn]),
-    el('div', { class: 'sv-limit-pill', onclick: () => goto('billing') }, [
+    el('div', {
+      class: 'sv-limit-pill' + (isAgency ? '' : ' sv-limit-pill-static'),
+      onclick: () => (isAgency ? goto('billing') : null),
+      style: isAgency ? '' : 'cursor:default;'
+    }, [
       el('span', { class: 'sv-pill-dot' }),
       el('span', {}, 'Live Capacity • 10/10 Channels Active'),
-      el('span', { style: 'margin-left:auto;font-weight:700;' }, '›')
+      isAgency ? el('span', { style: 'margin-left:auto;font-weight:700;' }, '›') : null
     ]),
     el('div', { class: 'sv-actions-sep' }, [
       el('div', { class: 'sv-actions-label' }, 'Executive Quick Actions'),
@@ -2004,9 +2006,11 @@ async function viewAgents(root) {
         el('strong', {}, 'Workflow Workspace Limit: '),
         `${currentCount} of ${maxWf} active workflows in use on ${(tenant.plan || 'starter').toUpperCase()} plan.`
       ]),
-      currentCount >= maxWf
-        ? el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('billing') }, 'Upgrade Plan')
-        : el('a', { href: '#billing', class: 'muted', style: 'text-decoration:underline' }, 'Manage Quotas in Billing')
+      isPlatformAdmin
+        ? (currentCount >= maxWf
+            ? el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('billing') }, 'Upgrade Plan')
+            : el('a', { href: '#billing', class: 'muted', style: 'text-decoration:underline' }, 'Manage Quotas in Billing'))
+        : null
     ]);
     root.appendChild(quotaBanner);
   }
@@ -6142,6 +6146,12 @@ function paintAgencyPrompt(host, data) {
 let currentBillingInterval = 'monthly';
 
 async function viewBilling(root) {
+  const u = (State.me && State.me.user) || {};
+  const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+  if (!isPlatformAdmin) {
+    goto('overview');
+    return;
+  }
   root.appendChild(viewHead('Plans & Billing', 'One plan for every call and every chat. Manage subscriptions, active quotas, and prepaid wallet.'));
 
   const me = State.me || {};

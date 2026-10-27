@@ -465,7 +465,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$b521b92f147e1d605738e2c7a27ab1c2$e1a1817490a0449bd5e47a01390ed8b2a480633fe58dbdd258b11956b720ccd0b9717c8ef4de04048d6b9282c80a495a41b64aafdec4f3099a371d2a8b633c86",
+      "passHash": "scrypt$d855d73eaa468c9b8cda5eabb50c1bb8$62b624e63217f2d0c721fcb765d546c41909dd5ffcc9761b3f512f3b978e147aa86dbfb197de082044dd7ff1131c6059de0f6df92400c50b9679d30a8a516f54",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z"
@@ -475,7 +475,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$369baf68a85d9442bf2de24ec89f5427$ba99a562ddbf22c3d86d990e81bdbe0d53847ed491a4edaa75d64819034291f054a95810b40f437f8c74daa0e409dd9d1329acaedf39eaa519faf35b0e943fcd",
+      "passHash": "scrypt$e5c0c84b2f09ac1747b134007864e772$88ba3f5081420fa563673855cdfacd775e4d7f2f9d95a24135b5ea5bfdda55383804038f397224e7db703f1f680c6da9624a02d43e010dc4b233b6333bbdfc46",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z"
