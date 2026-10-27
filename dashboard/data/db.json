@@ -7909,10 +7909,10 @@
       "exp": 1793708299314
     },
     {
-      "tokenHash": "c29cf33047b928e76769fab576c46e3fd94d7bfa57f6a8e967c3325e4cfd2011",
-      "userId": "u_9615cb3586082da5",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1793710073763
+      "tokenHash": "dc1184955145e7509c59e4e8aee70a635324c9882ae729745815f44706e272af",
+      "userId": "u_c6b5f6cf84425987",
+      "tenantId": "t_4feb1d5f86369faa",
+      "exp": 1793711787014
     }
   ],
   "wallets": [
@@ -10268,7 +10268,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T11:45:22.052322Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.232Z",
+      "syncedAt": "2026-10-27T13:11:27.708Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10302,7 +10302,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T11:45:22.052322Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.268Z",
+      "syncedAt": "2026-10-27T13:19:47.973Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10336,7 +10336,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T09:04:31.896292Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.613Z",
+      "syncedAt": "2026-10-27T13:11:27.898Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10404,7 +10404,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T09:20:05.424938Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.705Z",
+      "syncedAt": "2026-10-27T13:11:27.828Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10506,7 +10506,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T09:20:05.424938Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.525Z",
+      "syncedAt": "2026-10-27T13:19:48.200Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10574,7 +10574,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-27T09:04:31.896292Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.671Z",
+      "syncedAt": "2026-10-27T13:19:48.372Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10642,7 +10642,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-26T08:23:02.618983Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.574Z",
+      "syncedAt": "2026-10-27T13:19:48.072Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -10676,7 +10676,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-26T08:23:02.618983Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.783Z",
+      "syncedAt": "2026-10-27T13:11:28.085Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -12292,7 +12292,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-19T13:22:32.607545Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.719Z",
+      "syncedAt": "2026-10-27T13:19:48.265Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -12360,7 +12360,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-23T07:28:40.454783Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:47:50.837Z",
+      "syncedAt": "2026-10-27T13:19:48.135Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -13992,7 +13992,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-19T13:22:32.607545Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.305Z",
+      "syncedAt": "2026-10-27T13:11:28.026Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -14060,7 +14060,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-23T07:28:40.454783Z",
       "endedAt": null,
-      "syncedAt": "2026-10-27T12:48:04.498Z",
+      "syncedAt": "2026-10-27T13:11:27.964Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -31284,9 +31284,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.859Z",
+      "lastContactedAt": "2026-10-27T13:11:28.152Z",
       "createdAt": "2026-10-27T09:32:17.218Z",
-      "updatedAt": "2026-10-27T12:48:04.859Z"
+      "updatedAt": "2026-10-27T13:11:28.152Z"
     },
     {
       "id": "ct_b5b064c12d10c502",
@@ -31305,9 +31305,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.859Z",
+      "lastContactedAt": "2026-10-27T13:11:28.152Z",
       "createdAt": "2026-10-27T09:32:17.018Z",
-      "updatedAt": "2026-10-27T12:48:04.859Z"
+      "updatedAt": "2026-10-27T13:11:28.152Z"
     },
     {
       "id": "ct_4a9c3edb3a53c536",
@@ -31326,9 +31326,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.956Z",
+      "lastContactedAt": "2026-10-27T13:19:48.463Z",
       "createdAt": "2026-10-27T09:24:48.499Z",
-      "updatedAt": "2026-10-27T12:47:50.956Z"
+      "updatedAt": "2026-10-27T13:19:48.463Z"
     },
     {
       "id": "ct_287362c6fc8fab12",
@@ -31347,9 +31347,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.956Z",
+      "lastContactedAt": "2026-10-27T13:19:48.463Z",
       "createdAt": "2026-10-27T09:24:48.416Z",
-      "updatedAt": "2026-10-27T12:47:50.956Z"
+      "updatedAt": "2026-10-27T13:19:48.463Z"
     },
     {
       "id": "ct_052982647d21c236",
@@ -31389,9 +31389,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] AI Voice call completed\n\nInquiry: Speed-to-lead auto-dial for Aakash Verma",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.961Z",
+      "lastContactedAt": "2026-10-27T13:19:48.464Z",
       "createdAt": "2026-10-27T06:53:38.897Z",
-      "updatedAt": "2026-10-27T12:47:50.961Z"
+      "updatedAt": "2026-10-27T13:19:48.464Z"
     },
     {
       "id": "ct_cc50b0fd906c6993",
@@ -31410,9 +31410,9 @@
       ],
       "notes": "[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.859Z",
+      "lastContactedAt": "2026-10-27T13:11:28.152Z",
       "createdAt": "2026-10-26T08:26:53.589Z",
-      "updatedAt": "2026-10-27T12:48:04.859Z"
+      "updatedAt": "2026-10-27T13:11:28.152Z"
     },
     {
       "id": "ct_39d209b84a7b2374",
@@ -31429,9 +31429,9 @@
       ],
       "notes": "Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nAI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.963Z",
+      "lastContactedAt": "2026-10-27T13:19:48.464Z",
       "createdAt": "2026-10-23T16:39:16.686Z",
-      "updatedAt": "2026-10-27T12:47:50.963Z"
+      "updatedAt": "2026-10-27T13:19:48.464Z"
     },
     {
       "id": "ct_574c066759c7f2b4",
@@ -31450,9 +31450,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.965Z",
+      "lastContactedAt": "2026-10-27T13:19:48.467Z",
       "createdAt": "2026-10-23T16:39:16.536Z",
-      "updatedAt": "2026-10-27T12:47:50.965Z"
+      "updatedAt": "2026-10-27T13:19:48.467Z"
     },
     {
       "id": "ct_276febd50c9acb65",
@@ -31471,9 +31471,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.965Z",
+      "lastContactedAt": "2026-10-27T13:19:48.467Z",
       "createdAt": "2026-10-23T16:39:16.366Z",
-      "updatedAt": "2026-10-27T12:47:50.965Z"
+      "updatedAt": "2026-10-27T13:19:48.467Z"
     },
     {
       "id": "ct_a8b63f240477008b",
@@ -31511,9 +31511,9 @@
       ],
       "notes": "AI Voice call completed\n\n[Voice Call 2026-10-23] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.860Z",
+      "lastContactedAt": "2026-10-27T13:11:28.153Z",
       "createdAt": "2026-10-23T08:15:19.406Z",
-      "updatedAt": "2026-10-27T12:48:04.860Z"
+      "updatedAt": "2026-10-27T13:11:28.153Z"
     },
     {
       "id": "ct_dc3eec8677011091",
@@ -31532,9 +31532,9 @@
       ],
       "notes": "Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nAI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.860Z",
+      "lastContactedAt": "2026-10-27T13:11:28.152Z",
       "createdAt": "2026-10-23T08:15:19.406Z",
-      "updatedAt": "2026-10-27T12:48:04.860Z"
+      "updatedAt": "2026-10-27T13:11:28.152Z"
     },
     {
       "id": "ct_330101d6c738477f",
@@ -31553,9 +31553,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.861Z",
+      "lastContactedAt": "2026-10-27T13:11:28.153Z",
       "createdAt": "2026-10-23T08:15:18.149Z",
-      "updatedAt": "2026-10-27T12:48:04.861Z"
+      "updatedAt": "2026-10-27T13:11:28.153Z"
     },
     {
       "id": "ct_d832111d8b120878",
@@ -31574,9 +31574,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.861Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-23T08:15:18.102Z",
-      "updatedAt": "2026-10-27T12:48:04.861Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_9c1ebe3bdb9081e3",
@@ -31697,9 +31697,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.861Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:24:44.009Z",
-      "updatedAt": "2026-10-27T12:48:04.861Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_2afecf19dcc1136f",
@@ -31718,9 +31718,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Company: custom AI solutions",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.861Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:23:29.893Z",
-      "updatedAt": "2026-10-27T12:48:04.861Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_fabcd3b25d4b5354",
@@ -31737,9 +31737,9 @@
       ],
       "notes": "Inquiry: Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.863Z",
+      "lastContactedAt": "2026-10-27T13:11:28.155Z",
       "createdAt": "2026-10-15T13:18:15.732Z",
-      "updatedAt": "2026-10-27T12:48:04.863Z"
+      "updatedAt": "2026-10-27T13:11:28.155Z"
     },
     {
       "id": "ct_5523f59c6342985a",
@@ -31757,9 +31757,9 @@
       ],
       "notes": "Inquiry: Appointment reschedule request. Moved slot to Friday 5:00 PM. • Appointment / Booking: Friday 5:00 PM",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.155Z",
       "createdAt": "2026-10-15T13:18:15.732Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.155Z"
     },
     {
       "id": "ct_3d8a67b402c6cc11",
@@ -31777,9 +31777,9 @@
       ],
       "notes": "Inquiry: Home sample collection booked for tomorrow 8:00 AM. • Appointment / Booking: for tomorrow",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.155Z",
       "createdAt": "2026-10-15T13:18:15.731Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.155Z"
     },
     {
       "id": "ct_3cad41e7dafb03b0",
@@ -31799,9 +31799,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup) • Appointment / Booking: Appointment Requested",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:18:15.706Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_4de8b3e9fafdc1f9",
@@ -31820,9 +31820,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:18:14.547Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_94faf035e9d040d8",
@@ -31842,9 +31842,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: दोना पत्तल बनाने की machine के लिए inquiry • Summary: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:18:14.062Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_6019b1442360b7d6",
@@ -31863,9 +31863,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.154Z",
       "createdAt": "2026-10-15T13:18:13.019Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.154Z"
     },
     {
       "id": "ct_073b11db43729681",
@@ -31886,9 +31886,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-23] AI Voice call completed\n\nInquiry: Visited nodes: Start / Greeting (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.155Z",
       "createdAt": "2026-10-15T13:18:10.061Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.155Z"
     },
     {
       "id": "ct_e6a6f3232d6b2202",
@@ -31910,9 +31910,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:48:04.862Z",
+      "lastContactedAt": "2026-10-27T13:11:28.155Z",
       "createdAt": "2026-10-15T13:18:09.276Z",
-      "updatedAt": "2026-10-27T12:48:04.862Z"
+      "updatedAt": "2026-10-27T13:11:28.155Z"
     },
     {
       "id": "ct_8526d195e91ac1f2",
@@ -32021,9 +32021,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.972Z",
+      "lastContactedAt": "2026-10-27T13:19:48.468Z",
       "createdAt": "2026-10-15T09:10:19.615Z",
-      "updatedAt": "2026-10-27T12:47:50.972Z"
+      "updatedAt": "2026-10-27T13:19:48.468Z"
     },
     {
       "id": "ct_3a68e010fe06804d",
@@ -32042,9 +32042,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Company: custom AI solutions",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.973Z",
+      "lastContactedAt": "2026-10-27T13:19:48.468Z",
       "createdAt": "2026-10-15T09:10:19.281Z",
-      "updatedAt": "2026-10-27T12:47:50.973Z"
+      "updatedAt": "2026-10-27T13:19:48.468Z"
     },
     {
       "id": "ct_6731b1df7e057790",
@@ -32064,9 +32064,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup) • Appointment / Booking: Appointment Requested",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.973Z",
+      "lastContactedAt": "2026-10-27T13:19:48.468Z",
       "createdAt": "2026-10-15T09:10:18.936Z",
-      "updatedAt": "2026-10-27T12:47:50.973Z"
+      "updatedAt": "2026-10-27T13:19:48.468Z"
     },
     {
       "id": "ct_befcf6f8361869bf",
@@ -32858,9 +32858,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-14] Inquiry: custom AI automation solutions for hardware shop with lead qualification and appointment booking, and cost estimation • Appointment / Booking: Appointment Requested • Summary: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome -> End (end_call)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome -> End (end_call) • Appointment / Booking: Appointment Requested",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.976Z",
+      "lastContactedAt": "2026-10-27T13:19:48.471Z",
       "createdAt": "2026-10-14T11:50:29.493Z",
-      "updatedAt": "2026-10-27T12:47:50.976Z"
+      "updatedAt": "2026-10-27T13:19:48.471Z"
     },
     {
       "id": "ct_fd7a77b216afcf76",
@@ -32879,9 +32879,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.977Z",
+      "lastContactedAt": "2026-10-27T13:19:48.471Z",
       "createdAt": "2026-10-14T11:50:27.168Z",
-      "updatedAt": "2026-10-27T12:47:50.977Z"
+      "updatedAt": "2026-10-27T13:19:48.471Z"
     },
     {
       "id": "ct_8aa3fd789b5c8e8f",
@@ -32901,9 +32901,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.977Z",
+      "lastContactedAt": "2026-10-27T13:19:48.472Z",
       "createdAt": "2026-10-14T11:50:24.044Z",
-      "updatedAt": "2026-10-27T12:47:50.977Z"
+      "updatedAt": "2026-10-27T13:19:48.472Z"
     },
     {
       "id": "ct_761599d1351bc4e6",
@@ -32923,9 +32923,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:22.625Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_92b040664634b13d",
@@ -32944,9 +32944,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:21.772Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_3b01173efa13b147",
@@ -32963,9 +32963,9 @@
       ],
       "notes": "Inquiry: Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.982Z",
+      "lastContactedAt": "2026-10-27T13:19:48.476Z",
       "createdAt": "2026-10-14T11:50:21.417Z",
-      "updatedAt": "2026-10-27T12:47:50.982Z"
+      "updatedAt": "2026-10-27T13:19:48.476Z"
     },
     {
       "id": "ct_bbefddb0fbfab9b7",
@@ -32984,9 +32984,9 @@
       ],
       "notes": "Inquiry: Post-visit feedback collection. Positive patient experience recorded.\n\n[Voice Call 2026-10-27] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.982Z",
+      "lastContactedAt": "2026-10-27T13:19:48.476Z",
       "createdAt": "2026-10-14T11:50:21.416Z",
-      "updatedAt": "2026-10-27T12:47:50.982Z"
+      "updatedAt": "2026-10-27T13:19:48.476Z"
     },
     {
       "id": "ct_de6fef0f43f04f19",
@@ -33003,9 +33003,9 @@
       ],
       "notes": "Inquiry: Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.982Z",
+      "lastContactedAt": "2026-10-27T13:19:48.476Z",
       "createdAt": "2026-10-14T11:50:21.416Z",
-      "updatedAt": "2026-10-27T12:47:50.982Z"
+      "updatedAt": "2026-10-27T13:19:48.476Z"
     },
     {
       "id": "ct_b3d44ff4395383ea",
@@ -33022,9 +33022,9 @@
       ],
       "notes": "Inquiry: Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.981Z",
+      "lastContactedAt": "2026-10-27T13:19:48.475Z",
       "createdAt": "2026-10-14T11:50:21.415Z",
-      "updatedAt": "2026-10-27T12:47:50.981Z"
+      "updatedAt": "2026-10-27T13:19:48.475Z"
     },
     {
       "id": "ct_6a6155b0ee5a7c08",
@@ -33042,9 +33042,9 @@
       ],
       "notes": "Inquiry: Appointment reschedule request. Moved slot to Friday 5:00 PM. • Appointment / Booking: Friday 5:00 PM",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.981Z",
+      "lastContactedAt": "2026-10-27T13:19:48.475Z",
       "createdAt": "2026-10-14T11:50:21.415Z",
-      "updatedAt": "2026-10-27T12:47:50.981Z"
+      "updatedAt": "2026-10-27T13:19:48.475Z"
     },
     {
       "id": "ct_59d09b5f68da3cb3",
@@ -33062,9 +33062,9 @@
       ],
       "notes": "Inquiry: Home sample collection booked for tomorrow 8:00 AM. • Appointment / Booking: for tomorrow",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.981Z",
+      "lastContactedAt": "2026-10-27T13:19:48.475Z",
       "createdAt": "2026-10-14T11:50:21.415Z",
-      "updatedAt": "2026-10-27T12:47:50.981Z"
+      "updatedAt": "2026-10-27T13:19:48.475Z"
     },
     {
       "id": "ct_bdd2cb166c154607",
@@ -33083,9 +33083,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:20.713Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_33e2c9698dea519c",
@@ -33104,9 +33104,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:19.947Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_decd4a3610565178",
@@ -33125,9 +33125,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)\n\nAI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:19.243Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_455b0a9bb625dc1d",
@@ -33146,9 +33146,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:18.535Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_06539c69fdbcda83",
@@ -33169,9 +33169,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] AI Voice call completed\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:17.811Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_b8bcf285d8ff5363",
@@ -33191,9 +33191,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: दोना पत्तल बनाने की machine के लिए inquiry • Summary: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.978Z",
+      "lastContactedAt": "2026-10-27T13:19:48.473Z",
       "createdAt": "2026-10-14T11:50:17.044Z",
-      "updatedAt": "2026-10-27T12:47:50.978Z"
+      "updatedAt": "2026-10-27T13:19:48.473Z"
     },
     {
       "id": "ct_33417a6872b81243",
@@ -33213,9 +33213,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.979Z",
+      "lastContactedAt": "2026-10-27T13:19:48.474Z",
       "createdAt": "2026-10-14T11:50:15.602Z",
-      "updatedAt": "2026-10-27T12:47:50.979Z"
+      "updatedAt": "2026-10-27T13:19:48.474Z"
     },
     {
       "id": "ct_da49a05bdc1ac3c4",
@@ -33237,9 +33237,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup)\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested\n\n[Voice Call 2026-10-14] AI Voice call completed\n\n[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-23] AI Voice call completed\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.980Z",
+      "lastContactedAt": "2026-10-27T13:19:48.474Z",
       "createdAt": "2026-10-14T11:50:12.580Z",
-      "updatedAt": "2026-10-27T12:47:50.980Z"
+      "updatedAt": "2026-10-27T13:19:48.474Z"
     },
     {
       "id": "ct_d68a2548a0e04366",
@@ -33263,9 +33263,9 @@
       ],
       "notes": "[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested\n\n[Voice Call 2026-10-14] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-14] AI Voice call completed\n\n[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-27T12:47:50.981Z",
+      "lastContactedAt": "2026-10-27T13:19:48.475Z",
       "createdAt": "2026-10-14T11:50:10.445Z",
-      "updatedAt": "2026-10-27T12:47:50.981Z"
+      "updatedAt": "2026-10-27T13:19:48.475Z"
     },
     {
       "id": "ct_a4c793305d8a4ba0",
@@ -33712,8 +33712,8 @@
       "source": "voice_inbound",
       "notes": "Consultation booked for today at 4:30 PM.\n\nInquiry: Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma. • Appointment / Booking: appointment for 4:30 PM\n\nInquiry: Caller inquired about teeth scaling and root canal consultation. Qualified as high-intent lead. • Appointment / Booking: for today at 4 • Company: are your clinic",
       "createdAt": "2026-10-13T10:14:00.000Z",
-      "updatedAt": "2026-10-27T12:47:50.984Z",
-      "lastContactedAt": "2026-10-27T12:47:50.984Z",
+      "updatedAt": "2026-10-27T13:19:48.478Z",
+      "lastContactedAt": "2026-10-27T13:19:48.478Z",
       "company": "are your clinic"
     },
     {
@@ -33733,8 +33733,8 @@
       "source": "voice_outbound",
       "notes": "Received brochure link on WhatsApp. Considering cosmetic package.\n\nInquiry: Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.\n\nInquiry: Followed up on website inquiry. Shared brochure link on WhatsApp.",
       "createdAt": "2026-10-13T09:30:00.000Z",
-      "updatedAt": "2026-10-27T12:47:50.984Z",
-      "lastContactedAt": "2026-10-27T12:47:50.984Z"
+      "updatedAt": "2026-10-27T13:19:48.478Z",
+      "lastContactedAt": "2026-10-27T13:19:48.478Z"
     },
     {
       "id": "con_client_03",
@@ -33753,8 +33753,8 @@
       "source": "voice_inbound",
       "notes": "Visited clinic for emergency checkup, subscribed to annual dental plan.\n\nInquiry: Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.\n\nInquiry: Emergency dental inquiry. Provided emergency hotline and clinic address.",
       "createdAt": "2026-10-12T16:20:00.000Z",
-      "updatedAt": "2026-10-27T12:47:50.984Z",
-      "lastContactedAt": "2026-10-27T12:47:50.984Z"
+      "updatedAt": "2026-10-27T13:19:48.478Z",
+      "lastContactedAt": "2026-10-27T13:19:48.478Z"
     },
     {
       "id": "con_client_04",
@@ -33773,8 +33773,8 @@
       "source": "voice_outbound",
       "notes": "Regular checkup patient, appointment confirmed.\n\nInquiry: Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed. • Appointment / Booking: appointment tomorrow\n\nInquiry: Appointment reminder call for tomorrow morning. • Appointment / Booking: Appointment Requested",
       "createdAt": "2026-10-12T14:10:00.000Z",
-      "updatedAt": "2026-10-27T12:47:50.983Z",
-      "lastContactedAt": "2026-10-27T12:47:50.983Z"
+      "updatedAt": "2026-10-27T13:19:48.478Z",
+      "lastContactedAt": "2026-10-27T13:19:48.478Z"
     },
     {
       "id": "con_client_05",
@@ -35851,7 +35851,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.706Z",
+      "lastMessageAt": "2026-10-27T13:11:27.828Z",
       "createdAt": "2026-10-27T09:32:17.018Z"
     },
     {
@@ -35875,7 +35875,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.525Z",
+      "lastMessageAt": "2026-10-27T13:19:48.200Z",
       "createdAt": "2026-10-27T09:24:48.416Z"
     },
     {
@@ -35899,7 +35899,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.575Z",
+      "lastMessageAt": "2026-10-27T13:19:48.072Z",
       "createdAt": "2026-10-27T06:53:38.898Z"
     },
     {
@@ -35911,7 +35911,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.783Z",
+      "lastMessageAt": "2026-10-27T13:11:28.085Z",
       "createdAt": "2026-10-26T08:26:53.589Z"
     },
     {
@@ -35947,7 +35947,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.839Z",
+      "lastMessageAt": "2026-10-27T13:19:48.135Z",
       "createdAt": "2026-10-23T16:39:16.366Z"
     },
     {
@@ -36019,7 +36019,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.498Z",
+      "lastMessageAt": "2026-10-27T13:11:27.964Z",
       "createdAt": "2026-10-23T08:15:18.102Z"
     },
     {
@@ -36175,7 +36175,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.305Z",
+      "lastMessageAt": "2026-10-27T13:11:28.026Z",
       "createdAt": "2026-10-15T13:18:14.062Z"
     },
     {
@@ -36199,7 +36199,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.232Z",
+      "lastMessageAt": "2026-10-27T13:11:27.708Z",
       "createdAt": "2026-10-15T13:18:10.061Z"
     },
     {
@@ -36211,7 +36211,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:48:04.614Z",
+      "lastMessageAt": "2026-10-27T13:11:27.900Z",
       "createdAt": "2026-10-15T13:18:09.277Z"
     },
     {
@@ -36511,7 +36511,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.671Z",
+      "lastMessageAt": "2026-10-27T13:19:48.373Z",
       "createdAt": "2026-10-15T09:10:20.688Z"
     },
     {
@@ -36523,7 +36523,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.307Z",
+      "lastMessageAt": "2026-10-27T13:19:47.973Z",
       "createdAt": "2026-10-15T09:10:19.989Z"
     },
     {
@@ -36583,7 +36583,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-27T12:47:50.731Z",
+      "lastMessageAt": "2026-10-27T13:19:48.265Z",
       "createdAt": "2026-10-15T09:10:17.447Z"
     },
     {
@@ -95708,6 +95708,2148 @@
         }
       },
       "createdAt": "2026-10-27T12:48:04.783Z"
+    },
+    {
+      "id": "msg_9c1886f6bea4522a",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_241349586bb378c1",
+      "contactId": "ct_073b11db43729681",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.108Z"
+    },
+    {
+      "id": "msg_666ef06eee59cac3",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_6da86493076da05f",
+      "contactId": "ct_b5b064c12d10c502",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.247Z"
+    },
+    {
+      "id": "msg_1447b772e8a4c1a5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_c1fee052948aa3d9",
+      "contactId": "ct_94faf035e9d040d8",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.337Z"
+    },
+    {
+      "id": "msg_d201e55a033078b5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_25fbf41b9363cca1",
+      "contactId": "ct_cc50b0fd906c6993",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.423Z"
+    },
+    {
+      "id": "msg_e2bd907259483cb5",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_f12a814708d4456f",
+      "contactId": "ct_d832111d8b120878",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.496Z"
+    },
+    {
+      "id": "msg_a186f8b9f8dfaa2c",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:57:22.575Z"
+    },
+    {
+      "id": "msg_b1478d92bf13c87f",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_241349586bb378c1",
+      "contactId": "ct_073b11db43729681",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.083Z"
+    },
+    {
+      "id": "msg_5754d7f907fcb2a9",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_c1fee052948aa3d9",
+      "contactId": "ct_94faf035e9d040d8",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.179Z"
+    },
+    {
+      "id": "msg_53ba2b2203179c15",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.245Z"
+    },
+    {
+      "id": "msg_d65bb6e8a700ee43",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_f12a814708d4456f",
+      "contactId": "ct_d832111d8b120878",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.308Z"
+    },
+    {
+      "id": "msg_db62a22c24c10d94",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_25fbf41b9363cca1",
+      "contactId": "ct_cc50b0fd906c6993",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.373Z"
+    },
+    {
+      "id": "msg_b512bfc784ea0215",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_6da86493076da05f",
+      "contactId": "ct_b5b064c12d10c502",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T12:58:00.438Z"
+    },
+    {
+      "id": "msg_6956fdb2a3c7727c",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_241349586bb378c1",
+      "contactId": "ct_073b11db43729681",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.081Z"
+    },
+    {
+      "id": "msg_2129b213e9cb673e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_25fbf41b9363cca1",
+      "contactId": "ct_cc50b0fd906c6993",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.338Z"
+    },
+    {
+      "id": "msg_18809f9d288f742f",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_f12a814708d4456f",
+      "contactId": "ct_d832111d8b120878",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.456Z"
+    },
+    {
+      "id": "msg_a9e76ab58e81977c",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_c1fee052948aa3d9",
+      "contactId": "ct_94faf035e9d040d8",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.589Z"
+    },
+    {
+      "id": "msg_92dd9607ce65b593",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.722Z"
+    },
+    {
+      "id": "msg_78745ab64c3834d7",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_6da86493076da05f",
+      "contactId": "ct_b5b064c12d10c502",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:03:14.846Z"
+    },
+    {
+      "id": "msg_86448f552db0ee06",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_241349586bb378c1",
+      "contactId": "ct_073b11db43729681",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:27.708Z"
+    },
+    {
+      "id": "msg_27601267c69c4f42",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_6da86493076da05f",
+      "contactId": "ct_b5b064c12d10c502",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:27.828Z"
+    },
+    {
+      "id": "msg_92489fb999964793",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:27.900Z"
+    },
+    {
+      "id": "msg_46ff59532ca6182e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_f12a814708d4456f",
+      "contactId": "ct_d832111d8b120878",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:27.964Z"
+    },
+    {
+      "id": "msg_2d5f8930b390a73e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_c1fee052948aa3d9",
+      "contactId": "ct_94faf035e9d040d8",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:28.026Z"
+    },
+    {
+      "id": "msg_170543dbc1f58ae2",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_25fbf41b9363cca1",
+      "contactId": "ct_cc50b0fd906c6993",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:11:28.085Z"
+    },
+    {
+      "id": "msg_89f4b1696daf6755",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:36.598Z"
+    },
+    {
+      "id": "msg_4a7ac8245a8fa19b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:36.732Z"
+    },
+    {
+      "id": "msg_4046e80c4ce28a00",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:36.847Z"
+    },
+    {
+      "id": "msg_a513028a68f96100",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:36.950Z"
+    },
+    {
+      "id": "msg_e65298bd1ff2328e",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:37.039Z"
+    },
+    {
+      "id": "msg_af64edd00d5614ab",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:12:37.141Z"
+    },
+    {
+      "id": "msg_9b0cab3946e2c2bc",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.352Z"
+    },
+    {
+      "id": "msg_bee7c4fc56caa995",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.551Z"
+    },
+    {
+      "id": "msg_4f246fdace38a7e8",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.629Z"
+    },
+    {
+      "id": "msg_2690367fb8f44b74",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.690Z"
+    },
+    {
+      "id": "msg_0dcee116637f0380",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.750Z"
+    },
+    {
+      "id": "msg_b455fc0f8540f3c7",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:29.809Z"
+    },
+    {
+      "id": "msg_7eebbdf5a0a2e98f",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.247Z"
+    },
+    {
+      "id": "msg_c4381629cc795096",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.322Z"
+    },
+    {
+      "id": "msg_64e22e58bc9e41db",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.375Z"
+    },
+    {
+      "id": "msg_2e84f73fb25ce47b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.437Z"
+    },
+    {
+      "id": "msg_8142cb857be0f2f4",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.485Z"
+    },
+    {
+      "id": "msg_afc60edca6c546be",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:16:31.591Z"
+    },
+    {
+      "id": "msg_22ffb763bfff584a",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:28.642Z"
+    },
+    {
+      "id": "msg_421ab084a3362330",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:28.737Z"
+    },
+    {
+      "id": "msg_fd6109fceee7c864",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:28.805Z"
+    },
+    {
+      "id": "msg_9ccdb040827f710f",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:28.953Z"
+    },
+    {
+      "id": "msg_071bf97c40031739",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:29.027Z"
+    },
+    {
+      "id": "msg_fb534b224ac245a8",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:29.176Z"
+    },
+    {
+      "id": "msg_74061228eb807810",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.505Z"
+    },
+    {
+      "id": "msg_5cfa850a687fe472",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.563Z"
+    },
+    {
+      "id": "msg_1f926388adbe17d7",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.608Z"
+    },
+    {
+      "id": "msg_aa75d708aaa24ac2",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.657Z"
+    },
+    {
+      "id": "msg_a402f800347779cf",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.705Z"
+    },
+    {
+      "id": "msg_a3ae27cd24bae311",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:32.747Z"
+    },
+    {
+      "id": "msg_28e14666441f28ff",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.658Z"
+    },
+    {
+      "id": "msg_c8182a89d8f0b92d",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.767Z"
+    },
+    {
+      "id": "msg_a67f73635b91932b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.846Z"
+    },
+    {
+      "id": "msg_d07fa7afbaa362b4",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.890Z"
+    },
+    {
+      "id": "msg_72cf7c4d50a525c8",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.934Z"
+    },
+    {
+      "id": "msg_dff1d8a30e3158f8",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:17:33.976Z"
+    },
+    {
+      "id": "msg_bc2c4a199683a6dd",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.024Z"
+    },
+    {
+      "id": "msg_c7e0c7a5789c171c",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.142Z"
+    },
+    {
+      "id": "msg_d832f9e2182cfc29",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.221Z"
+    },
+    {
+      "id": "msg_3199c6fef25f6e3b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.297Z"
+    },
+    {
+      "id": "msg_efb46a835e8a997e",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.369Z"
+    },
+    {
+      "id": "msg_4888d5c1e76fcc45",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:22.452Z"
+    },
+    {
+      "id": "msg_83bee41120d27d29",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:29.797Z"
+    },
+    {
+      "id": "msg_59958fc71cc9971b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:29.905Z"
+    },
+    {
+      "id": "msg_c61d8ca9913deb88",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:29.972Z"
+    },
+    {
+      "id": "msg_3a989e017cee75d2",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:30.080Z"
+    },
+    {
+      "id": "msg_b6fa60ec73414c0b",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:30.164Z"
+    },
+    {
+      "id": "msg_966781625d3deabd",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:18:30.226Z"
+    },
+    {
+      "id": "msg_5163d35f42f525aa",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:11.887Z"
+    },
+    {
+      "id": "msg_5987a7407d7f8e47",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:12.003Z"
+    },
+    {
+      "id": "msg_73855a6ec20bee83",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:12.058Z"
+    },
+    {
+      "id": "msg_9151c60736569a59",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:12.102Z"
+    },
+    {
+      "id": "msg_2d62cbe10c492d30",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:12.143Z"
+    },
+    {
+      "id": "msg_4da776b88607f0fa",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:12.193Z"
+    },
+    {
+      "id": "msg_e958f5da81c4b934",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.594Z"
+    },
+    {
+      "id": "msg_820ae98d3ca63304",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.640Z"
+    },
+    {
+      "id": "msg_ead342828382a83a",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.686Z"
+    },
+    {
+      "id": "msg_2d88aaf34adc9815",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.736Z"
+    },
+    {
+      "id": "msg_1f0a3e63fffb37b2",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.787Z"
+    },
+    {
+      "id": "msg_ed78e20c3cb8ba77",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.837Z"
+    },
+    {
+      "id": "msg_dcfb7e3634c466cf",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.885Z"
+    },
+    {
+      "id": "msg_d868de15ec57d28d",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.932Z"
+    },
+    {
+      "id": "msg_6ea00b17cdb346df",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:14.985Z"
+    },
+    {
+      "id": "msg_f0dc7840314b95b8",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:15.036Z"
+    },
+    {
+      "id": "msg_d80592029a1c5317",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:15.146Z"
+    },
+    {
+      "id": "msg_63071bdb296769cd",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:15.331Z"
+    },
+    {
+      "id": "msg_457c669201c2d1cf",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.461Z"
+    },
+    {
+      "id": "msg_e08f51f29b6b207d",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.647Z"
+    },
+    {
+      "id": "msg_e44da92331de14cb",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.732Z"
+    },
+    {
+      "id": "msg_50855d0e38d6bc66",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.791Z"
+    },
+    {
+      "id": "msg_9709d0f9e84b7a1f",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.850Z"
+    },
+    {
+      "id": "msg_1e86718c6d0db9e0",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:30.919Z"
+    },
+    {
+      "id": "msg_0cc3e11d34eab586",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_b03e2952b7082a45",
+      "contactId": "ct_da49a05bdc1ac3c4",
+      "phone": "+918120590466",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754853",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:47.973Z"
+    },
+    {
+      "id": "msg_046c2817fc7ab621",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_4977991a86247fa2",
+      "contactId": "ct_aab367b93d16303f",
+      "phone": "+919876543210",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "753540",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:48.072Z"
+    },
+    {
+      "id": "msg_a290125debb82ee6",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_c3b155070ab700de",
+      "contactId": "ct_276febd50c9acb65",
+      "phone": "+914069466600",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "749895",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:48.135Z"
+    },
+    {
+      "id": "msg_933edfbe7ea98f66",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_80161d79349d4bce",
+      "contactId": "ct_287362c6fc8fab12",
+      "phone": "+919167288410",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754646",
+        "disposition": "no-answer",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:48.200Z"
+    },
+    {
+      "id": "msg_e6dfde1303141eb1",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_8b0c3e85ed02e8a2",
+      "contactId": "ct_b8bcf285d8ff5363",
+      "phone": "+918982200895",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "745046",
+        "disposition": "completed",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:48.265Z"
+    },
+    {
+      "id": "msg_5fc105eefeaf95e0",
+      "tenantId": "t_4feb1d5f86369faa",
+      "conversationId": "conv_0c8e00e1e760edea",
+      "contactId": "ct_d68a2548a0e04366",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "754632",
+        "disposition": "busy",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-27T13:19:48.373Z"
     }
   ],
   "waTemplates": [],
@@ -97056,13 +99198,15 @@
       },
       "gmail": {
         "provider": "Gmail Dispatch",
-        "status": "active",
+        "status": "disconnected",
         "senderEmail": "dispatch@seevora.ai",
         "dispatchOnCallEnd": true,
-        "lastDispatchedAt": "2026-10-15T10:20:35.686Z"
+        "lastDispatchedAt": "2026-10-15T10:20:35.686Z",
+        "disconnectedAt": "2026-10-27T13:19:25.951Z",
+        "updatedAt": "2026-10-27T13:19:25.965Z"
       },
       "whatsapp": {
-        "status": "active",
+        "status": "disconnected",
         "phoneNumber": "+919876543210",
         "wabaId": "waba_991204",
         "verifiedAt": "2026-10-27T09:04:10.004Z",
@@ -97073,7 +99217,8 @@
         "provider": "WhatsApp Voice Alerts",
         "dispatchOnCallEnd": true,
         "description": "Auto-sends booking summary & call transcript to caller from +919876543210 (waba_991204)",
-        "updatedAt": "2026-10-27T09:04:10.012Z"
+        "updatedAt": "2026-10-27T13:19:44.576Z",
+        "disconnectedAt": "2026-10-27T13:19:44.567Z"
       }
     },
     {
@@ -97117,11 +99262,13 @@
         "lastDispatchedAt": "2026-10-15T10:45:10.612Z"
       },
       "whatsapp": {
-        "status": "live",
+        "status": "disconnected",
         "phoneNumber": "+91 98765 43210",
         "wabaId": "waba_991204",
         "verifiedAt": "2026-10-15T10:45:10.612Z",
-        "botActive": true
+        "botActive": true,
+        "disconnectedAt": "2026-10-27T13:11:42.325Z",
+        "updatedAt": "2026-10-27T13:11:42.339Z"
       }
     },
     {
@@ -97835,11 +99982,275 @@
       "createdBy": "u_9615cb3586082da5",
       "createdAt": "2026-10-26T08:25:56.249Z",
       "updatedAt": "2026-10-26T08:25:56.249Z",
-      "lastFiredAt": "2026-10-27T12:48:05.354Z",
+      "lastFiredAt": "2026-10-27T13:11:29.756Z",
       "lastStatus": 200
     }
   ],
   "crmWebhookLogs": [
+    {
+      "id": "whlog_bd47dc7258a3",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_896b14734a888c92",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_896b14734a888c92\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:28.148Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
+      "firedAt": "2026-10-27T13:11:29.756Z"
+    },
+    {
+      "id": "whlog_eb3e9d01844c",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_455e4d04769ec25c",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_455e4d04769ec25c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:28.078Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
+      "firedAt": "2026-10-27T13:11:29.694Z"
+    },
+    {
+      "id": "whlog_ba438a88ec86",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_ddbdd0312e5b4299",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_ddbdd0312e5b4299\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:27.793Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
+      "firedAt": "2026-10-27T13:11:29.634Z"
+    },
+    {
+      "id": "whlog_4742de5a07f8",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_a6b30ec354f64b37",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_a6b30ec354f64b37\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:27.960Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
+      "firedAt": "2026-10-27T13:11:29.566Z"
+    },
+    {
+      "id": "whlog_65db0e743e5b",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_47f1baa74fbc1bc9",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_47f1baa74fbc1bc9\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:28.022Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
+      "firedAt": "2026-10-27T13:11:29.508Z"
+    },
+    {
+      "id": "whlog_628b77c5c48e",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_34c570a73aa5c705",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_34c570a73aa5c705\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:11:27.894Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
+      "firedAt": "2026-10-27T13:11:29.414Z"
+    },
+    {
+      "id": "whlog_78261054fbc3",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_49a50c73e7312837",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_49a50c73e7312837\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:14.835Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
+      "firedAt": "2026-10-27T13:03:17.496Z"
+    },
+    {
+      "id": "whlog_25075bc10b0f",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_c4755954b40066ac",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_c4755954b40066ac\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:14.706Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
+      "firedAt": "2026-10-27T13:03:17.063Z"
+    },
+    {
+      "id": "whlog_ff108d907df5",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_6ebd99fb1b65a056",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_6ebd99fb1b65a056\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:14.329Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
+      "firedAt": "2026-10-27T13:03:17.002Z"
+    },
+    {
+      "id": "whlog_6531e08b6bab",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_df4356bf561d1527",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_df4356bf561d1527\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:14.571Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
+      "firedAt": "2026-10-27T13:03:16.946Z"
+    },
+    {
+      "id": "whlog_326c43e9c007",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_0aad2019b8d6b544",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_0aad2019b8d6b544\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:15.181Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
+      "firedAt": "2026-10-27T13:03:16.802Z"
+    },
+    {
+      "id": "whlog_f27e31beac87",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_c9a96768ef4fb3e6",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_c9a96768ef4fb3e6\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T13:03:14.450Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
+      "firedAt": "2026-10-27T13:03:16.544Z"
+    },
+    {
+      "id": "whlog_4ee1655055a9",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_b399b680f348bc28",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_b399b680f348bc28\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.503Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
+      "firedAt": "2026-10-27T12:58:01.678Z"
+    },
+    {
+      "id": "whlog_fbfe6d8a6a56",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_ca8dfdca7b5362f4",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_ca8dfdca7b5362f4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.434Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
+      "firedAt": "2026-10-27T12:58:01.649Z"
+    },
+    {
+      "id": "whlog_b1e1b9c5ccc6",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_54bbf6295f6b675c",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_54bbf6295f6b675c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.241Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
+      "firedAt": "2026-10-27T12:58:01.621Z"
+    },
+    {
+      "id": "whlog_efa86a540e6a",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_4d9e45bedad64b33",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_4d9e45bedad64b33\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.370Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
+      "firedAt": "2026-10-27T12:58:01.589Z"
+    },
+    {
+      "id": "whlog_aea6a9be41dc",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_9611bbc674f59c8a",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_9611bbc674f59c8a\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.174Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
+      "firedAt": "2026-10-27T12:58:01.561Z"
+    },
+    {
+      "id": "whlog_4a51437d325d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_5526cfdf7a77ed61",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_5526cfdf7a77ed61\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:58:00.305Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
+      "firedAt": "2026-10-27T12:58:01.532Z"
+    },
+    {
+      "id": "whlog_fad481c61b5d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_37658e7dde2dc9fe",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_37658e7dde2dc9fe\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.569Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
+      "firedAt": "2026-10-27T12:57:24.234Z"
+    },
+    {
+      "id": "whlog_f174432f50db",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_d3cccae250e89067",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_d3cccae250e89067\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.241Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
+      "firedAt": "2026-10-27T12:57:24.170Z"
+    },
+    {
+      "id": "whlog_3cad3b191dc5",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_2859a51b06b1ea63",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_2859a51b06b1ea63\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.643Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
+      "firedAt": "2026-10-27T12:57:24.104Z"
+    },
+    {
+      "id": "whlog_1f943e389e5d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_723eb80b80dba7f4",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_723eb80b80dba7f4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.333Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
+      "firedAt": "2026-10-27T12:57:24.038Z"
+    },
+    {
+      "id": "whlog_8f8e7a873619",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_abd603775eb58b4d",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_abd603775eb58b4d\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.418Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
+      "firedAt": "2026-10-27T12:57:23.973Z"
+    },
+    {
+      "id": "whlog_0d596b11fa2d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_d1d069577b9f960f",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_d1d069577b9f960f\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:57:22.492Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
+      "firedAt": "2026-10-27T12:57:23.915Z"
+    },
     {
       "id": "whlog_8d8727783be8",
       "webhookId": "cwh_59cedef49d7114a4",
@@ -98675,270 +101086,6 @@
       "ok": true,
       "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_92718524d4fae6af\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:54.642Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
       "firedAt": "2026-10-27T12:19:55.976Z"
-    },
-    {
-      "id": "whlog_e8ec86e855a9",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_0a5431a64d7f25ab",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_0a5431a64d7f25ab\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:54.457Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
-      "firedAt": "2026-10-27T12:19:55.855Z"
-    },
-    {
-      "id": "whlog_1a5203cbb72e",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_5dd03e1089682d24",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_5dd03e1089682d24\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:54.508Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
-      "firedAt": "2026-10-27T12:19:55.816Z"
-    },
-    {
-      "id": "whlog_3810239c988b",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_aefbcf25be72a78e",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_aefbcf25be72a78e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.861Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
-      "firedAt": "2026-10-27T12:19:13.083Z"
-    },
-    {
-      "id": "whlog_862f1fa1934c",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_26aa3983d3de5a2e",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_26aa3983d3de5a2e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.913Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
-      "firedAt": "2026-10-27T12:19:13.014Z"
-    },
-    {
-      "id": "whlog_5083511e9074",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_80b1de3a2c785c72",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_80b1de3a2c785c72\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.351Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
-      "firedAt": "2026-10-27T12:19:12.458Z"
-    },
-    {
-      "id": "whlog_eb076085c9b5",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_7f3ff31217831239",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_7f3ff31217831239\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.404Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
-      "firedAt": "2026-10-27T12:19:12.411Z"
-    },
-    {
-      "id": "whlog_a9e8d2853661",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_6de8147e6dea2b0b",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_6de8147e6dea2b0b\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.302Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
-      "firedAt": "2026-10-27T12:19:12.368Z"
-    },
-    {
-      "id": "whlog_2a23e37d971d",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_f9e236239952fdd5",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_f9e236239952fdd5\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:19:11.227Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
-      "firedAt": "2026-10-27T12:19:12.322Z"
-    },
-    {
-      "id": "whlog_da1c34c149f2",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_63d4d8ac51aa537e",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_63d4d8ac51aa537e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.703Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
-      "firedAt": "2026-10-27T12:18:43.500Z"
-    },
-    {
-      "id": "whlog_6a0e8e7a9b34",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_344ce51916cf93be",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_344ce51916cf93be\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.540Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
-      "firedAt": "2026-10-27T12:18:43.305Z"
-    },
-    {
-      "id": "whlog_6ed4c13b997a",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_bf02e7654b46c5bc",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_bf02e7654b46c5bc\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.757Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
-      "firedAt": "2026-10-27T12:18:43.143Z"
-    },
-    {
-      "id": "whlog_5406f95606ed",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_98cfd851cd11972f",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_98cfd851cd11972f\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.648Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
-      "firedAt": "2026-10-27T12:18:43.076Z"
-    },
-    {
-      "id": "whlog_5bf1ab26c7b7",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_4761ce9e21fb48ec",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_4761ce9e21fb48ec\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.594Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
-      "firedAt": "2026-10-27T12:18:43.024Z"
-    },
-    {
-      "id": "whlog_e9bade1aa938",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_65616361efc33245",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_65616361efc33245\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:18:41.482Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
-      "firedAt": "2026-10-27T12:18:42.977Z"
-    },
-    {
-      "id": "whlog_8e2bd87e1ea3",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_b130a16c248fe27b",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_b130a16c248fe27b\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:48.123Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
-      "firedAt": "2026-10-27T12:06:49.482Z"
-    },
-    {
-      "id": "whlog_b74dd37083a4",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_21ede68278f62c4f",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_21ede68278f62c4f\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:48.187Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_753540\\\",\\\"dograh_run_id\\\":\\\"753540\\\",\\\"phone_number\\\":\\\"+919876543210\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_753540/audi",
-      "firedAt": "2026-10-27T12:06:49.260Z"
-    },
-    {
-      "id": "whlog_34dc7f2153f3",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_30eeaf0a4233725f",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_30eeaf0a4233725f\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:48.154Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
-      "firedAt": "2026-10-27T12:06:49.217Z"
-    },
-    {
-      "id": "whlog_2cfcd1c980ad",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_f5dab6da594a7ec4",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_f5dab6da594a7ec4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:48.092Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
-      "firedAt": "2026-10-27T12:06:49.144Z"
-    },
-    {
-      "id": "whlog_4f3abd5b2c96",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_4d55919ee8978705",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_4d55919ee8978705\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:47.952Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754853\\\",\\\"dograh_run_id\\\":\\\"754853\\\",\\\"phone_number\\\":\\\"+918120590466\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754853/audi",
-      "firedAt": "2026-10-27T12:06:49.088Z"
-    },
-    {
-      "id": "whlog_639348d0070f",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_7afedf034e3f62d4",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_7afedf034e3f62d4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:48.054Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
-      "firedAt": "2026-10-27T12:06:49.047Z"
-    },
-    {
-      "id": "whlog_f6ae38bfa40d",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_4aac372608c7cdfe",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_4aac372608c7cdfe\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:40.442Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_745046\\\",\\\"dograh_run_id\\\":\\\"745046\\\",\\\"phone_number\\\":\\\"+918982200895\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_745046/audio",
-      "firedAt": "2026-10-27T12:06:41.014Z"
-    },
-    {
-      "id": "whlog_25cbe93636c5",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_9927998d5344f167",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_9927998d5344f167\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:40.386Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_749895\\\",\\\"dograh_run_id\\\":\\\"749895\\\",\\\"phone_number\\\":\\\"+914069466600\\\",\\\"direction\\\":\\\"inbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_749895/audio",
-      "firedAt": "2026-10-27T12:06:40.723Z"
-    },
-    {
-      "id": "whlog_9e42ff0b7ba1",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_b5e2107c00da9b43",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_b5e2107c00da9b43\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:40.331Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754646\\\",\\\"dograh_run_id\\\":\\\"754646\\\",\\\"phone_number\\\":\\\"+919167288410\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754646/audi",
-      "firedAt": "2026-10-27T12:06:40.671Z"
-    },
-    {
-      "id": "whlog_622a4dd2a101",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_fea07eaf444fb84e",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {}, \n  \"data\": \"{\\\"id\\\":\\\"evt_fea07eaf444fb84e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f0a845e2a\\\",\\\"timestamp\\\":\\\"2026-10-27T12:06:40.271Z\\\",\\\"data\\\":{\\\"call_id\\\":\\\"rec_754632\\\",\\\"dograh_run_id\\\":\\\"754632\\\",\\\"phone_number\\\":\\\"+917974315518\\\",\\\"direction\\\":\\\"outbound\\\",\\\"duration_sec\\\":0,\\\"cost_inr\\\":\\\"0.00\\\",\\\"status\\\":\\\"completed\\\",\\\"sentiment\\\":\\\"neutral\\\",\\\"outcome\\\":\\\"inquiry_handled\\\",\\\"summary\\\":\\\"\\\",\\\"transcript\\\":\\\"\\\",\\\"recording_url\\\":\\\"/api/calls/rec_754632/audi",
-      "firedAt": "2026-10-27T12:06:40.607Z"
     }
   ],
   "dograhOrgs": [],
