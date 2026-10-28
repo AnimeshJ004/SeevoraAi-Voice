@@ -7418,3 +7418,539 @@ h1 .blue, .blue-grad, .t-blue {
 .nav-link.nav-locked {
   opacity: 0.88 !important;
 }
+
+
+/* Custom Scandinavian Sage Time Dropdown */
+.aria-custom-dropdown {
+  position: relative !important;
+  display: inline-block !important;
+  user-select: none !important;
+}
+
+.aria-dropdown-trigger {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+  padding: 6px 16px !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  color: #0d5d41 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-shadow: 0 1px 4px rgba(13, 93, 65, 0.05) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.aria-dropdown-trigger:hover {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(13, 93, 65, 0.1) !important;
+  transform: translateY(-0.5px) !important;
+}
+
+.aria-dropdown-trigger:active,
+.aria-custom-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.15) !important;
+}
+
+.aria-dropdown-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #0d5d41 !important;
+  transition: transform 0.2s ease !important;
+}
+
+.aria-custom-dropdown.open .aria-dropdown-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.aria-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  right: 0 !important;
+  min-width: 154px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 32px rgba(13, 93, 65, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 1000 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-6px) scale(0.97) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s !important;
+  pointer-events: none !important;
+}
+
+.aria-custom-dropdown.open .aria-dropdown-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+.aria-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  color: #2c3e35 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  font-weight: 650 !important;
+}
+
+.aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 650 !important;
+}
+
+.aria-dropdown-opt.selected:hover {
+  background: #094732 !important;
+  color: #ffffff !important;
+}
+
+.aria-opt-check {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #ffffff !important;
+}
+
+
+.aria-date-btn {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  color: #3b5045 !important;
+  padding: 6px 14px !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+}
+
+.aria-date-btn:hover {
+  background: #ffffff !important;
+  border-color: #0d5d41 !important;
+  color: #0d5d41 !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.08) !important;
+  transform: translateY(-0.5px) !important;
+}
+
+.aria-date-btn svg {
+  color: #0d5d41 !important;
+}
+
+
+/* ==========================================================================
+   AI CHATBOT / ASSISTANT: PURE SCANDINAVIAN SAGE CARDLESS CANVAS
+   No giant outer box/card borders. Everything floats seamlessly on #f3f8f5.
+   ========================================================================== */
+
+/* 1. Main outer wrapper sits directly on canvas without card borders */
+.chat-workspace-card,
+.view-assistant-wrapper > .chat-workspace-card,
+.shell:not([data-route="overview"]) .main .chat-workspace-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  gap: 20px !important;
+  width: 100% !important;
+  height: calc(100vh - 100px) !important;
+  max-height: calc(100vh - 100px) !important;
+  overflow: visible !important;
+  position: relative !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.main:has(.view-assistant-wrapper) {
+  padding: 12px 24px 20px 24px !important;
+  background: #f3f8f5 !important;
+}
+
+/* 2. Left Icon Rail: Sleek Floating White Capsule */
+.chat-left-rail {
+  width: 54px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.12) !important;
+  border-right: 1px solid rgba(13, 93, 65, 0.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 4px 20px rgba(13, 93, 65, 0.05) !important;
+  padding: 12px 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  height: fit-content !important;
+  align-self: flex-start !important;
+  flex-shrink: 0 !important;
+}
+
+.chat-rail-top {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.chat-rail-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  color: #5d7468 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.18s ease !important;
+  box-shadow: none !important;
+}
+
+.chat-rail-btn:hover {
+  background: #f3f8f5 !important;
+  color: #0d5d41 !important;
+  transform: scale(1.06) !important;
+}
+
+.chat-rail-btn.primary-plus {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(13, 93, 65, 0.25) !important;
+}
+
+.chat-rail-btn.primary-plus:hover {
+  background: #0a4631 !important;
+  transform: scale(1.08) !important;
+}
+
+/* 3. Center Chat Stream: Sits directly on the Sage Canvas */
+.chat-center-pane {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  min-width: 0 !important;
+  height: 100% !important;
+}
+
+.chat-center-header {
+  padding: 2px 8px 14px 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.chat-center-title {
+  font-size: 1.32rem !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+  letter-spacing: -0.02em !important;
+}
+
+.chat-delete-btn {
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 10px !important;
+  color: #5d7468 !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.chat-delete-btn:hover {
+  background: #fff5f5 !important;
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.chat-messages-container {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  padding: 10px 10px 18px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+}
+
+.chat-bubble-assistant {
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.10) !important;
+  border-radius: 20px 20px 20px 6px !important;
+  box-shadow: 0 4px 16px rgba(13, 93, 65, 0.04) !important;
+  color: #14221c !important;
+  padding: 16px 22px !important;
+  font-size: 14.5px !important;
+  line-height: 1.6 !important;
+  max-width: 82% !important;
+}
+
+.chat-bubble-user {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px 20px 6px 20px !important;
+  box-shadow: 0 4px 16px rgba(13, 93, 65, 0.22) !important;
+  padding: 14px 22px !important;
+  font-size: 14.5px !important;
+  line-height: 1.6 !important;
+  max-width: 78% !important;
+  align-self: flex-end !important;
+}
+
+/* Floating Input Capsule at Bottom */
+.chat-input-dock {
+  padding: 10px 0 2px 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.chat-input-capsule {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 30px rgba(13, 93, 65, 0.07) !important;
+  padding: 6px 8px 6px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+.chat-input-capsule:focus-within {
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12), 0 10px 32px rgba(13, 93, 65, 0.09) !important;
+}
+
+.chat-attach-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #f3f8f5 !important;
+  border: none !important;
+  color: #0d5d41 !important;
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.chat-attach-btn:hover {
+  background: #d7ecdf !important;
+}
+
+.chat-send-btn {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  background: #0d5d41 !important;
+  border: none !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.chat-send-btn:hover {
+  background: #0a4631 !important;
+  transform: scale(1.05) !important;
+}
+
+/* 4. Right Connectivity & History Panel: Standalone Floating Companion Card */
+.chat-right-panel {
+  width: 320px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.10) !important;
+  border-left: 1px solid rgba(13, 93, 65, 0.10) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 8px 30px rgba(13, 93, 65, 0.05) !important;
+  padding: 20px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.chat-integrations-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+}
+
+.chat-integration-item {
+  background: #f8fbf9 !important;
+  border: 1px solid rgba(13, 93, 65, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  margin-bottom: 2px !important;
+}
+
+.chat-integration-item:hover {
+  background: #ffffff !important;
+  border-color: rgba(13, 93, 65, 0.25) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.06) !important;
+}
+
+.integration-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.integration-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.10) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.integration-name {
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+  color: #14221c !important;
+}
+
+.integration-count {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  background: #f1f5f3 !important;
+  color: #5d7468 !important;
+}
+
+.integration-count.connected,
+.integration-count:contains("Connected"),
+[id^="conn-status-"]:not(:empty) {
+  /* soft sage pill */
+}
+
+.chat-share-btn {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.20) !important;
+  transition: all 0.18s ease !important;
+  margin-top: 4px !important;
+}
+
+.chat-share-btn:hover {
+  background: #0a4631 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(13, 93, 65, 0.28) !important;
+}
+
+.chat-history-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid rgba(13, 93, 65, 0.08) !important;
+}
+
+.history-time-group .group-header {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #7a8f83 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 6px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
+.history-item {
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  color: #3b5045 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.15s ease !important;
+}
+
+.history-item:hover {
+  background: #f3f8f5 !important;
+  color: #0d5d41 !important;
+}
+
+.history-item.active {
+  background: #e8f3ec !important;
+  color: #0d5d41 !important;
+  font-weight: 650 !important;
+}

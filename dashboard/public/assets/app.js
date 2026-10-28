@@ -1096,11 +1096,8 @@ function renderShell() {
       el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
-      isPlatformAdmin
-        ? el('span', { class: 'pill', style: 'background:rgba(239,68,68,0.12);color:#DC2626;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;letter-spacing:0.3px;' }, 'Admin')
-        : null,
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
-    ].filter(Boolean))
+    ])
   ]);
 
   const impersonationBanner = State.me.impersonation ? el('div', { class: 'impersonation-banner' }, [
@@ -1596,6 +1593,9 @@ async function fetchVoiceDashboardMetrics(period = 'today') {
           periodRecs = recs.slice(0, 24);
         }
       }
+    } else if (period.startsWith('date:')) {
+      const targetDate = period.slice(5); // 'YYYY-MM-DD'
+      periodRecs = recs.filter(r => (r.startedAt || r.createdAt || '').slice(0, 10) === targetDate);
     } else if (period === 'week') {
       const oneWeekAgo = new Date(Date.now() - 7 * 86400000);
       periodRecs = recs.filter(r => new Date(r.startedAt || r.createdAt) >= oneWeekAgo);
@@ -1846,20 +1846,169 @@ function renderVoiceDashboard(root, opts) {
   root.appendChild(dash);
 
   const now = new Date();
-  const dateLabel = el('span', { class: 'aria-date-label' }, 'Today, ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
-  const timeDropdown = el('select', { class: 'aria-time-select', id: 'sv-time-select', title: 'Select Period' }, [
-    el('option', { value: 'today', selected: (opts.period || 'today') === 'today' }, 'Today'),
-    el('option', { value: 'week', selected: (opts.period || 'today') === 'week' }, 'This Week'),
-    el('option', { value: 'month', selected: (opts.period || 'today') === 'month' }, 'This Month'),
-    el('option', { value: 'all', selected: (opts.period || 'today') === 'all' }, 'All Time')
+  const todayIso = now.toISOString().slice(0, 10);
+  let currentPeriod = opts.period || 'today';
+
+  // Native Date Picker Input (accessible via button & dropdown)
+  const datePickerInput = el('input', {
+    type: 'date',
+    id: 'sv-date-picker-input',
+    max: todayIso,
+    value: todayIso,
+    style: 'position:absolute;opacity:0;pointer-events:none;width:0;height:0;z-index:-1;'
+  });
+
+  // Interactive Date Button in Topbar
+  const dateLabel = el('button', {
+    class: 'aria-date-btn',
+    type: 'button',
+    id: 'sv-active-date-btn',
+    title: 'Click to select custom date',
+    onclick: (e) => {
+      e.stopPropagation();
+      try {
+        if (typeof datePickerInput.showPicker === 'function') datePickerInput.showPicker();
+        else datePickerInput.click();
+      } catch (_) {
+        datePickerInput.click();
+      }
+    }
+  }, [
+    el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' }),
+    el('span', { id: 'sv-active-date-text' }, 'Today, ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))
   ]);
+
+  // Custom Sage-Themed Period Dropdown
+  const periods = [
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: 'This Week' },
+    { value: 'month', label: 'This Month' },
+    { value: 'all', label: 'All Time' },
+    { value: 'custom_date', label: 'Select Date...' }
+  ];
+
+  const timeDropdown = el('div', { class: 'aria-custom-dropdown', id: 'sv-time-select-wrapper' });
+  const timeDropdownBtn = el('button', {
+    class: 'aria-dropdown-trigger',
+    type: 'button',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false'
+  }, [
+    el('span', { class: 'aria-dropdown-current-label' }, periods.find(p => p.value === currentPeriod)?.label || 'Today'),
+    el('span', {
+      class: 'aria-dropdown-arrow',
+      html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+    })
+  ]);
+
+  const timeDropdownMenu = el('div', { class: 'aria-dropdown-menu' });
+
+  function renderDropdownOptions() {
+    timeDropdownMenu.innerHTML = '';
+    periods.forEach(p => {
+      const isSelected = p.value === currentPeriod || (p.value === 'custom_date' && currentPeriod.startsWith('date:'));
+      const optEl = el('div', {
+        class: 'aria-dropdown-opt' + (isSelected ? ' selected' : ''),
+        onclick: (e) => {
+          e.stopPropagation();
+          if (p.value === 'custom_date') {
+            timeDropdown.classList.remove('open');
+            timeDropdownBtn.setAttribute('aria-expanded', 'false');
+            try {
+              if (typeof datePickerInput.showPicker === 'function') datePickerInput.showPicker();
+              else datePickerInput.click();
+            } catch (_) {
+              datePickerInput.click();
+            }
+            return;
+          }
+
+          currentPeriod = p.value;
+          timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = p.label;
+          timeDropdown.classList.remove('open');
+          timeDropdownBtn.setAttribute('aria-expanded', 'false');
+
+          const activeDateText = dash.querySelector('#sv-active-date-text');
+          if (activeDateText) {
+            if (p.value === 'today') {
+              activeDateText.textContent = 'Today, ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            } else if (p.value === 'week') {
+              activeDateText.textContent = 'Past 7 Days';
+            } else if (p.value === 'month') {
+              activeDateText.textContent = 'Past 30 Days';
+            } else if (p.value === 'all') {
+              activeDateText.textContent = 'All Records';
+            }
+          }
+
+          renderDropdownOptions();
+          syncVoiceDashboardData(currentPeriod);
+        }
+      }, [
+        el('span', { class: 'aria-opt-label' }, p.label),
+        isSelected ? el('span', {
+          class: 'aria-opt-check',
+          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        }) : null
+      ].filter(Boolean));
+      timeDropdownMenu.appendChild(optEl);
+    });
+  }
+
+  // Handle Date Picker selection
+  datePickerInput.onchange = () => {
+    const val = datePickerInput.value;
+    if (!val) return;
+    const isToday = val === todayIso;
+    const parts = val.split('-');
+    const pickedDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const formatted = pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    currentPeriod = isToday ? 'today' : ('date:' + val);
+    const dateText = isToday ? ('Today, ' + pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : formatted;
+
+    const activeDateText = dash.querySelector('#sv-active-date-text');
+    if (activeDateText) activeDateText.textContent = dateText;
+
+    timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = isToday ? 'Today' : formatted;
+    renderDropdownOptions();
+    syncVoiceDashboardData(currentPeriod);
+  };
+
+  renderDropdownOptions();
+
+  timeDropdownBtn.onclick = (e) => {
+    e.stopPropagation();
+    const isOpen = timeDropdown.classList.toggle('open');
+    timeDropdownBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!timeDropdown.contains(e.target)) {
+      timeDropdown.classList.remove('open');
+      timeDropdownBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  Object.defineProperty(timeDropdown, 'value', {
+    get: () => currentPeriod,
+    set: (v) => {
+      currentPeriod = v;
+      const found = periods.find(p => p.value === v);
+      if (found) timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = found.label;
+      renderDropdownOptions();
+    }
+  });
+
+  timeDropdown.appendChild(timeDropdownBtn);
+  timeDropdown.appendChild(timeDropdownMenu);
+
   const refreshBtn = el('button', { class: 'aria-btn-ghost', title: 'Refresh live data', style: 'transition:transform .6s;' }, [uiIcon('refresh', 13)]);
   refreshBtn.onclick = () => {
     refreshBtn.style.transform = 'rotate(360deg)';
     setTimeout(() => { refreshBtn.style.transform = ''; }, 650);
     syncVoiceDashboardData(timeDropdown.value);
   };
-  timeDropdown.onchange = () => syncVoiceDashboardData(timeDropdown.value);
   const callBtn = el('button', {
     class: 'aria-btn-action',
     type: 'button',
@@ -1874,7 +2023,7 @@ function renderVoiceDashboard(root, opts) {
     uiIcon('phone', 12), el('span', {}, 'Make Call')
   ]);
   dash.appendChild(el('header', { class: 'aria-topbar', style: 'justify-content:flex-end;' }, [
-    el('div', { class: 'aria-topbar-right' }, [dateLabel, refreshBtn, timeDropdown, callBtn])
+    el('div', { class: 'aria-topbar-right' }, [datePickerInput, dateLabel, refreshBtn, timeDropdown, callBtn])
   ]));
 
   // Onboarding Step-by-Step Instructions Banner when no phone number is assigned
