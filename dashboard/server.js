@@ -445,6 +445,9 @@ function publicTenant(t) {
   const isCompleted = !!t.onboardingCompleted || hasAgents;
   const usageAndLimits = plans.getTenantUsageAndLimits(d, t.id);
   const dograhOrg = t.dograhOrgId || t.dograh_org_id || ('org_' + t.id.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+  const tenantConnections = (d.byonConnections || []).filter(x => x.tenantId === t.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
+  const hasAssignedNumber = tenantConnections.length > 0;
+  const assignedNumber = hasAssignedNumber ? tenantConnections[0].address : (t.telephony && t.telephony.did ? t.telephony.did : null);
   return {
     id: t.id, name: t.name, slug: t.slug, createdAt: t.createdAt,
     branding: t.branding, providers: t.providers, plan: t.plan || 'starter',
@@ -461,6 +464,9 @@ function publicTenant(t) {
     limits: usageAndLimits.limits,
     features: usageAndLimits.features,
     usage: usageAndLimits.usage,
+    hasAssignedNumber: hasAssignedNumber || !!assignedNumber,
+    assignedNumber: assignedNumber,
+    telephony: t.telephony || (assignedNumber ? { did: assignedNumber } : null),
   };
 }
 function publicAgent(a) {
@@ -2878,6 +2884,7 @@ async function apiTelephonyStatus(req, res, ctx) {
       // Global provider may not be configured in local/test; fallback gracefully
     }
 
+    const isPlatformAdmin = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
     const tenantId = ctx && ctx.tenant ? ctx.tenant.id : null;
     const tenantConnections = (core.db().byonConnections || [])
       .filter((x) => tenantId && x.tenantId === tenantId && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
@@ -2891,21 +2898,34 @@ async function apiTelephonyStatus(req, res, ctx) {
       isCustom: true
     }));
 
-    // Merge tenant's own numbers first, followed by platform DIDs
-    const existingDids = (status && Array.isArray(status.dids)) ? status.dids : [];
-    const uniqueDids = [...tenantDids];
-    for (const d of existingDids) {
-      const num = typeof d === 'string' ? d : (d.number || d.did);
-      if (num && !uniqueDids.some((x) => x.number === num)) {
-        uniqueDids.push(typeof d === 'string' ? { id: num, number: num, label: num, provider: 'vobiz' } : d);
+    let uniqueDids = [];
+    let hasAssignedNumber = false;
+
+    if (isPlatformAdmin) {
+      // Platform admin has access to platform carrier DIDs + all client DIDs
+      const existingDids = (status && Array.isArray(status.dids)) ? status.dids : [];
+      uniqueDids = [...tenantDids];
+      for (const d of existingDids) {
+        const num = typeof d === 'string' ? d : (d.number || d.did);
+        if (num && !uniqueDids.some((x) => x.number === num)) {
+          uniqueDids.push(typeof d === 'string' ? { id: num, number: num, label: num, provider: 'vobiz' } : d);
+        }
       }
+      hasAssignedNumber = uniqueDids.length > 0;
+    } else {
+      // Regular client workspace ONLY gets numbers explicitly assigned to their tenant or self-connected
+      uniqueDids = [...tenantDids];
+      hasAssignedNumber = tenantDids.length > 0;
     }
 
-    const primaryDid = tenantDids.length > 0 ? tenantDids[0].number : (status.did || (uniqueDids[0] && uniqueDids[0].number));
+    const primaryDid = tenantDids.length > 0
+      ? tenantDids[0].number
+      : (isPlatformAdmin ? (status.did || (uniqueDids[0] && uniqueDids[0].number) || null) : null);
 
     core.sendJson(res, 200, {
       ...status,
-      connected: true,
+      connected: hasAssignedNumber,
+      hasAssignedNumber,
       dids: uniqueDids,
       did: primaryDid,
       customDids: tenantDids,
@@ -2915,6 +2935,73 @@ async function apiTelephonyStatus(req, res, ctx) {
   } catch (e) {
     handleProviderError(res, e);
   }
+}
+
+// Dial directly via VoBiz Indian Carrier REST API
+function dialViaVobiz(to, from, authId, authToken, answerUrl) {
+  let num = String(to || '').replace(/[^0-9]/g, '');
+  if (num.length === 12 && num.startsWith('91')) num = num.slice(2);
+  if (num.length !== 10) {
+    const err = new Error('Need a 10-digit Indian mobile number');
+    err.status = 422;
+    return Promise.reject(err);
+  }
+  const formattedTo = '+91' + num;
+  let formattedFrom = String(from || '+918071582519').replace(/[^0-9+]/g, '');
+  if (!formattedFrom.startsWith('+')) formattedFrom = '+' + formattedFrom;
+
+  const payload = JSON.stringify({
+    to: formattedTo,
+    from: formattedFrom,
+    answer_url: answerUrl || 'https://api.dograh.com/api/v1/telephony/inbound/run',
+    answer_method: 'POST'
+  });
+
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    const options = {
+      hostname: 'api.vobiz.ai',
+      path: '/api/v1/Account/' + authId + '/Call/',
+      method: 'POST',
+      headers: {
+        'X-Auth-ID': authId,
+        'X-Auth-Token': authToken,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ status: res.statusCode, data: json });
+          } else {
+            const err = new Error(json.message || json.error || 'VoBiz call failed');
+            err.status = res.statusCode;
+            err.data = json;
+            reject(err);
+          }
+        } catch (e) {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ status: res.statusCode, data: { message: 'call queued' } });
+          } else {
+            const err = new Error(`VoBiz call failed with status ${res.statusCode}: ${data}`);
+            err.status = res.statusCode;
+            reject(err);
+          }
+        }
+      });
+    });
+    req.on('error', (e) => {
+      e.status = 502;
+      reject(e);
+    });
+    req.write(payload);
+    req.end();
+  });
 }
 
 // POST /api/telephony/dial -> places a REAL paid call. GUARDED behind confirm.
@@ -2927,7 +3014,7 @@ async function apiTelephonyDial(req, res, ctx) {
     });
   }
   let workflowId;
-  if (ctx.tenant.privacyMode === 'no_recording') {
+  if (ctx.tenant && ctx.tenant.privacyMode === 'no_recording') {
     workflowId = Number(process.env.DOGRAH_NO_RECORDING_WORKFLOW_ID || 0);
     if (!Number.isInteger(workflowId) || workflowId <= 0) {
       return core.sendJson(res, 409, {
@@ -2936,11 +3023,34 @@ async function apiTelephonyDial(req, res, ctx) {
       });
     }
   }
+
+  // Look up tenant's assigned / connected VoBiz number
+  const tenantConnections = (core.db().byonConnections || [])
+    .filter((x) => ctx.tenant && x.tenantId === ctx.tenant.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
+  const activeConn = tenantConnections[0];
+
+  const authId = (activeConn && activeConn.authId) || process.env.VOBIZ_AUTH_ID;
+  const authToken = (activeConn && activeConn.authToken) || process.env.VOBIZ_AUTH_TOKEN;
+  const fromNumber = (activeConn && activeConn.address) || (ctx.tenant && ctx.tenant.telephony && ctx.tenant.telephony.did) || process.env.VOBIZ_NUMBER || '+918071582519';
+
   try {
-    const r = await providers.telephony.dial(b.number, { workflowId });
+    let r;
+    // 1. Dial via VoBiz carrier directly if VoBiz credentials are present
+    if (authId && authToken) {
+      try {
+        r = await dialViaVobiz(b.number, fromNumber, authId, authToken);
+        logger.info('VoBiz call placed directly', { to: b.number, from: fromNumber, response: r.data });
+      } catch (vobizErr) {
+        logger.warn('Direct VoBiz dial failed, attempting fallback to orchestrator', { err: vobizErr.message });
+        r = await providers.telephony.dial(b.number, { workflowId });
+      }
+    } else {
+      r = await providers.telephony.dial(b.number, { workflowId });
+    }
+
     // Count the dial attempt against today's usage.
     bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => {});
-    const runId = r.data && (r.data.run_id || r.data.id || r.data.call_id);
+    const runId = r.data && (r.data.request_uuid || r.data.run_id || r.data.id || r.data.call_id);
     // Auto-sync into WACRM leads, conversation timeline, and tenant-scoped callRecordings
     core.mutate((d) => {
       if (runId) {
@@ -2950,7 +3060,7 @@ async function apiTelephonyDial(req, res, ctx) {
           tenantId: ctx.tenant.id,
           dograhRunId: String(runId),
           phoneNumber: b.number,
-          callerNumber: '+918071582519',
+          callerNumber: fromNumber,
           calledNumber: b.number,
           direction: 'outbound',
           status: 'initiated',
@@ -2976,7 +3086,8 @@ async function apiTelephonyDial(req, res, ctx) {
         status: 'sent'
       });
     }).catch(() => {});
-    core.sendJson(res, r.status, r.data);
+
+    core.sendJson(res, r.status || 200, { ok: true, message: 'call queued', ...r.data });
   } catch (e) {
     console.error('[DIAL ERROR]', (e && e.message) || e, (e && e.detail) || '');
     handleProviderError(res, e);
@@ -3640,7 +3751,7 @@ async function apiSupportReply(req, res, ctx) {
 }
 
 function apiByonList(req, res, ctx) {
-  const isAdm = ctx.user && ['super_admin', 'admin'].includes(ctx.user.role);
+  const isAdm = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
   const allConnections = core.db().byonConnections || [];
   const tenants = core.db().tenants || [];
   const tenantMap = new Map(tenants.map((t) => [t.id, t.name || t.id]));
@@ -5094,7 +5205,7 @@ async function apiRecordingsList(req, res, ctx) {
   }
   try {
     const q = new URL(req.url, 'http://local').searchParams;
-    const limit = Math.min(parseInt(q.get('limit') || '50', 10), 100);
+    const limit = Math.min(parseInt(q.get('limit') || '50', 10), 500);
     const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0);
     const forceSync = q.get('sync') === 'true' || q.get('refresh') === 'true';
 
@@ -5104,8 +5215,14 @@ async function apiRecordingsList(req, res, ctx) {
       triggerBackgroundDograhSync(ctx.tenant.id);
     }
 
-    let all = (core.db().callRecordings || [])
-      .filter((r) => r.tenantId === ctx.tenant.id);
+    const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+    let all = (core.db().callRecordings || []);
+    if (!isPlatformAdmin || q.get('scope') === 'tenant') {
+      all = all.filter((r) => r.tenantId === ctx.tenant.id);
+    }
+    if (all.length === 0 && isPlatformAdmin) {
+      all = (core.db().callRecordings || []);
+    }
 
     // If real calls exist from Dograh (dograhRunId > 100000), omit dummy seed records so user sees real calls
     const hasRealRuns = all.some((r) => r.dograhRunId && Number(r.dograhRunId) > 100000);
@@ -6760,7 +6877,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/usage') return core.requireAuth(req, res, apiUsage);
         if (route === '/api/telephony/status') return core.requireAuth(req, res, apiTelephonyStatus);
         if (route === '/api/presets') return core.requireAuth(req, res, apiPresets);
-        if (route === '/api/wallet') return core.requireAuth(req, res, apiWallet);
+        if (route === '/api/wallet' || route === '/api/billing/wallet') return core.requireAuth(req, res, apiWallet);
         if (route === '/api/payment-intents') return core.requireAuth(req, res, apiPaymentIntents);
         if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportList);
         if (route === '/api/byon') return core.requireAuth(req, res, apiByonList);
@@ -6774,7 +6891,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/integrations') return core.requireRole(req, res, 'owner', apiIntegrations);
         if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksList);
         if (route === '/api/admin/overview') return core.requireRole(req, res, 'admin', apiAdminOverview);
-        if (route === '/api/admin/tenants') return core.requireRole(req, res, 'admin', apiAdminTenants);
+        if (route === '/api/admin/tenants') return core.requireRole(req, res, 'owner', apiAdminTenants);
         if (route === '/api/admin/users') return core.requireRole(req, res, 'admin', apiAdminUsers);
         if (route === '/api/admin/audit') return core.requireRole(req, res, 'admin', apiAdminAudit);
         if (route === '/api/admin/tickets') return core.requireRole(req, res, 'admin', apiAdminTickets);
@@ -6870,7 +6987,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
       if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
-      if (route === '/api/byon/assign') return core.requireRole(req, res, 'admin', apiByonAssign, body);
+      if (route === '/api/byon/assign') return core.requireRole(req, res, 'owner', apiByonAssign, body);
       if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
