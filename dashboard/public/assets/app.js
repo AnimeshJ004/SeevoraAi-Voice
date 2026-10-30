@@ -1,3 +1,13 @@
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 'use strict';
 /* ==========================================================================
    RapidX Voice , Console (product dashboard) SPA.
@@ -143,15 +153,31 @@ function toast(message, kind, title) {
 /* ===========================================================================
    MODAL
    =========================================================================== */
-function modal(opts) {
-  // opts: { title, body(node), confirmText, confirmKind, onConfirm, cancelText }
+function modal(opts, maybeBody) {
+  // Handle both modal({ title, body, ... }) and modal(titleString, bodyNode)
+  if (typeof opts === 'string') {
+    opts = {
+      title: opts,
+      body: maybeBody,
+      confirmText: 'Close',
+      cancelText: null,
+      onConfirm: async () => { }
+    };
+  }
+  opts = opts || {};
+  if (opts.content && !opts.body) opts.body = opts.content;
+  // opts: { title, body(node), confirmText, confirmKind, onConfirm, cancelText, wide }
   const host = $('#modal-host');
   const close = () => { host.classList.add('hide'); host.setAttribute('aria-hidden', 'true'); host.innerHTML = ''; };
-  const confirmBtn = el('button', { class: 'btn ' + (opts.confirmKind === 'danger' ? 'btn-danger' : 'btn-primary') }, opts.confirmText || 'Confirm');
+  const confirmBtn = el('button', {
+    class: 'btn ' + (opts.confirmKind === 'danger' ? 'btn-danger' : 'btn-primary'),
+    style: 'background:#0d5d41;color:#ffffff;border:none;'
+  }, opts.confirmText || 'Confirm');
+
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
     try {
-      const res = await opts.onConfirm();
+      const res = typeof opts.onConfirm === 'function' ? await opts.onConfirm() : true;
       if (res === false || res === 'keepOpen') {
         confirmBtn.disabled = false;
         return;
@@ -164,13 +190,18 @@ function modal(opts) {
       }
     }
   });
-  const card = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, [
+
+  const actions = el('div', { class: 'modal-actions' });
+  if (opts.cancelText !== false && opts.cancelText !== null) {
+    actions.appendChild(el('button', { class: 'btn btn-ghost', onclick: close }, opts.cancelText || 'Cancel'));
+  }
+  actions.appendChild(confirmBtn);
+
+  const isWide = opts.wide || (opts.body && opts.body.classList && (opts.body.classList.contains('rec-drawer-wrap') || (opts.body.querySelector && opts.body.querySelector('.rec-drawer-wrap'))));
+  const card = el('div', { class: 'modal' + (isWide ? ' modal-wide' : ''), role: 'dialog', 'aria-modal': 'true' }, [
     el('h3', {}, opts.title || ''),
     opts.body || null,
-    el('div', { class: 'modal-actions' }, [
-      el('button', { class: 'btn btn-ghost', onclick: close }, opts.cancelText || 'Cancel'),
-      confirmBtn
-    ])
+    actions
   ]);
   host.innerHTML = '';
   host.appendChild(el('div', { onclick: (e) => { if (e.target === e.currentTarget) close(); }, style: 'position:absolute;inset:0' }));
@@ -502,7 +533,7 @@ async function speakUtterance(text, ttsOrAgent, callbacks) {
       const voices = window.speechSynthesis.getVoices();
       const femaleKeywords = ['female', 'zira', 'neerja', 'jenny', 'samantha', 'victoria', 'kavya', 'priya', 'swara', 'geeta', 'ananya', 'aria', 'sara', 'eva', 'ava', 'sonia', 'aditi', 'kiran'];
       const maleKeywords = ['david', 'mark', 'george', 'richard', 'james', 'ravi', 'male', 'guy', 'stefan'];
-      
+
       const isFemale = (v) => {
         const name = (v.name || '').toLowerCase();
         return femaleKeywords.some((k) => name.includes(k)) && !maleKeywords.some((k) => name.includes(k));
@@ -592,32 +623,32 @@ async function ensureClerkReady() {
           ui: { ClerkUI: window.__internal_ClerkUICtor },
           appearance: {
             variables: {
-              colorPrimary:        '#2f8a63',
-              colorBackground:     '#ffffff',
-              colorText:           '#17191d',
-              colorTextSecondary:  '#6c737d',
-              colorNeutral:        '#6c737d',
-              colorInputBackground:'#FFFFFF',
-              colorInputText:      '#17191d',
-              colorSuccess:        '#10b981',
-              colorDanger:         '#EF6177',
-              colorWarning:        '#E8A838',
-              borderRadius:        '14px',
-              fontFamily:          "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              fontSize:            '15px',
+              colorPrimary: '#2f8a63',
+              colorBackground: '#ffffff',
+              colorText: '#17191d',
+              colorTextSecondary: '#6c737d',
+              colorNeutral: '#6c737d',
+              colorInputBackground: '#FFFFFF',
+              colorInputText: '#17191d',
+              colorSuccess: '#10b981',
+              colorDanger: '#EF6177',
+              colorWarning: '#E8A838',
+              borderRadius: '14px',
+              fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize: '15px',
             },
             elements: {
-              card:                'background: #ffffff; border:1px solid rgba(34, 43, 56, 0.10); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
-              formButtonPrimary:   'background:linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%)!important; box-shadow:0 4px 14px rgba(47, 138, 99,0.35)!important; color:#fff!important; border-radius:99px!important; font-weight:700!important',
+              card: 'background: #ffffff; border:1px solid rgba(34, 43, 56, 0.10); border-radius:22px; box-shadow:0 20px 60px -12px rgba(12, 74, 110,0.14)',
+              formButtonPrimary: 'background:linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%)!important; box-shadow:0 4px 14px rgba(47, 138, 99,0.35)!important; color:#fff!important; border-radius:99px!important; font-weight:700!important',
               socialButtonsBlockButton: 'border:1px solid rgba(47, 138, 99,0.55)!important; border-radius:12px!important; background:rgba(255,255,255,0.9)!important',
-              footerActionLink:    'color:#0d5d41!important; font-weight:600!important',
+              footerActionLink: 'color:#0d5d41!important; font-weight:600!important',
               identityPreviewEditButtonIcon: 'color:#0d5d41',
-              formFieldInput:      'border:1px solid rgba(47, 138, 99,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
-              dividerLine:         'background:rgba(47, 138, 99,0.45)!important',
-              dividerText:         'color:#93B88C!important',
-              headerTitle:         'color:#17191d!important; font-family:"Manrope",sans-serif; font-weight:700!important',
-              headerSubtitle:      'color:#6c737d!important',
-              rootBox:             'font-family:"Plus Jakarta Sans",sans-serif',
+              formFieldInput: 'border:1px solid rgba(47, 138, 99,0.6)!important; border-radius:12px!important; background:rgba(255,255,255,0.95)!important',
+              dividerLine: 'background:rgba(47, 138, 99,0.45)!important',
+              dividerText: 'color:#93B88C!important',
+              headerTitle: 'color:#17191d!important; font-family:"Manrope",sans-serif; font-weight:700!important',
+              headerSubtitle: 'color:#6c737d!important',
+              rootBox: 'font-family:"Plus Jakarta Sans",sans-serif',
             },
           },
         });
@@ -634,18 +665,18 @@ let _ticketsCache = null;
 function prewarmAppData() {
   setTimeout(() => {
     Promise.all([
-      ensureAgents().catch(() => {}),
-      ensureTelephony().catch(() => {}),
+      ensureAgents().catch(() => { }),
+      ensureTelephony().catch(() => { }),
       api('/api/recordings?limit=100&offset=0').then((res) => {
         if (res && Array.isArray(res.recordings)) _recState.recordings = res.recordings;
-      }).catch(() => {}),
+      }).catch(() => { }),
       api('/api/crm/pipeline').then((res) => {
         if (res && Array.isArray(res.pipeline)) _pipelineCache = res;
-      }).catch(() => {}),
+      }).catch(() => { }),
       api('/api/support/tickets').then((res) => {
         if (res && Array.isArray(res.tickets)) _ticketsCache = res.tickets;
-      }).catch(() => {})
-    ]).catch(() => {});
+      }).catch(() => { })
+    ]).catch(() => { });
   }, 40);
 }
 
@@ -661,7 +692,7 @@ async function boot() {
     // takes 400ms - 1500ms, so we retry gracefully every 200ms up to 20 times (~4 seconds).
     for (let attempt = 0; attempt < 20; attempt++) {
       if (window.Clerk && window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
-        try { await window.Clerk.session.getToken({ skipCache: attempt > 2 }); } catch (_) {}
+        try { await window.Clerk.session.getToken({ skipCache: attempt > 2 }); } catch (_) { }
       }
 
       try {
@@ -712,9 +743,13 @@ async function boot() {
       ensureTelephony(true).catch(() => null),
       ensureAgents().catch(() => null)
     ]);
-    renderShell();
-    updateNavLockStates();
-    prewarmAppData();
+    try {
+      renderShell();
+      updateNavLockStates();
+      prewarmAppData();
+    } catch (renderErr) {
+      console.error('UI render warning during boot:', renderErr);
+    }
   } catch (e) {
     console.warn('Authentication check failed:', e);
     // Anti-loop protection: If Clerk session failed server authentication,
@@ -722,7 +757,7 @@ async function boot() {
     if (window.Clerk && window.Clerk.user && typeof window.Clerk.signOut === 'function') {
       try {
         await window.Clerk.signOut();
-      } catch (_) {}
+      } catch (_) { }
     }
     renderAuth();
   }
@@ -751,24 +786,33 @@ function resetData() {
 /* ===========================================================================
    CONSOLE SHELL & DUAL-PANEL NAVIGATION
    =========================================================================== */
+function isPlatformAdmin() {
+  if (State.me && State.me.impersonation) return false;
+  const u = (State.me && State.me.user) || {};
+  return ['super_admin', 'admin'].includes(u.role);
+}
+
 function getVisibleRoutes() {
   const u = (State.me && State.me.user) || {};
-  const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+  const adminMode = isPlatformAdmin();
 
-  if (!isPlatformAdmin) {
+  if (!adminMode) {
+    const tFeats = (State.me && State.me.tenant && State.me.tenant.features) || {};
     const routes = [
       { id: 'overview', label: 'Dashboard', icon: 'grid' },
-      { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle' },
-      { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
-      { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
-      { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-      { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-      { id: 'agents', label: 'My AI Agent', icon: 'users' },
-      { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
+      { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle', disabled: tFeats.assistant === false },
+      { id: 'workflows', label: 'Workflows', icon: 'git-branch', disabled: tFeats.workflows === false },
+      { id: 'inbound', label: 'Inbound Calls', icon: 'phone', disabled: tFeats.inbound === false },
+      { id: 'campaigns', label: 'Outbound Calls', icon: 'send', disabled: tFeats.campaigns === false },
+      { id: 'recordings', label: 'Call Recordings', icon: 'record', disabled: tFeats.recordings === false },
+      { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline', disabled: tFeats.crmPipeline === false },
+      { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
+      { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
+      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
-    if (u && !u.onboardingCompleted && !['admin', 'super_admin'].includes(u.role)) {
+    if (u && !u.onboardingCompleted && !['admin', 'super_admin', 'employee'].includes(u.role)) {
       routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
     }
     return routes;
@@ -778,12 +822,14 @@ function getVisibleRoutes() {
     { id: 'overview', label: 'Admin Dashboard', icon: 'grid' },
     { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle' },
     { id: 'admin', label: 'Manage Clients', icon: 'shield' },
+    { id: 'features', label: 'Feature Controls', icon: 'sliders' },
+    { id: 'workflows', label: 'Client Workflows', icon: 'git-branch' },
     { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
     { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
     { id: 'recordings', label: 'Call Recordings', icon: 'record' },
     { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-    { id: 'agents', label: 'All AI Agents', icon: 'users' },
-    { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
+    { id: 'agents', label: 'All AI Agents', icon: 'mic' },
+    { id: 'talk', label: 'Talk to Agent', icon: 'wave' },
     { id: 'invoices', label: 'Invoices', icon: 'invoice' },
     { id: 'billing', label: 'Platform Billing', icon: 'wallet' },
     { id: 'settings', label: 'Settings', icon: 'gear' }
@@ -797,11 +843,14 @@ const ROUTES = [
   { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
   { id: 'recordings', label: 'Call Recordings', icon: 'record' },
   { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
-  { id: 'agents', label: 'Agents', icon: 'users' },
+  { id: 'agents', label: 'Agents', icon: 'mic' },
+  { id: 'teams', label: 'Teams', icon: 'users' },
   { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
   { id: 'invoices', label: 'Invoices', icon: 'invoice' },
   { id: 'support', label: 'Support', icon: 'support' },
   { id: 'admin', label: 'Clients', icon: 'shield' },
+  { id: 'features', label: 'Feature Controls', icon: 'sliders' },
+  { id: 'workflows', label: 'Workflows', icon: 'git-branch' },
   { id: 'settings', label: 'Settings', icon: 'gear' }
 ];
 
@@ -821,6 +870,9 @@ function navIcon(name) {
     return '<svg class="ic ic-wa" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
   }
   const paths = {
+    'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+    'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+    sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
     chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
     pipeline: '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>',
     broadcast: '<circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>',
@@ -841,6 +893,8 @@ function navIcon(name) {
     invoice: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6M9 19h4"/>',
     plug: '<path d="M8 3v5M16 3v5M6 8h12v2a6 6 0 0 1-12 0V8zM12 16v5"/>',
     prompt: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 2 2-2 2M12 13h5"/>',
+    'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+    'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
     bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     logout: '<path d="M14 3.5H6.5A1.5 1.5 0 0 0 5 5v14a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M17 8l4 4-4 4"/><path d="M21 12H9"/>'
   };
@@ -876,7 +930,9 @@ function uiIcon(name, size) {
     bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
     creditCard: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
     eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
-    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'
+    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+    'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+    gitBranch: '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'
   };
   const elSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   elSvg.setAttribute('viewBox', '0 0 24 24');
@@ -890,6 +946,161 @@ function uiIcon(name, size) {
   elSvg.setAttribute('class', 'ui-svg-icon');
   elSvg.innerHTML = paths[name] || paths.sparkle;
   return elSvg;
+}
+
+/**
+ * Creates a Scandinavian Sage themed custom dropdown matching .aria-custom-dropdown
+ * cfg: {
+ *   options: [{ value: '', label: 'All Clients (21 workspaces)' }, ...],
+ *   value: '',
+ *   onChange: (val, opt) => { ... },
+ *   placeholder: 'Select...',
+ *   align: 'left' | 'right',
+ *   className: '',
+ *   style: ''
+ * }
+ */
+function createThemedDropdown(cfg) {
+  cfg = cfg || {};
+  let currentVal = cfg.value != null ? String(cfg.value) : '';
+  const options = Array.isArray(cfg.options)
+    ? cfg.options.map(o => typeof o === 'object' && o !== null ? { value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? '') } : { value: String(o), label: String(o) })
+    : [];
+
+  const alignClass = cfg.align === 'right' ? 'align-right' : 'align-left';
+  const wrap = el('div', { class: 'aria-custom-dropdown sv-themed-dropdown ' + (cfg.className || ''), style: cfg.style || '' });
+
+  function getSelectedOption() {
+    return options.find(o => String(o.value) === String(currentVal));
+  }
+
+  function getSelectedLabel() {
+    const found = getSelectedOption();
+    if (found) return found.label;
+    if (cfg.placeholder) return cfg.placeholder;
+    return options[0] ? options[0].label : 'Select...';
+  }
+
+  const labelSpan = el('span', { class: 'aria-dropdown-current-label' }, getSelectedLabel());
+  const arrowSpan = el('span', {
+    class: 'aria-dropdown-arrow',
+    html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+  });
+
+  const triggerBtn = el('button', {
+    class: 'aria-dropdown-trigger',
+    type: 'button',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false'
+  }, [labelSpan, arrowSpan]);
+
+  const menu = el('div', { class: 'aria-dropdown-menu ' + alignClass });
+
+  function renderOptions() {
+    menu.innerHTML = '';
+    options.forEach(opt => {
+      const isSelected = String(opt.value) === String(currentVal);
+      const optEl = el('div', {
+        class: 'aria-dropdown-opt' + (isSelected ? ' selected' : ''),
+        onclick: (e) => {
+          e.stopPropagation();
+          currentVal = String(opt.value);
+          labelSpan.textContent = opt.label;
+          closeDropdown();
+          renderOptions();
+          if (typeof cfg.onChange === 'function') cfg.onChange(currentVal, opt);
+          if (typeof wrap.onchange === 'function') wrap.onchange({ target: wrap, currentTarget: wrap, value: currentVal });
+          wrap.dispatchEvent(new CustomEvent('change', { detail: { value: currentVal, option: opt }, bubbles: true }));
+        }
+      }, [
+        el('span', { class: 'aria-opt-label' }, opt.label),
+        isSelected ? el('span', {
+          class: 'aria-opt-check',
+          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        }) : null
+      ].filter(Boolean));
+      menu.appendChild(optEl);
+    });
+  }
+
+  function openDropdown() {
+    if (triggerBtn.disabled) return;
+    document.querySelectorAll('.aria-custom-dropdown.open').forEach(d => {
+      if (d !== wrap) {
+        d.classList.remove('open');
+        const b = d.querySelector('.aria-dropdown-trigger');
+        if (b) b.setAttribute('aria-expanded', 'false');
+      }
+    });
+    wrap.classList.add('open');
+    triggerBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeDropdown() {
+    wrap.classList.remove('open');
+    triggerBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  triggerBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (triggerBtn.disabled) return;
+    if (wrap.classList.contains('open')) closeDropdown();
+    else openDropdown();
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closeDropdown();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && wrap.classList.contains('open')) closeDropdown();
+  });
+
+  renderOptions();
+  wrap.appendChild(triggerBtn);
+  wrap.appendChild(menu);
+
+  Object.defineProperty(wrap, 'value', {
+    get: () => currentVal,
+    set: (v) => {
+      currentVal = String(v ?? '');
+      labelSpan.textContent = getSelectedLabel();
+      renderOptions();
+    }
+  });
+
+  Object.defineProperty(wrap, 'disabled', {
+    get: () => triggerBtn.disabled,
+    set: (v) => {
+      triggerBtn.disabled = !!v;
+      if (v) wrap.classList.add('disabled');
+      else wrap.classList.remove('disabled');
+    }
+  });
+
+  Object.defineProperty(wrap, 'options', {
+    get: () => options
+  });
+
+  Object.defineProperty(wrap, 'selectedIndex', {
+    get: () => options.findIndex(o => String(o.value) === String(currentVal))
+  });
+
+  wrap.setOptions = (newOpts) => {
+    options.length = 0;
+    (newOpts || []).forEach(o => {
+      if (typeof o === 'object' && o !== null) options.push({ value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? '') });
+      else options.push({ value: String(o), label: String(o) });
+    });
+    labelSpan.textContent = getSelectedLabel();
+    renderOptions();
+  };
+
+  wrap.setValue = (v) => {
+    wrap.value = v;
+  };
+
+  return wrap;
 }
 
 
@@ -918,24 +1129,46 @@ function hasActiveTelephony() {
 }
 
 function updateNavLockStates() {
-  const isPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin', 'owner'].includes(State.me.user.role);
+  const adminMode = isPlatformAdmin();
   const activeTel = hasActiveTelephony();
   const voiceRoutes = ['inbound', 'campaigns', 'recordings', 'talk'];
-  
+  const ROUTE_FEATURE_MAP = {
+    inbound: 'inbound',
+    campaigns: 'campaigns',
+    recordings: 'recordings',
+    'crm-pipeline': 'crmPipeline',
+    agents: 'agents',
+    talk: 'talk',
+    assistant: 'assistant',
+    teams: 'teams',
+    workflows: 'workflows'
+  };
+  const tFeats = (State.me && State.me.tenant && State.me.tenant.features) || {};
+
   document.querySelectorAll('.nav-list a').forEach(a => {
     const routeId = a.getAttribute('data-route');
-    if (!voiceRoutes.includes(routeId)) return;
-    const isLocked = !isPlatformAdmin && !activeTel;
+    if (!routeId) return;
+
+    const featKey = ROUTE_FEATURE_MAP[routeId];
+    const isFeatureDisabled = !adminMode && featKey && (tFeats[featKey] === false);
+    const isPhoneMissing = !adminMode && !activeTel && voiceRoutes.includes(routeId);
+    const isLocked = isFeatureDisabled || isPhoneMissing;
+
     a.classList.toggle('nav-locked', isLocked);
-    a.title = isLocked ? (a.textContent.trim() + ' (Phone number required)') : a.textContent.trim();
-    
-    // Remove any old text pills (like "Locked")
-    const oldPill = a.querySelector('.nav-lock-pill');
-    if (oldPill) oldPill.remove();
+    a.classList.toggle('nav-feature-disabled', !!isFeatureDisabled);
+
+    const baseLabel = (a.querySelector('.nav-label') ? a.querySelector('.nav-label').textContent : a.textContent).trim();
+    if (isFeatureDisabled) {
+      a.title = `${baseLabel} (Disabled by Administrator)`;
+    } else if (isPhoneMissing) {
+      a.title = `${baseLabel} (Phone number required)`;
+    } else {
+      a.title = baseLabel;
+    }
 
     const wrap = a.querySelector('.nav-icon-wrap');
     if (wrap) {
-      const existingBadge = wrap.querySelector('.nav-icon-lock-badge');
+      let existingBadge = wrap.querySelector('.nav-icon-lock-badge');
       if (isLocked) {
         if (!existingBadge) {
           const badge = document.createElement('span');
@@ -947,7 +1180,40 @@ function updateNavLockStates() {
         if (existingBadge) existingBadge.remove();
       }
     }
+
+    let existingPill = a.querySelector('.nav-lock-pill');
+    if (isFeatureDisabled) {
+      if (!existingPill) {
+        const pill = document.createElement('span');
+        pill.className = 'nav-lock-pill';
+        pill.textContent = 'Locked';
+        a.appendChild(pill);
+      }
+    } else {
+      if (existingPill) existingPill.remove();
+    }
   });
+}
+
+function updateVoiceNavigationLocks() {
+  updateNavLockStates();
+  const id = currentRoute();
+  const ROUTE_FEATURE_MAP = {
+    inbound: 'inbound',
+    campaigns: 'campaigns',
+    recordings: 'recordings',
+    'crm-pipeline': 'crmPipeline',
+    agents: 'agents',
+    talk: 'talk',
+    assistant: 'assistant',
+    teams: 'teams',
+    workflows: 'workflows'
+  };
+  const featKey = ROUTE_FEATURE_MAP[id];
+  const tFeatures = (State.me && State.me.tenant && State.me.tenant.features) || {};
+  if (!isPlatformAdmin() && featKey && tFeatures[featKey] === false) {
+    onRoute();
+  }
 }
 
 function renderPhoneNumberRequiredScreen(root, featureName) {
@@ -1001,14 +1267,14 @@ function renderShell() {
   root.removeAttribute('aria-busy');
   const t = State.me.tenant, u = State.me.user;
 
-  const isPlatformAdmin = ['admin', 'super_admin', 'owner'].includes(u.role);
+  const adminUser = isPlatformAdmin();
   const mainRoutes = getVisibleRoutes().filter((r) => r.id !== 'settings');
 
   const expandSidebarIfCollapsed = () => {
     const shell = $('.shell');
     if (shell && shell.classList.contains('side-collapsed')) {
       shell.classList.remove('side-collapsed');
-      try { localStorage.setItem('seevora_side_collapsed', '0'); } catch (_) {}
+      try { localStorage.setItem('seevora_side_collapsed', '0'); } catch (_) { }
       return true;
     }
     return false;
@@ -1017,20 +1283,36 @@ function renderShell() {
   const nav = el('nav', { class: 'nav' }, [
     el('div', { class: 'nav-list' }, mainRoutes.map((r) => {
       const isVoiceRoute = ['inbound', 'campaigns', 'recordings', 'talk'].includes(r.id);
-      const isLocked = !isPlatformAdmin && !hasActiveTelephony() && isVoiceRoute;
+      const isFeatureDisabled = !adminUser && (r.disabled === true);
+      const isPhoneLocked = !adminUser && !hasActiveTelephony() && isVoiceRoute;
+      const isLocked = isFeatureDisabled || isPhoneLocked;
       const lockBadge = isLocked ? '<span class="nav-icon-lock-badge"><svg width="7.5" height="7.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' : '';
+
+      const linkClasses = ['nav-link'];
+      if (isLocked) linkClasses.push('nav-locked');
+      if (isFeatureDisabled) linkClasses.push('nav-feature-disabled');
+
+      const titleAttr = isFeatureDisabled
+        ? `${r.label} (Disabled by Administrator)`
+        : (isPhoneLocked ? `${r.label} (Phone number required)` : r.label);
+
+      const children = [
+        el('span', { class: 'nav-icon-wrap', html: navIcon(r.icon) + lockBadge }),
+        el('span', { class: 'nav-label' }, r.label)
+      ];
+      if (isFeatureDisabled) {
+        children.push(el('span', { class: 'nav-lock-pill' }, 'Locked'));
+      }
+
       return el('a', {
-        class: 'nav-link' + (isLocked ? ' nav-locked' : ''),
+        class: linkClasses.join(' '),
         href: r.href || ('#/' + r.id),
         'data-route': r.id,
-        title: isLocked ? `${r.label} (Phone number required)` : r.label,
+        title: titleAttr,
         onclick: () => {
           expandSidebarIfCollapsed();
         }
-      }, [
-        el('span', { class: 'nav-icon-wrap', html: navIcon(r.icon) + lockBadge }),
-        el('span', { class: 'nav-label' }, r.label)
-      ]);
+      }, children);
     }))
   ]);
 
@@ -1049,7 +1331,7 @@ function renderShell() {
   ]);
   const brandMeta = el('div', { class: 'side-brand-meta' }, [
     el('span', { class: 'side-brand-name' }, 'SEEVORA'),
-    el('span', { class: 'side-brand-sub' }, isPlatformAdmin ? 'ADMIN CONSOLE' : 'VOICE PLATFORM')
+    el('span', { class: 'side-brand-sub' }, adminUser ? 'ADMIN CONSOLE' : 'VOICE PLATFORM')
   ]);
   const collapseToggle = el('button', {
     class: 'side-collapse-btn', title: 'Toggle Sidebar Width', type: 'button',
@@ -1157,10 +1439,24 @@ async function mountClerkUserButton() {
 }
 
 async function exitImpersonation() {
-  await api('/api/auth/impersonation/exit', { method: 'POST', body: {} });
-  State.me = await api('/api/me');
+  try {
+    await api('/api/auth/impersonation/exit', { method: 'POST', body: {} });
+  } catch (err) {
+    console.warn('Exit impersonation note:', (err && err.message) || err);
+  }
+  document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
+  resetData();
+  try {
+    State.me = await api('/api/me');
+  } catch (_) {
+    if (State.me) State.me.impersonation = null;
+  }
+  if (State.me && State.me.impersonation) {
+    State.me.impersonation = null;
+  }
   renderShell();
-  toast('Returned to super admin.', 'ok');
+  goto('admin');
+  toast('Returned to admin view.', 'ok');
 }
 
 async function doLogout() {
@@ -1187,12 +1483,15 @@ async function doLogout() {
    =========================================================================== */
 function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-  const isPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
-  if (isPlatformAdmin) {
+  const adminMode = isPlatformAdmin();
+  if (adminMode) {
+    if (hash === 'teams') {
+      return 'admin';
+    }
     if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
       return 'overview';
     }
-    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
+    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'features', 'workflows', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'dograh', 'dograh-flows', 'kb', 'knowledge-base', 'crm-webhooks'];
     if (hash && adminAllowed.includes(hash)) {
       return hash;
     }
@@ -1214,7 +1513,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -1243,8 +1542,27 @@ function onRoute() {
   view.appendChild(wrap);
 
   const u = (State.me && State.me.user) || {};
-  const isPlatformAdmin = ['admin', 'super_admin', 'owner'].includes(u.role);
-  if (!isPlatformAdmin && !hasActiveTelephony() && ['inbound', 'campaigns', 'recordings', 'talk'].includes(id)) {
+  const adminMode = isPlatformAdmin();
+  // Check client feature disablement by admin
+  const ROUTE_FEATURE_MAP = {
+    inbound: 'inbound',
+    campaigns: 'campaigns',
+    recordings: 'recordings',
+    'crm-pipeline': 'crmPipeline',
+    agents: 'agents',
+    talk: 'talk',
+    assistant: 'assistant',
+    teams: 'teams',
+    workflows: 'workflows'
+  };
+  const featKey = ROUTE_FEATURE_MAP[id];
+  const tFeatures = (State.me && State.me.tenant && State.me.tenant.features) || {};
+  if (!adminMode && featKey && tFeatures[featKey] === false) {
+    renderFeatureDisabledScreen(wrap, r ? r.label : id, featKey);
+    return;
+  }
+
+  if (!adminMode && !hasActiveTelephony() && ['inbound', 'campaigns', 'recordings', 'talk'].includes(id)) {
     renderPhoneNumberRequiredScreen(wrap, r ? r.label : id);
     return;
   }
@@ -1253,6 +1571,7 @@ function onRoute() {
     assistant: viewAssistant,
     inbound: viewInbound,
     agents: viewAgents,
+    teams: viewTeams,
     'ai-creator': viewOnboarding,
     onboarding: viewOnboarding,
     talk: viewTalk,
@@ -1263,10 +1582,14 @@ function onRoute() {
     billing: viewBilling,
     support: viewSupport,
     admin: viewAdmin,
+    features: viewSettings,
+    workflows: viewSettings,
     settings: viewSettings,
     kb: () => { location.hash = '#/settings?tab=knowledge-base'; },
     'knowledge-base': () => { location.hash = '#/settings?tab=knowledge-base'; },
     'crm-webhooks': () => { location.hash = '#/settings?tab=crm-webhooks'; },
+    dograh: () => { location.hash = '#/settings?tab=dograh'; },
+    'dograh-flows': () => { location.hash = '#/settings?tab=dograh'; },
     presets: () => { goto('agents'); },
     studio: () => { goto('talk'); },
     demos: () => { goto('agents'); },
@@ -1313,7 +1636,14 @@ async function openMakeCallModal(prefillNumber) {
     el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')')
   ));
 
-  // 3. Clean dial row with +91 prefix
+  // 3. Clean dial row with +91 prefix + Optional Recipient Name
+  const callerNameI = el('input', {
+    type: 'text',
+    id: 'modal_dial_name',
+    placeholder: 'e.g. Rajesh Verma (auto-detected if in CRM)',
+    style: 'width:100%;height:42px;padding:9px 14px;background:rgba(255,255,255,0.9);border:1px solid rgba(203,213,225,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;'
+  });
+
   const numI = el('input', {
     type: 'tel',
     id: 'modal_dial_num',
@@ -1334,21 +1664,25 @@ async function openMakeCallModal(prefillNumber) {
 
   const body = el('div', { class: 'make-call-modal' }, [
     el('p', { class: 'soft', style: 'margin-bottom:16px;font-size:.88rem;line-height:1.45;' },
-      'Place a live outbound phone call from your dedicated business line (+91 80715 82519). The chosen AI voice receptionist will greet the recipient and converse naturally.'
+      'Place a live outbound phone call from your dedicated business line (+91 80715 82519). The call will appear immediately in your Dashboard Live Call Locator.'
     ),
-    el('div', { style: 'margin-bottom:16px;' }, [
+    el('div', { style: 'margin-bottom:14px;' }, [
       el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Select AI Voice Agent'),
       agentSelect
     ]),
-    el('div', { style: 'margin-bottom:16px;' }, [
+    el('div', { style: 'margin-bottom:14px;' }, [
       el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Recipient Mobile Number (+91)'),
       dialRow
+    ]),
+    el('div', { style: 'margin-bottom:16px;' }, [
+      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Recipient / Caller Name (Shown on Live Locator)'),
+      callerNameI
     ]),
     el('div', { class: 'sv-modal-notice' }, [
       el('span', { html: uiIcon('phone', 16), style: 'color:#0d5d41;flex-shrink:0;margin-top:2px;' }),
       el('div', {}, [
         el('strong', { style: 'color:#0f172a;display:block;margin-bottom:2px;' }, 'Live Telephony Call'),
-        el('span', { style: 'color:#475569;' }, 'This connects an instant outbound call from +91 80715 82519. The chosen AI voice receptionist greets the recipient upon answer.')
+        el('span', { style: 'color:#475569;' }, 'This connects an instant outbound call from +91 80715 82519. Track, transfer, or end the call anytime from the Dashboard Live Locator.')
       ])
     ])
   ]);
@@ -1360,15 +1694,17 @@ async function openMakeCallModal(prefillNumber) {
     confirmKind: 'primary',
     onConfirm: async () => {
       const num = (numI.value || '').replace(/\D/g, '');
+      const callerName = (callerNameI.value || '').trim();
       if (num.length !== 10) {
         toast('Enter a valid 10-digit Indian mobile number.', 'err');
         numI.focus();
         throw new Error('Invalid mobile number');
       }
       try {
-        await api('/api/telephony/dial', { method: 'POST', body: { number: num, confirm: true, agentId: agentSelect.value } });
-        toast('Outbound call placed to +91 ' + num + '!', 'ok');
+        await api('/api/telephony/dial', { method: 'POST', body: { number: num, callerName, confirm: true, agentId: agentSelect.value } });
+        toast('Outbound call placed to ' + (callerName ? callerName + ' (+91 ' + num + ')' : '+91 ' + num) + '!', 'ok');
         State.loaded.telephony = false;
+        if (typeof refreshDashboardLiveLocator === 'function') refreshDashboardLiveLocator();
       } catch (ex) {
         if (ex.status === 400 && ex.data && ex.data.code === 'needs_confirm') {
           toast('Confirmation required. Retrying call...', 'warn');
@@ -1713,7 +2049,7 @@ function enrichVoiceMetrics(m) {
   }
 
   const recs = (m.periodRecs && m.periodRecs.length ? m.periodRecs : m.recs) || [];
-  
+
   // Real Hourly Distribution from actual calls
   const hours = new Array(17).fill(0);
   recs.forEach(r => {
@@ -1745,11 +2081,12 @@ function enrichVoiceMetrics(m) {
       const o = (r.outcome || '').toLowerCase();
       const handed = o.includes('transfer') || o.includes('escalat');
       const callerNumber = r.phoneNumber || r.calledNumber || r.callerNumber || '+918071582519';
+      const callerDisplay = r.callerName ? `${r.callerName} (${callerNumber})` : callerNumber;
       const topicName = r.agentName || r.summary || (r.keyTopics && r.keyTopics[0]) || 'Customer Support';
       return {
         time: isNaN(d.getTime()) ? 'Just now' : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase(),
         topic: topicName.length > 28 ? topicName.slice(0, 26) + '...' : topicName,
-        caller: callerNumber,
+        caller: callerDisplay,
         durStr: sec >= 60 ? '+' + Math.floor(sec / 60) + 'm ' + (sec % 60) + 's' : '+0m ' + sec + 's',
         status: handed ? 'Handed to a person' : 'Resolved',
         isHanded: handed,
@@ -2107,8 +2444,8 @@ function renderVoiceDashboard(root, opts) {
   const heroInfo = el('div', { class: 'aria-hero-info' }, [
     (!isAgency && !hasActiveTelephony()
       ? el('div', { class: 'aria-live-badge', style: 'background:rgba(234,179,8,0.15);color:#B45309;' }, [
-          el('span', { class: 'aria-live-dot', style: 'background:#B45309;' }), 'NUMBER REQUIRED'
-        ])
+        el('span', { class: 'aria-live-dot', style: 'background:#B45309;' }), 'NUMBER REQUIRED'
+      ])
       : el('div', { class: 'aria-live-badge' }, [el('span', { class: 'aria-live-dot' }), 'LIVE NOW'])),
     el('h1', { class: 'aria-headline' }, [
       el('span', { id: 'sv-kpi-calls-val' }, String(opts.callsToday != null ? opts.callsToday : '24')), ' conversations, ',
@@ -2132,11 +2469,15 @@ function renderVoiceDashboard(root, opts) {
       ])
     ]),
     el('div', { class: 'aria-balance-chip', style: isAgency ? 'cursor:pointer;' : '', onclick: () => isAgency ? goto('billing') : null }, [
-      el('span', { style: 'opacity:0.8;' }, 'VOICE BALANCE:'), balValEl, eyeBtn,
-      el('span', { style: 'margin-left:6px;opacity:0.7;' }, `• ${opts.channelsCount || 10} Channels Active` + (isAgency ? ' · Top up →' : ''))
+      el('span', { style: 'font-weight:700;color:#0b5d41;' }, 'VOICE BALANCE:'), balValEl, eyeBtn,
+      el('span', { style: 'margin-left:6px;font-weight:600;color:#18533c;' }, `• ${opts.channelsCount || 10} Channels Active` + (isAgency ? ' · Top up →' : ''))
     ])
   ]);
   dash.appendChild(el('section', { class: 'aria-hero' }, [gaugeCard, heroInfo]));
+
+  // Real-Time Live Call Locator & Active AI Agent Control Center
+  const liveLocatorHost = el('section', { class: 'aria-live-locator', id: 'sv-live-locator-host' });
+  dash.appendChild(liveLocatorHost);
 
   const waveStage = el('div', { class: 'aria-wave-stage', id: 'sv-chart-bars-host' });
   dash.appendChild(el('section', { class: 'aria-wave-section' }, [
@@ -2164,6 +2505,7 @@ function renderVoiceDashboard(root, opts) {
 
   paintAriaLists(dash, opts, () => timeDropdown.value);
   triggerVoiceDashboardAnimations(dash, opts);
+  initDashboardLiveLocator(dash, () => timeDropdown.value);
 }
 
 function paintAriaLists(dash, m, getPeriod) {
@@ -2212,8 +2554,17 @@ function paintAriaLists(dash, m, getPeriod) {
           class: 'aria-recent-row',
           onclick: () => {
             if (c.rawRec && typeof renderDrawer === 'function') {
-              modal('Voice Call Recording & Transcript — ' + c.caller, renderDrawer(c.rawRec, () => syncVoiceDashboardData(getPeriod())));
-            } else goto('recordings');
+              modal({
+                title: 'Voice Call Transcript & Recording — ' + c.caller,
+                body: renderDrawer(c.rawRec, () => syncVoiceDashboardData(getPeriod())),
+                confirmText: 'Close',
+                cancelText: null,
+                wide: true,
+                onConfirm: async () => { }
+              });
+            } else {
+              goto('recordings');
+            }
           }
         }, [
           el('span', { class: 'aria-recent-time' }, c.time),
@@ -2253,9 +2604,473 @@ async function syncVoiceDashboardData(period = 'today') {
     if (!dash) return;
     paintAriaLists(dash, metrics, () => period);
     triggerVoiceDashboardAnimations(dash, metrics);
+    if (typeof refreshDashboardLiveLocator === 'function') refreshDashboardLiveLocator();
   } catch (err) {
     console.warn('Dashboard live sync error:', err);
   }
+}
+
+/* ===========================================================================
+   LIVE CALL LOCATOR & ACTIVE AI AGENT CONTROL CENTER (Dashboard Real-Time Radar)
+   =========================================================================== */
+let _liveLocatorPollTimer = null;
+let _liveLocatorTickTimer = null;
+let _lastLiveLocatorState = null;
+
+function formatLiveCallTimer(sec) {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m < 10 ? '0' : ''}${m}:${r < 10 ? '0' : ''}${r}`;
+}
+
+async function refreshDashboardLiveLocator() {
+  const host = document.getElementById('sv-live-locator-host');
+  if (!host) return;
+  try {
+    const res = await api('/api/calls/live');
+    _lastLiveLocatorState = res;
+    renderLiveLocatorDOM(host, res);
+    // Keep hero "X in progress." headline in sync with live calls count
+    const activeKpiEl = document.getElementById('sv-kpi-active-val');
+    if (activeKpiEl) {
+      const targetStr = String(res.activeCallsCount != null ? res.activeCallsCount : 0);
+      if (activeKpiEl.textContent !== targetStr) {
+        activeKpiEl.textContent = targetStr;
+        activeKpiEl._currentAnimTarget = targetStr;
+      }
+    }
+  } catch (err) {
+    console.warn('Live Call Locator poll warning:', err);
+  }
+}
+
+function initDashboardLiveLocator(dash, getPeriod) {
+  if (_liveLocatorPollTimer) { clearInterval(_liveLocatorPollTimer); _liveLocatorPollTimer = null; }
+  if (_liveLocatorTickTimer) { clearInterval(_liveLocatorTickTimer); _liveLocatorTickTimer = null; }
+
+  refreshDashboardLiveLocator();
+
+  // Poll backend every 3.5s while on the Dashboard
+  _liveLocatorPollTimer = setInterval(() => {
+    const host = document.getElementById('sv-live-locator-host');
+    if (!host || !document.body.contains(host)) {
+      clearInterval(_liveLocatorPollTimer);
+      _liveLocatorPollTimer = null;
+      return;
+    }
+    refreshDashboardLiveLocator();
+  }, 3500);
+
+  // Smooth 1-second duration ticker for active calls
+  _liveLocatorTickTimer = setInterval(() => {
+    const host = document.getElementById('sv-live-locator-host');
+    if (!host || !document.body.contains(host)) {
+      clearInterval(_liveLocatorTickTimer);
+      _liveLocatorTickTimer = null;
+      return;
+    }
+    host.querySelectorAll('[data-live-started-at]').forEach((timerEl) => {
+      const iso = timerEl.getAttribute('data-live-started-at');
+      if (!iso) return;
+      const elapsed = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+      timerEl.textContent = formatLiveCallTimer(elapsed);
+    });
+  }, 1000);
+}
+
+function renderLiveLocatorDOM(host, data) {
+  const liveCalls = (data && Array.isArray(data.liveCalls)) ? data.liveCalls : [];
+  const activeCount = liveCalls.length;
+  const activeAgentsCount = (data && data.activeAgentsCount != null) ? data.activeAgentsCount : activeCount;
+  const totalAgentsCount = (data && data.totalAgentsCount) || (State.agents && State.agents.length) || 1;
+  const sharedLine = (data && data.sharedLine) || '+91 80715 82519';
+  const allEmployees = (data && Array.isArray(data.employees)) ? data.employees : [];
+
+  host.innerHTML = '';
+
+  const eqWaveBars = el('span', { class: 'sv-live-eq' + (activeCount > 0 ? ' active' : '') }, [
+    el('i'), el('i'), el('i'), el('i'), el('i')
+  ]);
+
+  const headerBar = el('div', { class: 'aria-section-head sv-locator-header' }, [
+    el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
+      el('h2', { class: 'aria-section-title' }, 'Live calls'),
+      el('span', { class: 'sv-locator-count-pill' + (activeCount > 0 ? ' active' : '') }, [
+        eqWaveBars,
+        el('span', {}, activeCount > 0
+          ? `${activeCount} Live • ${activeAgentsCount} of ${totalAgentsCount} AI Agent${totalAgentsCount === 1 ? '' : 's'} Talking`
+          : `0 Active • ${totalAgentsCount} AI Agent${totalAgentsCount === 1 ? '' : 's'} Standing By`)
+      ])
+    ]),
+    el('span', { class: 'sv-locator-line-pill' }, `Line: ${sharedLine}`)
+  ]);
+
+  host.appendChild(headerBar);
+
+  if (activeCount === 0) {
+    const emptyRow = el('div', { class: 'sv-locator-empty' }, [
+      el('span', { class: 'aria-live-dot', style: 'opacity:0.55;' }),
+      el('span', { class: 'sv-locator-empty-ttl' }, 'No active calls right now'),
+      el('span', { class: 'sv-locator-empty-desc' },
+        `— Automatically shows any incoming call on ${sharedLine} or auto-dispatched campaign / lead call in real time.`
+      )
+    ]);
+    host.appendChild(emptyRow);
+    return;
+  }
+
+  const list = el('div', { class: 'aria-recent-list sv-locator-grid' });
+  liveCalls.forEach((call) => {
+    const isInbound = String(call.direction || 'inbound').toLowerCase() === 'inbound';
+    const isAutoDispatch = String(call.dispatchSource || '').toLowerCase().includes('auto');
+    const assignedEmp = (call.assignedEmployees && call.assignedEmployees[0]) || null;
+
+    const row = el('div', {
+      class: 'aria-recent-row sv-live-call-card',
+      style: 'cursor:pointer;',
+      title: 'Click to open Live Call Details, Real-Time Transcript & Decline Call options',
+      onclick: () => openLiveCallMonitorModal(call, allEmployees, () => {
+        refreshDashboardLiveLocator();
+        syncVoiceDashboardData('today');
+      })
+    }, [
+      // 1. Live Timer & Status Column (matches aria-recent-time)
+      el('div', { class: 'sv-lcc-time-col' }, [
+        el('div', { class: 'sv-lcc-timer-box' }, [
+          el('span', { class: 'sv-lcc-timer-dot' }),
+          el('span', {
+            class: 'sv-lcc-timer-val',
+            'data-live-started-at': call.startedAt
+          }, formatLiveCallTimer(call.durationSeconds || 1))
+        ]),
+        el('span', { class: 'sv-lcc-dir-pill ' + (isInbound ? 'inbound' : 'outbound') },
+          isInbound ? 'Inbound' : (isAutoDispatch ? 'Auto-Call' : 'Outbound')
+        )
+      ]),
+
+      // 2. Agent, Caller Name, Phone Number & Live Snippet Column (matches aria-recent-topic)
+      el('div', { class: 'aria-recent-topic sv-lcc-main-col' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
+          el('span', { class: 'sv-lcc-caller-name' }, call.callerName || 'Unknown Caller'),
+          el('span', { class: 'sv-lcc-phone' }, call.formattedPhone || call.phoneNumber),
+          el('span', { class: 'aria-recent-sub' }, `· Talking with ${call.agentName || 'Seevora AI Voice Receptionist'}`),
+          assignedEmp ? el('span', { class: 'aria-recent-sub' }, `· Backup: ${assignedEmp.name}`) : null
+        ].filter(Boolean)),
+        el('div', { class: 'aria-recent-sub sv-lcc-snippet' },
+          call.liveSnippet || `${call.dispatchSource || (isInbound ? 'Incoming Call' : 'Outbound Call')} — Click to inspect live transcript & Decline call`
+        )
+      ]),
+
+      // 3. Action Link Column (matches aria-recent-status)
+      el('div', { class: 'aria-recent-status resolved sv-lcc-controls' }, [
+        el('span', { class: 'sv-live-eq active', style: 'margin-right:6px;' }, [el('i'), el('i'), el('i'), el('i')]),
+        el('span', {}, 'Live transcript & Decline →')
+      ])
+    ]);
+
+    list.appendChild(row);
+  });
+
+  host.appendChild(list);
+}
+
+function openEditLiveCallerNameModal(call, onDone) {
+  const nameI = el('input', {
+    class: 'input',
+    type: 'text',
+    value: (call.callerName && call.callerName !== 'Unknown Caller') ? call.callerName : '',
+    placeholder: 'e.g. Rajesh Verma / Dr. Sunita Sharma',
+    style: 'width:100%;height:44px;padding:10px 14px;border-radius:12px;border:1.5px solid rgba(13,93,65,0.35);font-weight:600;'
+  });
+
+  const body = el('div', {}, [
+    el('p', { class: 'soft', style: 'margin-bottom:14px;font-size:0.86rem;' },
+      `Save the caller's name for ${call.formattedPhone || call.phoneNumber}. This updates both the Live Call Locator and your CRM Contacts automatically.`
+    ),
+    el('label', { style: 'display:block;margin-bottom:6px;font-weight:700;font-size:0.78rem;color:#1a2c24;text-transform:uppercase;' }, 'Caller / Customer Full Name'),
+    nameI
+  ]);
+
+  modal({
+    title: `Identify Caller — ${call.formattedPhone || call.phoneNumber}`,
+    body,
+    confirmText: 'Save Caller Name',
+    confirmKind: 'primary',
+    onConfirm: async () => {
+      const val = (nameI.value || '').trim();
+      if (!val) { toast('Please enter a name', 'err'); throw new Error('missing name'); }
+      await api('/api/calls/live/action', {
+        method: 'POST',
+        body: { action: 'update_name', callId: call.id, callerName: val }
+      });
+      toast(`Caller identified as "${val}" and saved to CRM!`, 'ok');
+      if (onDone) onDone();
+    }
+  });
+  setTimeout(() => nameI.focus(), 100);
+}
+
+function openLiveCallTransferModal(call, employees, onDone) {
+  const empList = (Array.isArray(call.assignedEmployees) && call.assignedEmployees.length > 0)
+    ? call.assignedEmployees
+    : (Array.isArray(employees) ? employees : []);
+
+  const empSelect = el('select', {
+    class: 'input',
+    style: 'width:100%;height:44px;padding:8px 14px;border-radius:12px;border:1.5px solid rgba(13,93,65,0.35);font-weight:600;color:#0F172A;background:#fff;'
+  }, empList.length > 0
+    ? empList.map((e) => el('option', { value: e.id }, `${e.name} — ${e.department || 'Team'}${e.phone ? ' (' + e.phone + ')' : ''}`))
+    : [el('option', { value: '' }, 'Default Available Team Specialist')]
+  );
+
+  const reasonI = el('input', {
+    class: 'input',
+    type: 'text',
+    value: `Live call transfer from Dashboard (${call.callerName || call.formattedPhone})`,
+    style: 'width:100%;height:42px;padding:8px 14px;border-radius:12px;border:1px solid rgba(203,213,225,0.9);font-weight:500;'
+  });
+
+  const liveDialChk = el('input', { type: 'checkbox', style: 'width:16px;height:16px;accent-color:#0d5d41;' });
+
+  const body = el('div', {}, [
+    el('div', { style: 'padding:12px 14px;border-radius:12px;background:rgba(13,93,65,0.06);border:1px solid rgba(13,93,65,0.16);margin-bottom:14px;font-size:0.84rem;' }, [
+      el('div', { style: 'font-weight:700;color:#0d5d41;margin-bottom:3px;' }, `Active Call: ${call.callerName} (${call.formattedPhone || call.phoneNumber})`),
+      el('div', { style: 'color:#2c4238;' }, `Currently talking with AI Agent: ${call.agentName}`)
+    ]),
+    el('div', { style: 'margin-bottom:14px;' }, [
+      el('label', { style: 'display:block;margin-bottom:6px;font-weight:700;font-size:0.78rem;color:#1a2c24;text-transform:uppercase;' }, 'Select Team Employee to Receive Call'),
+      empSelect
+    ]),
+    el('div', { style: 'margin-bottom:14px;' }, [
+      el('label', { style: 'display:block;margin-bottom:6px;font-weight:700;font-size:0.78rem;color:#1a2c24;text-transform:uppercase;' }, 'Handoff Context / Note for Employee'),
+      reasonI
+    ]),
+    el('label', { style: 'display:flex;align-items:center;gap:9px;cursor:pointer;font-size:0.84rem;font-weight:600;color:#1a2c24;' }, [
+      liveDialChk,
+      el('span', {}, 'Also place a real carrier ring to the employee’s mobile number via VoBiz (+91 80715 82519)')
+    ])
+  ]);
+
+  modal({
+    title: 'Transfer Live Call to Team Member',
+    body,
+    confirmText: '📲 Transfer Live Call Now',
+    confirmKind: 'primary',
+    onConfirm: async () => {
+      const res = await api('/api/calls/live/action', {
+        method: 'POST',
+        body: {
+          action: 'transfer',
+          callId: call.id,
+          employeeId: empSelect.value,
+          reason: reasonI.value,
+          placeLiveCall: liveDialChk.checked
+        }
+      });
+      toast(res.message || 'Live call transferred to team member!', 'ok');
+      if (onDone) onDone();
+    }
+  });
+}
+
+let _liveModalPollId = null;
+let _liveModalTickId = null;
+
+function openLiveCallMonitorModal(initialCall, employees, onDone) {
+  if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+  if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+
+  let currentCall = Object.assign({}, initialCall);
+  const isInbound = String(currentCall.direction || 'inbound').toLowerCase() === 'inbound';
+  const assignedEmp = (currentCall.assignedEmployees && currentCall.assignedEmployees[0]) || null;
+
+  const statusBadgeEl = el('span', { class: 'sv-lcc-status-badge', id: 'sv-modal-live-status' }, [
+    el('span', { class: 'sv-live-eq active' }, [el('i'), el('i'), el('i'), el('i')]),
+    el('span', {}, `LIVE • ${formatLiveCallTimer(currentCall.durationSeconds || 1)}`)
+  ]);
+
+  const callerTitleEl = el('div', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;' },
+    `${currentCall.callerName || 'Unknown Caller'} (${currentCall.formattedPhone || currentCall.phoneNumber})`
+  );
+
+  const transcriptBox = el('div', {
+    id: 'sv-modal-live-transcript-box',
+    style: 'min-height:220px;max-height:320px;overflow-y:auto;padding:16px;border-radius:14px;background:#f8faf9;border:1px solid rgba(13,93,65,0.16);display:flex;flex-direction:column;gap:10px;margin-bottom:16px;'
+  });
+
+  function paintTranscriptTurns(callObj) {
+    const turns = parseTurnsFromTranscript(callObj.transcript || '');
+    transcriptBox.innerHTML = '';
+    if (turns.length > 0) {
+      turns.forEach((t) => {
+        transcriptBox.appendChild(el('div', {
+          style: `align-self:${t.isAgent ? 'flex-start' : 'flex-end'};max-width:85%;padding:10px 14px;border-radius:12px;font-size:0.86rem;line-height:1.48;background:${t.isAgent ? '#e7f4ed' : '#ffffff'};border:1px solid ${t.isAgent ? 'rgba(13,93,65,0.24)' : 'rgba(0,0,0,0.09)'};color:#14221c;box-shadow:0 2px 6px rgba(0,0,0,0.02);`
+        }, [
+          el('div', { style: 'font-size:0.7rem;font-weight:800;text-transform:uppercase;color:#0d5d41;margin-bottom:3px;' },
+            t.isAgent ? `🤖 ${callObj.agentName || 'AI Voice Agent'}` : `👤 ${callObj.callerName || callObj.formattedPhone || 'Caller'}`
+          ),
+          el('div', {}, t.text)
+        ]));
+      });
+      transcriptBox.scrollTop = transcriptBox.scrollHeight;
+    } else {
+      transcriptBox.appendChild(el('div', { class: 'muted', style: 'text-align:center;padding:34px 18px;font-size:0.86rem;' },
+        callObj.liveSnippet || 'Call connected. Listening for live speech turns between AI Agent and caller...'
+      ));
+    }
+  }
+
+  paintTranscriptTurns(currentCall);
+
+  const declineBtn = el('button', {
+    type: 'button',
+    class: 'sv-lcc-btn decline',
+    style: 'padding:10px 18px;font-size:0.84rem;font-weight:800;border-radius:12px;',
+    onclick: async (ev) => {
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Declining / Ending Call...';
+      try {
+        const r = await api('/api/calls/live/action', {
+          method: 'POST',
+          body: { action: 'decline', callId: currentCall.id }
+        });
+        toast(r.message || `Call with ${currentCall.callerName || currentCall.formattedPhone} declined/ended.`, 'ok');
+        if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+        if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+        const host = $('#modal-host');
+        if (host) { host.classList.add('hide'); host.innerHTML = ''; }
+        if (onDone) onDone();
+      } catch (err) {
+        toast(err.message || 'Could not end call', 'err');
+        btn.disabled = false;
+        btn.textContent = '🔴 Decline / End Call';
+      }
+    }
+  }, '🔴 Decline / End Call');
+
+  const transferBtn = el('button', {
+    type: 'button',
+    class: 'sv-lcc-btn transfer',
+    style: 'padding:10px 16px;font-size:0.83rem;font-weight:750;border-radius:12px;',
+    onclick: () => {
+      if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+      if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+      openLiveCallTransferModal(currentCall, employees, onDone);
+    }
+  }, assignedEmp ? `📲 Transfer to ${assignedEmp.name}` : '📲 Transfer to Team Employee');
+
+  const detailsGrid = el('div', {
+    style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:18px;padding:14px 0;margin-bottom:16px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);'
+  }, [
+    el('div', {}, [
+      el('div', { style: 'font-size:0.68rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.05em;' }, 'AI Voice Agent'),
+      el('div', { style: 'font-size:0.92rem;font-weight:800;color:#0d5d41;margin-top:3px;' }, currentCall.agentName || 'Seevora AI Voice Receptionist')
+    ]),
+    el('div', {}, [
+      el('div', { style: 'font-size:0.68rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.05em;' }, isInbound ? 'Caller Number' : 'Dialed Number'),
+      el('div', { style: 'font-size:0.92rem;font-weight:800;color:#14221c;font-family:var(--mono,monospace);margin-top:3px;' }, currentCall.formattedPhone || currentCall.phoneNumber)
+    ]),
+    el('div', {}, [
+      el('div', { style: 'font-size:0.68rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.05em;' }, 'Call Type & Route'),
+      el('div', { style: 'font-size:0.86rem;font-weight:700;color:#14221c;margin-top:3px;' }, currentCall.dispatchSource || (isInbound ? 'Incoming Call' : 'Outbound Call'))
+    ]),
+    el('div', {}, [
+      el('div', { style: 'font-size:0.68rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.05em;' }, 'Assigned Team Backup'),
+      el('div', { style: 'font-size:0.86rem;font-weight:700;color:#14221c;margin-top:3px;' }, assignedEmp ? `${assignedEmp.name} (${assignedEmp.department || 'Team'})` : 'Autonomous AI Resolution')
+    ])
+  ]);
+
+  const body = el('div', {}, [
+    el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:0 0 12px 0;' }, [
+      el('div', {}, [
+        callerTitleEl,
+        el('div', { style: 'font-size:0.8rem;color:#2c4238;margin-top:3px;' },
+          `Name Source: ${currentCall.callerSource || 'CRM / Caller ID'} • Shared Line: ${currentCall.sharedLine || '+91 80715 82519'}`
+        )
+      ]),
+      statusBadgeEl
+    ]),
+    detailsGrid,
+    el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;' }, [
+      el('div', { style: 'font-weight:800;font-size:0.78rem;text-transform:uppercase;color:#1a2c24;letter-spacing:0.04em;' }, 'Live Streaming Call Transcript'),
+      el('span', { style: 'font-size:0.74rem;color:#0d5d41;font-weight:700;' }, '● Auto-syncing in real time')
+    ]),
+    transcriptBox,
+    el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(13,93,65,0.12);' }, [
+      el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'border:1px solid rgba(13,93,65,0.3);color:#0d5d41;font-weight:700;',
+        onclick: () => openEditLiveCallerNameModal(currentCall, onDone)
+      }, '✎ Edit Caller Name'),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        transferBtn,
+        declineBtn
+      ])
+    ])
+  ]);
+
+  modal({
+    title: `Live Call Details & Transcript — ${currentCall.agentName}`,
+    body,
+    confirmText: 'Close Window',
+    cancelText: null,
+    wide: true,
+    onConfirm: async () => {
+      if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+      if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+    }
+  });
+
+  // 1-second live timer inside modal
+  _liveModalTickId = setInterval(() => {
+    const badge = document.getElementById('sv-modal-live-status');
+    if (!badge || !document.body.contains(badge)) {
+      clearInterval(_liveModalTickId);
+      _liveModalTickId = null;
+      return;
+    }
+    if (currentCall.isEnded) return;
+    const elapsed = Math.max(1, Math.floor((Date.now() - new Date(currentCall.startedAt || Date.now()).getTime()) / 1000));
+    badge.innerHTML = `<span class="sv-live-eq active"><i></i><i></i><i></i><i></i></span><span>LIVE • ${formatLiveCallTimer(elapsed)}</span>`;
+  }, 1000);
+
+  // 2-second real-time transcript & call state poll while modal is open
+  _liveModalPollId = setInterval(async () => {
+    const box = document.getElementById('sv-modal-live-transcript-box');
+    if (!box || !document.body.contains(box)) {
+      clearInterval(_liveModalPollId);
+      _liveModalPollId = null;
+      return;
+    }
+    try {
+      const res = await api('/api/calls/live?callId=' + encodeURIComponent(currentCall.id));
+      if (res && res.selectedCall) {
+        const updated = res.selectedCall;
+        const prevTranscript = currentCall.transcript || '';
+        currentCall = updated;
+        callerTitleEl.textContent = `${currentCall.callerName || 'Unknown Caller'} (${currentCall.formattedPhone || currentCall.phoneNumber})`;
+        if ((updated.transcript || '') !== prevTranscript || (updated.liveSnippet || '') !== (currentCall.liveSnippet || '')) {
+          paintTranscriptTurns(updated);
+        }
+        if (updated.isEnded) {
+          const badge = document.getElementById('sv-modal-live-status');
+          if (badge) {
+            badge.style.background = '#f1f5f9';
+            badge.style.color = '#334155';
+            badge.style.borderColor = '#cbd5e1';
+            badge.textContent = `CALL ENDED (${formatLiveCallTimer(updated.durationSeconds || 0)})`;
+          }
+          declineBtn.disabled = true;
+          declineBtn.textContent = 'Call Ended';
+          clearInterval(_liveModalPollId);
+          _liveModalPollId = null;
+        }
+      }
+    } catch (_) { }
+  }, 2000);
 }
 
 
@@ -2388,7 +3203,7 @@ async function viewTenantOverview(root) {
     subtitle: 'Real-time call volume, voice minutes, and receptionists performance overview.',
     ...metrics
   });
-  ensureAgents().catch(() => {});
+  ensureAgents().catch(() => { });
 }
 
 function renderCallRow(number, timeStr, duration, outcome, hasAudio) {
@@ -2545,8 +3360,8 @@ async function viewAgents(root) {
       ]),
       isPlatformAdmin
         ? (currentCount >= maxWf
-            ? el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('billing') }, 'Upgrade Plan')
-            : el('a', { href: '#billing', class: 'muted', style: 'text-decoration:underline' }, 'Manage Quotas in Billing'))
+          ? el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('billing') }, 'Upgrade Plan')
+          : el('a', { href: '#billing', class: 'muted', style: 'text-decoration:underline' }, 'Manage Quotas in Billing'))
         : null
     ].filter(Boolean));
     root.appendChild(quotaBanner);
@@ -2999,9 +3814,39 @@ function agentCard(a) {
       ])
     ]),
     el('div', { class: 'ac-persona' }, a.persona || 'No persona set.'),
-    el('div', { class: 'ac-meta' }, [
-      did ? el('span', { class: 'tag' }, did) : el('span', { class: 'tag' }, 'no number'),
+    el('div', { class: 'ac-meta', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;' }, [
+      a.isPrimary
+        ? el('span', { class: 'tag', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.28);' }, '● Active on Shared Line (+91 80715 82519)')
+        : el('button', {
+          type: 'button',
+          class: 'btn btn-ghost btn-sm',
+          style: 'padding:3px 10px;font-size:0.74rem;border-radius:999px;border:1px solid rgba(13,93,65,0.28);color:#0d5d41;font-weight:700;',
+          onclick: async () => {
+            try {
+              await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
+              toast(a.name + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
+              await ensureAgents(true);
+              paintAgents();
+            } catch (err) {
+              toast(err.message || 'Could not activate agent on line', 'err');
+            }
+          }
+        }, 'Set Active on Line'),
+      el('span', { class: 'tag' }, did || '+91 80715 82519 (Shared DID)'),
       el('span', { class: 'tag' }, (tts.model || 'muga') + (isMuga ? ` (${tts.tone || 'excited'})` : ''))
+    ]),
+    el('div', { style: 'margin-top:8px;padding:8px 11px;border-radius:10px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.10);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:0.78rem;' }, [
+      el('div', { style: 'color:#1a2c24;font-weight:600;' },
+        (Array.isArray(a.assignedEmployees) && a.assignedEmployees.length > 0)
+          ? ('Assigned Staff (Call Handoff): ' + a.assignedEmployees.map((emp) => emp.name + (emp.phone ? ' (' + emp.phone + ')' : '')).join(', '))
+          : 'No employee assigned for human call handoff'
+      ),
+      el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'padding:2px 9px;font-size:0.73rem;color:#0d5d41;font-weight:700;',
+        onclick: () => goto('teams')
+      }, 'Manage in Teams →')
     ]),
     trainingStudio,
     el('div', { class: 'ac-actions' }, [
@@ -3339,7 +4184,7 @@ async function viewOnboarding(root) {
       if (window.Clerk && window.Clerk.user) {
         localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
         if (typeof window.Clerk.user.update === 'function') {
-          window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+          window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => { });
         }
       }
       await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
@@ -3535,13 +4380,13 @@ async function viewOnboarding(root) {
   }
 
   async function triggerAgentGeneration() {
-    api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => {});
+    api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
     if (State.me && State.me.tenant) State.me.tenant.onboardingCompleted = true;
     if (State.me && State.me.user) State.me.user.onboardingCompleted = true;
     if (window.Clerk && window.Clerk.user) {
       localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
       if (typeof window.Clerk.user.update === 'function') {
-        window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+        window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => { });
       }
     }
     container.innerHTML = '';
@@ -3765,7 +4610,7 @@ async function viewOnboarding(root) {
           if (window.Clerk && window.Clerk.user) {
             localStorage.setItem('seevora_onboarded_' + window.Clerk.user.id, 'true');
             if (typeof window.Clerk.user.update === 'function') {
-              window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => {});
+              window.Clerk.user.update({ unsafeMetadata: { onboardingCompleted: true } }).catch(() => { });
             }
           }
           await api('/api/tenant/onboarding-complete', { method: 'POST' }).catch(() => { });
@@ -4329,7 +5174,7 @@ async function viewTalk(root, customAgent) {
     if (postSpeakTimer) { clearTimeout(postSpeakTimer); postSpeakTimer = null; }
     // Hardware track silencing: disable audio packets directly at browser WebRTC layer (MediaRecorder encodes pure silence)
     if (micStream) {
-      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) {}
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = false; }); } catch (_) { }
     }
     // Wipe all pending recognition text buffers so zero speaker bleed leaks into user turns
     accumulatedFinalText = '';
@@ -4349,11 +5194,11 @@ async function viewTalk(root, customAgent) {
       if (liveUserBubble) { liveUserBubble.remove(); liveUserBubble = null; }
       // Re-enable microphone tracks so user speech is captured
       if (micStream) {
-        try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
+        try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) { }
       }
       // Restart Web Speech if Web Speech is active and Deepgram is not
       if (isListening && speechRec && !mediaRec) {
-        try { speechRec.start(); } catch (_) {}
+        try { speechRec.start(); } catch (_) { }
       }
       if (isListening && !isSpeaking) {
         setPhase('listening', `Listening (${sttLang === 'hi' ? 'Hindi' : 'English / Hinglish'})...`);
@@ -4392,7 +5237,7 @@ async function viewTalk(root, customAgent) {
     const allBotTexts = convo.filter(m => m.role === 'bot').map(m => (m.text || '').toLowerCase());
     const cleanLower = cleaned.toLowerCase();
     const cleanWords = cleanLower.split(/\s+/).filter(w => w.length >= 3);
-    
+
     const isBotEcho = allBotTexts.some(bt => {
       if (bt.includes(cleanLower) || cleanLower.includes(bt)) return true;
       if (cleanWords.length >= 2) {
@@ -4702,7 +5547,7 @@ async function viewTalk(root, customAgent) {
 
     // Ensure audio tracks start active
     if (micStream) {
-      try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) {}
+      try { micStream.getAudioTracks().forEach((t) => { t.enabled = true; }); } catch (_) { }
     }
 
     // 2. Connect Tier 1 Deepgram Nova Live Streaming WebSocket via /api/stt/stream
@@ -4714,7 +5559,7 @@ async function viewTalk(root, customAgent) {
 
         dgWs.onopen = () => {
           if (!isListening) {
-            try { dgWs.close(); } catch (_) {}
+            try { dgWs.close(); } catch (_) { }
             return;
           }
         };
@@ -4799,14 +5644,14 @@ async function viewTalk(root, customAgent) {
                 }
               }, 700);
             }
-          } catch (_) {}
+          } catch (_) { }
         };
 
         dgWs.onerror = (err) => {
           console.warn('Deepgram STT stream notice:', err);
           if (isListening) {
             if (mediaRec && mediaRec.state !== 'inactive') {
-              try { mediaRec.stop(); } catch (_) {}
+              try { mediaRec.stop(); } catch (_) { }
             }
             mediaRec = null;
             startWebSpeechFallback();
@@ -4816,7 +5661,7 @@ async function viewTalk(root, customAgent) {
         dgWs.onclose = () => {
           if (isListening) {
             if (mediaRec && mediaRec.state !== 'inactive') {
-              try { mediaRec.stop(); } catch (_) {}
+              try { mediaRec.stop(); } catch (_) { }
             }
             mediaRec = null;
             startWebSpeechFallback();
@@ -4864,7 +5709,7 @@ async function viewTalk(root, customAgent) {
 
         speechRec.onstart = () => {
           if (!isListening) {
-            try { speechRec.stop(); } catch (_) {}
+            try { speechRec.stop(); } catch (_) { }
             return;
           }
           if (!isSpeaking) {
@@ -4927,7 +5772,7 @@ async function viewTalk(root, customAgent) {
           if (isListening && speechRec && !micMuted && !isSpeaking) {
             setTimeout(() => {
               if (isListening && speechRec && !micMuted && !isSpeaking) {
-                try { speechRec.start(); } catch (_) {}
+                try { speechRec.start(); } catch (_) { }
               }
             }, 250);
           }
@@ -4946,19 +5791,19 @@ async function viewTalk(root, customAgent) {
     isSpeaking = false;
     muteMic();
     if (mediaRec && mediaRec.state !== 'inactive') {
-      try { mediaRec.stop(); } catch (_) {}
+      try { mediaRec.stop(); } catch (_) { }
     }
     mediaRec = null;
     if (micStream) {
-      try { micStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+      try { micStream.getTracks().forEach((t) => t.stop()); } catch (_) { }
       micStream = null;
     }
     if (dgWs) {
-      try { dgWs.close(); } catch (_) {}
+      try { dgWs.close(); } catch (_) { }
       dgWs = null;
     }
     if (speechRec) {
-      try { speechRec.stop(); } catch (_) {}
+      try { speechRec.stop(); } catch (_) { }
       speechRec = null;
     }
     sessionBtn.classList.remove('active');
@@ -5298,26 +6143,44 @@ function renderDrawer(rec, onUpdate) {
 
     if (rec.summary) {
       transcriptPanel.appendChild(el('div', { class: 'rec-summary-box' }, [
-        el('b', {}, 'Call Trace & Intent'),
-        document.createTextNode(rec.summary)
+        el('b', {}, 'Call Trace & Intent: '),
+        el('span', { class: 'rec-summary-text' }, rec.summary)
       ]));
     }
 
     if (turns.length) {
       const scroll = el('div', { class: 'rec-transcript-scroll' });
       turns.forEach((t) => {
-        scroll.appendChild(el('div', { class: 'rec-turn ' + (t.isAgent ? 'agent' : 'user') }, [
-          el('div', { class: 'rec-turn-role' }, t.role),
-          el('div', { class: 'rec-turn-text' }, t.text)
+        const roleLabel = t.isAgent ? 'AI Voice Receptionist' : 'Customer (Caller)';
+        const iconSvg = t.isAgent
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l2.4 6.8L21.2 11.2l-6.8 2.4L12 20.4l-2.4-6.8L2.8 11.2l6.8-2.4z"/></svg>'
+          : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+        scroll.appendChild(el('div', { class: 'rec-turn-row ' + (t.isAgent ? 'agent-row' : 'user-row') }, [
+          el('div', { class: 'rec-turn ' + (t.isAgent ? 'agent' : 'user') }, [
+            el('div', { class: 'rec-turn-role' }, [
+              el('span', { class: 'rec-turn-role-icon', html: iconSvg }),
+              el('span', {}, roleLabel)
+            ]),
+            el('div', { class: 'rec-turn-text' }, t.text)
+          ])
         ]));
       });
       transcriptPanel.appendChild(scroll);
     } else {
-      const emptyTranscript = el('div', { style: 'text-align:center;padding:24px 12px;color:var(--ink-dim)' }, [
-        el('div', { style: 'display:flex;justify-content:center;margin-bottom:8px;opacity:.5;color:var(--ink-dim)', html: navIcon('invoice') }),
-        el('p', { class: 'muted text-xs', style: 'margin-bottom:12px' }, 'No transcript cached yet for this call.'),
+      const emptyTranscript = el('div', {
+        class: 'rec-empty-transcript-state',
+        style: 'text-align:center;padding:36px 20px;border:1px dashed rgba(13,93,65,0.18);border-radius:12px;background:rgba(13,93,65,0.015);'
+      }, [
+        el('div', {
+          style: 'width:52px;height:52px;border-radius:14px;background:rgba(13,93,65,0.06);border:1px solid rgba(13,93,65,0.14);display:flex;align-items:center;justify-content:center;margin:0 auto 12px auto;color:#0d5d41;flex-shrink:0;',
+          html: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+        }),
+        el('div', { style: 'font-weight:700;font-size:0.86rem;color:#172820;margin-bottom:4px;' }, 'No Conversational Transcript Cached'),
+        el('p', { class: 'muted text-xs', style: 'margin-bottom:16px;max-width:320px;margin-left:auto;margin-right:auto;line-height:1.45;' }, 'Audio recording is captured on the telephony carrier. Generate an AI transcript with full speech turns and speaker diarization.'),
         el('button', {
-          class: 'btn btn-primary btn-sm',
+          class: 'btn btn-primary btn-sm flex items-center gap-2',
+          style: 'margin:0 auto;border-radius:999px;padding:7px 18px;font-size:0.80rem;font-weight:700;',
           onclick: async (e) => {
             const btn = e.target;
             btn.disabled = true;
@@ -5335,7 +6198,10 @@ function renderDrawer(rec, onUpdate) {
               btn.textContent = 'Retry Generation';
             }
           }
-        }, 'Generate Transcript')
+        }, [
+          el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l2.4 6.8L21.2 11.2l-6.8 2.4L12 20.4l-2.4-6.8L2.8 11.2l6.8-2.4z"/></svg>' }),
+          el('span', {}, 'Generate AI Transcript')
+        ])
       ]);
       transcriptPanel.appendChild(emptyTranscript);
     }
@@ -5420,16 +6286,16 @@ function renderDrawer(rec, onUpdate) {
     const outc = (rec.outcome || 'inquiry_handled').toLowerCase();
     const outcLabel = rec.outcomeLabel || (
       outc === 'appointment_booked' ? 'Appointment Booked' :
-      outc === 'interested' ? 'Interested Lead' :
-      outc === 'callback_requested' ? 'Callback Requested' :
-      outc === 'not_interested' ? 'Not Interested' :
-      outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
+        outc === 'interested' ? 'Interested Lead' :
+          outc === 'callback_requested' ? 'Callback Requested' :
+            outc === 'not_interested' ? 'Not Interested' :
+              outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
     );
     const nextAction = rec.nextAction || (
       outc === 'appointment_booked' ? 'Dispatch WhatsApp appointment reminder & calendar invite' :
-      outc === 'interested' ? 'Send personalized pricing brochure and schedule sales call' :
-      outc === 'callback_requested' ? 'Schedule human executive follow-up call within 2 hours' :
-      'Log resolution in CRM and send satisfaction survey'
+        outc === 'interested' ? 'Send personalized pricing brochure and schedule sales call' :
+          outc === 'callback_requested' ? 'Schedule human executive follow-up call within 2 hours' :
+            'Log resolution in CRM and send satisfaction survey'
     );
     const topics = Array.isArray(rec.keyTopics) && rec.keyTopics.length ? rec.keyTopics : ['Customer Support'];
 
@@ -5453,9 +6319,12 @@ function renderDrawer(rec, onUpdate) {
       // Score and CSAT Bar
       el('div', { style: 'display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;' }, [
         el('div', { class: 'flex items-baseline gap-2' }, [
-          el('span', { style: 'font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;color:var(--ink);line-height:1;' }, String(scoreVal)),
+          el('span', { style: 'font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;color:#0d5d41;line-height:1;' }, String(scoreVal)),
           el('span', { class: 'muted', style: 'font-size:0.8rem;font-weight:600;' }, '/ 100 Quality Score'),
-          el('span', { class: `quality-score-pill ${scoreVal >= 80 ? 'high' : (scoreVal >= 55 ? 'med' : 'low')}` }, '● ' + scoreTier)
+          el('span', { class: `quality-score-pill ${scoreVal >= 80 ? 'high' : (scoreVal >= 55 ? 'med' : 'low')}` }, [
+            el('span', { class: 'quality-score-dot' }),
+            el('span', {}, scoreTier)
+          ])
         ]),
         el('span', { class: 'muted', style: 'font-size:0.74rem;font-weight:600;' }, (turns.length || 1) + ' Dialogue Turns')
       ]),
@@ -5474,11 +6343,14 @@ function renderDrawer(rec, onUpdate) {
         ])
       ]),
 
-      // Recommended Next Action Card
+      // Recommended Next Action Card (No emojis, sleek badge)
       el('div', { class: 'rec-next-action-card' }, [
-        el('span', { style: 'font-size:1rem;' }, '👉'),
-        el('div', {}, [
-          el('b', {}, 'Next Action: '),
+        el('div', {
+          style: 'width:20px;height:20px;border-radius:50%;background:rgba(13,93,65,0.12);color:#0d5d41;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;',
+          html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        }),
+        el('div', { style: 'flex:1;min-width:0;' }, [
+          el('b', { style: 'color:#0d5d41;font-weight:700;' }, 'Recommended Next Action: '),
           el('span', {}, nextAction)
         ])
       ]),
@@ -5503,7 +6375,7 @@ function renderDrawer(rec, onUpdate) {
       ]),
       el('div', { class: 'rec-meta-item' }, [
         el('div', { class: 'rec-meta-label' }, 'Direction'),
-        el('div', { class: 'rec-meta-val' }, (rec.direction === 'inbound') ? '↓ Inbound (Incoming)' : '↑ Outbound (Dialed)')
+        el('div', { class: 'rec-meta-val' }, (rec.direction === 'inbound') ? 'Inbound (Incoming)' : 'Outbound (Dialed)')
       ]),
       el('div', { class: 'rec-meta-item' }, [
         el('div', { class: 'rec-meta-label' }, (rec.direction === 'inbound') ? 'Customer (Caller)' : 'Customer (Dialed)'),
@@ -5545,53 +6417,99 @@ function renderDrawer(rec, onUpdate) {
 
 async function viewRecordings(root) {
   _recState.dirFilter = '';
+  const wrap = el('div', { class: 'aria-recordings-view' });
+  root.appendChild(wrap);
+
   const head = viewHead('Call Recordings & Transcripts', 'Review every inbound and outbound voice call, complete with full conversational transcripts, audio replay, and caller details.');
-  const syncBtn = el('button', { class: 'btn btn-ghost btn-sm flex items-center gap-2' }, [
+  const headTitle = head.querySelector('h2');
+  if (headTitle) {
+    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony Archive & Audit');
+    headTitle.parentNode.insertBefore(kicker, headTitle);
+  }
+  const syncBtn = el('button', {
+    class: 'btn btn-ghost btn-sm flex items-center gap-2',
+    style: 'border-radius:999px;font-size:0.80rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;'
+  }, [
     el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
     el('span', {}, 'Sync calls')
   ]);
-  const liveBadge = el('span', { class: 'badge-live', style: 'margin-right:8px' }, [el('span', { class: 'd' }), 'Live sync']);
+  const liveBadge = el('span', {
+    class: 'badge-live',
+    style: 'margin-right:8px;font-size:0.74rem;padding:4px 11px;border-radius:999px;background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);display:inline-flex;align-items:center;gap:6px;font-weight:700;'
+  }, [el('span', { class: 'd', style: 'width:6px;height:6px;border-radius:50%;background:#059669;' }), 'Live sync']);
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [liveBadge, syncBtn]));
-  root.appendChild(head);
+  wrap.appendChild(head);
 
-  // Summary Stats (horizontal 4-card grid matching dashboard layout)
-  const statsRow = el('div', { class: 'grid grid-4' }, skeleton('sk-stat', 4));
-  root.appendChild(statsRow);
+  // Summary Stats (Cardless Flat Scandinavian Sage KPI Row)
+  const statsRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid recordings-kpi-grid' }, skeleton('sk-stat', 4));
+  wrap.appendChild(statsRow);
 
   // Filter & Search Toolbar
-  const searchInput = el('input', { class: 'input', placeholder: 'Filter by phone, agent, sentiment, outcome, topics...' });
-  const sentimentSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Sentiments'),
-    el('option', { value: 'positive' }, '● Positive'),
-    el('option', { value: 'neutral' }, '● Neutral'),
-    el('option', { value: 'negative' }, '● Negative'),
-  ]);
-  const outcomeSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Outcomes'),
-    el('option', { value: 'appointment_booked' }, '📅 Appointment Booked'),
-    el('option', { value: 'interested' }, '⭐ Interested Lead'),
-    el('option', { value: 'callback_requested' }, '📞 Callback Requested'),
-    el('option', { value: 'inquiry_handled' }, '💬 Inquiry Handled'),
-    el('option', { value: 'not_interested' }, '✕ Not Interested'),
-    el('option', { value: 'wrong_number' }, '🚫 Wrong Number'),
-  ]);
-  const statusSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Statuses'),
-    el('option', { value: 'completed' }, 'Completed'),
-    el('option', { value: 'in_progress' }, 'In Progress'),
-    el('option', { value: 'failed' }, 'Failed'),
-  ]);
-  const dirSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Directions'),
-    el('option', { value: 'outbound' }, 'Outbound'),
-    el('option', { value: 'inbound' }, 'Inbound'),
-  ]);
+  const searchInput = el('input', { class: 'input aria-search-input', placeholder: 'Filter by phone, agent, sentiment, outcome, topics...' });
+  const sentimentSelect = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Sentiments' },
+      { value: 'positive', label: 'Positive' },
+      { value: 'neutral', label: 'Neutral' },
+      { value: 'negative', label: 'Negative' },
+    ],
+    value: _recState.sentimentFilter || '',
+    placeholder: 'All Sentiments',
+    onChange: (val) => {
+      _recState.sentimentFilter = val;
+      applyFiltersAndRender();
+    }
+  });
+  const outcomeSelect = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Outcomes' },
+      { value: 'appointment_booked', label: 'Appointment Booked' },
+      { value: 'interested', label: 'Interested Lead' },
+      { value: 'callback_requested', label: 'Callback Requested' },
+      { value: 'inquiry_handled', label: 'Inquiry Handled' },
+      { value: 'not_interested', label: 'Not Interested' },
+      { value: 'wrong_number', label: 'Wrong Number' },
+    ],
+    value: _recState.outcomeFilter || '',
+    placeholder: 'All Outcomes',
+    onChange: (val) => {
+      _recState.outcomeFilter = val;
+      applyFiltersAndRender();
+    }
+  });
+  const statusSelect = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Statuses' },
+      { value: 'completed', label: 'Completed' },
+      { value: 'in_progress', label: 'In Progress' },
+      { value: 'failed', label: 'Failed' },
+    ],
+    value: _recState.statusFilter || '',
+    placeholder: 'All Statuses',
+    onChange: (val) => {
+      _recState.statusFilter = val;
+      applyFiltersAndRender();
+    }
+  });
+  const dirSelect = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Directions' },
+      { value: 'outbound', label: 'Outbound' },
+      { value: 'inbound', label: 'Inbound' },
+    ],
+    value: _recState.dirFilter || '',
+    placeholder: 'All Directions',
+    onChange: (val) => {
+      _recState.dirFilter = val;
+      applyFiltersAndRender();
+    }
+  });
   const toolbar = el('div', { class: 'rec-toolbar' }, [searchInput, sentimentSelect, outcomeSelect, statusSelect, dirSelect]);
-  root.appendChild(toolbar);
+  wrap.appendChild(toolbar);
 
-  // Table Card
+  // Table Cardless Host
   const tableHost = el('div', { class: 'rec-card-table' }, skeleton('sk-card', 1));
-  root.appendChild(tableHost);
+  wrap.appendChild(tableHost);
 
   function applyFiltersAndRender() {
     const q = (_recState.query || '').toLowerCase().trim();
@@ -5640,10 +6558,23 @@ async function viewRecordings(root) {
 
     statsRow.innerHTML = '';
     const isOnlyInbound = _recState.dirFilter === 'inbound';
-    statsRow.appendChild(statCard(isOnlyInbound ? 'Inbound Calls' : 'Total Calls', String((_recState.filtered && _recState.filtered.length != null) ? _recState.filtered.length : (all ? all.length : 0)), isOnlyInbound ? 'Direct callers' : 'All time', false, 'sv-kpi-blue'));
-    statsRow.appendChild(statCard('Positive CSAT', (posPct >= 70 ? posPct : 98.4) + '%', 'Sentiment rating', true, 'sv-kpi-green'));
-    statsRow.appendChild(statCard('Leads & Bookings', String(bookedCount), 'High-intent conversions', true, 'sv-kpi-amber'));
-    statsRow.appendChild(statCard('Avg Duration', avgStr, 'Per conversation', false, 'sv-kpi-slate'));
+    const isOnlyOutbound = _recState.dirFilter === 'outbound';
+    const countVal = String((_recState.filtered && _recState.filtered.length != null) ? _recState.filtered.length : (all ? all.length : 0));
+
+    const statsData = [
+      { label: isOnlyInbound ? 'INBOUND CALLS' : (isOnlyOutbound ? 'OUTBOUND CALLS' : 'TOTAL CALLS'), val: countVal, sub: isOnlyInbound ? 'Direct callers' : (isOnlyOutbound ? 'AI auto-dialed' : 'Recorded conversations') },
+      { label: 'POSITIVE CSAT', val: (posPct >= 70 ? posPct : 98.4) + '%', sub: 'Sentiment rating' },
+      { label: 'LEADS & BOOKINGS', val: String(bookedCount), sub: 'High-intent conversions' },
+      { label: 'AVG DURATION', val: avgStr, sub: 'Per conversation' }
+    ];
+
+    statsData.forEach(item => {
+      statsRow.appendChild(el('div', { class: 'kpi-card aria-stat-card' }, [
+        el('span', { class: 'kpi-label' }, item.label),
+        el('span', { class: 'kpi-value' }, item.val),
+        el('span', { class: 'kpi-sub' }, item.sub)
+      ]));
+    });
   }
 
   function renderTable() {
@@ -5700,10 +6631,10 @@ async function viewRecordings(root) {
       const outc = (rec.outcome || 'inquiry_handled').toLowerCase();
       const outcLabel = rec.outcomeLabel || (
         outc === 'appointment_booked' ? 'Appointment Booked' :
-        outc === 'interested' ? 'Interested Lead' :
-        outc === 'callback_requested' ? 'Callback Requested' :
-        outc === 'not_interested' ? 'Not Interested' :
-        outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
+          outc === 'interested' ? 'Interested Lead' :
+            outc === 'callback_requested' ? 'Callback Requested' :
+              outc === 'not_interested' ? 'Not Interested' :
+                outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
       );
       const outcomeBadge = el('span', { class: `badge-outcome badge-outcome-${outc}` }, outcLabel);
 
@@ -5777,10 +6708,6 @@ async function viewRecordings(root) {
 
   // Event handlers
   searchInput.oninput = (e) => { _recState.query = e.target.value; applyFiltersAndRender(); };
-  sentimentSelect.onchange = (e) => { _recState.sentimentFilter = e.target.value; applyFiltersAndRender(); };
-  outcomeSelect.onchange = (e) => { _recState.outcomeFilter = e.target.value; applyFiltersAndRender(); };
-  statusSelect.onchange = (e) => { _recState.statusFilter = e.target.value; applyFiltersAndRender(); };
-  dirSelect.onchange = (e) => { _recState.dirFilter = e.target.value; applyFiltersAndRender(); };
 
   async function loadData(showToast) {
     try {
@@ -5809,6 +6736,13 @@ async function viewRecordings(root) {
    =========================================================================== */
 async function viewInbound(root) {
   _recState.dirFilter = 'inbound';
+  root.innerHTML = '';
+
+  const wrap = el('div', { class: 'aria-inbound-view aria-theme' });
+  root.appendChild(wrap);
+
+  const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+91 80715 82519';
+
   const head = viewHead('Inbound Desk & Voice Receptionist', 'Configure real-time telephony answering rules, agent assignments, 24/7 operating schedules, and monitor incoming business calls.');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
@@ -5832,25 +6766,41 @@ async function viewInbound(root) {
     el('span', {}, 'Sync Inbound Calls')
   ]);
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [syncBtn]));
-  root.appendChild(head);
+  wrap.appendChild(head);
 
-  // 1. Inbound Receptionist & Line Status Banner
-  const agentSelect = el('select', {
-    class: 'input',
-    style: 'height:36px;padding:4px 12px;font-size:0.84rem;font-weight:600;min-width:240px;border-radius:9px;background:rgba(255,255,255,0.85);border:1px solid rgba(47,138,99,0.40);color:#0f172a;cursor:pointer;',
-  }, [el('option', { value: '' }, 'Loading AI Receptionists...')]);
+  // 1. Inbound Receptionist & Line Status Banner (Cardless Scandinavian Sage Strip)
+  const agentDropdown = createThemedDropdown({
+    options: [{ value: '', label: 'Loading AI Receptionists...' }],
+    value: '',
+    placeholder: 'Select AI Receptionist...',
+    align: 'right',
+    className: 'inbound-agent-dropdown',
+    onChange: async (agId, opt) => {
+      const agName = opt ? opt.label : '';
+      try {
+        await api('/api/inbound/config', {
+          method: 'POST',
+          body: { assignedAgentId: agId, assignedAgentName: agName }
+        });
+        toast(`Answering receptionist updated to ${agName}`, 'ok');
+      } catch (err) {
+        toast('Failed to update assigned receptionist: ' + err.message, 'err');
+      }
+    }
+  });
 
   const phoneLineCard = el('div', {
-    class: 'sv-inbound-banner'
+    class: 'sv-inbound-banner aria-inbound-strip'
   }, [
-    el('div', { class: 'sv-inbound-banner-left', style: 'display:flex;align-items:center;gap:16px;flex-wrap:wrap;' }, [
+    el('div', { class: 'sv-inbound-banner-left aria-inbound-strip-left', style: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;' }, [
       el('div', {
-        style: 'width:44px;height:44px;border-radius:12px;background:var(--blue2);color:#0d5d41;border:1px solid rgba(47,138,99,0.40);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        class: 'aria-strip-icon-badge',
+        style: 'width:42px;height:42px;border-radius:12px;background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;',
         html: uiIcon('phone', 20)
       }),
       el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;' }, [
         el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-          el('span', { style: 'font-weight:750;font-size:1.02rem;color:var(--ink);font-family:var(--mono);letter-spacing:0.5px;' }, '+91 80715 82519'),
+          el('span', { style: 'font-weight:750;font-size:1.02rem;color:var(--ink);font-family:var(--mono);letter-spacing:0.5px;' }, activeDid),
           el('span', { class: 'pill ok', style: 'font-size:0.72rem;padding:3px 10px;font-weight:700;background:rgba(16,185,129,0.15);color:#059669;border:1px solid rgba(16,185,129,0.30);display:inline-flex;align-items:center;gap:6px;' }, [
             el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#059669;display:inline-block;' }),
             'Line Active & Answering'
@@ -5858,101 +6808,110 @@ async function viewInbound(root) {
         ]),
         el('p', { class: 'muted', style: 'margin:0;font-size:0.78rem;color:#5d7468;' }, 'VoBiz Enterprise SIP Trunk · Zero-Ring Instant Receptionist · Direct Inbound DID')
       ]),
-      el('div', { style: 'display:flex;align-items:center;gap:8px;margin-left:auto;' }, [
-        el('span', { style: 'font-size:0.80rem;font-weight:600;color:#5d7468;white-space:nowrap;' }, 'Assigned Receptionist:'),
-        agentSelect
+      el('div', { style: 'display:flex;align-items:center;gap:10px;margin-left:auto;' }, [
+        el('span', { style: 'font-size:0.80rem;font-weight:700;color:#5d7468;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;' }, 'ASSIGNED RECEPTIONIST:'),
+        agentDropdown
       ])
     ]),
-    el('div', { class: 'sv-inbound-banner-right' }, [
+    el('div', { class: 'sv-inbound-banner-right aria-inbound-strip-right' }, [
       el('button', {
-        class: 'sv-btn-outline',
+        class: 'btn btn-ghost btn-sm',
         style: 'font-size:0.80rem;padding:8px 18px;display:flex;align-items:center;gap:6px;',
-        onclick: () => openMakeCallModal('+918071582519')
+        onclick: () => openMakeCallModal(activeDid)
       }, [
         el('span', { html: uiIcon('phone', 14) }),
         el('span', {}, 'Test Dial Receptionist')
       ])
     ])
   ]);
-  root.appendChild(phoneLineCard);
+  wrap.appendChild(phoneLineCard);
 
   // Load Inbound Config & Agents
   Promise.all([
     api('/api/inbound/config').catch(() => null),
     api('/api/agents').catch(() => null)
   ]).then(([cfgRes, agentsRes]) => {
-    // Populate agent select
-    const agents = (agentsRes && Array.isArray(agentsRes.agents)) ? agentsRes.agents : [];
-    agentSelect.innerHTML = '';
-    if (agents.length === 0) {
-      agentSelect.appendChild(el('option', { value: '' }, 'Default AI Receptionist'));
+    const rawAgents = (agentsRes && Array.isArray(agentsRes.agents) && agentsRes.agents.length > 0)
+      ? agentsRes.agents
+      : ((State.agents && State.agents.length) ? State.agents : []);
+    const opts = [];
+    if (rawAgents.length === 0) {
+      opts.push({ value: 'default-receptionist', label: 'Ria – Seevora AI Voice Receptionist' });
     } else {
-      agents.forEach((ag) => {
-        agentSelect.appendChild(el('option', { value: ag.id }, ag.name));
+      rawAgents.forEach((ag) => {
+        opts.push({ value: ag.id, label: ag.name });
       });
     }
-
-    if (cfgRes && cfgRes.config) {
-      const cfg = cfgRes.config;
-      if (cfg.assignedAgentId) agentSelect.value = cfg.assignedAgentId;
+    const assignedId = cfgRes && cfgRes.config && cfgRes.config.assignedAgentId;
+    const assignedName = cfgRes && cfgRes.config && cfgRes.config.assignedAgentName;
+    if (assignedId && !opts.find(o => String(o.value) === String(assignedId))) {
+      opts.unshift({ value: assignedId, label: assignedName || 'Ria – Seevora AI Voice Receptionist' });
     }
-  });
+    agentDropdown.setOptions(opts);
 
-  agentSelect.addEventListener('change', async () => {
-    const agId = agentSelect.value;
-    const agName = agentSelect.options[agentSelect.selectedIndex] ? agentSelect.options[agentSelect.selectedIndex].text : '';
-    try {
-      await api('/api/inbound/config', {
-        method: 'POST',
-        body: { assignedAgentId: agId, assignedAgentName: agName }
-      });
-      toast(`Answering receptionist updated to ${agName}`, 'ok');
-    } catch (err) {
-      toast('Failed to update assigned receptionist: ' + err.message, 'err');
+    if (assignedId) {
+      agentDropdown.setValue(assignedId);
+    } else if (opts[0]) {
+      agentDropdown.setValue(opts[0].value);
     }
   });
 
   const hasExistingRecs = Array.isArray(_recState.recordings) && _recState.recordings.length > 0;
 
-  // 3. Operational KPI Metrics (4-Card Row)
-  const statsRow = el('div', { class: 'grid grid-4' }, hasExistingRecs ? [] : skeleton('sk-stat', 4));
-  root.appendChild(statsRow);
+  // 2. Cardless Dashboard-style KPI Metrics Bar
+  const statsRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid inbound-kpi-grid' }, hasExistingRecs ? [] : skeleton('sk-stat', 4));
+  wrap.appendChild(statsRow);
 
-  // 4. Streamlined Inbound Caller Logs & Actions
-  const searchInput = el('input', { class: 'input', placeholder: 'Search incoming callers by number, agent, questions, sentiment...' });
-  const sentimentSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Sentiments'),
-    el('option', { value: 'positive' }, '● Positive'),
-    el('option', { value: 'neutral' }, '● Neutral'),
-    el('option', { value: 'negative' }, '● Negative'),
-  ]);
-  const outcomeSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Outcomes'),
-    el('option', { value: 'appointment_booked' }, '📅 Appointment Booked'),
-    el('option', { value: 'interested' }, '⭐ Interested Lead'),
-    el('option', { value: 'callback_requested' }, '📞 Callback Requested'),
-    el('option', { value: 'inquiry_handled' }, '💬 Inquiry Handled'),
-    el('option', { value: 'not_interested' }, '✕ Not Interested'),
-    el('option', { value: 'wrong_number' }, '🚫 Wrong Number'),
-  ]);
-  const statusSelect = el('select', { class: 'rec-filter-select' }, [
-    el('option', { value: '' }, 'All Statuses'),
-    el('option', { value: 'completed' }, 'Completed'),
-    el('option', { value: 'in_progress' }, 'In Progress'),
-    el('option', { value: 'failed' }, 'Failed'),
-  ]);
+  // 3. Cardless Streamlined Search & Themed Filter Toolbar
+  const searchInput = el('input', { class: 'input aria-search-input', placeholder: 'Search incoming callers by number, agent, questions, sentiment...' });
+  const sentimentDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Sentiments' },
+      { value: 'positive', label: 'Positive' },
+      { value: 'neutral', label: 'Neutral' },
+      { value: 'negative', label: 'Negative' },
+    ],
+    value: '',
+    placeholder: 'All Sentiments',
+    onChange: () => applyInboundFilters()
+  });
+  const outcomeDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Outcomes' },
+      { value: 'appointment_booked', label: 'Appointment Booked' },
+      { value: 'interested', label: 'Interested Lead' },
+      { value: 'callback_requested', label: 'Callback Requested' },
+      { value: 'inquiry_handled', label: 'Inquiry Handled' },
+      { value: 'not_interested', label: 'Not Interested' },
+      { value: 'wrong_number', label: 'Wrong Number' },
+    ],
+    value: '',
+    placeholder: 'All Outcomes',
+    onChange: () => applyInboundFilters()
+  });
+  const statusDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Statuses' },
+      { value: 'completed', label: 'Completed' },
+      { value: 'in_progress', label: 'In Progress' },
+      { value: 'failed', label: 'Failed' },
+    ],
+    value: '',
+    placeholder: 'All Statuses',
+    onChange: () => applyInboundFilters()
+  });
 
-  const toolbar = el('div', { class: 'rec-toolbar' }, [searchInput, sentimentSelect, outcomeSelect, statusSelect]);
-  root.appendChild(toolbar);
+  const toolbar = el('div', { class: 'sv-wf-filter-bar rec-toolbar' }, [searchInput, sentimentDropdown, outcomeDropdown, statusDropdown]);
+  wrap.appendChild(toolbar);
 
-  const tableHost = el('div', { class: 'rec-card-table' }, hasExistingRecs ? [] : skeleton('sk-card', 1));
-  root.appendChild(tableHost);
+  const tableHost = el('div', { class: 'rec-card-table aria-inbound-table-host' }, hasExistingRecs ? [] : skeleton('sk-card', 1));
+  wrap.appendChild(tableHost);
 
   function applyInboundFilters() {
     const q = (searchInput.value || '').toLowerCase().trim();
-    const st = statusSelect.value;
-    const sent = sentimentSelect.value;
-    const outc = outcomeSelect.value;
+    const st = statusDropdown.value;
+    const sent = sentimentDropdown.value;
+    const outc = outcomeDropdown.value;
     const all = _recState.recordings || [];
 
     const inboundList = all.filter((r) => {
@@ -5990,10 +6949,20 @@ async function viewInbound(root) {
     const bookedCount = bookedCalls.length > 0 ? bookedCalls.length : Math.max(1, Math.round(all.length * 0.46));
 
     statsRow.innerHTML = '';
-    statsRow.appendChild(statCard('Inbound Calls Handled', String(all.length), 'Direct callers answered', false, 'sv-kpi-blue'));
-    statsRow.appendChild(statCard('Zero-Wait Answer Rate', '100%', 'Sub-second receptionist pickup', true, 'sv-kpi-green'));
-    statsRow.appendChild(statCard('Avg Pickup Latency', '< 0.8s', 'Instant AI greeting', false, 'sv-kpi-slate'));
-    statsRow.appendChild(statCard('Inbound Bookings & Leads', String(bookedCount), 'Instant triage & booking', true, 'sv-kpi-amber'));
+    const statsData = [
+      { label: 'INBOUND CALLS HANDLED', val: String(all.length), sub: 'Direct callers answered' },
+      { label: 'ZERO-WAIT ANSWER RATE', val: '100%', sub: 'Sub-second receptionist pickup' },
+      { label: 'AVG PICKUP LATENCY', val: '< 0.8s', sub: 'Instant AI greeting' },
+      { label: 'INBOUND BOOKINGS & LEADS', val: String(bookedCount), sub: 'Instant triage & booking' }
+    ];
+
+    statsData.forEach(item => {
+      statsRow.appendChild(el('div', { class: 'kpi-card aria-stat-card' }, [
+        el('span', { class: 'kpi-label' }, item.label),
+        el('span', { class: 'kpi-value' }, item.val),
+        el('span', { class: 'kpi-sub' }, item.sub)
+      ]));
+    });
   }
 
   function renderInboundTable(inboundList) {
@@ -6041,10 +7010,10 @@ async function viewInbound(root) {
       const outc = (rec.outcome || 'inquiry_handled').toLowerCase();
       const outcLabel = rec.outcomeLabel || (
         outc === 'appointment_booked' ? 'Appointment Booked' :
-        outc === 'interested' ? 'Interested Lead' :
-        outc === 'callback_requested' ? 'Callback Requested' :
-        outc === 'not_interested' ? 'Not Interested' :
-        outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
+          outc === 'interested' ? 'Interested Lead' :
+            outc === 'callback_requested' ? 'Callback Requested' :
+              outc === 'not_interested' ? 'Not Interested' :
+                outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
       );
       const outcomeBadge = el('span', { class: `badge-outcome badge-outcome-${outc}` }, outcLabel);
 
@@ -6108,9 +7077,6 @@ async function viewInbound(root) {
   }
 
   searchInput.addEventListener('input', applyInboundFilters);
-  sentimentSelect.addEventListener('change', applyInboundFilters);
-  outcomeSelect.addEventListener('change', applyInboundFilters);
-  statusSelect.addEventListener('change', applyInboundFilters);
 
   if (hasExistingRecs) {
     applyInboundFilters();
@@ -6234,26 +7200,111 @@ function parseImportText(text) {
 async function viewCampaigns(root) {
   await ensureAgents().catch(() => null);
   await ensureTelephony().catch(() => null);
+  root.innerHTML = '';
+
+  const wrap = el('div', { class: 'aria-campaigns-view aria-theme' });
+  root.appendChild(wrap);
 
   /* ---- Page header ---- */
-  const head = viewHead('Outbound Campaigns', 'Create server-side campaigns or place instant direct calls. Campaigns auto-dial within the TRAI 9am-9pm window with retry logic.');
+  const head = viewHead('Outbound Calling & Campaigns', 'Place instant direct AI phone calls, monitor outbound conversation logs, or launch automated bulk calling campaigns.');
+  const syncBtn = el('button', {
+    class: 'btn btn-ghost btn-sm flex items-center gap-2',
+    onclick: async () => {
+      try {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
+        const res = await api('/api/recordings?sync=true&limit=100&offset=0');
+        _recState.recordings = (res && Array.isArray(res.recordings)) ? res.recordings : [];
+        applyOutboundFilters();
+        await loadCampManager();
+        toast('Outbound calls & campaigns synchronized.', 'ok');
+      } catch (err) {
+        toast('Failed to sync: ' + err.message, 'err');
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Sync Outbound Calls</span>';
+      }
+    }
+  }, [
+    el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' }),
+    el('span', {}, 'Sync Outbound Calls')
+  ]);
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [
-    el('button', { class: 'btn btn-ghost', onclick: () => openMakeCallModal() }, 'Quick Direct Call'),
-    el('button', { class: 'btn btn-ghost', onclick: () => goto('recordings') }, 'Recordings →')
+    syncBtn,
+    el('button', { class: 'btn btn-ghost btn-sm', onclick: () => goto('recordings') }, 'Recordings →')
   ]));
-  root.appendChild(head);
+  wrap.appendChild(head);
 
-  const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+918071582519';
+  /* ---- Subnav Tabs (Approach 1: Outbound Call Logs vs Bulk Campaigns) ---- */
+  const countBadge = el('span', { class: 'aria-tab-badge', id: 'outbound-calls-count-badge' }, '0');
+
+  const tabCallsBtn = el('button', {
+    class: 'aria-nav-tab active',
+    type: 'button',
+    onclick: () => switchTab('calls')
+  }, [
+    el('span', { html: uiIcon('phone', 15) }),
+    el('span', {}, 'Outbound Call Logs'),
+    countBadge
+  ]);
+
+  const tabCampaignsBtn = el('button', {
+    class: 'aria-nav-tab',
+    type: 'button',
+    onclick: () => switchTab('campaigns')
+  }, [
+    el('span', { html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>' }),
+    el('span', {}, 'Bulk Campaigns & Auto-Dialer')
+  ]);
+
+  const tabsBar = el('div', { class: 'aria-subnav-tabs' }, [tabCallsBtn, tabCampaignsBtn]);
+  wrap.appendChild(tabsBar);
+
+  const callsPanel = el('div', { class: 'aria-tab-panel aria-tab-panel-calls' });
+  const campaignsPanel = el('div', { class: 'aria-tab-panel aria-tab-panel-campaigns', style: 'display:none;' });
+  wrap.appendChild(callsPanel);
+  wrap.appendChild(campaignsPanel);
+
+  function switchTab(tab) {
+    if (tab === 'calls') {
+      tabCallsBtn.classList.add('active');
+      tabCampaignsBtn.classList.remove('active');
+      callsPanel.style.display = '';
+      campaignsPanel.style.display = 'none';
+      applyOutboundFilters();
+    } else {
+      tabCallsBtn.classList.remove('active');
+      tabCampaignsBtn.classList.add('active');
+      callsPanel.style.display = 'none';
+      campaignsPanel.style.display = '';
+      loadCampManager();
+    }
+  }
+
+  const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+91 80715 82519';
 
   /* ================================================================
-     QUICK DIALER CARD
+     1. CARDLESS INSTANT OUTBOUND DIALER STRIP
      ================================================================ */
-  const quickDialerInput = el('input', { class: 'input', type: 'tel', inputmode: 'numeric', maxlength: 10, placeholder: '9876543210', style: 'flex:1;border:none;outline:none;padding:10px 14px;font-size:1.05rem;font-weight:600;letter-spacing:1px;background:transparent;' });
+  const quickDialerInput = el('input', {
+    class: 'input',
+    type: 'tel',
+    inputmode: 'numeric',
+    maxlength: 10,
+    placeholder: '9876543210',
+    style: 'flex:1;border:none;outline:none;padding:8px 12px;font-size:1.02rem;font-weight:700;letter-spacing:1px;background:transparent;color:#14221c;'
+  });
   quickDialerInput.addEventListener('input', () => { quickDialerInput.value = quickDialerInput.value.replace(/\D/g, '').slice(0, 10); });
-  const quickAgentSelect = el('select', { class: 'select', style: 'font-size:.9rem;font-weight:600;' },
-    (State.agents && State.agents.length ? State.agents : [{ id: 'default', name: 'Seevora AI Voice Receptionist' }]).map((a) => el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name))
-  );
-  const quickDialBtn = el('button', { class: 'btn btn-primary', style: 'padding:10px 20px;font-weight:700;' }, 'Dial Now');
+  const agentList = (State.agents && State.agents.length ? State.agents : [{ id: 'default', name: 'Ria – Seevora AI Voice Receptionist' }]);
+  const agentOpts = agentList.map((a) => ({ value: a.id, label: a.name }));
+  const quickAgentSelect = createThemedDropdown({
+    options: agentOpts,
+    value: State.activeAgentId || (agentOpts[0] && agentOpts[0].value) || 'default',
+    placeholder: 'Select Voice Agent...',
+    className: 'outbound-agent-dropdown w-full',
+    style: 'width:100%;'
+  });
+  const quickDialBtn = el('button', { class: 'btn btn-primary', style: 'padding:8px 22px;font-weight:700;font-size:0.88rem;' }, 'Dial Now');
   quickDialBtn.addEventListener('click', async () => {
     const num = (quickDialerInput.value || '').replace(/\D/g, '');
     if (num.length !== 10) { toast('Enter a valid 10-digit mobile number.', 'err'); quickDialerInput.focus(); return; }
@@ -6262,34 +7313,315 @@ async function viewCampaigns(root) {
       await api('/api/telephony/dial', { method: 'POST', body: { number: num, confirm: true, agentId: quickAgentSelect.value } });
       toast('Call placed to +91 ' + num + '!', 'ok');
       quickDialerInput.value = '';
+      setTimeout(async () => {
+        const out = await api('/api/recordings?sync=true&limit=100&offset=0').catch(() => null);
+        if (out && Array.isArray(out.recordings)) {
+          _recState.recordings = out.recordings;
+          applyOutboundFilters();
+        }
+      }, 1500);
     } catch (e) {
       const detail = (e.data && (e.data.detail || e.data.message)) || '';
       toast(detail && !e.message.includes(detail) ? `${e.message}: ${detail}` : (e.message || 'Call failed.'), 'err');
     } finally { quickDialBtn.disabled = false; quickDialBtn.textContent = 'Dial Now'; }
   });
-  root.appendChild(el('div', { class: 'card card-pad campaign-dialer-card', style: 'margin-bottom:20px;border:1.5px solid rgba(47, 138, 99,0.3);' }, [
-    el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:10px;' }, [
-      el('h3', { class: 't-h3', style: 'display:flex;align-items:center;gap:8px;' }, [el('span', { html: uiIcon('phone', 18) }), 'Instant Outbound Dialer']),
-      el('span', { class: 'pill' }, [el('span', { class: 'dot' }), 'Line: ' + activeDid])
+
+  const dialerStrip = el('div', { class: 'aria-outbound-dialer-strip campaign-dialer-card' }, [
+    el('div', { class: 'aria-dialer-head', style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;' }, [
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('div', { style: 'width:34px;height:34px;border-radius:10px;background:rgba(13,93,65,0.08);color:#0d5d41;display:flex;align-items:center;justify-content:center;flex-shrink:0;', html: uiIcon('phone', 16) }),
+        el('h3', { class: 't-h3', style: 'font-size:1.02rem;font-weight:800;color:#14221c;margin:0;' }, 'Instant Outbound Dialer'),
+        el('span', { class: 'pill ok', style: 'font-size:0.72rem;padding:2px 8px;font-weight:700;' }, 'Line: ' + activeDid)
+      ]),
+      el('div', { class: 'trai-compliance-tag', style: 'display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:#0d5d41;background:rgba(13,93,65,0.06);padding:3px 10px;border-radius:999px;' }, [
+        el('span', { class: 'aria-live-dot', style: 'background:#0d5d41;' }),
+        'TRAI 9:00 AM – 9:00 PM IST Calling Window'
+      ])
     ]),
-    el('div', { style: 'display:grid;grid-template-columns:1fr 1.5fr auto;gap:12px;align-items:end;' }, [
-      el('div', {}, [el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Voice Agent'), quickAgentSelect]),
+    el('div', { class: 'aria-dialer-grid', style: 'display:grid;grid-template-columns:minmax(220px, 1fr) minmax(260px, 1.5fr) auto;gap:16px;align-items:end;' }, [
       el('div', {}, [
-        el('label', { class: 'field-label', style: 'display:block;margin-bottom:4px;font-size:.78rem;font-weight:600;' }, 'Recipient (+91)'),
-        el('div', { style: 'display:flex;align-items:center;border:1.5px solid rgba(203,213,225,0.8);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);' }, [
-          el('span', { style: 'padding:10px 14px;background:rgba(241,245,249,0.7);font-weight:700;border-right:1px solid rgba(203,213,225,0.8);font-size:.92rem;color:#334155;' }, '+91'),
+        el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-size:.76rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;color:#5d7468;' }, 'VOICE AGENT'),
+        quickAgentSelect
+      ]),
+      el('div', {}, [
+        el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-size:.76rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;color:#5d7468;' }, 'RECIPIENT NUMBER (+91)'),
+        el('div', { style: 'display:flex;align-items:center;border-bottom:1.5px solid rgba(13,93,65,0.22);background:transparent;' }, [
+          el('span', { style: 'padding:8px 10px 8px 0;font-weight:800;font-size:.92rem;color:#0d5d41;font-family:var(--mono);' }, '+91'),
           quickDialerInput
         ])
       ]),
       quickDialBtn
     ])
-  ]));
+  ]);
+  callsPanel.appendChild(dialerStrip);
 
   /* ================================================================
-     4-STEP CAMPAIGN WIZARD
+     1b. OUTBOUND CALLS KPI METRICS BAR
      ================================================================ */
-  const wizardCard = el('div', { class: 'cw-card', style: 'margin-bottom:24px;' });
-  root.appendChild(wizardCard);
+  const outboundCallsKpisRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid outbound-kpi-grid' });
+  callsPanel.appendChild(outboundCallsKpisRow);
+
+  /* ================================================================
+     1c. OUTBOUND CALLS SEARCH & THEMED FILTER TOOLBAR
+     ================================================================ */
+  const outboundSearchInput = el('input', { class: 'input aria-search-input', placeholder: 'Search outbound calls by recipient phone, agent, questions, sentiment...' });
+  const outboundSentimentDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Sentiments' },
+      { value: 'positive', label: 'Positive' },
+      { value: 'neutral', label: 'Neutral' },
+      { value: 'negative', label: 'Negative' },
+    ],
+    value: '',
+    placeholder: 'All Sentiments',
+    onChange: () => applyOutboundFilters()
+  });
+  const outboundOutcomeDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Outcomes' },
+      { value: 'appointment_booked', label: 'Appointment Booked' },
+      { value: 'interested', label: 'Interested Lead' },
+      { value: 'callback_requested', label: 'Callback Requested' },
+      { value: 'inquiry_handled', label: 'Inquiry Handled' },
+      { value: 'not_interested', label: 'Not Interested' },
+      { value: 'wrong_number', label: 'Wrong Number' },
+    ],
+    value: '',
+    placeholder: 'All Outcomes',
+    onChange: () => applyOutboundFilters()
+  });
+  const outboundStatusDropdown = createThemedDropdown({
+    options: [
+      { value: '', label: 'All Statuses' },
+      { value: 'completed', label: 'Completed' },
+      { value: 'in_progress', label: 'In Progress' },
+      { value: 'failed', label: 'Failed' },
+    ],
+    value: '',
+    placeholder: 'All Statuses',
+    onChange: () => applyOutboundFilters()
+  });
+
+  const outboundToolbar = el('div', { class: 'sv-wf-filter-bar rec-toolbar' }, [
+    outboundSearchInput,
+    outboundSentimentDropdown,
+    outboundOutcomeDropdown,
+    outboundStatusDropdown
+  ]);
+  callsPanel.appendChild(outboundToolbar);
+
+  const outboundTableHost = el('div', { class: 'rec-card-table aria-inbound-table-host' });
+  callsPanel.appendChild(outboundTableHost);
+
+  function applyOutboundFilters() {
+    const q = (outboundSearchInput.value || '').toLowerCase().trim();
+    const st = outboundStatusDropdown.value;
+    const sent = outboundSentimentDropdown.value;
+    const outc = outboundOutcomeDropdown.value;
+    const all = _recState.recordings || [];
+
+    const outboundList = all.filter((r) => {
+      const isDirOutbound = r.direction === 'outbound';
+      if (!isDirOutbound) return false;
+      if (st && r.status !== st) return false;
+      if (sent && (r.sentiment || 'positive').toLowerCase() !== sent) return false;
+      if (outc && (r.outcome || 'inquiry_handled').toLowerCase() !== outc) return false;
+      if (q) {
+        const hay = [
+          r.phoneNumber || '',
+          r.agentName || '',
+          r.transcript || '',
+          r.summary || '',
+          r.outcomeLabel || '',
+          r.sentimentLabel || '',
+          r.nextAction || '',
+          (Array.isArray(r.keyTopics) ? r.keyTopics.join(' ') : '')
+        ].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    countBadge.textContent = String(outboundList.length);
+    renderOutboundCallsStats(outboundList);
+    renderOutboundCallsTable(outboundList);
+  }
+
+  function renderOutboundCallsStats(outboundList) {
+    const allOutbound = (_recState.recordings || []).filter((r) => r.direction === 'outbound');
+    const totalOutbound = allOutbound.length;
+    const nonNeg = outboundList.filter((r) => (r.sentiment || 'positive').toLowerCase() !== 'negative');
+    const posPct = outboundList.length ? Math.round((nonNeg.length / outboundList.length) * 100) : 98;
+    const bookedCalls = outboundList.filter((r) => {
+      const o = (r.outcome || '').toLowerCase();
+      return o.includes('appointment') || o.includes('interested') || o.includes('lead') || o.includes('booking') || (r.qualityScore && r.qualityScore >= 80);
+    });
+    const bookedCount = bookedCalls.length;
+    const totalDur = outboundList.reduce((sum, r) => sum + (r.durationSeconds || 0), 0);
+    const avgSec = outboundList.length ? Math.round(totalDur / outboundList.length) : 0;
+    const avgStr = avgSec >= 60 ? `${Math.floor(avgSec / 60)}m ${avgSec % 60}s` : `${avgSec}s`;
+
+    outboundCallsKpisRow.innerHTML = '';
+    const statsData = [
+      { label: 'OUTBOUND CALLS PLACED', val: String(totalOutbound), sub: 'Direct dialer & automated campaigns' },
+      { label: 'CSAT / CONNECT RATE', val: totalOutbound ? `${posPct}%` : '98.5%', sub: 'High customer satisfaction rating' },
+      { label: 'HIGH-INTENT CONVERSIONS', val: String(bookedCount), sub: 'Appointments booked & qualified leads' },
+      { label: 'AVG CONVERSATION TIME', val: avgStr, sub: 'Natural human conversation depth' }
+    ];
+
+    statsData.forEach(item => {
+      outboundCallsKpisRow.appendChild(el('div', { class: 'kpi-card aria-stat-card' }, [
+        el('span', { class: 'kpi-label' }, item.label),
+        el('span', { class: 'kpi-value' }, item.val),
+        el('span', { class: 'kpi-sub' }, item.sub)
+      ]));
+    });
+  }
+
+  function renderOutboundCallsTable(outboundList) {
+    outboundTableHost.innerHTML = '';
+    if (outboundList.length === 0) {
+      outboundTableHost.appendChild(el('div', { class: 'rec-empty-state' }, [
+        el('div', { class: 'rec-empty-icon', html: uiIcon('phone', 28) }),
+        el('h4', { class: 't-h4', style: 'margin-bottom:6px' }, 'No outbound calls placed yet'),
+        el('p', { class: 'muted text-xs' }, 'Place a call using the Instant Outbound Dialer above or schedule a bulk campaign to reach your contacts.')
+      ]));
+      return;
+    }
+
+    const table = el('table', { class: 'rec-table' });
+    const thead = el('thead', {}, [
+      el('tr', {}, [
+        el('th', {}, 'Recipient Phone Number'),
+        el('th', {}, 'Outbound AI Agent'),
+        el('th', {}, 'Duration'),
+        el('th', {}, 'Sentiment'),
+        el('th', {}, 'Call Outcome'),
+        el('th', {}, 'Lead Score'),
+        el('th', {}, 'Call Time'),
+        el('th', { style: 'text-align:right' }, 'Operational Actions')
+      ])
+    ]);
+    table.appendChild(thead);
+
+    const tbody = el('tbody');
+    outboundList.forEach((rec) => {
+      const dt = rec.startedAt ? new Date(rec.startedAt) : null;
+      const dateStr = dt ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
+      const timeStr = dt ? dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+
+      const sent = (rec.sentiment || 'positive').toLowerCase();
+      const sentClass = sent === 'positive' ? 'pos' : (sent === 'neutral' ? 'neu' : 'neg');
+      const sentLabel = rec.sentimentLabel || (sent === 'positive' ? 'Positive' : (sent === 'neutral' ? 'Neutral' : 'Negative'));
+      const sentimentBadge = el('span', { class: `badge-sentiment badge-sentiment-${sentClass}` }, [
+        el('span', { class: 'badge-sentiment-dot' }),
+        el('span', {}, sentLabel)
+      ]);
+
+      const outc = (rec.outcome || 'inquiry_handled').toLowerCase();
+      const outcLabel = rec.outcomeLabel || (
+        outc === 'appointment_booked' ? 'Appointment Booked' :
+          outc === 'interested' ? 'Interested Lead' :
+            outc === 'callback_requested' ? 'Callback Requested' :
+              outc === 'not_interested' ? 'Not Interested' :
+                outc === 'wrong_number' ? 'Wrong Number' : 'Inquiry Handled'
+      );
+      const outcomeBadge = el('span', { class: `badge-outcome badge-outcome-${outc}` }, outcLabel);
+
+      const score = Number(rec.qualityScore) || (sent === 'positive' ? 92 : (sent === 'neutral' ? 68 : 25));
+      const scoreClass = score >= 80 ? 'high' : (score >= 55 ? 'med' : 'low');
+      const scorePill = el('span', { class: `quality-score-pill ${scoreClass}` }, `${score}/100`);
+
+      const redialBtn = el('button', {
+        class: 'btn-inbound-action callback btn-outbound-action',
+        title: 'Call again ' + (rec.phoneNumber || 'recipient'),
+        onclick: (e) => {
+          e.stopPropagation();
+          openMakeCallModal(rec.phoneNumber || '');
+        }
+      }, [
+        el('span', { html: uiIcon('phone', 13) }),
+        el('span', {}, 'Redial')
+      ]);
+
+      const recordingsLink = el('button', {
+        class: 'btn-inbound-action recordings-link btn-outbound-action',
+        title: 'Open full audio player & conversational transcript in Call Recordings',
+        onclick: (e) => {
+          e.stopPropagation();
+          _recState.expandedId = rec.id;
+          _recState.dirFilter = 'outbound';
+          goto('recordings');
+        }
+      }, [
+        el('span', {}, 'View in Recordings'),
+        el('span', { html: '→' })
+      ]);
+
+      const actionsCell = el('div', {
+        style: 'display:flex;align-items:center;justify-content:flex-end;gap:8px;'
+      }, [redialBtn, recordingsLink]);
+
+      const tr = el('tr', { class: 'rec-row-head' }, [
+        el('td', {}, [
+          el('div', { class: 'rec-phone' }, rec.phoneNumber || '+91 98765 43210'),
+          el('div', { class: 'rec-time' }, timeStr + ' • ' + dateStr)
+        ]),
+        el('td', {}, el('div', { class: 'rec-agent', title: rec.agentName || 'Seevora Voice Agent' }, rec.agentName || 'Seevora Voice Agent')),
+        el('td', {}, el('span', { class: 'rec-dur' }, fmtDuration(rec.durationSeconds))),
+        el('td', {}, sentimentBadge),
+        el('td', {}, outcomeBadge),
+        el('td', {}, scorePill),
+        el('td', {}, el('span', { style: 'color:var(--ink-dim);font-size:.82rem' }, timeStr)),
+        el('td', { style: 'text-align:right' }, actionsCell)
+      ]);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    outboundTableHost.appendChild(table);
+  }
+
+  outboundSearchInput.addEventListener('input', applyOutboundFilters);
+
+  /* ================================================================
+     2. BULK CAMPAIGNS PANEL & KPI METRICS BAR
+     ================================================================ */
+  const outboundStatsRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid outbound-kpi-grid' });
+  campaignsPanel.appendChild(outboundStatsRow);
+
+  function updateOutboundKpis(camps) {
+    const list = camps || [];
+    const totalLeads = list.reduce((acc, c) => acc + ((c.leads && c.leads.length) || 0), 0);
+    const initiatedCalls = list.reduce((acc, c) => acc + ((c.leads && c.leads.filter(l => l.status === 'initiated').length) || 0), 0);
+    const runningCount = list.filter(c => c.status === 'running').length;
+
+    outboundStatsRow.innerHTML = '';
+    const statsData = [
+      { label: 'ACTIVE CAMPAIGNS', val: String(runningCount || list.length), sub: runningCount ? `${runningCount} running now` : 'Auto-retry worker active' },
+      { label: 'TOTAL CONTACTS QUEUED', val: String(totalLeads || 0), sub: 'Scrubbed against TRAI DND' },
+      { label: 'CALLS INITIATED', val: String(initiatedCalls || 0), sub: 'Auto-dial sequence completed' },
+      { label: 'CALLING WINDOW', val: '9 AM – 9 PM', sub: 'TRAI regulatory schedule' }
+    ];
+
+    statsData.forEach(item => {
+      outboundStatsRow.appendChild(el('div', { class: 'kpi-card aria-stat-card' }, [
+        el('span', { class: 'kpi-label' }, item.label),
+        el('span', { class: 'kpi-value' }, item.val),
+        el('span', { class: 'kpi-sub' }, item.sub)
+      ]));
+    });
+  }
+  updateOutboundKpis([]);
+
+  /* ================================================================
+     3. 4-STEP CAMPAIGN WIZARD & CAMPAIGN MANAGER GRID (CARDLESS)
+     ================================================================ */
+  const campBodyGrid = el('div', { class: 'aria-campaigns-body-grid' });
+  campaignsPanel.appendChild(campBodyGrid);
+
+  const wizardCard = el('div', { class: 'cw-card aria-cw-builder' });
+  campBodyGrid.appendChild(wizardCard);
 
   /* Wizard state */
   const wiz = {
@@ -6299,7 +7631,7 @@ async function viewCampaigns(root) {
     leads: [],
     dailyCap: 100, intervalSeconds: 45, retryLimit: 2,
     retryBusyAfterMin: 30, retryNoAnsAfterMin: 120,
-    activeDays: [1,2,3,4,5], scheduleStartHour: 9, scheduleEndHour: 21,
+    activeDays: [1, 2, 3, 4, 5], scheduleStartHour: 9, scheduleEndHour: 21,
   };
 
   const STEPS = ['Details', 'Contacts', 'Schedule', 'Review & Launch'];
@@ -6313,26 +7645,36 @@ async function viewCampaigns(root) {
     stepper.appendChild(s);
     return s;
   });
-  wizardCard.appendChild(el('h3', { class: 't-h3', style: 'margin-bottom:18px' }, '+ New Campaign'));
+  wizardCard.appendChild(el('div', { class: 'aria-section-header', style: 'margin-bottom:20px;' }, [
+    el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:6px;' }, 'Automated Outbound Calling'),
+    el('h3', { class: 't-h3', style: 'margin:0 0 6px 0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, 'Create Automated Campaign'),
+    el('p', { class: 'muted text-xs', style: 'margin:0;font-size:0.84rem;color:#5d7468;line-height:1.45;' }, 'Schedule multi-contact AI voice outreach with automatic retries and TRAI 9:00 AM – 9:00 PM IST compliance.')
+  ]));
   wizardCard.appendChild(stepper);
 
   const panelHost = el('div', {});
   wizardCard.appendChild(panelHost);
 
-  const backBtn  = el('button', { class: 'btn btn-ghost',   style: 'visibility:hidden' }, '← Back');
-  const nextBtn  = el('button', { class: 'btn btn-primary' }, 'Next Step →');
+  const backBtn = el('button', { class: 'btn btn-ghost', style: 'visibility:hidden' }, '← Back');
+  const nextBtn = el('button', { class: 'btn btn-primary' }, 'Next Step →');
   const wizFooter = el('div', { class: 'cw-footer' }, [backBtn, nextBtn]);
   wizardCard.appendChild(wizFooter);
 
   /* Step 1: Details */
   function buildStep1() {
-    const nameInput = el('input', { class: 'input', type: 'text', id: 'cw_name', maxlength: 80, placeholder: 'e.g. Q4 Patient Follow-up', value: wiz.name, style: 'font-size:1rem;font-weight:600;' });
+    const nameInput = el('input', { class: 'input aria-campaign-name-input', type: 'text', id: 'cw_name', maxlength: 80, placeholder: 'e.g. Q4 Patient Follow-up', value: wiz.name });
     nameInput.addEventListener('input', () => { wiz.name = nameInput.value.trim(); });
-    const agentOpts = (State.agents && State.agents.length) ? State.agents : [{ id: 'default', name: 'Seevora Voice Receptionist' }];
-    const agentSel = el('select', { class: 'input', id: 'cw_agent' }, agentOpts.map((a) => el('option', { value: a.id, selected: a.id === wiz.agentId }, a.name)));
-    agentSel.addEventListener('change', () => { wiz.agentId = agentSel.value; });
+    const agentOpts = (State.agents && State.agents.length) ? State.agents : [{ id: 'default', name: 'Ria – Seevora AI Voice Receptionist' }];
+    const agentSel = createThemedDropdown({
+      options: agentOpts.map((a) => ({ value: a.id, label: a.name })),
+      value: wiz.agentId || (agentOpts[0] && agentOpts[0].id) || 'default',
+      placeholder: 'Select Voice Agent...',
+      className: 'w-full',
+      style: 'width:100%;',
+      onChange: (val) => { wiz.agentId = val; }
+    });
     const p = el('div', { class: 'cw-panel' }, [
-      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:22px' }, 'Give your campaign a name and select which voice agent will handle calls.'),
+      el('p', { class: 'muted', style: 'font-size:.82rem;color:#5d7468;margin-bottom:20px;' }, 'Give your campaign a name and select which voice agent will handle calls.'),
       el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label', for: 'cw_name' }, 'Campaign Name'), nameInput]),
       el('div', { class: 'cw-field' }, [el('label', { class: 'cw-label', for: 'cw_agent' }, 'Voice Agent'), agentSel]),
       el('div', { class: 'trai-notice' }, [
@@ -6350,8 +7692,8 @@ async function viewCampaigns(root) {
     const tabCrm = el('button', { class: 'cw-tab', type: 'button' }, 'From CRM');
     const csvPan = el('div', {}); const pastePan = el('div', { style: 'display:none' }); const crmPan = el('div', { style: 'display:none' });
     const switchTab = (t, pan) => {
-      [tabCsv,tabPaste,tabCrm].forEach((x) => x.classList.remove('active'));
-      [csvPan,pastePan,crmPan].forEach((x) => { x.style.display = 'none'; });
+      [tabCsv, tabPaste, tabCrm].forEach((x) => x.classList.remove('active'));
+      [csvPan, pastePan, crmPan].forEach((x) => { x.style.display = 'none'; });
       t.classList.add('active'); pan.style.display = '';
     };
     tabCsv.addEventListener('click', () => switchTab(tabCsv, csvPan));
@@ -6391,9 +7733,9 @@ async function viewCampaigns(root) {
     const sBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, 'Load 3 Sample Leads');
     sBtn.addEventListener('click', () => {
       wiz.leads = [...wiz.leads,
-        { id: 'ld_s1', name: 'Dr. Sameer Verma', phone: '+91 9820144521', rawNumber: '9820144521', status: 'pending', error: null, timestamp: null },
-        { id: 'ld_s2', name: 'Pooja Agarwal',    phone: '+91 9167288410', rawNumber: '9167288410', status: 'pending', error: null, timestamp: null },
-        { id: 'ld_s3', name: 'Kavita Menon',     phone: '+91 9845012399', rawNumber: '9845012399', status: 'pending', error: null, timestamp: null }
+      { id: 'ld_s1', name: 'Dr. Sameer Verma', phone: '+91 9820144521', rawNumber: '9820144521', status: 'pending', error: null, timestamp: null },
+      { id: 'ld_s2', name: 'Pooja Agarwal', phone: '+91 9167288410', rawNumber: '9167288410', status: 'pending', error: null, timestamp: null },
+      { id: 'ld_s3', name: 'Kavita Menon', phone: '+91 9845012399', rawNumber: '9845012399', status: 'pending', error: null, timestamp: null }
       ];
       refreshCount(); toast('3 sample contacts added.', 'ok');
     });
@@ -6411,7 +7753,7 @@ async function viewCampaigns(root) {
       crmBtn.disabled = true; crmBtn.textContent = 'Syncing...';
       try {
         const res = await api('/api/crm/contacts');
-        const nl = ((res && res.contacts) || []).map((c) => { const n = normalizeLeadNumber(c.phone); return n ? { id: 'ld_' + Math.random().toString(36).slice(2,9), name: c.name || 'Lead', phone: n.formatted, rawNumber: n.raw, status: 'pending', error: null, timestamp: null } : null; }).filter(Boolean);
+        const nl = ((res && res.contacts) || []).map((c) => { const n = normalizeLeadNumber(c.phone); return n ? { id: 'ld_' + Math.random().toString(36).slice(2, 9), name: c.name || 'Lead', phone: n.formatted, rawNumber: n.raw, status: 'pending', error: null, timestamp: null } : null; }).filter(Boolean);
         wiz.leads = [...wiz.leads, ...nl]; refreshCount(); toast('Imported ' + nl.length + ' CRM contacts.', 'ok');
       } catch (e) { toast('CRM sync failed: ' + e.message, 'err'); }
       finally { crmBtn.disabled = false; crmBtn.textContent = 'Sync from CRM'; }
@@ -6428,8 +7770,8 @@ async function viewCampaigns(root) {
 
   /* Step 3: Schedule */
   function buildStep3() {
-    const dayNames = ['S','M','T','W','T','F','S'];
-    const dayLong  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const dayLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayPicker = el('div', { class: 'cw-day-picker' });
     dayNames.forEach((d, i) => {
       const btn = el('button', { type: 'button', class: 'cw-day-btn' + (wiz.activeDays.includes(i) ? ' on' : ''), title: dayLong[i] }, d);
@@ -6440,37 +7782,50 @@ async function viewCampaigns(root) {
       dayPicker.appendChild(btn);
     });
 
-    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h-12}:00 PM` : `${h}:00 AM`;
+    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`;
     const mkHSel = (val, min, max, onChange) => {
-      const s = el('select', { class: 'input' });
-      for (let h = min; h <= max; h++) s.appendChild(el('option', { value: h, selected: h === val }, fmtH(h)));
-      s.addEventListener('change', () => onChange(Number(s.value)));
-      return s;
+      const opts = [];
+      for (let h = min; h <= max; h++) opts.push({ value: h, label: fmtH(h) });
+      return createThemedDropdown({
+        options: opts,
+        value: val,
+        className: 'w-full',
+        style: 'width:100%;',
+        onChange: (v) => onChange(Number(v))
+      });
     };
-    const startH = mkHSel(wiz.scheduleStartHour, 9,  20, (v) => { wiz.scheduleStartHour = v; });
-    const endH   = mkHSel(wiz.scheduleEndHour,   10, 21, (v) => { wiz.scheduleEndHour   = v; });
+    const startH = mkHSel(wiz.scheduleStartHour, 9, 20, (v) => { wiz.scheduleStartHour = v; });
+    const endH = mkHSel(wiz.scheduleEndHour, 10, 21, (v) => { wiz.scheduleEndHour = v; });
 
     const dailyCapI = el('input', { class: 'input', type: 'number', min: 1, max: 1000, value: wiz.dailyCap });
     dailyCapI.addEventListener('change', () => { wiz.dailyCap = Math.max(1, Number(dailyCapI.value) || 100); });
 
-    const intervalSel = el('select', { class: 'input' }, [
-      el('option', { value: 30  }, '30 seconds'),
-      el('option', { value: 45  }, '45 seconds (Recommended)'),
-      el('option', { value: 60  }, '60 seconds'),
-      el('option', { value: 90  }, '90 seconds'),
-      el('option', { value: 120 }, '2 minutes'),
-    ]);
-    intervalSel.value = String(wiz.intervalSeconds);
-    intervalSel.addEventListener('change', () => { wiz.intervalSeconds = Number(intervalSel.value); });
+    const intervalSel = createThemedDropdown({
+      options: [
+        { value: 30, label: '30 seconds' },
+        { value: 45, label: '45 seconds (Recommended)' },
+        { value: 60, label: '60 seconds' },
+        { value: 90, label: '90 seconds' },
+        { value: 120, label: '2 minutes' },
+      ],
+      value: wiz.intervalSeconds,
+      className: 'w-full',
+      style: 'width:100%;',
+      onChange: (v) => { wiz.intervalSeconds = Number(v); }
+    });
 
-    const retrySel = el('select', { class: 'input' }, [
-      el('option', { value: 0 }, 'No retries'),
-      el('option', { value: 1 }, '1 retry'),
-      el('option', { value: 2 }, '2 retries'),
-      el('option', { value: 3 }, '3 retries'),
-    ]);
-    retrySel.value = String(wiz.retryLimit);
-    retrySel.addEventListener('change', () => { wiz.retryLimit = Number(retrySel.value); });
+    const retrySel = createThemedDropdown({
+      options: [
+        { value: 0, label: 'No retries' },
+        { value: 1, label: '1 retry' },
+        { value: 2, label: '2 retries' },
+        { value: 3, label: '3 retries' },
+      ],
+      value: wiz.retryLimit,
+      className: 'w-full',
+      style: 'width:100%;',
+      onChange: (v) => { wiz.retryLimit = Number(v); }
+    });
 
     return el('div', { class: 'cw-panel' }, [
       el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:22px' }, 'Configure calling days, daily limits, and retry behavior. TRAI 9:00 AM to 9:00 PM enforcement is automatic.'),
@@ -6498,17 +7853,17 @@ async function viewCampaigns(root) {
   /* Step 4: Review */
   function buildStep4() {
     const agentName = ((State.agents || []).find((a) => a.id === wiz.agentId) || {}).name || 'Seevora Voice Receptionist';
-    const dayLong   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h-12}:00 PM` : `${h}:00 AM`;
+    const dayLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const fmtH = (h) => h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`;
     const items = [
-      { k: 'Campaign Name',  v: wiz.name || 'None' },
-      { k: 'Voice Agent',    v: agentName },
+      { k: 'Campaign Name', v: wiz.name || 'None' },
+      { k: 'Voice Agent', v: agentName },
       { k: 'Total Contacts', v: wiz.leads.length + ' contacts' },
-      { k: 'Active Days',    v: wiz.activeDays.map((d) => dayLong[d]).join(', ') || 'None' },
+      { k: 'Active Days', v: wiz.activeDays.map((d) => dayLong[d]).join(', ') || 'None' },
       { k: 'Calling Window', v: fmtH(wiz.scheduleStartHour) + ' to ' + fmtH(wiz.scheduleEndHour) },
-      { k: 'Daily Cap',      v: wiz.dailyCap + ' calls/day' },
-      { k: 'Interval',       v: wiz.intervalSeconds + 's' },
-      { k: 'Retries',        v: String(wiz.retryLimit) },
+      { k: 'Daily Cap', v: wiz.dailyCap + ' calls/day' },
+      { k: 'Interval', v: wiz.intervalSeconds + 's' },
+      { k: 'Retries', v: String(wiz.retryLimit) },
     ];
     const grid = el('div', { class: 'cw-review-grid' });
     items.forEach(({ k, v }) => grid.appendChild(el('div', { class: 'cw-review-item' }, [el('div', { class: 'cw-review-key' }, k), el('div', { class: 'cw-review-val' }, v)])));
@@ -6544,7 +7899,7 @@ async function viewCampaigns(root) {
         method: 'POST',
         body: { name: wiz.name, agentId: wiz.agentId, leads: wiz.leads, dailyCap: wiz.dailyCap, intervalSeconds: wiz.intervalSeconds, retryLimit: wiz.retryLimit, retryBusyAfterMin: wiz.retryBusyAfterMin, retryNoAnsAfterMin: wiz.retryNoAnsAfterMin, activeDays: wiz.activeDays, scheduleStartHour: wiz.scheduleStartHour, scheduleEndHour: wiz.scheduleEndHour }
       });
-      if (resp && resp.campaign) await api('/api/campaigns/action', { method: 'POST', body: { campaignId: resp.campaign.id, action: 'start' } }).catch(() => {});
+      if (resp && resp.campaign) await api('/api/campaigns/action', { method: 'POST', body: { campaignId: resp.campaign.id, action: 'start' } }).catch(() => { });
       toast('Campaign "' + wiz.name + '" launched!', 'ok');
       Object.assign(wiz, { step: 1, name: '', leads: [], agentId: (State.agents && State.agents[0] && State.agents[0].id) || '' });
       renderWizStep();
@@ -6558,13 +7913,16 @@ async function viewCampaigns(root) {
   /* ================================================================
      CAMPAIGN MANAGER (server-persisted campaigns list)
      ================================================================ */
-  const managerCard = el('div', { class: 'camp-manager-card', style: 'margin-top:24px;' });
-  root.appendChild(managerCard);
-  managerCard.appendChild(el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:4px' }, [
-    el('h3', { class: 't-h3' }, 'Campaign Manager'),
-    el('button', { class: 'btn btn-ghost', style: 'font-size:.8rem', onclick: loadCampManager }, 'Refresh')
+  const managerCard = el('div', { class: 'camp-manager-card aria-camp-manager' });
+  campBodyGrid.appendChild(managerCard);
+  managerCard.appendChild(el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:14px;flex-wrap:wrap;gap:12px;' }, [
+    el('div', {}, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Active Schedules'),
+      el('h3', { class: 't-h3', style: 'margin:0 0 4px 0;font-size:1.20rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, 'Campaign Manager'),
+      el('p', { class: 'muted text-xs', style: 'margin:0;font-size:0.82rem;color:#5d7468;' }, 'Server-persisted automated campaigns with automated retry logic and strict TRAI compliance.')
+    ]),
+    el('button', { class: 'btn btn-ghost btn-sm', style: 'font-size:.80rem;padding:7px 18px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;cursor:pointer;', onclick: loadCampManager }, 'Refresh')
   ]));
-  managerCard.appendChild(el('p', { class: 'muted', style: 'font-size:.82rem' }, 'Server-persisted campaigns with automated retry and TRAI compliance. Updates every 12 seconds when a campaign is active.'));
   const campList = el('div', { class: 'camp-list' });
   managerCard.appendChild(campList);
 
@@ -6575,10 +7933,11 @@ async function viewCampaigns(root) {
       const data = await api('/api/campaigns');
       const camps = (data && data.campaigns) || [];
       campList.innerHTML = '';
+      updateOutboundKpis(camps);
       if (!camps.length) {
-        campList.appendChild(el('div', { class: 'camp-empty' }, [
-          el('div', { style: 'font-weight:600;margin-bottom:4px;' }, 'No campaigns yet'),
-          el('div', { class: 'muted' }, 'Use the wizard above to create and launch your first campaign.')
+        campList.appendChild(el('div', { class: 'camp-empty', style: 'padding:32px 0;' }, [
+          el('div', { style: 'font-weight:700;font-size:0.95rem;color:#14221c;margin-bottom:4px;' }, 'No campaigns created yet'),
+          el('div', { class: 'muted text-xs', style: 'color:#5d7468;' }, 'Use the campaign creator above to schedule and launch automated outbound voice calling.')
         ]));
         return;
       }
@@ -6589,10 +7948,10 @@ async function viewCampaigns(root) {
   function buildCampItem(camp) {
     const leads = camp.leads || [];
     const total = leads.length;
-    const done  = leads.filter((l) => l.status === 'initiated').length;
-    const fail  = leads.filter((l) => l.status === 'failed').length;
-    const pct   = total ? Math.round((done / total) * 100) : 0;
-    const st    = camp.status || 'draft';
+    const done = leads.filter((l) => l.status === 'initiated').length;
+    const fail = leads.filter((l) => l.status === 'failed').length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const st = camp.status || 'draft';
 
     const pill = el('div', { class: 'camp-status-pill ' + st }, [el('div', { class: 'camp-status-dot' }), st.charAt(0).toUpperCase() + st.slice(1)]);
 
@@ -6602,12 +7961,12 @@ async function viewCampaigns(root) {
       pb.addEventListener('click', async () => { pb.disabled = true; try { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'pause' } }); toast('Paused.', 'ok'); loadCampManager(); } catch (e) { toast(e.message, 'err'); } finally { pb.disabled = false; } });
       btns.push(pb);
     }
-    if (['draft','paused'].includes(st)) {
+    if (['draft', 'paused'].includes(st)) {
       const sb = el('button', { class: 'btn btn-primary', style: 'font-size:.78rem;padding:5px 12px' }, st === 'paused' ? 'Resume' : 'Start');
       sb.addEventListener('click', async () => { sb.disabled = true; try { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'start' } }); toast('Started.', 'ok'); loadCampManager(); } catch (e) { toast(e.message, 'err'); } finally { sb.disabled = false; } });
       btns.push(sb);
     }
-    if (!['completed','stopped'].includes(st)) {
+    if (!['completed', 'stopped'].includes(st)) {
       const xb = el('button', { class: 'btn btn-danger', style: 'font-size:.78rem;padding:5px 12px' }, 'Stop');
       xb.addEventListener('click', () => modal({ title: 'Stop Campaign', body: el('div', {}, [el('p', {}, ['Stop ', el('b', {}, esc(camp.name)), '?']), el('div', { class: 'danger-note' }, 'Pending calls cancelled.')]), confirmText: 'Stop', confirmKind: 'danger', onConfirm: async () => { await api('/api/campaigns/action', { method: 'POST', body: { campaignId: camp.id, action: 'stop' } }); toast('Stopped.', 'ok'); loadCampManager(); } }));
       btns.push(xb);
@@ -6616,9 +7975,12 @@ async function viewCampaigns(root) {
     db.addEventListener('click', () => modal({ title: 'Delete Campaign', body: el('div', {}, el('p', {}, ['Delete ', el('b', {}, esc(camp.name)), '?'])), confirmText: 'Delete', confirmKind: 'danger', onConfirm: async () => { await api('/api/campaigns/delete', { method: 'POST', body: { campaignId: camp.id } }); toast('Deleted.', 'ok'); loadCampManager(); } }));
     btns.push(db);
 
-    return el('div', { class: 'camp-item' }, [
-      el('div', {}, [
-        el('div', { class: 'flex items-center gap-2', style: 'margin-bottom:4px' }, [el('div', { class: 'camp-item-name' }, esc(camp.name)), pill]),
+    return el('div', { class: 'camp-item aria-camp-row' }, [
+      el('div', { style: 'flex:1;min-width:0;' }, [
+        el('div', { class: 'flex items-center gap-2', style: 'margin-bottom:6px' }, [
+          el('div', { class: 'camp-item-name', style: 'font-weight:750;font-size:0.98rem;color:#14221c;' }, esc(camp.name)),
+          pill
+        ]),
         el('div', { class: 'camp-item-meta' }, [
           el('span', {}, esc(camp.agentName || 'Voice Agent')),
           el('span', {}, total + (total === 1 ? ' contact' : ' contacts')),
@@ -6627,12 +7989,31 @@ async function viewCampaigns(root) {
           el('span', {}, (camp.intervalSeconds || 45) + 's interval'),
           el('span', {}, 'Daily cap: ' + (camp.dailyCap || 100))
         ].filter(Boolean)),
-        el('div', { class: 'camp-progress-bar' }, [el('div', { class: 'camp-progress-fill', style: 'width:' + pct + '%' })]),
-        el('div', { class: 'muted', style: 'font-size:.72rem;margin-top:4px;font-family:var(--mono)' }, pct + '% complete' + (st === 'running' ? ' · Active' : ''))
+        el('div', { class: 'camp-progress-bar', style: 'height:4px;border-radius:99px;background:rgba(13,93,65,0.08);margin-top:8px;' }, [
+          el('div', { class: 'camp-progress-fill', style: 'width:' + pct + '%;height:100%;border-radius:99px;background:linear-gradient(90deg, #0d5d41, #10b981);' })
+        ]),
+        el('div', { class: 'muted text-xs', style: 'font-size:.74rem;margin-top:4px;font-family:var(--mono);color:#5d7468;' }, pct + '% complete' + (st === 'running' ? ' · Active' : ''))
       ]),
       el('div', { class: 'camp-item-actions' }, btns)
     ]);
   }
+
+  // Initial data loading for Outbound Calls & Campaigns
+  const hasExistingRecs = Array.isArray(_recState.recordings) && _recState.recordings.length > 0;
+  if (hasExistingRecs) {
+    applyOutboundFilters();
+  }
+
+  api('/api/recordings?sync=true&limit=100&offset=0').then((res) => {
+    if (res && Array.isArray(res.recordings)) {
+      _recState.recordings = res.recordings;
+      applyOutboundFilters();
+    } else if (!hasExistingRecs) {
+      applyOutboundFilters();
+    }
+  }).catch(() => {
+    if (!hasExistingRecs) applyOutboundFilters();
+  });
 
   loadCampManager();
 
@@ -6912,7 +8293,16 @@ async function viewBilling(root) {
     goto('overview');
     return;
   }
-  root.appendChild(viewHead('Plans & Billing', 'One plan for every call and every chat. Manage subscriptions, active quotas, and prepaid wallet.'));
+  const wrap = el('div', { class: 'aria-billing-view' });
+  root.appendChild(wrap);
+
+  const head = viewHead('Plans & Billing', 'One plan for every call and every chat. Manage subscriptions, active quotas, and prepaid wallet.');
+  const headTitle = head.querySelector('h2');
+  if (headTitle) {
+    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Subscription & Usage Tiers');
+    headTitle.parentNode.insertBefore(kicker, headTitle);
+  }
+  wrap.appendChild(head);
 
   const me = State.me || {};
   const tenant = me.tenant || {};
@@ -6921,23 +8311,23 @@ async function viewBilling(root) {
   const limits = tenant.limits || { voiceMinutes: 500, activeWorkflows: 3, contacts: 1000, users: 2 };
   const usage = tenant.usage || { activeWorkflows: 0, contacts: 0, users: 1 };
 
-  // 1. Current Plan & Quota Meters Card
+  // 1. Current Plan & Quota Meters Card (Cardless Scandinavian Strip)
   const overviewCard = el('section', { class: 'billing-overview-card' });
   const topRow = el('div', { class: 'billing-top-row' }, [
     el('div', {}, [
-      el('h3', { style: 'margin:0 0 6px 0;font-size:1.35rem;font-weight:700;color:var(--ink)' }, (tenant.name || 'Workspace') + ' Subscription'),
-      el('p', { class: 'muted', style: 'margin:0;font-size:0.85rem' }, [
-        'Plan: ', el('strong', { style: 'color:var(--ink)' }, (tenant.plan || 'Starter').charAt(0).toUpperCase() + (tenant.plan || 'Starter').slice(1).toLowerCase()),
-        ' · Billing term: ', el('strong', {}, currentInterval.charAt(0).toUpperCase() + currentInterval.slice(1)),
+      el('h3', { style: 'margin:0 0 6px 0;font-size:1.30rem;font-weight:800;color:#14221c;letter-spacing:-0.02em;' }, (tenant.name || 'Workspace') + ' Subscription'),
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;' }, [
+        'Plan: ', el('strong', { style: 'color:#0d5d41;font-weight:750;' }, (tenant.plan || 'Starter').charAt(0).toUpperCase() + (tenant.plan || 'Starter').slice(1).toLowerCase()),
+        ' · Billing term: ', el('strong', { style: 'color:#14221c;font-weight:700;' }, currentInterval.charAt(0).toUpperCase() + currentInterval.slice(1)),
         tenant.planExpiresAt ? ' · Renews on ' + new Date(tenant.planExpiresAt).toLocaleDateString() : ' · Active subscription'
       ])
     ]),
     el('div', { style: 'text-align:right' }, [
-      el('span', { class: 'muted', style: 'font-size:0.8rem;display:block' }, 'Questions or custom terms?'),
+      el('span', { class: 'muted', style: 'font-size:0.78rem;color:#5d7468;display:block' }, 'Questions or custom terms?'),
       el('a', {
         href: 'tel:+918982200895',
         class: 'btn btn-ghost btn-sm',
-        style: 'margin-top:4px;display:inline-flex;align-items:center;gap:6px'
+        style: 'margin-top:6px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;padding:6px 16px;font-size:0.80rem;font-weight:700;'
       }, 'Phone Support: +91 89822 00895')
     ])
   ]);
@@ -6981,7 +8371,7 @@ async function viewBilling(root) {
 
   overviewCard.appendChild(topRow);
   overviewCard.appendChild(metersGrid);
-  root.appendChild(overviewCard);
+  wrap.appendChild(overviewCard);
 
   // 2. Billing Cycle Switcher (Monthly, Quarterly, Annual)
   const switcherWrap = el('div', { class: 'interval-toggle-wrap' });
@@ -7012,11 +8402,11 @@ async function viewBilling(root) {
   switcher.appendChild(quarterlyBtn);
   switcher.appendChild(annualBtn);
   switcherWrap.appendChild(switcher);
-  root.appendChild(switcherWrap);
+  wrap.appendChild(switcherWrap);
 
   // 3. Plan Cards Grid Host
   const plansGridHost = el('div', { class: 'pricing-plans-grid', id: 'pricingPlansHost' });
-  root.appendChild(plansGridHost);
+  wrap.appendChild(plansGridHost);
 
   function renderPlanCards() {
     plansGridHost.innerHTML = '';
@@ -7189,7 +8579,7 @@ async function viewBilling(root) {
     ])
   ]);
   matrixWrap.appendChild(matrixTable);
-  root.appendChild(matrixWrap);
+  wrap.appendChild(matrixWrap);
 
   // 5. Add-ons & Overages Rate Card
   const addonsWrap = el('section', { class: 'addons-table-wrap' });
@@ -7218,14 +8608,14 @@ async function viewBilling(root) {
     ]),
   ]);
   addonsWrap.appendChild(addonsGrid);
-  root.appendChild(addonsWrap);
+  wrap.appendChild(addonsWrap);
 
   // 6. Prepaid Wallet Top-up & Ledger Section
   const walletGrid = el('div', { class: 'wallet-section-grid' }, [
-    el('section', { class: 'card card-pad', id: 'walletSummary' }, skeleton('sk-card', 1)),
-    el('section', { class: 'card card-pad', id: 'walletLedger' }, skeleton('sk-card', 1))
+    el('section', { class: 'card card-pad aria-wallet-card', id: 'walletSummary' }, skeleton('sk-card', 1)),
+    el('section', { class: 'card card-pad aria-wallet-card', id: 'walletLedger' }, skeleton('sk-card', 1))
   ]);
-  root.appendChild(walletGrid);
+  wrap.appendChild(walletGrid);
 
   try {
     const out = await api('/api/wallet');
@@ -7501,86 +8891,328 @@ async function loadTickets(host) {
 }
 
 function ticketCard(t, admin) {
-  const messages = (t.messages || []).map((m) => el('div', { class: 'ticket-message' }, [
-    el('b', {}, m.authorName || m.authorRole || 'User'), el('span', {}, m.message || m.body || '')
-  ]));
-  const reply = el('input', { class: 'input', placeholder: 'Write a reply.' });
-  const send = el('button', { class: 'btn btn-ghost' }, 'Reply');
-  send.onclick = async () => {
-    const msg = reply.value.trim(); if (!msg) return;
-    send.disabled = true;
-    try {
-      await api(admin ? '/api/admin/tickets/reply' : '/api/support/tickets/reply', { method: 'POST', body: { ticketId: t.id, message: msg } });
-      toast('Reply sent.', 'ok'); onRoute();
-    } catch (e) { toast(e.message, 'err'); } finally { send.disabled = false; }
-  };
-  const adminControls = admin ? el('div', { class: 'ticket-admin-controls' }, [
-    (function () { const s = el('select', { class: 'select' }, ['open', 'in_progress', 'waiting_on_customer', 'resolved', 'closed'].map((v) => el('option', { value: v }, v.replace(/_/g, ' ')))); s.value = t.status || 'open'; s.setAttribute('data-ticket-status', t.id); return s; })(),
-    (function () { const s = el('select', { class: 'select' }, ['low', 'normal', 'high', 'urgent'].map((v) => el('option', { value: v }, v))); s.value = t.priority || 'normal'; s.setAttribute('data-ticket-priority', t.id); return s; })(),
-    el('button', { class: 'btn btn-ghost', onclick: async () => { const status = document.querySelector('[data-ticket-status="' + t.id + '"]').value; const priority = document.querySelector('[data-ticket-priority="' + t.id + '"]').value; await api('/api/admin/tickets/update', { method: 'POST', body: { ticketId: t.id, status: status, priority: priority } }); toast('Ticket updated.', 'ok'); onRoute(); } }, 'Update')
-  ]) : null;
-  return el('article', { class: 'card ticket-card', style: 'margin-bottom:18px;' }, [
-    el('div', { class: 'flex items-center justify-between gap-2' }, [el('h3', { class: 't-h3' }, t.subject), el('span', { class: 'pill' }, t.status || 'open')]),
-    adminControls, ...messages, el('div', { class: 'ticket-reply' }, [reply, send])
+  let isExpanded = false;
+
+  const statusVal = t.status || 'open';
+  const priorityVal = t.priority || 'normal';
+  const msgList = t.messages || [];
+  const msgCount = msgList.length;
+
+  const isClosed = (statusVal === 'closed' || statusVal === 'resolved');
+  const badgeStatus = el('span', { class: 'status-badge ' + (isClosed ? 'status-suspended' : 'status-active') }, statusVal.replace(/_/g, ' ').toUpperCase());
+  const badgePriority = el('span', {
+    class: 'pill',
+    style: (priorityVal === 'urgent' || priorityVal === 'high') ? 'background:rgba(239,68,68,0.12);color:#dc2626;font-weight:700;' : 'background:rgba(13,93,65,0.08);color:#0d5d41;'
+  }, priorityVal.toUpperCase());
+
+  const toggleBtn = el('button', {
+    class: 'btn btn-ghost btn-sm',
+    style: 'font-size:12px;padding:6px 12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;'
+  }, [
+    el('span', { class: 'ticket-toggle-label' }, 'View & Reply (' + msgCount + ')'),
+    el('span', { class: 'ticket-toggle-icon', html: uiIcon('chevron-down', 13) })
   ]);
+
+  // Main row strip (always visible on canvas)
+  const headerRow = el('div', { class: 'admin-ticket-row' }, [
+    el('div', { class: 'admin-ticket-identity' }, [
+      el('span', { class: 'ticket-avatar' }, [
+        el('span', { html: uiIcon('ticket', 18) })
+      ]),
+      el('div', { class: 'admin-ticket-meta' }, [
+        el('b', { class: 'ws-truncate', title: t.subject }, t.subject),
+        el('small', { class: 'muted' }, (t.tenantName || t.tenantId || 'Client Ticket') + ' · ' + msgCount + ' message' + (msgCount === 1 ? '' : 's'))
+      ])
+    ]),
+    el('div', { class: 'admin-client-signal' }, [
+      el('span', {}, 'Priority'),
+      badgePriority
+    ]),
+    el('div', { class: 'admin-client-signal' }, [
+      el('span', {}, 'Updated'),
+      el('strong', {}, (t.updatedAt || t.createdAt || '').slice(0, 10) || 'Recent')
+    ]),
+    el('div', { class: 'admin-client-signal' }, [
+      el('span', {}, 'Status'),
+      badgeStatus
+    ]),
+    el('div', { style: 'text-align:right;' }, [toggleBtn])
+  ]);
+
+  // Expandable Drawer Container
+  const drawer = el('div', { class: 'ticket-drawer hide' });
+
+  // 1. Admin controls (Compact, inline flex)
+  if (admin) {
+    const statusSelect = el('select', { class: 'select-compact' }, ['open', 'in_progress', 'waiting_on_customer', 'resolved', 'closed'].map((v) => el('option', { value: v }, v.replace(/_/g, ' '))));
+    statusSelect.value = statusVal;
+    statusSelect.setAttribute('data-ticket-status', t.id);
+
+    const prioSelect = el('select', { class: 'select-compact' }, ['low', 'normal', 'high', 'urgent'].map((v) => el('option', { value: v }, v)));
+    prioSelect.value = priorityVal;
+    prioSelect.setAttribute('data-ticket-priority', t.id);
+
+    const updateBtn = el('button', {
+      class: 'btn-compact-update',
+      onclick: async () => {
+        updateBtn.disabled = true;
+        try {
+          await api('/api/admin/tickets/update', {
+            method: 'POST',
+            body: { ticketId: t.id, status: statusSelect.value, priority: prioSelect.value }
+          });
+          toast('Ticket status updated.', 'ok');
+          onRoute();
+        } catch (e) {
+          toast(e.message, 'err');
+        } finally {
+          updateBtn.disabled = false;
+        }
+      }
+    }, 'Update Status');
+
+    const controls = el('div', { class: 'ticket-controls-bar' }, [
+      el('span', { class: 'ticket-controls-label' }, 'Change Status:'),
+      statusSelect,
+      el('span', { class: 'ticket-controls-label', style: 'margin-left:10px;' }, 'Priority:'),
+      prioSelect,
+      updateBtn
+    ]);
+    drawer.appendChild(controls);
+  }
+
+  // 2. Conversation Bubbles Thread
+  const thread = el('div', { class: 'ticket-conversation-thread' });
+  msgList.forEach((m) => {
+    const isSupport = (m.authorRole === 'support' || m.authorRole === 'super_admin' || m.authorRole === 'admin' || (m.authorName || '').toLowerCase().includes('seevora'));
+    thread.appendChild(el('div', { class: 'ticket-bubble ' + (isSupport ? 'bubble-support' : 'bubble-client') }, [
+      el('div', { class: 'bubble-author' }, [
+        el('b', {}, m.authorName || m.authorRole || 'User'),
+        el('span', { class: 'bubble-role' }, isSupport ? 'Support Team' : 'Client')
+      ]),
+      el('div', { class: 'bubble-body' }, m.message || m.body || '')
+    ]));
+  });
+  drawer.appendChild(thread);
+
+  // 3. Compact Reply Bar
+  const replyInput = el('input', {
+    class: 'ticket-reply-input',
+    placeholder: 'Write a response to this ticket...'
+  });
+  const replyBtn = el('button', {
+    class: 'ticket-reply-btn',
+    onclick: async () => {
+      const msg = replyInput.value.trim();
+      if (!msg) return;
+      replyBtn.disabled = true;
+      try {
+        await api(admin ? '/api/admin/tickets/reply' : '/api/support/tickets/reply', {
+          method: 'POST',
+          body: { ticketId: t.id, message: msg }
+        });
+        toast('Reply sent.', 'ok');
+        onRoute();
+      } catch (e) {
+        toast(e.message, 'err');
+      } finally {
+        replyBtn.disabled = false;
+      }
+    }
+  }, 'Send Reply');
+
+  replyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      replyBtn.click();
+    }
+  });
+
+  const replyDock = el('div', { class: 'ticket-reply-dock' }, [
+    replyInput,
+    replyBtn
+  ]);
+  drawer.appendChild(replyDock);
+
+  function toggleDrawer() {
+    isExpanded = !isExpanded;
+    drawer.classList.toggle('hide', !isExpanded);
+    itemContainer.classList.toggle('is-expanded', isExpanded);
+    const label = toggleBtn.querySelector('.ticket-toggle-label');
+    const icon = toggleBtn.querySelector('.ticket-toggle-icon');
+    if (label) label.textContent = isExpanded ? 'Close Thread' : 'View & Reply (' + msgCount + ')';
+    if (icon) icon.innerHTML = isExpanded ? uiIcon('chevron-up', 13) : uiIcon('chevron-down', 13);
+  }
+
+  toggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    toggleDrawer();
+  };
+  headerRow.onclick = (e) => {
+    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+      toggleDrawer();
+    }
+  };
+
+  const itemContainer = el('div', { class: 'admin-ticket-item' }, [
+    headerRow,
+    drawer
+  ]);
+
+  return itemContainer;
 }
 
 let _adminDataCache = null;
 
 async function viewAdmin(root) {
+  root.classList.add('aria-clients-view');
   const isSuperAdmin = State.me && State.me.user && ['super_admin', 'admin'].includes(State.me.user.role);
   if (!isSuperAdmin) {
     const head = viewHead('Manage Clients', 'Client workspace management is reserved for platform administrators.');
     root.appendChild(head);
-    root.appendChild(el('div', { class: 'card card-pad', style: 'text-align:center;padding:48px 24px;margin-top:20px;' }, [
-      el('div', { style: 'font-weight:700;font-size:1.1rem;margin-bottom:8px;color:var(--ink);' }, 'Administrator Access Required'),
-      el('p', { class: 'muted', style: 'max-width:460px;margin:0 auto 16px;font-size:0.86rem;line-height:1.5;' }, 'Your account is currently signed in with client permissions. Sign in with an Administrator account or use Admin Demo to manage client workspaces.'),
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => goto('overview') }, 'Go to Dashboard')
+    root.appendChild(el('div', { class: 'aria-admin-notice-box', style: 'text-align:center;padding:48px 24px;margin-top:20px;background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:20px;' }, [
+      el('div', { style: 'font-weight:700;font-size:1.1rem;margin-bottom:8px;color:#14221c;' }, 'Administrator Access Required'),
+      el('p', { class: 'muted', style: 'max-width:460px;margin:0 auto 16px;font-size:0.86rem;line-height:1.5;color:#5d7468;' }, 'Your account is currently signed in with client permissions. Sign in with an Administrator account or use Admin Demo to manage client workspaces.'),
+      el('button', { class: 'btn btn-primary btn-sm', style: 'background:#0d5d41;color:#fff;', onclick: () => goto('overview') }, 'Go to Dashboard')
     ]));
     return;
   }
   const superAdmin = true;
-  const head = viewHead('Clients', 'Add, approach, inspect, pause, and offboard client workspaces with an immutable activity trail.');
+  const head = viewHead('Manage Clients', 'Add, approach, inspect, pause, and provision client workspaces with live telephony & usage signals.');
   if (superAdmin) head.appendChild(el('div', { class: 'view-actions' }, [el('button', { class: 'sv-btn-add-client', onclick: openClientComposer }, [el('span', { html: uiIcon('plus', 14) }), el('span', {}, 'Add Client')])]));
   root.appendChild(head);
 
+  // Top Options Navigation Tabs (Click to view particular option)
+  let activeTab = 'workspaces';
+  const tabDefs = [
+    { id: 'workspaces', label: 'Client Workspaces', icon: 'building', badgeId: 'tab-badge-workspaces', badgeVal: '...' },
+    { id: 'carriers', label: 'Carrier Infrastructure', icon: 'phone', badgeId: 'tab-badge-carriers', badgeVal: 'Live' },
+    { id: 'watchdog', label: 'TRAI Watchdog', icon: 'activity', badgeId: 'tab-badge-watchdog', badgeVal: 'Open' },
+    { id: 'tickets', label: 'Support Tickets', icon: 'headset', badgeId: 'tab-badge-tickets', badgeVal: '0' }
+  ];
+
+  const tabsNav = el('div', { class: 'admin-tab-nav' });
+  const navButtons = [];
+
+  tabDefs.forEach((tab) => {
+    const badge = el('span', { class: 'admin-tab-badge', id: tab.badgeId }, tab.badgeVal);
+    const btn = el('button', {
+      class: 'admin-tab-btn' + (tab.id === activeTab ? ' active' : ''),
+      'data-tab': tab.id,
+      onclick: () => switchTab(tab.id)
+    }, [
+      el('span', { html: uiIcon(tab.icon, 13) }),
+      el('span', {}, tab.label),
+      badge
+    ]);
+    navButtons.push(btn);
+    tabsNav.appendChild(btn);
+  });
+  root.appendChild(tabsNav);
+
   const hasCache = _adminDataCache != null;
-  const stats = el('div', { class: 'admin-kpi-grid' }, hasCache ? [] : skeleton('sk-stat', 5));
-  const tenantHost = el('div', { class: 'card admin-client-card' }, hasCache ? [] : skeleton('sk-card', 1));
-  const ticketHost = el('div', { class: 'ticket-list' }, hasCache ? [] : skeleton('sk-card', 1));
-  const eventHost = el('div', { class: 'card card-pad admin-table agency-events-card' }, hasCache ? [] : skeleton('sk-card', 1));
-  const carrierHost = el('div', { class: 'card card-pad', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
-  const kycHost = el('div', { class: 'card card-pad admin-table', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
-  const watchdogHost = el('div', { class: 'card card-pad admin-table', style: 'margin-top:16px;' }, skeleton('sk-card', 1));
-  root.appendChild(stats);
-  root.appendChild(tenantHost);
-  root.appendChild(carrierHost);
-  root.appendChild(kycHost);
-  root.appendChild(watchdogHost);
-  root.appendChild(ticketHost);
-  root.appendChild(eventHost);
+  const stats = el('div', { class: 'admin-kpi-grid aria-kpi-grid' }, hasCache ? [] : skeleton('sk-stat', 5));
+  const tenantHost = el('div', { class: 'admin-client-card aria-clients-list-host' }, hasCache ? [] : skeleton('sk-card', 1));
+  const ticketHost = el('div', { class: 'ticket-list aria-tickets-host' }, hasCache ? [] : skeleton('sk-card', 1));
+  const carrierHost = el('div', { class: 'aria-carrier-host' }, skeleton('sk-card', 1));
+  const watchdogHost = el('div', { class: 'aria-watchdog-host admin-table' }, skeleton('sk-card', 1));
+
+  // Search & Filter Bar for Client Workspaces (Single top Add Client button in header, clean input without emoji)
+  const searchInput = el('input', {
+    class: 'admin-search-input',
+    placeholder: 'Search client by name, email, ID or slug...',
+    type: 'text'
+  });
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    const rows = tenantHost.querySelectorAll('.admin-client-row');
+    rows.forEach((r) => {
+      const text = r.textContent.toLowerCase();
+      r.style.display = (!q || text.includes(q)) ? 'grid' : 'none';
+    });
+  });
+
+  const searchFilterBar = el('div', { class: 'admin-workspaces-bar' }, [
+    el('div', { class: 'admin-search-wrap' }, [searchInput])
+  ]);
+
+  // Tab Panels (Only active tab is displayed)
+  const panelWorkspaces = el('div', { class: 'admin-tab-panel', 'data-tab': 'workspaces', style: 'display:block;' }, [stats, searchFilterBar, tenantHost]);
+  const panelCarriers = el('div', { class: 'admin-tab-panel', 'data-tab': 'carriers', style: 'display:none;' }, [carrierHost]);
+  const panelWatchdog = el('div', { class: 'admin-tab-panel', 'data-tab': 'watchdog', style: 'display:none;' }, [watchdogHost]);
+  const panelTickets = el('div', { class: 'admin-tab-panel', 'data-tab': 'tickets', style: 'display:none;' }, [ticketHost]);
+
+  root.appendChild(panelWorkspaces);
+  root.appendChild(panelCarriers);
+  root.appendChild(panelWatchdog);
+  root.appendChild(panelTickets);
+
+  function switchTab(id) {
+    activeTab = id;
+    navButtons.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.tab === id);
+    });
+    [panelWorkspaces, panelCarriers, panelWatchdog, panelTickets].forEach((panel) => {
+      panel.style.display = (panel.dataset.tab === id) ? 'block' : 'none';
+    });
+  }
 
   function renderAdminData(data) {
     const o = superAdmin ? data[0] : { totals: {} }, ts = superAdmin ? data[1] : { tenants: [] }, users = superAdmin ? data[2] : { users: [] }, tickets = data[superAdmin ? 3 : 0], events = data[superAdmin ? 4 : 1];
     stats.innerHTML = '';
     const totals = o.totals || {};
     [['Active clients', totals.activeTenants != null ? totals.activeTenants : 'Restricted', 'Live workspaces'], ['Revenue recorded', superAdmin ? '₹' + fmtInr((totals.invoicedPaise || 0) / 100) : 'Restricted', 'Issued invoices'], ['Outstanding', superAdmin ? '₹' + fmtInr((totals.outstandingPaise || 0) / 100) : 'Restricted', 'Receivables'], ['Open tickets', totals.openTickets != null ? totals.openTickets : (tickets.tickets || []).filter((t) => t.status !== 'closed').length, 'Needs attention'], ['Calls', superAdmin ? totals.calls : 'Restricted', 'Tracked usage']].forEach((x) => stats.appendChild(el('article', { class: 'agency-metric' }, [el('div', { class: 'agency-metric-label' }, x[0]), el('div', { class: 'agency-metric-value' }, String(x[1] || 0)), el('div', { class: 'agency-metric-note' }, x[2])])));
-    tenantHost.innerHTML = ''; tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Portfolio'), el('h3', {}, 'Client workspaces')]), superAdmin ? el('button', { class: 'sv-btn-outline', style: 'padding:6px 14px;font-size:0.78rem;', onclick: openClientComposer }, [el('span', { html: uiIcon('plus', 12) }), el('span', {}, 'Add Client')]) : null]));
-    if (superAdmin) (ts.tenants || []).forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
-    else tenantHost.appendChild(el('div', { class: 'muted' }, 'Tenant controls require super admin access.'));
+
+    // Update Tab Badges
+    const bWorkspaces = document.getElementById('tab-badge-workspaces');
+    if (bWorkspaces) bWorkspaces.textContent = String((ts.tenants || []).length);
+
+    tenantHost.innerHTML = '';
+    tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [
+      el('div', {}, [
+        el('span', { class: 'section-kicker' }, 'Client Portfolio'),
+        el('h3', {}, 'Provisioned Workspaces (' + ((ts.tenants || []).length) + ')')
+      ])
+    ]));
+
+    if (superAdmin) {
+      if ((ts.tenants || []).length === 0) {
+        tenantHost.appendChild(el('div', { class: 'ws-empty-state' }, [
+          el('div', { class: 'ws-empty-icon' }, [uiIcon('building', 28)]),
+          el('div', { class: 'ws-empty-title' }, 'No client workspaces found'),
+          el('div', { class: 'ws-empty-sub' }, 'Click "+ Add Client" above to onboard your first business client workspace.')
+        ]));
+      } else {
+        (ts.tenants || []).forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
+      }
+    } else {
+      tenantHost.appendChild(el('div', { class: 'muted' }, 'Tenant controls require super admin access.'));
+    }
+
     ticketHost.innerHTML = '';
     const openTicketsList = (tickets && tickets.tickets) || [];
+    const bTickets = document.getElementById('tab-badge-tickets');
+    if (bTickets) bTickets.textContent = String(openTicketsList.length);
+    ticketHost.appendChild(el('div', { class: 'admin-client-head' }, [
+      el('div', {}, [
+        el('span', { class: 'section-kicker' }, 'Client Inquiries & Support'),
+        el('h3', {}, 'Support Tickets (' + openTicketsList.length + ')')
+      ])
+    ]));
+
     if (openTicketsList.length) {
-      ticketHost.style.display = 'grid';
+      ticketHost.style.display = 'block';
       openTicketsList.forEach((t) => ticketHost.appendChild(ticketCard(t, true)));
     } else {
-      ticketHost.style.display = 'none';
+      ticketHost.style.display = 'block';
+      ticketHost.appendChild(el('div', { class: 'ws-empty-state' }, [
+        el('div', { class: 'ws-empty-icon' }, [uiIcon('check', 28)]),
+        el('div', { class: 'ws-empty-title' }, 'All caught up!'),
+        el('div', { class: 'ws-empty-sub' }, 'There are no pending support tickets from any client workspaces.')
+      ]));
     }
-    eventHost.innerHTML = ''; eventHost.appendChild(el('div', { class: 'agency-card-head' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Financial operations'), el('h3', {}, 'PayU event log')])]));
-    (events.events || []).slice(0, 25).forEach((e) => eventHost.appendChild(el('div', { class: 'admin-row' }, [el('div', {}, [el('b', {}, e.txnid || 'Unknown transaction'), el('small', { class: 'muted' }, (e.reason || '') + ' · ' + (e.createdAt || ''))]), el('span', { class: 'pill' }, e.status || 'received')])));
-    if (!(events.events || []).length) eventHost.appendChild(el('div', { class: 'muted' }, 'No PayU webhooks received yet.'));
 
-    loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
+    loadAdminTelecomAndCompliance(carrierHost, watchdogHost);
   }
 
   if (hasCache) {
@@ -7588,7 +9220,7 @@ async function viewAdmin(root) {
   }
 
   try {
-    const calls = [api('/api/admin/tickets'), api('/api/admin/payment-events')];
+    const calls = [api('/api/admin/tickets')];
     if (superAdmin) calls.unshift(api('/api/admin/overview'), api('/api/admin/tenants'), api('/api/admin/users'));
     const data = await Promise.all(calls);
     _adminDataCache = data;
@@ -7601,107 +9233,59 @@ async function viewAdmin(root) {
   }
 }
 
-async function loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost) {
+async function loadAdminTelecomAndCompliance(carrierHost, watchdogHost) {
   // 1. Carrier Health Monitor
   try {
     const health = await api('/api/admin/carriers/health');
     carrierHost.innerHTML = '';
-    carrierHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
+    carrierHost.appendChild(el('div', { class: 'admin-client-head' }, [
       el('div', {}, [
         el('span', { class: 'section-kicker' }, 'Telephony Infrastructure'),
-        el('h3', {}, 'Carrier Health & SIP Trunk Monitor')
+        el('h3', {}, 'Carrier Health & SIP Trunk Monitor (' + ((health.carriers || []).length) + ')')
       ]),
       el('span', { class: 'badge-live' }, [el('span', { class: 'd' }), 'Telemetry active'])
     ]));
 
-    const grid = el('div', { class: 'grid grid-3', style: 'gap:14px;' });
+    const list = el('div', { class: 'admin-carrier-list' });
     (health.carriers || []).forEach((c) => {
       const isHealthy = c.status === 'healthy';
-      grid.appendChild(el('div', {
-        class: 'card card-pad',
-        style: 'background:var(--bg-2);border:1px solid ' + (isHealthy ? 'rgba(16,185,129,0.3)' : 'var(--line-2)') + ';'
-      }, [
-        el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:8px;' }, [
-          el('b', { style: 'font-size:0.92rem;color:var(--ink);' }, c.name),
-          el('span', { class: 'pill', style: isHealthy ? 'background:rgba(16,185,129,0.15);color:#10B981;' : 'background:rgba(245,158,11,0.15);color:#F59E0B;' }, c.status.toUpperCase())
+      list.appendChild(el('div', { class: 'admin-carrier-row' }, [
+        el('div', { class: 'admin-carrier-identity' }, [
+          el('span', { class: 'carrier-avatar ' + (isHealthy ? 'status-ok' : 'status-warn') }, [
+            el('span', { html: uiIcon('phone', 18) })
+          ]),
+          el('div', { class: 'admin-carrier-meta' }, [
+            el('b', { title: c.name }, c.name),
+            el('small', { title: c.carrier }, c.carrier)
+          ])
         ]),
-        el('div', { class: 'muted text-xs', style: 'margin-bottom:12px;' }, c.carrier),
-        el('div', { class: 'grid grid-2', style: 'gap:8px;font-size:0.82rem;' }, [
-          el('div', {}, [el('span', { class: 'muted block' }, 'Latency'), el('b', { style: 'color:#2f8a63;' }, c.latencyMs + ' ms')]),
-          el('div', {}, [el('span', { class: 'muted block' }, 'Jitter'), el('b', {}, c.jitterMs + ' ms')]),
-          el('div', {}, [el('span', { class: 'muted block' }, 'Packet Loss'), el('b', {}, (c.packetLossPct * 100).toFixed(1) + '%')]),
-          el('div', {}, [el('span', { class: 'muted block' }, 'Channels'), el('b', {}, c.activeChannels + ' / ' + c.channelCapacity)])
-        ])
+        el('div', { class: 'admin-client-signal' }, [
+          el('span', {}, 'Latency'),
+          el('strong', { style: isHealthy ? 'color:#0d5d41;' : 'color:#d97706;' }, c.latencyMs + ' ms')
+        ]),
+        el('div', { class: 'admin-client-signal' }, [
+          el('span', {}, 'Jitter'),
+          el('strong', {}, c.jitterMs + ' ms')
+        ]),
+        el('div', { class: 'admin-client-signal' }, [
+          el('span', {}, 'Packet Loss'),
+          el('strong', {}, (c.packetLossPct * 100).toFixed(1) + '%')
+        ]),
+        el('div', { class: 'admin-client-signal' }, [
+          el('span', {}, 'Active Channels'),
+          el('strong', {}, c.activeChannels + ' / ' + c.channelCapacity)
+        ]),
+        el('span', { class: 'status-badge ' + (isHealthy ? 'status-active' : 'status-standby') }, c.status.toUpperCase())
       ]));
     });
-    carrierHost.appendChild(grid);
-  } catch (_) {}
+    carrierHost.appendChild(list);
+  } catch (_) { }
 
-  // 2. DigiLocker KYC Queue
-  try {
-    const kycRes = await api('/api/admin/kyc/queue');
-    kycHost.innerHTML = '';
-    kycHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
-      el('div', {}, [
-        el('span', { class: 'section-kicker' }, 'Indian Regulatory Compliance'),
-        el('h3', {}, 'DigiLocker KYC Verification Queue')
-      ]),
-      el('span', { class: 'pill badge-gold' }, (kycRes.queue || []).length + ' in queue')
-    ]));
-
-    if (!(kycRes.queue || []).length) {
-      kycHost.appendChild(el('div', { class: 'muted', style: 'font-size:0.88rem;padding:12px 0;' }, 'No pending KYC requests. All active Indian DID workspaces are compliant.'));
-    } else {
-      const table = el('table', { class: 'admin-table' }, [
-        el('thead', {}, el('tr', {}, [
-          el('th', {}, 'Workspace'),
-          el('th', {}, 'Entity Type'),
-          el('th', {}, 'PAN / Aadhaar'),
-          el('th', {}, 'DLT PE ID'),
-          el('th', {}, 'Status'),
-          el('th', { style: 'text-align:right;' }, 'Verification Action')
-        ])),
-        el('tbody', {}, (kycRes.queue || []).map((row) => {
-          const k = row.kyc || {};
-          const isVer = k.status === 'verified';
-          const approveBtn = el('button', { class: 'btn btn-primary btn-sm' }, 'Approve KYC');
-          const rejectBtn = el('button', { class: 'btn btn-ghost btn-sm', style: 'color:#EF4444;' }, 'Reject');
-
-          approveBtn.onclick = async () => {
-            await api('/api/admin/kyc/' + encodeURIComponent(row.tenantId) + '/action', { method: 'POST', body: { action: 'approve' } });
-            toast('KYC verified for ' + row.tenantName, 'ok');
-            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
-          };
-          rejectBtn.onclick = async () => {
-            const reason = prompt('Enter rejection reason:');
-            if (!reason) return;
-            await api('/api/admin/kyc/' + encodeURIComponent(row.tenantId) + '/action', { method: 'POST', body: { action: 'reject', reason } });
-            toast('KYC rejected for ' + row.tenantName, 'err');
-            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
-          };
-
-          return el('tr', {}, [
-            el('td', {}, [el('b', {}, row.tenantName), el('div', { class: 'muted text-xs' }, row.tenantId)]),
-            el('td', {}, el('span', { class: 'pill' }, k.entityType || 'pvt_ltd')),
-            el('td', {}, [
-              el('div', { class: 'text-xs' }, 'PAN: ' + (k.pan || 'Not provided')),
-              el('div', { class: 'text-xs muted' }, 'Aadhaar: ' + (k.aadhaarVerified ? '✓ DigiLocker' : (k.aadhaar ? 'Pending OTP' : 'Missing')))
-            ]),
-            el('td', {}, el('code', { class: 'text-xs' }, k.dltPeId || 'TRAI-DLT-PENDING')),
-            el('td', {}, el('span', { class: 'pill ' + (isVer ? 'badge-ok' : 'badge-gold') }, k.status || 'unverified')),
-            el('td', { style: 'text-align:right;' }, isVer ? el('span', { class: 'muted text-xs' }, 'Verified') : el('div', { class: 'flex gap-2 justify-end' }, [approveBtn, rejectBtn]))
-          ]);
-        }))
-      ]);
-      kycHost.appendChild(table);
-    }
-  } catch (_) {}
-
-  // 3. Compliance Watchdog
+  // 2. Compliance Watchdog
   try {
     const wd = await api('/api/admin/watchdog');
     watchdogHost.innerHTML = '';
-    watchdogHost.appendChild(el('div', { class: 'agency-card-head', style: 'margin-bottom:14px;' }, [
+    watchdogHost.appendChild(el('div', { class: 'admin-client-head' }, [
       el('div', {}, [
         el('span', { class: 'section-kicker' }, 'TRAI & Anti-Spam Guard'),
         el('h3', {}, 'Dialing Watchdog & Tenant Compliance Monitor')
@@ -7739,7 +9323,7 @@ async function loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost)
               body: { tenantId: row.tenantId, freeze: nextFreeze, reason: 'Admin enforcement' }
             });
             toast(nextFreeze ? 'Campaigns frozen for ' + row.tenantName : 'Campaigns unfrozen for ' + row.tenantName, nextFreeze ? 'err' : 'ok');
-            loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost);
+            loadAdminTelecomAndCompliance(carrierHost, watchdogHost);
           };
 
           return el('tr', { style: row.flagged ? 'background:rgba(239,68,68,0.04);' : '' }, [
@@ -7749,10 +9333,10 @@ async function loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost)
             el('td', {}, [el('span', { style: row.outsideTraiCalls > 0 ? 'color:#F59E0B;font-weight:700;' : '' }, String(row.outsideTraiCalls))]),
             el('td', {}, [
               isFrozen
-                ? el('span', { class: 'pill badge-err' }, '❄ FROZEN')
+                ? el('span', { class: 'pill badge-err' }, 'FROZEN')
                 : row.flagged
-                  ? el('span', { class: 'pill badge-err' }, '⚠ FLAGGED')
-                  : el('span', { class: 'pill badge-ok' }, '✓ COMPLIANT')
+                  ? el('span', { class: 'pill badge-err' }, 'FLAGGED')
+                  : el('span', { class: 'pill badge-ok' }, 'COMPLIANT')
             ]),
             el('td', { style: 'text-align:right;' }, freezeBtn)
           ]);
@@ -7760,36 +9344,74 @@ async function loadAdminTelecomAndCompliance(carrierHost, kycHost, watchdogHost)
       ]);
       watchdogHost.appendChild(table);
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function adminTenantRow(t, users) {
   const wallet = t.wallet || {};
-  const toggle = el('button', { class: 'btn btn-ghost btn-sm' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
+  const toggle = el('button', { class: 'btn btn-ghost btn-sm', style: 'font-size:12px;padding:6px 10px;' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
   toggle.onclick = async () => {
     const status = t.status === 'suspended' ? 'active' : 'suspended';
     await api('/api/admin/tenants/status', { method: 'POST', body: { tenantId: t.id, status: status } });
     toast('Tenant set to ' + status + '.', 'ok'); onRoute();
   };
-  const credit = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => adjustWallet(t) }, 'Adjust credit');
-  const inspect = el('button', { class: 'btn btn-primary btn-sm', onclick: () => inspectTenant(t, users || []) }, 'Open workspace');
-  const approach = el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openClientApproach(t) }, 'Log approach');
+  const credit = el('button', { class: 'btn btn-ghost btn-sm', style: 'font-size:12px;padding:6px 10px;', onclick: () => adjustWallet(t) }, 'Credit');
+  const deleteBtn = el('button', {
+    class: 'btn-delete-client',
+    title: 'Permanently delete this client workspace from database',
+    onclick: () => {
+      modal({
+        title: 'Delete Client Workspace',
+        body: el('div', { class: 'ws-delete-confirm-box' }, [
+          el('div', { style: 'font-weight:700;font-size:1.05rem;color:#dc2626;margin-bottom:8px;' }, 'Permanently delete ' + t.name + '?'),
+          el('p', { class: 'muted', style: 'font-size:0.86rem;line-height:1.5;color:#5d7468;margin-bottom:12px;' },
+            'This action cannot be undone. All workspace records, team members, assigned AI voice agents, call logs, phone numbers, and CRM contacts will be permanently removed from the database.'
+          ),
+          el('div', { style: 'background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.20);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#991b1b;' },
+            'Workspace ID: ' + t.id
+          )
+        ]),
+        confirmText: 'Delete Client',
+        confirmKind: 'danger',
+        onConfirm: async () => {
+          try {
+            await api('/api/admin/tenants/delete', { method: 'POST', body: { tenantId: t.id } });
+            toast('Client workspace ' + t.name + ' deleted from database.', 'ok');
+            _adminDataCache = null;
+            onRoute();
+          } catch (err) {
+            toast((err && err.message) || 'Failed to delete client', 'err');
+          }
+        }
+      });
+    }
+  }, 'Delete');
+  const directAccess = el('button', {
+    class: 'btn-workspace-direct',
+    title: 'Switch directly into this workspace as client owner',
+    onclick: () => enterClientWorkspaceDirect(t, users || [])
+  }, 'Switch to Client →');
+  const openWorkspaceBtn = el('button', {
+    class: 'btn-workspace-open',
+    title: 'Open workspace inspection, team members, agents & telephony analytics',
+    onclick: () => inspectTenant(t, users || [])
+  }, [el('span', { html: uiIcon('eye', 13) }), el('span', {}, 'Open Workspace')]);
   const dograhSlug = t.dograhOrgId || t.dograh_org_id || ('org_' + t.id.replace(/[^a-z0-9]/gi, '_').toLowerCase());
   return el('div', { class: 'admin-client-row' }, [
     el('div', { class: 'admin-client-identity' }, [
       el('span', { class: 'client-avatar' }, initials(t.name)),
-      el('div', {}, [
-        el('b', {}, t.name),
-        el('small', { class: 'muted' }, (t.users || 0) + ' users, ' + (t.agents || 0) + ' agents'),
-        el('span', { class: 'pill', style: 'font-size:0.7rem;background:rgba(255,255,255,0.06);margin-left:6px;' }, dograhSlug),
-        t.campaignFrozen ? el('span', { class: 'pill badge-err', style: 'font-size:0.7rem;margin-left:4px;' }, '❄ Frozen') : null
+      el('div', { class: 'admin-client-meta' }, [
+        el('b', { class: 'ws-truncate', title: t.name }, t.name),
+        el('small', { class: 'muted' }, (t.users || 0) + ' users · ' + (t.agents || 0) + ' agents'),
+        el('span', { class: 'pill ws-slug-badge', title: dograhSlug }, dograhSlug),
+        t.campaignFrozen ? el('span', { class: 'pill badge-err', style: 'font-size:0.7rem;margin-left:4px;' }, 'Frozen') : null
       ])
     ]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Activity'), el('strong', {}, fmtInr((t.calls || 0)) + ' calls')]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Outstanding'), el('strong', {}, '₹' + fmtInr((t.outstandingPaise || 0) / 100))]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Wallet'), el('strong', {}, '₹' + fmtInr((wallet.balancePaise || 0) / 100))]),
     el('span', { class: 'status-badge status-' + (t.status || 'active') }, invoiceStatusLabel(t.status || 'active')),
-    el('div', { class: 'admin-client-actions' }, [inspect, approach, credit, toggle])
+    el('div', { class: 'admin-client-actions' }, [openWorkspaceBtn, directAccess, credit, toggle, deleteBtn])
   ]);
 }
 
@@ -7828,28 +9450,732 @@ function openClientApproach(t) {
 }
 
 async function inspectTenant(t, users) {
-  const out = await api('/api/admin/tenant-detail?tenantId=' + encodeURIComponent(t.id));
-  const tabs = [
-    ['Users', (out.users || []).map((u) => u.name + ' · ' + u.email + ' · ' + u.role)],
-    ['Agents', (out.agents || []).map((a) => a.name + ' · ' + ((a.telephony || {}).did || 'No number'))],
-    ['Numbers', (out.numbers || []).map((n) => n.address + ' · ' + n.provider + ' · ' + n.status)],
-    ['Calls', (out.usage || []).map((u) => u.day + ' · ' + (u.calls || 0) + ' calls')],
-    ['Billing', (out.ledger || []).map((x) => (x.type || 'entry') + ' · ₹' + fmtInr((x.amountPaise || 0) / 100))],
-    ['Support', (out.tickets || []).map((x) => x.subject + ' · ' + x.status)]
+  let out;
+  try {
+    out = await api('/api/admin/tenant-detail?tenantId=' + encodeURIComponent(t.id));
+  } catch (err) {
+    toast('Could not fetch workspace details: ' + (err.message || 'error'), 'err');
+    return;
+  }
+  const tenant = (out && out.tenant) || t;
+  const tUsers = (out && out.users) || users || [];
+  const tAgents = (out && out.agents) || [];
+  const tNumbers = (out && out.numbers) || [];
+  const tUsage = (out && out.usage) || [];
+  const tLedger = (out && out.ledger) || [];
+  const tTickets = (out && out.tickets) || [];
+  const walletBal = (out && out.wallet && out.wallet.balancePaise != null) ? out.wallet.balancePaise : ((t.wallet && t.wallet.balancePaise) || 0);
+
+  // 1. Top Workspace Banner
+  const wsHeader = el('div', { class: 'ws-modal-header' }, [
+    el('div', { class: 'ws-modal-avatar' }, initials(tenant.name)),
+    el('div', { class: 'ws-modal-identity' }, [
+      el('div', { class: 'ws-modal-title-row' }, [
+        el('h3', { class: 'ws-modal-title', title: tenant.name }, tenant.name),
+        el('span', { class: 'status-badge status-' + (tenant.status || 'active') }, invoiceStatusLabel(tenant.status || 'active')),
+        el('span', { class: 'pill badge-gold' }, 'Plan: ' + (tenant.plan || 'Growth Tier'))
+      ]),
+      el('div', { class: 'ws-modal-meta-row' }, [
+        el('span', {
+          class: 'ws-modal-meta-pill ws-copyable',
+          title: 'Click to copy Tenant ID',
+          onclick: () => { navigator.clipboard.writeText(tenant.id); toast('Workspace ID copied to clipboard', 'ok'); }
+        }, ['ID: ', el('code', {}, tenant.id), el('span', { style: 'margin-left:5px;font-size:10px;text-transform:uppercase;color:#0d5d41;font-weight:700;' }, 'Copy')]),
+        el('span', { class: 'ws-modal-meta-pill' }, 'Wallet Balance: ₹' + fmtInr(walletBal / 100)),
+        el('span', { class: 'ws-modal-meta-pill ws-truncate', style: 'max-width:180px;', title: tenant.dograhOrgId || tenant.slug || ('org_' + tenant.id) }, tenant.dograhOrgId || tenant.slug || ('org_' + tenant.id))
+      ])
+    ]),
+    el('div', { class: 'ws-modal-head-actions' }, [
+      el('button', {
+        class: 'btn-workspace-direct',
+        title: 'Switch directly into this workspace as client owner',
+        onclick: () => {
+          const host = document.getElementById('modal-host');
+          if (host) { host.classList.add('hide'); host.innerHTML = ''; }
+          enterClientWorkspaceDirect(tenant, tUsers);
+        }
+      }, 'Access Client →'),
+      el('button', {
+        class: 'btn btn-ghost btn-sm',
+        style: 'font-size:12px;',
+        onclick: () => adjustWallet(tenant)
+      }, 'Adjust Credit')
+    ])
+  ]);
+
+  // 2. Tab Navigation inside Modal
+  let currentWsTab = 'users';
+  const wsTabs = [
+    { id: 'users', label: 'Team Members', count: tUsers.length, icon: 'users' },
+    { id: 'agents', label: 'AI Voice Agents', count: tAgents.length, icon: 'mic' },
+    { id: 'numbers', label: 'Phone Numbers', count: tNumbers.length, icon: 'phone' },
+    { id: 'usage', label: 'Call Usage', count: tUsage.length, icon: 'activity' },
+    { id: 'ledger', label: 'Billing Ledger', count: tLedger.length, icon: 'wallet' },
+    { id: 'tickets', label: 'Support Tickets', count: tTickets.length, icon: 'headset' }
   ];
-  const body = el('div', { class: 'tenant-inspector' }, tabs.map((tab) => el('section', {}, [el('h4', {}, tab[0]), ...(tab[1].length ? tab[1].map((line) => el('div', { class: 'inspector-line' }, line)) : [el('div', { class: 'muted' }, 'No records')])])));
-  const user = (out.users || []).find((u) => u.role !== 'super_admin' && u.status === 'active');
-  if (user) body.prepend(el('button', { class: 'btn btn-dark', onclick: () => startImpersonation(user) }, 'View as ' + user.email));
-  modal({ title: out.tenant.name, body: body, confirmText: 'Close', onConfirm: async () => { } });
+
+  const wsTabsNav = el('div', { class: 'ws-modal-tabs' });
+  const wsPanels = {};
+
+  wsTabs.forEach((tab) => {
+    const btn = el('button', {
+      class: 'ws-modal-tab-btn' + (tab.id === currentWsTab ? ' active' : ''),
+      'data-wstab': tab.id,
+      onclick: () => switchWsTab(tab.id)
+    }, [
+      el('span', { html: uiIcon(tab.icon, 13) }),
+      el('span', {}, tab.label),
+      el('span', { class: 'admin-tab-badge' }, String(tab.count))
+    ]);
+    wsTabsNav.appendChild(btn);
+
+    const panel = el('div', {
+      class: 'ws-tab-panel',
+      'data-wstab': tab.id,
+      style: tab.id === currentWsTab ? 'display:block;' : 'display:none;'
+    });
+    wsPanels[tab.id] = panel;
+  });
+
+  function switchWsTab(tabId) {
+    currentWsTab = tabId;
+    wsTabsNav.querySelectorAll('.ws-modal-tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.wstab === tabId);
+    });
+    Object.keys(wsPanels).forEach((k) => {
+      wsPanels[k].style.display = (k === tabId) ? 'block' : 'none';
+    });
+  }
+
+  function renderWsEmpty(title, msg) {
+    return el('div', { class: 'ws-empty-state' }, [
+      el('div', { class: 'ws-empty-icon' }, [uiIcon('file', 28)]),
+      el('div', { class: 'ws-empty-title' }, title),
+      el('div', { class: 'ws-empty-sub' }, msg)
+    ]);
+  }
+
+  // Populate Users Panel
+  if (tUsers.length === 0) {
+    wsPanels.users.appendChild(renderWsEmpty('No Team Members Found', 'This workspace currently does not have registered user accounts.'));
+  } else {
+    tUsers.forEach((u) => {
+      wsPanels.users.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title', title: u.name || u.email }, u.name || 'Workspace Member'),
+          el('div', { class: 'ws-item-sub ws-truncate', title: u.email }, u.email)
+        ]),
+        el('span', { class: 'pill' }, u.role || 'member'),
+        el('span', { class: 'status-badge status-' + (u.status || 'active') }, u.status || 'active'),
+        el('button', {
+          class: 'btn btn-ghost btn-xs',
+          style: 'font-weight:700;color:#0d5d41;padding:4px 10px;',
+          title: 'View workspace as ' + u.email,
+          onclick: () => {
+            const host = document.getElementById('modal-host');
+            if (host) { host.classList.add('hide'); host.innerHTML = ''; }
+            startImpersonation(u);
+          }
+        }, 'View As User')
+      ]));
+    });
+  }
+
+  // Populate Agents Panel
+  if (tAgents.length === 0) {
+    wsPanels.agents.appendChild(renderWsEmpty('No AI Voice Agents Created', 'Client has not created any voice receptionist agents yet.'));
+  } else {
+    tAgents.forEach((a) => {
+      const assignedDid = (a.telephony && a.telephony.did) || 'No DID Assigned';
+      wsPanels.agents.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title', title: a.name }, a.name),
+          el('div', { class: 'ws-item-sub ws-truncate', title: a.greeting || 'Standard voice greeting' },
+            '“' + (a.greeting ? (a.greeting.slice(0, 85) + (a.greeting.length > 85 ? '...' : '')) : 'Standard receptionist greeting') + '”')
+        ]),
+        el('span', { class: 'pill badge-gold' }, a.industry || 'Voice AI'),
+        el('span', { class: 'ws-number-pill' }, assignedDid),
+        el('span', { class: 'pill badge-ok' }, a.voiceEngine || 'Mulberry HD')
+      ]));
+    });
+  }
+
+  // Populate Numbers Panel
+  if (tNumbers.length === 0) {
+    wsPanels.numbers.appendChild(renderWsEmpty('No Phone Numbers Connected', 'No dedicated Indian (+91) DID numbers allocated to this workspace yet.'));
+  } else {
+    tNumbers.forEach((n) => {
+      wsPanels.numbers.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title ws-mono' }, n.address || 'Unknown Address'),
+          el('div', { class: 'ws-item-sub ws-truncate', title: n.label || 'VoBiz Indian Carrier Line' }, n.label || 'Dedicated Business DID')
+        ]),
+        el('span', { class: 'pill' }, (n.provider || 'vobiz').toUpperCase()),
+        el('span', { class: 'status-badge status-' + (n.status || 'active') }, n.status || 'active')
+      ]));
+    });
+  }
+
+  // Populate Usage Panel
+  if (tUsage.length === 0) {
+    wsPanels.usage.appendChild(renderWsEmpty('No Call Usage History', 'No outbound or inbound calls have been recorded yet for this client workspace.'));
+  } else {
+    tUsage.slice(0, 50).forEach((u) => {
+      wsPanels.usage.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title' }, u.day || 'Day'),
+          el('div', { class: 'ws-item-sub' }, (u.minutes || 0) + ' billable minutes')
+        ]),
+        el('span', { class: 'pill' }, (u.calls || 0) + ' calls'),
+        el('strong', { style: 'color:#0d5d41;font-size:13.5px;' }, '₹' + fmtInr((u.costPaise || 0) / 100))
+      ]));
+    });
+  }
+
+  // Populate Ledger Panel
+  if (tLedger.length === 0) {
+    wsPanels.ledger.appendChild(renderWsEmpty('No Billing Ledger Entries', 'No wallet deposits, credit adjustments or call deductions recorded.'));
+  } else {
+    tLedger.slice(0, 50).forEach((x) => {
+      const isCredit = (x.type === 'credit' || (x.amountPaise || 0) > 0);
+      wsPanels.ledger.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title', title: x.type }, x.type || 'entry'),
+          el('div', { class: 'ws-item-sub ws-truncate', title: x.reason || 'Ledger transaction' }, x.reason || 'Balance adjustment')
+        ]),
+        el('div', { class: 'muted text-xs' }, (x.createdAt || '').slice(0, 16).replace('T', ' ')),
+        el('strong', {
+          style: 'font-size:14px;color:' + (isCredit ? '#10B981;' : '#EF4444;')
+        }, (isCredit ? '+' : '-') + '₹' + fmtInr(Math.abs(x.amountPaise || 0) / 100))
+      ]));
+    });
+  }
+
+  // Populate Tickets Panel
+  if (tTickets.length === 0) {
+    wsPanels.tickets.appendChild(renderWsEmpty('No Support Tickets', 'This workspace currently has no submitted support tickets.'));
+  } else {
+    tTickets.forEach((x) => {
+      wsPanels.tickets.appendChild(el('div', { class: 'ws-item-row' }, [
+        el('div', { class: 'ws-item-main' }, [
+          el('div', { class: 'ws-item-title ws-truncate', title: x.subject }, x.subject || 'Support Ticket'),
+          el('div', { class: 'ws-item-sub' }, (x.createdAt || '').slice(0, 10))
+        ]),
+        el('span', { class: 'pill' }, x.priority || 'normal'),
+        el('span', { class: 'status-badge status-' + (x.status || 'open') }, x.status || 'open')
+      ]));
+    });
+  }
+
+  // Scrollable Viewport Container
+  const viewport = el('div', { class: 'ws-tab-viewport' }, Object.values(wsPanels));
+
+  const modalBody = el('div', { class: 'ws-inspector-body' }, [
+    wsHeader,
+    wsTabsNav,
+    viewport
+  ]);
+
+  modal({
+    title: '',
+    wide: true,
+    body: modalBody,
+    confirmText: 'Done',
+    cancelText: null,
+    onConfirm: async () => { }
+  });
+}
+
+async function enterClientWorkspaceDirect(tenant, users) {
+  try {
+    const targetUser = (users || []).find((u) => u.role !== 'super_admin' && u.status === 'active');
+    await api('/api/admin/impersonations', {
+      method: 'POST',
+      body: {
+        tenantId: tenant.id,
+        userId: targetUser ? targetUser.id : undefined,
+        reason: 'Admin managing client agents and teams'
+      }
+    });
+    resetData();
+    State.me = await api('/api/me');
+    toast('Entered client workspace: ' + tenant.name, 'ok');
+    renderShell();
+    goto('overview');
+  } catch (err) {
+    toast(err.message || 'Could not enter client workspace', 'err');
+  }
 }
 
 function startImpersonation(user) {
-  const reason = el('input', { class: 'input', placeholder: 'Support ticket or investigation reason' });
-  const password = el('input', { class: 'input', type: 'password', placeholder: 'Your super admin password' });
+  enterClientWorkspaceDirect({ id: user.tenantId, name: user.email }, [user]);
+}
+
+/* ===========================================================================
+   TEAMS & EMPLOYEE AGENT ASSIGNMENT + LIVE CALL HANDOFF WORKSPACE
+   =========================================================================== */
+async function viewTeams(root) {
+  const u = (State.me && State.me.user) || {};
+  const canManageTeam = ['super_admin', 'admin', 'owner', 'client', 'manager'].includes(u.role);
+
+  const head = el('div', { class: 'view-head', style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:22px;' }, [
+    el('div', { class: 'view-head-copy' }, [
+      el('span', { class: 'section-kicker', style: 'color:#0d5d41;font-weight:700;letter-spacing:0.06em;font-size:11px;text-transform:uppercase;display:block;margin-bottom:4px;' }, 'Workspace Teams & Human Escalation'),
+      el('h2', { style: 'margin:0;font-family:Manrope,sans-serif;font-weight:800;color:#14221c;' }, 'Teams & Agent Assignment'),
+      el('p', { style: 'margin:4px 0 0 0;font-size:0.88rem;color:#2c4238;font-weight:500;' },
+        'Add employees, assign specific AI Voice Agents on your shared business phone number, and auto-transfer calls to employees when an agent gets stuck.'
+      )
+    ]),
+    canManageTeam ? el('div', { style: 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;' }, [
+      el('button', {
+        class: 'btn btn-ghost',
+        style: 'border:1px solid rgba(13,93,65,0.28);color:#0d5d41;font-weight:700;border-radius:999px;padding:9px 18px;',
+        onclick: () => goto('agents')
+      }, '+ Create / Manage AI Agents'),
+      el('button', {
+        class: 'btn btn-primary',
+        id: 'btnAddTeamMember',
+        style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 20px;',
+        onclick: () => openTeamMemberModal(null, teamState, reloadTeams)
+      }, '+ Add Employee')
+    ]) : null
+  ]);
+  root.appendChild(head);
+
+  const contentWrap = el('div', { class: 'teams-workspace-wrap' }, skeleton('sk-card', 3));
+  root.appendChild(contentWrap);
+
+  let teamState = {
+    members: [],
+    agents: [],
+    sharedNumber: '+918071582519',
+    activeAgent: null,
+    handoffLogs: []
+  };
+
+  async function reloadTeams() {
+    try {
+      const res = await api('/api/teams');
+      teamState = {
+        members: res.members || [],
+        agents: res.agents || [],
+        sharedNumber: res.sharedNumber || '+918071582519',
+        activeAgent: res.activeAgent || null,
+        handoffLogs: res.handoffLogs || []
+      };
+      State.agents = teamState.agents;
+      renderTeamsContent();
+    } catch (err) {
+      contentWrap.innerHTML = '';
+      contentWrap.appendChild(el('div', { class: 'card card-pad muted' }, 'Failed to load Teams data: ' + (err.message || err)));
+    }
+  }
+
+  function renderTeamsContent() {
+    contentWrap.innerHTML = '';
+
+    const activeEmployees = teamState.members.filter((m) => m.status === 'active');
+    const assignedAgentsCount = teamState.agents.filter((a) => Array.isArray(a.assignedEmployees) && a.assignedEmployees.length > 0).length;
+    const totalHandoffs = teamState.handoffLogs.length;
+    const fmtSharedNum = teamState.sharedNumber.replace(/^(\+91)(\d{5})(\d{5})$/, '$1 $2 $3');
+
+    const kpiGrid = el('div', {
+      style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:22px;'
+    }, [
+      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
+        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'TEAM MEMBERS'),
+        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(activeEmployees.length)),
+        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Active workspace staff & owners')
+      ]),
+      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
+        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'SHARED BUSINESS LINE'),
+        el('div', { style: 'font-size:22px;font-weight:800;color:#0d5d41;margin:8px 0 4px;font-family:Manrope,sans-serif;' }, fmtSharedNum),
+        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'All agents & handoffs use this number')
+      ]),
+      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
+        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'ACTIVE LINE AGENT'),
+        el('div', { style: 'font-size:18px;font-weight:800;color:#14221c;margin:8px 0 4px;font-family:Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' },
+          teamState.activeAgent ? teamState.activeAgent.name : 'No Agent Created'
+        ),
+        el('div', { style: 'font-size:12.5px;font-weight:600;color:#0b6b47;' },
+          assignedAgentsCount + ' of ' + teamState.agents.length + ' agent(s) assigned to staff'
+        )
+      ]),
+      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
+        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'CALL ESCALATIONS (STUCK → HUMAN)'),
+        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(totalHandoffs)),
+        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Calls routed to assigned employee phone')
+      ])
+    ]);
+    contentWrap.appendChild(kpiGrid);
+
+    const agentSwitchSelect = el('select', {
+      class: 'input',
+      style: 'min-width:260px;height:40px;padding:6px 14px;border-radius:999px;border:1.5px solid rgba(13,93,65,0.3);font-weight:700;color:#14221c;background:#fff;cursor:pointer;'
+    }, teamState.agents.length
+      ? teamState.agents.map((a) => el('option', { value: a.id, selected: !!(teamState.activeAgent && teamState.activeAgent.id === a.id) },
+        a.name + (a.isPrimary ? ' (● Active on Line)' : '')
+      ))
+      : [el('option', { value: '' }, 'No agents created yet')]
+    );
+
+    const switchBtn = el('button', {
+      class: 'btn btn-primary btn-sm',
+      style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 18px;',
+      onclick: async () => {
+        if (!agentSwitchSelect.value) return;
+        switchBtn.disabled = true;
+        switchBtn.textContent = 'Syncing Line...';
+        try {
+          await api('/api/agents/activate', { method: 'POST', body: { agentId: agentSwitchSelect.value } });
+          toast('Switched active agent on ' + fmtSharedNum + ' & synced live!', 'ok');
+          await reloadTeams();
+        } catch (err) {
+          toast(err.message || 'Failed to switch active agent', 'err');
+        } finally {
+          switchBtn.disabled = false;
+          switchBtn.textContent = 'Activate on Same Number';
+        }
+      }
+    }, 'Activate on Same Number');
+
+    const sharedLineBanner = el('div', {
+      class: 'card card-pad',
+      style: 'background:linear-gradient(135deg, rgba(13,93,65,0.06) 0%, rgba(227,241,233,0.45) 100%);border:1px solid rgba(13,93,65,0.18);border-radius:16px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;'
+    }, [
+      el('div', { style: 'max-width:620px;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:8px;margin-bottom:4px;' }, [
+          el('span', { style: 'width:9px;height:9px;border-radius:50%;background:#0d5d41;display:inline-block;' }),
+          el('strong', { style: 'font-size:0.95rem;color:#14221c;' }, 'Same-Number Multi-Agent Routing (' + fmtSharedNum + ')')
+        ]),
+        el('div', { style: 'font-size:0.84rem;color:#2c4238;line-height:1.45;' },
+          'All your custom AI agents operate on your single business number. Select which agent answers incoming calls below, or choose any agent when dialing outbound calls. If the AI agent gets stuck or the caller asks for a human, the call escalates to the employee assigned to that agent.'
+        )
+      ]),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        agentSwitchSelect,
+        switchBtn
+      ])
+    ]);
+    contentWrap.appendChild(sharedLineBanner);
+
+    const membersCard = el('div', {
+      class: 'card card-pad',
+      style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:22px;margin-bottom:24px;'
+    }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;' }, [
+        el('div', {}, [
+          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'Employee Directory & Agent Routing'),
+          el('h3', { style: 'margin:2px 0 0 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Workspace Employees & Assigned AI Agents')
+        ]),
+        canManageTeam ? el('button', {
+          class: 'btn btn-primary btn-sm',
+          style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:7px 16px;',
+          onclick: () => openTeamMemberModal(null, teamState, reloadTeams)
+        }, '+ Add Employee') : null
+      ]),
+      el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
+        el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
+          el('thead', {}, el('tr', {}, [
+            el('th', {}, 'Employee / Member'),
+            el('th', {}, 'Department & Role'),
+            el('th', {}, 'Assigned AI Agent(s)'),
+            el('th', {}, 'Escalation Phone (If AI Stuck)'),
+            el('th', {}, 'Handoffs'),
+            el('th', {}, 'Status'),
+            el('th', { style: 'text-align:right;' }, 'Actions')
+          ])),
+          el('tbody', {}, teamState.members.map((m) => {
+            const assignedList = Array.isArray(m.assignedAgents) ? m.assignedAgents : [];
+            const isSelf = m.id === u.id;
+            const roleLabel = m.role === 'super_admin' ? 'Super Admin' : m.role === 'admin' ? 'Admin' : m.role === 'owner' ? 'Workspace Owner' : m.role === 'manager' ? 'Team Manager' : m.role === 'client' ? 'Client Owner' : 'Employee';
+
+            return el('tr', {}, [
+              el('td', {}, [
+                el('div', { style: 'font-weight:700;color:#14221c;font-size:0.9rem;' }, m.name || 'Team Member'),
+                el('div', { style: 'font-size:0.78rem;color:#2c4238;' }, m.email)
+              ]),
+              el('td', {}, [
+                el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.09);color:#0d5d41;font-weight:700;font-size:0.74rem;margin-right:6px;' }, m.department || 'General'),
+                el('span', { style: 'font-size:0.76rem;color:#2c4238;font-weight:600;' }, roleLabel)
+              ]),
+              el('td', {}, [
+                assignedList.length > 0
+                  ? el('div', { style: 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;' }, assignedList.map((ag) =>
+                    el('span', {
+                      class: 'pill',
+                      style: 'background:#e3f1e9;color:#0d5d41;font-weight:700;font-size:0.75rem;border:1px solid rgba(13,93,65,0.22);'
+                    }, '🤖 ' + ag.name + (ag.isPrimary ? ' (Live)' : ''))
+                  ))
+                  : el('span', { style: 'font-size:0.78rem;color:#2c4238;font-style:italic;' }, 'No specific agent assigned')
+              ]),
+              el('td', {}, [
+                m.phone
+                  ? el('div', {}, [
+                    el('div', { style: 'font-weight:700;color:#14221c;font-size:0.85rem;' }, m.phone),
+                    el('span', {
+                      style: 'font-size:0.72rem;font-weight:700;color:' + (m.escalationEnabled !== false ? '#0b6b47' : '#b45309') + ';'
+                    }, m.escalationEnabled !== false ? '✓ Auto-Transfer When AI Stuck' : '⏸ Escalation Paused')
+                  ])
+                  : el('span', { style: 'font-size:0.78rem;color:#b45309;font-weight:600;' }, 'Add phone for call transfer')
+              ]),
+              el('td', {}, [
+                el('strong', { style: 'font-size:0.9rem;color:#14221c;' }, String(m.handoffCount || 0)),
+                m.lastHandoffAt ? el('div', { style: 'font-size:0.7rem;color:#2c4238;' }, new Date(m.lastHandoffAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : null
+              ]),
+              el('td', {}, [
+                el('span', {
+                  class: 'pill',
+                  style: m.status === 'active'
+                    ? 'background:rgba(16,185,129,0.14);color:#065f46;font-weight:700;font-size:0.74rem;'
+                    : 'background:rgba(239,68,68,0.14);color:#991b1b;font-weight:700;font-size:0.74rem;'
+                }, (m.status || 'active').toUpperCase())
+              ]),
+              el('td', { style: 'text-align:right;white-space:nowrap;' }, [
+                el('div', { style: 'display:inline-flex;gap:6px;align-items:center;' }, [
+                  canManageTeam ? el('button', {
+                    class: 'btn btn-ghost btn-sm',
+                    style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
+                    onclick: () => openAssignAgentModal(m, teamState, reloadTeams)
+                  }, 'Assign Agent') : null,
+                  el('button', {
+                    class: 'btn btn-ghost btn-sm',
+                    style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
+                    title: 'Simulate or trigger live call transfer when AI agent gets stuck',
+                    onclick: () => openTestHandoffModal(m, teamState, reloadTeams)
+                  }, '📞 Test Handoff'),
+                  canManageTeam ? el('button', {
+                    class: 'btn btn-ghost btn-sm',
+                    style: 'padding:5px 10px;font-size:0.76rem;',
+                    onclick: () => openTeamMemberModal(m, teamState, reloadTeams)
+                  }, 'Edit') : null,
+                  (canManageTeam && !isSelf) ? el('button', {
+                    class: 'btn btn-ghost btn-sm',
+                    style: 'padding:5px 10px;font-size:0.76rem;color:#dc2626;',
+                    onclick: async () => {
+                      if (!confirm('Remove ' + m.name + ' (' + m.email + ') from your team?')) return;
+                      try {
+                        await api('/api/teams/delete', { method: 'POST', body: { id: m.id } });
+                        toast('Removed ' + m.name + ' from team.', 'ok');
+                        await reloadTeams();
+                      } catch (err) {
+                        toast(err.message || 'Could not remove member', 'err');
+                      }
+                    }
+                  }, 'Remove') : null
+                ].filter(Boolean))
+              ])
+            ]);
+          }))
+        ])
+      ])
+    ]);
+    contentWrap.appendChild(membersCard);
+
+    const handoffCard = el('div', {
+      class: 'card card-pad',
+      style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:22px;'
+    }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;' }, [
+        el('div', {}, [
+          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'AI-to-Employee Call Transfer Log'),
+          el('h3', { style: 'margin:2px 0 0 0;font-size:1.1rem;font-weight:800;color:#14221c;' }, 'Recent Human Escalations (When AI Got Stuck)')
+        ]),
+        el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.09);color:#0d5d41;font-weight:700;' }, teamState.handoffLogs.length + ' Events')
+      ]),
+      teamState.handoffLogs.length === 0
+        ? el('div', { style: 'padding:18px 0;color:#2c4238;font-size:0.88rem;' },
+          'No calls have required human escalation yet. When an AI agent cannot resolve a caller query or the caller asks for a person, the call is transferred to the assigned employee and logged here.'
+        )
+        : el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
+          el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
+            el('thead', {}, el('tr', {}, [
+              el('th', {}, 'Time'),
+              el('th', {}, 'AI Voice Agent'),
+              el('th', {}, 'Transferred To Employee'),
+              el('th', {}, 'Employee Phone'),
+              el('th', {}, 'Reason / Context'),
+              el('th', {}, 'Status')
+            ])),
+            el('tbody', {}, teamState.handoffLogs.map((h) => el('tr', {}, [
+              el('td', { style: 'font-size:0.8rem;color:#2c4238;white-space:nowrap;' }, new Date(h.createdAt).toLocaleString()),
+              el('td', { style: 'font-weight:700;color:#14221c;' }, h.agentName || 'AI Agent'),
+              el('td', {}, [
+                el('b', { style: 'color:#0d5d41;' }, h.employeeName),
+                el('span', { style: 'font-size:0.75rem;color:#2c4238;margin-left:6px;' }, '(' + (h.department || 'General') + ')')
+              ]),
+              el('td', { style: 'font-weight:600;color:#14221c;' }, h.employeePhone || '—'),
+              el('td', { style: 'font-size:0.82rem;color:#2c4238;' }, h.reason || 'Caller requested human'),
+              el('td', {}, el('span', {
+                class: 'pill',
+                style: h.liveCallPlaced
+                  ? 'background:rgba(16,185,129,0.15);color:#065f46;font-weight:700;font-size:0.73rem;'
+                  : 'background:rgba(13,93,65,0.10);color:#0d5d41;font-weight:700;font-size:0.73rem;'
+              }, h.liveCallPlaced ? '📞 Live Call Transferred' : '✓ Escalation Logged'))
+            ])))
+          ])
+        ])
+    ]);
+    contentWrap.appendChild(handoffCard);
+  }
+
+  await reloadTeams();
+}
+
+function openTeamMemberModal(existing, teamState, onDone) {
+  const isEdit = !!existing;
+  const m = existing || {};
+  const nameI = el('input', { class: 'input', value: m.name || '', placeholder: 'e.g. Rahul Sharma' });
+  const emailI = el('input', { class: 'input', type: 'email', value: m.email || '', placeholder: 'e.g. rahul@company.com' });
+  const phoneI = el('input', { class: 'input', type: 'tel', value: (m.phone || '').replace(/^\+91/, ''), placeholder: '10-digit mobile for call transfer (e.g. 9876543210)' });
+  const deptS = el('select', { class: 'select' }, ['Sales', 'Support', 'Reception', 'Billing', 'Technical', 'Operations', 'Management', 'General'].map((d) =>
+    el('option', { value: d, selected: (m.department || 'Sales') === d }, d)
+  ));
+  const roleS = el('select', { class: 'select' }, [
+    { v: 'employee', l: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
+    { v: 'manager', l: 'Team Manager (Can Manage All Agents & Employees)' },
+    { v: 'owner', l: 'Workspace Co-Owner (Full Client Access)' }
+  ].map((r) => el('option', { value: r.v, selected: (m.role || 'employee') === r.v }, r.l)));
+  const passI = el('input', { class: 'input', type: 'password', placeholder: isEdit ? 'Leave blank to keep existing password' : 'Minimum 8 characters (e.g. Welcome@123)' });
+  const escCheck = el('input', { type: 'checkbox', checked: m.escalationEnabled !== false });
+
+  const currentAssigned = new Set(Array.isArray(m.assignedAgentIds) ? m.assignedAgentIds : []);
+  const agentChecks = (teamState.agents || []).map((ag) => {
+    const cb = el('input', { type: 'checkbox', value: ag.id, checked: currentAssigned.has(ag.id) });
+    return {
+      cb,
+      row: el('label', { style: 'display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(13,93,65,0.16);border-radius:10px;cursor:pointer;background:#f8faf9;font-size:0.84rem;font-weight:600;color:#14221c;' }, [
+        cb,
+        el('span', {}, ag.name + (ag.isPrimary ? ' (● Active on Shared Number)' : ''))
+      ])
+    };
+  });
+
+  const body = el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
+    field('Employee Full Name', nameI),
+    field('Employee Login Email', emailI),
+    field('Employee Mobile Number (+91) — For Live Call Transfer When AI Stuck', phoneI),
+    field('Department', deptS),
+    field('Access Role', roleS),
+    field(isEdit ? 'Reset Login Password (Optional)' : 'Temporary Login Password', passI),
+    el('div', {}, [
+      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:700;font-size:0.82rem;color:#14221c;' }, 'Assign AI Voice Agent(s) (Operates on Same Business Number)'),
+      agentChecks.length
+        ? el('div', { style: 'display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;' }, agentChecks.map((x) => x.row))
+        : el('div', { class: 'muted', style: 'font-size:0.82rem;' }, 'No agents created yet. Create an agent in My AI Agents first.')
+    ]),
+    el('label', { style: 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;font-weight:600;color:#0d5d41;margin-top:4px;' }, [
+      escCheck,
+      el('span', {}, 'Automatically escalate/transfer call to this employee if AI agent gets stuck or caller requests a human')
+    ])
+  ]);
+
   modal({
-    title: 'View as ' + user.email, body: el('div', {}, [el('p', {}, 'This creates a 30 minute read-only user session. Billing, roles, status, and secrets remain blocked.'), field('Reason', reason), field('Re-enter your password', password)]), confirmText: 'Enter user view', onConfirm: async () => {
-      await api('/api/admin/impersonations', { method: 'POST', body: { userId: user.id, reason: reason.value.trim(), password: password.value } });
-      State.me = await api('/api/me'); renderShell(); goto('overview');
+    title: isEdit ? ('Edit Employee: ' + m.name) : 'Add Team Member / Employee',
+    body,
+    confirmText: isEdit ? 'Save Changes' : '+ Add Employee & Assign Agent',
+    confirmKind: 'primary',
+    onConfirm: async () => {
+      const selectedAgentIds = agentChecks.filter((x) => x.cb.checked).map((x) => x.cb.value);
+      const payload = {
+        id: m.id,
+        name: nameI.value.trim(),
+        email: emailI.value.trim(),
+        phone: phoneI.value.trim(),
+        department: deptS.value,
+        role: roleS.value,
+        assignedAgentIds: selectedAgentIds,
+        escalationEnabled: escCheck.checked
+      };
+      if (passI.value.trim()) payload.password = passI.value.trim();
+      else if (!isEdit) payload.password = 'Welcome@123';
+
+      await api(isEdit ? '/api/teams/update' : '/api/teams/create', { method: 'POST', body: payload });
+      toast(isEdit ? 'Updated team member & synced agent routing!' : 'Employee added & agent assigned!', 'ok');
+      if (onDone) await onDone();
+    }
+  });
+}
+
+function openAssignAgentModal(member, teamState, onDone) {
+  const currentAssigned = new Set(Array.isArray(member.assignedAgentIds) ? member.assignedAgentIds : []);
+  const agentChecks = (teamState.agents || []).map((ag) => {
+    const cb = el('input', { type: 'checkbox', value: ag.id, checked: currentAssigned.has(ag.id) });
+    return {
+      cb,
+      row: el('label', { style: 'display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(13,93,65,0.2);border-radius:12px;cursor:pointer;background:#f8faf9;font-weight:700;color:#14221c;' }, [
+        cb,
+        el('div', {}, [
+          el('div', { style: 'font-size:0.9rem;' }, ag.name + (ag.isPrimary ? ' (● Active on Line)' : '')),
+          el('div', { style: 'font-size:0.75rem;color:#2c4238;font-weight:500;' }, (ag.persona || '').slice(0, 90) + '...')
+        ])
+      ])
+    };
+  });
+
+  modal({
+    title: 'Assign AI Agents to ' + member.name,
+    body: el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
+      el('p', { style: 'font-size:0.85rem;color:#2c4238;margin:0 0 6px 0;' },
+        'Select which AI Voice Agent(s) ' + member.name + ' manages. All selected agents use your shared business number (' + teamState.sharedNumber + ') and will transfer stuck calls to ' + (member.phone || member.name) + '.'
+      ),
+      ...(agentChecks.length ? agentChecks.map((x) => x.row) : [el('div', { class: 'muted' }, 'No agents found.')])
+    ]),
+    confirmText: 'Save Agent Assignment',
+    confirmKind: 'primary',
+    onConfirm: async () => {
+      const assignedAgentIds = agentChecks.filter((x) => x.cb.checked).map((x) => x.cb.value);
+      await api('/api/teams/assign-agent', { method: 'POST', body: { userId: member.id, assignedAgentIds } });
+      toast('Assigned agent(s) to ' + member.name + ' & synced live phone workflow!', 'ok');
+      if (onDone) await onDone();
+    }
+  });
+}
+
+function openTestHandoffModal(member, teamState, onDone) {
+  const assignedList = (teamState.agents || []).filter((a) => (member.assignedAgentIds || []).includes(a.id));
+  const defaultAgent = assignedList[0] || teamState.activeAgent || (teamState.agents && teamState.agents[0]);
+  const agentSel = el('select', { class: 'select' }, (teamState.agents || []).map((a) =>
+    el('option', { value: a.id, selected: !!(defaultAgent && defaultAgent.id === a.id) }, a.name)
+  ));
+  const callerI = el('input', { class: 'input', value: '+919876543210', placeholder: 'Caller number (e.g. +919876543210)' });
+  const reasonI = el('input', { class: 'input', value: 'Caller asked to speak with ' + (member.department || 'Sales') + ' specialist / AI stuck on custom pricing negotiation' });
+  const liveDialCheck = el('input', { type: 'checkbox', checked: !!member.phone });
+
+  modal({
+    title: '📞 Trigger Human Call Handoff → ' + member.name,
+    body: el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
+      el('p', { style: 'font-size:0.85rem;color:#2c4238;margin:0;' },
+        'When the AI Voice Agent cannot resolve a caller query or gets stuck, it automatically escalates the call to the assigned employee (' + (member.phone || 'No phone set') + ') from your shared line (' + teamState.sharedNumber + ').'
+      ),
+      field('AI Agent Escalating the Call', agentSel),
+      field('Customer / Caller Number', callerI),
+      field('Escalation Reason / Stuck Context', reasonI),
+      el('label', { style: 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;font-weight:700;color:#0d5d41;' }, [
+        liveDialCheck,
+        el('span', {}, 'Place live phone call to employee mobile (' + (member.phone || 'Set phone in Edit first') + ') via VoBiz/Dograh')
+      ])
+    ]),
+    confirmText: 'Escalate & Transfer Call Now',
+    confirmKind: 'primary',
+    onConfirm: async () => {
+      const res = await api('/api/teams/escalate', {
+        method: 'POST',
+        body: {
+          userId: member.id,
+          agentId: agentSel.value,
+          callerNumber: callerI.value.trim(),
+          reason: reasonI.value.trim(),
+          placeLiveCall: liveDialCheck.checked
+        }
+      });
+      toast(
+        res.handoff && res.handoff.liveCallPlaced
+          ? ('Live call transfer placed to ' + member.name + ' (' + member.phone + ')!')
+          : ('Call escalation logged and routed to ' + member.name + '!'),
+        'ok'
+      );
+      if (onDone) await onDone();
     }
   });
 }
@@ -7879,7 +10205,11 @@ async function viewSettings(root) {
   // Tab state: default to 'general', or respect URL param
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
   let currentTab = urlParams.get('tab') || 'general';
-  if (!['general', 'vobiz', 'integrations', 'crm-webhooks', 'knowledge-base', 'team'].includes(currentTab)) {
+  if (currentTab === 'team') {
+    goto('teams');
+    return;
+  }
+  if (!['general', 'vobiz', 'dograh', 'integrations', 'crm-webhooks', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
@@ -7893,10 +10223,10 @@ async function viewSettings(root) {
   const tabs = [
     { id: 'general', label: 'General', icon: 'gear' },
     { id: 'vobiz', label: 'VoBiz Numbers', icon: 'phone' },
+    { id: 'dograh', label: 'Dograh AI Flows', icon: 'git-branch' },
     { id: 'integrations', label: 'Inbound Auto-Call', icon: 'phone' },
     { id: 'crm-webhooks', label: 'CRM Webhooks', icon: 'send' },
-    { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' },
-    { id: 'team', label: 'Team', icon: 'users' }
+    { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
   ];
 
   function renderSubnav() {
@@ -7926,6 +10256,8 @@ async function viewSettings(root) {
       renderGeneralTab(panel);
     } else if (tabId === 'vobiz') {
       renderVoBizTab(panel);
+    } else if (tabId === 'dograh') {
+      renderDograhTab(panel);
     } else if (tabId === 'integrations') {
       renderIntegrationsTab(panel);
     } else if (tabId === 'crm-webhooks') {
@@ -8115,7 +10447,7 @@ async function viewSettings(root) {
     }, [
       el('div', { style: 'padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' }, [
         el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.88rem;' }, '1. Buy on VoBiz Console'),
-        el('div', { class: 'muted', style: 'font-size:0.8rem;line-height:1.4;' }, 'Log in to console.vobiz.ai, complete KYC, and purchase your 10-digit Indian (+91) phone number.')
+        el('div', { class: 'muted', style: 'font-size:0.8rem;line-height:1.4;' }, 'Log in to console.vobiz.ai and purchase your 10-digit Indian (+91) phone number.')
       ]),
       el('div', { style: 'padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' }, [
         el('div', { style: 'font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.88rem;' }, isPlatformAdmin ? '2. Connect & Assign Client' : '2. Connect Credentials'),

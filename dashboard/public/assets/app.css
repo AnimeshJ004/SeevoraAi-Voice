@@ -1202,6 +1202,18 @@
   align-items: center;
   gap: 11px;
   min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.admin-client-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 0%;
+  width: 100%;
 }
 
 .client-avatar {
@@ -1218,11 +1230,16 @@
 }
 
 .admin-client-identity b,
-.admin-client-identity small {
+.admin-client-meta b,
+.admin-client-identity small,
+.admin-client-meta small,
+.ws-truncate {
   display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .admin-client-identity b {
@@ -3926,10 +3943,9 @@
 
 /* Bottom Input Dock */
 .chat-input-dock {
-  position: absolute;
-  bottom: 18px;
-  left: 28px;
-  right: 28px;
+  position: relative;
+  flex-shrink: 0;
+  padding: 10px 20px 8px;
   z-index: 10;
 }
 .chat-input-capsule {

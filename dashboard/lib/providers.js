@@ -475,6 +475,21 @@ const telVobiz = {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = buf.length;
       up = await httpsPost(connection.host, connection.prefix + pathname, headers, buf);
+    } else if (method === 'PUT') {
+      const buf = Buffer.from(JSON.stringify(payload || {}));
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = buf.length;
+      up = await new Promise((resolve, reject) => {
+        const r = https.request({ host: connection.host, path: connection.prefix + pathname, method: 'PUT', headers }, (resp) => {
+          const parts = [];
+          resp.on('data', (d) => parts.push(d));
+          resp.on('end', () => resolve({ status: resp.statusCode, headers: resp.headers, buffer: Buffer.concat(parts) }));
+        });
+        r.on('error', reject);
+        r.setTimeout(60000, () => r.destroy(new Error('upstream timeout')));
+        if (buf) r.write(buf);
+        r.end();
+      });
     } else {
       up = await httpsGet(connection.host, connection.prefix + pathname, headers);
     }
@@ -566,11 +581,48 @@ const telVobiz = {
     return { status: result.up.status, data: result.data };
   },
 
+  // ---- Dograh workflow (flow) management: list / read / create / archive ----
+  async listWorkflows() {
+    const r = await this.request('GET', '/api/v1/workflow/fetch');
+    if (r.up.status < 200 || r.up.status >= 300) {
+      throw new ProviderError('Could not list Dograh workflows', upstreamStatus(r.up.status),
+        'upstream', upstreamMessage(r.data, 'Dograh workflow list failed.'));
+    }
+    return Array.isArray(r.data) ? r.data : [];
+  },
+
+  async fetchWorkflow(workflowId) {
+    const r = await this.request('GET', `/api/v1/workflow/fetch/${encodeURIComponent(workflowId)}`);
+    if (r.up.status === 404) throw new ProviderError('Workflow not found in Dograh', 404, 'not_found');
+    if (r.up.status < 200 || r.up.status >= 300) {
+      throw new ProviderError('Could not read Dograh workflow', upstreamStatus(r.up.status),
+        'upstream', upstreamMessage(r.data, 'Dograh workflow read failed.'));
+    }
+    return r.data;
+  },
+
+  async createWorkflow(name, workflowDefinition) {
+    const r = await this.request('POST', '/api/v1/workflow/create/definition', {
+      name,
+      workflow_definition: workflowDefinition,
+    });
+    if (r.up.status < 200 || r.up.status >= 300) {
+      throw new ProviderError('Dograh could not create the flow', upstreamStatus(r.up.status),
+        'upstream', upstreamMessage(r.data, 'Dograh workflow creation failed.'));
+    }
+    return r.data;
+  },
+
+  async archiveWorkflow(workflowId) {
+    const r = await this.request('PUT', `/api/v1/workflow/${encodeURIComponent(workflowId)}/status`, { status: 'archived' });
+    return r.up.status >= 200 && r.up.status < 300;
+  },
+
   // Fetch call/workflow run list from Dograh. Returns raw array of run objects.
   // Each run includes id, status, phone_number, duration_seconds, created_at, recording_url.
   async fetchRecordings(options = {}) {
     if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
-    const workflowId = positiveIntEnv('DOGRAH_WORKFLOW_ID');
+    const workflowId = Number(options.workflowId) > 0 ? Number(options.workflowId) : positiveIntEnv('DOGRAH_WORKFLOW_ID');
     const limit = Number(options.limit) > 0 ? Math.min(Number(options.limit), 100) : 50;
     const page = Math.max(1, Math.floor((Number(options.offset) || 0) / limit) + 1);
     const path = `/api/v1/workflow/${workflowId}/runs?limit=${limit}&page=${page}`;
@@ -588,9 +640,9 @@ const telVobiz = {
   },
 
   // Fetch the detail (including transcript) for a single workflow run.
-  async fetchRunDetail(dograhRunId) {
+  async fetchRunDetail(dograhRunId, workflowIdOverride) {
     if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
-    const workflowId = positiveIntEnv('DOGRAH_WORKFLOW_ID');
+    const workflowId = Number(workflowIdOverride) > 0 ? Number(workflowIdOverride) : positiveIntEnv('DOGRAH_WORKFLOW_ID');
     const result = await this.request('GET', `/api/v1/workflow/${workflowId}/runs/${encodeURIComponent(dograhRunId)}`);
     if (result.up.status === 404) {
       throw new ProviderError('Call recording not found in Dograh', 404, 'not_found');
@@ -604,9 +656,9 @@ const telVobiz = {
 
   // Stream the audio recording buffer for a run. Returns { buffer, contentType }.
   // Resolves signed recording URL from Dograh and follows S3 redirects.
-  async fetchRecordingAudio(dograhRunId) {
+  async fetchRecordingAudio(dograhRunId, workflowIdOverride) {
     if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
-    const detail = await this.fetchRunDetail(dograhRunId);
+    const detail = await this.fetchRunDetail(dograhRunId, workflowIdOverride);
     let targetUrl = detail.recording_public_url;
     if (!targetUrl && detail.public_access_token) {
       targetUrl = `https://api.dograh.com/api/v1/public/download/workflow/${encodeURIComponent(detail.public_access_token)}/recording`;

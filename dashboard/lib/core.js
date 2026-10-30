@@ -200,10 +200,15 @@ function defaultDb() {
     crmWebhooks: [], crmWebhookLogs: [],
     // Sprint-5: Per-Tenant Dograh Organization Isolation
     dograhOrgs: [],
+    // Per-tenant Dograh voice flows (generated or admin-assigned)
+    dograhFlows: [],
     // Sprint-6: Booking engine
     bookingSchedules: [], bookingSlots: [],
     // Inbound telephony receptionist config
     inboundConfigs: [],
+    handoffLogs: [],
+    // Workflows & multi-step call automation
+    workflows: [],
   };
 }
 
@@ -222,9 +227,10 @@ const COLLECTIONS = [
   'campaigns', 'campaignJobs',
   'knowledgeBases',
   'crmWebhooks', 'crmWebhookLogs',
-  'dograhOrgs',
+  'dograhOrgs', 'dograhFlows',
   'bookingSchedules', 'bookingSlots',
-  'inboundConfigs',
+  'inboundConfigs', 'handoffLogs',
+  'workflows',
 ];
 
 function migrateDb(parsed) {
@@ -240,7 +246,10 @@ function migrateDb(parsed) {
     }
   }
   for (const user of out.users) {
-    if (!['super_admin', 'admin', 'owner', 'member', 'client'].includes(user.role)) user.role = 'member';
+    if (!['super_admin', 'admin', 'owner', 'member', 'client', 'employee', 'manager'].includes(user.role)) user.role = 'member';
+    if (!Array.isArray(user.assignedAgentIds)) user.assignedAgentIds = [];
+    if (user.escalationEnabled === undefined) user.escalationEnabled = true;
+    if (!user.department) user.department = ['super_admin', 'admin', 'owner', 'client'].includes(user.role) ? 'Management' : 'General';
     if (!user.status) user.status = 'active';
   }
   return out;
@@ -447,6 +456,22 @@ function parseCookieToken(req) {
  */
 async function getSession(req) {
   // 1. Support Clerk tokens via Bearer Authorization header or __session cookie
+  // Priority: Active admin impersonation session cookie takes precedence over admin Clerk token
+  const impCookieTok = parseCookieToken(req);
+  if (impCookieTok && impCookieTok.length >= 16) {
+    const dImp = db();
+    const impHash = crypto.createHash('sha256').update(impCookieTok).digest('hex');
+    const impSession = dImp.sessions.find((s) => (s.tokenHash === impHash || s.token === impCookieTok) && s.impersonatorUserId && s.exp > Date.now());
+    if (impSession) {
+      const impUser = dImp.users.find((u) => u.id === impSession.userId && u.status === 'active');
+      const impTenant = dImp.tenants.find((t) => t.id === impSession.tenantId && t.status === 'active');
+      const impActor = dImp.users.find((u) => u.id === impSession.impersonatorUserId && u.status === 'active');
+      if (impUser && impTenant && impActor && (impActor.role === 'admin' || impActor.role === 'super_admin')) {
+        return { session: impSession, user: impUser, tenant: impTenant, impersonator: impActor };
+      }
+    }
+  }
+
   const clerkToken = clerk.extractToken(req);
   if (clerkToken && clerkToken.includes('.')) {
     try {
@@ -735,7 +760,7 @@ async function destroySession(req) {
   await mutate((d) => { d.sessions = d.sessions.filter((s) => s.token !== token && s.tokenHash !== tokenHash); });
 }
 
-const ROLE_LEVEL = { client: 1, member: 1, owner: 1, admin: 3, super_admin: 3 };
+const ROLE_LEVEL = { employee: 1, member: 1, manager: 2, client: 2, owner: 2, admin: 3, super_admin: 3 };
 function hasRole(user, minimum) {
   return (ROLE_LEVEL[user && user.role] || 0) >= (ROLE_LEVEL[minimum] || 99);
 }
@@ -821,7 +846,7 @@ function serveStatic(req, res) {
     }
     send(res, 200, data, {
       'Content-Type': MIME[path.extname(resolved).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
     });
   });
 }
@@ -934,7 +959,7 @@ module.exports = {
   db, mutate, loadDb, defaultDb, migrateDb,
   hashPassword, verifyPassword,
   createSession, createImpersonationSession, destroySession, getSession, requireAuth, requireRole, hasRole,
-  sessionCookie, clearCookie, COOKIE_NAME,
+  sessionCookie, clearCookie, parseCookieToken, COOKIE_NAME,
   rateOk,
   serveStatic, MIME,
   genId,

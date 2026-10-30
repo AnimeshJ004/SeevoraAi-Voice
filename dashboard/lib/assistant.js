@@ -15,11 +15,18 @@ const crypto = require('crypto');
 // ---- intent labels (keep in sync with frontend) --------------------------
 const INTENTS = Object.freeze({
   BUILD_AGENT: 'build_agent',
+  TRAIN_AGENT: 'train_agent',
   EDIT_AGENT: 'edit_agent',
   ADD_KNOWLEDGE: 'add_knowledge',
   CONNECT_INTEGRATION: 'connect_integration',
   CREATE_CAMPAIGN: 'create_campaign',
   BROADCAST_MESSAGE: 'broadcast_message',
+  SEND_EMAIL: 'send_email',
+  CONFIGURE_GMAIL: 'configure_gmail',
+  EMAIL_TROUBLESHOOT: 'email_troubleshoot',
+  SCHEDULE_CALENDAR: 'schedule_calendar',
+  SEND_WHATSAPP: 'send_whatsapp',
+  CRM_CREATE_LEAD: 'crm_create_lead',
   ASK_REPORT: 'ask_report',
   TEST_CHAT: 'test_chat',
   CONFIRM: 'confirm_pending',
@@ -41,6 +48,27 @@ function classifyIntent(text, hasPendingToken) {
     return INTENTS.CONFIRM;
   }
 
+  // Email troubleshooting / mail not received / issue
+  if (/\b(didn't|did not|not)\s+(get|receive)\b.{0,30}\b(mail|email)\b/i.test(text) ||
+      /\b(mail|email)\b.{0,30}\b(nahi|not)\b.{0,30}\b(aaya|mila|pahuncha|received|working)\b/i.test(text) ||
+      /\b(fix|troubleshoot|check)\b.{0,30}\b(mail|email)\b/i.test(text) ||
+      /\b(mail|email)\b.{0,20}\b(issue|problem|error|fail|failed|stuck)\b/i.test(text)) {
+    return INTENTS.EMAIL_TROUBLESHOOT;
+  }
+
+  // App Password configuration via chat
+  if (/\b(app\s*pass(?:word)?|gmail\s*pass(?:word)?)\b/i.test(text) ||
+      /\b[a-zA-Z]{4}\s+[a-zA-Z]{4}\s+[a-zA-Z]{4}\s+[a-zA-Z]{4}\b/.test(text.trim())) {
+    return INTENTS.CONFIGURE_GMAIL;
+  }
+
+  // Connect or disconnect integration (WhatsApp, CRM, Gmail/Email, Calendar, File Reader, Webhook)
+  if (/\b(connect|disconnect|integrate|link|unlink|hook|sync|bind|attach|setup|set up|hatao|jodo|deactivate|band\s*karo)\b.{0,50}\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook|marketplace|tool)\b/i.test(text) ||
+      /\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook)\b.{0,50}\b(connect\s*karo|jodo|link\s*karo|sync\s*karo|setup\s*karo|integrate\s*karo|band\s*karo|disconnect\s*karo|connect|disconnect|integrate|integration)\b/i.test(text) ||
+      /\b(connect|disconnect)\s+(this\s+)?(voice\s+)?agent\b/i.test(text)) {
+    return INTENTS.CONNECT_INTEGRATION;
+  }
+
   // Broadcast message to all contacts via connected WhatsApp Business number
   const isCallingCampaign = /\b(campaign|calling|dialer|outbound\s*calls?)\b/i.test(text);
   if (!isCallingCampaign && (
@@ -52,29 +80,56 @@ function classifyIntent(text, hasPendingToken) {
     return INTENTS.BROADCAST_MESSAGE;
   }
 
-    // Connect or disconnect integration (WhatsApp, CRM, Gmail/Email, Calendar, File Reader, Webhook)
-  if (/\b(connect|disconnect|integrate|link|unlink|hook|sync|bind|attach|setup|set up|hatao|jodo|deactivate|band\s*karo)\b.{0,50}\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook|marketplace|tool)\b/i.test(text) ||
-      /\b(whatsapp|crm|gmail|email|mail|calendar|cal\.com|file|reader|knowledge|media|hubspot|zoho|salesforce|webhook)\b.{0,50}\b(connect|disconnect|integration|integrate|link|unlink|hook|sync|setup|set up|hatao|jodo|deactivate|karo)\b/i.test(text) ||
-      /\b(connect|disconnect)\s+(this\s+)?(voice\s+)?agent\b/i.test(text)) {
-    return INTENTS.CONNECT_INTEGRATION;
+  // Send Email / Gmail action dispatch
+  if (/\b(mail|email|e-mail)\b.{0,40}\b(kar\s*do|bhej\s*do|karo|bhejo|send|dispatch|forward)\b/i.test(text) ||
+      /\b(send|dispatch|forward|shoot)\b.{0,30}\b(mail|email|e-mail)\b/i.test(text) ||
+      /\b(mail|email)\b.{0,30}\b(to|par|pe|pai)\b.{0,50}@[a-z0-9.-]+\.[a-z]{2,}/i.test(text) ||
+      /\b@[a-z0-9.-]+\.[a-z]{2,}\b.{0,30}\b(mail|email)\b/i.test(text)) {
+    return INTENTS.SEND_EMAIL;
+  }
+
+  // Schedule / Book Calendar appointment
+  if (/\b(calendar|calender|gcal|schedule|appointment|meeting|slot)\b.{0,40}\b(add|book|schedule|set|lagao|karo|daalo|block)\b/i.test(text) ||
+      /\b(add|book|schedule|set|lagao|karo|daalo|block)\b.{0,40}\b(calendar|calender|appointment|meeting|slot)\b/i.test(text) ||
+      /\b(calendar|calender)\s*(mein|pe|par)\b/i.test(text)) {
+    return INTENTS.SCHEDULE_CALENDAR;
+  }
+
+  // Send single WhatsApp alert/message
+  if (/\b(whatsapp|wa)\b.{0,30}\b(kar\s*do|bhej\s*do|karo|bhejo|send|msg|message)\b/i.test(text) ||
+      /\b(send|bhej)\b.{0,20}\b(whatsapp|wa)\b/i.test(text) ||
+      /\b(whatsapp|wa)\s*(pe|par)\b/i.test(text)) {
+    return INTENTS.SEND_WHATSAPP;
+  }
+
+  // Add lead to CRM
+  if (/\b(crm|pipeline|leads?)\b.{0,40}\b(add|create|save|insert|daalo|banao)\b/i.test(text) ||
+      /\b(add|create|save|insert|daalo|banao)\b.{0,40}\b(crm|lead|contact)\b/i.test(text)) {
+    return INTENTS.CRM_CREATE_LEAD;
+  }
+
+  // Train / Build Voice Agent (Interactive AI Voice Agent Training)
+  if (/\b(train|sikhao|banana|banao)\b.{0,40}\b(agent|bot|receptionist|voice|ai)\b/i.test(text) ||
+      /\b(agent|bot|receptionist|voice)\b.{0,40}\b(train|banao|banana)\b/i.test(text) ||
+      /\b(train|build|create|make)\s+(?:an?\s+)?(?:ai\s+)?(?:voice\s+)?agent\b/i.test(text) ||
+      /\b(?:voice\s+agent)\s+(?:for|ke\s+liye)\b/i.test(text) ||
+      /\b(create|creat|build|make|set.?up|generate|new)\b.{0,40}\b(agent|bot|receptionist|assistant|voice|ai)\b/i.test(text) ||
+      /\b(agent|bot|receptionist)\b.{0,30}\b(for|to handle|to answer|for my)\b/i.test(text)) {
+    return INTENTS.TRAIN_AGENT;
   }
 
   // Create or launch campaign (Voice outbound calling campaign)
-  if (/\b(create|launch|start|run|schedule|setup|new)\b.{0,40}\b(campaign|outbound calls|outbound call|blast|broadcast)\b/i.test(text) ||
+  if (/\b(create|launch|start|run|schedule|setup|new)\b.{0,40}\b(campaign|outbound calls|outbound call|blast)\b/i.test(text) ||
       /\b(campaign)\b.{0,30}\b(for|with|of|to call|leads)\b/i.test(text)) {
     return INTENTS.CREATE_CAMPAIGN;
   }
-
-  // Build agent
-  if (/\b(create|creat|build|make|set.?up|generate|new)\b.{0,40}\b(agent|bot|receptionist|assistant|voice|ai)\b/i.test(text)) return INTENTS.BUILD_AGENT;
-  if (/\b(agent|bot|receptionist)\b.{0,30}\b(for|to handle|to answer|for my)\b/i.test(text)) return INTENTS.BUILD_AGENT;
 
   // Edit agent
   if (/\b(edit|change|update|modify|rename|fix|adjust|improve|rewrite|revise)\b.{0,50}\b(agent|persona|greeting|prompt|script|voice|name|tone|instruction)\b/i.test(text)) return INTENTS.EDIT_AGENT;
   if (/\b(agent|persona|greeting|prompt|script)\b.{0,40}\b(should|must|needs to|has to)\b/i.test(text)) return INTENTS.EDIT_AGENT;
 
   // Add knowledge
-  if (/\b(add|upload|attach|give|teach|train|include)\b.{0,40}\b(knowledge|faq|info|information|document|pdf|file|data|text|url|link|webpage)\b/i.test(text)) return INTENTS.ADD_KNOWLEDGE;
+  if (/\b(add|upload|attach|give|teach|include)\b.{0,40}\b(knowledge|faq|info|information|document|pdf|file|data|text|url|link|webpage)\b/i.test(text)) return INTENTS.ADD_KNOWLEDGE;
   if (/\b(the agent|it|he|she)\b.{0,30}\b(should know|needs to know|must know|can answer)\b/i.test(text)) return INTENTS.ADD_KNOWLEDGE;
 
   // Analytics / reports
@@ -228,12 +283,17 @@ function defaultIntegrations(tenantId) {
     },
     whatsapp: {
       provider: 'WhatsApp Voice Dispatch',
-      status: 'active',
-      phoneNumber: '+91 98765 43210',
+      status: 'connected',
+      companyName: 'Seevora AI',
+      senderNumber: '+91 80715 82519',
+      phoneNumber: '+91 80715 82519',
+      recipientPhone: '+91 98765 43210',
       wabaId: 'waba_991204',
       verifiedAt: new Date().toISOString(),
       dispatchOnCallEnd: true,
-      description: 'Sends post-call audio transcript and booking confirmation via WhatsApp'
+      includeCompanyHeader: true,
+      lastDispatchedAt: new Date().toISOString(),
+      description: 'Sends post-call audio transcript and booking confirmation via WhatsApp from +91 80715 82519'
     },
     crm: {
       provider: 'CRM Webhook & Pipeline',

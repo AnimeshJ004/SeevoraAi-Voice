@@ -542,16 +542,43 @@ async function dispatchOutboundCall({ leadId, callId, lead, agent, webhookRow, d
     if (logger) logger.warn('Auto-call dispatch failed', { leadId, error });
   }
 
-  // Update lead status in DB
+  // Update lead status in DB and register active live call in callRecordings for Dashboard Live Locator
   await db_mutate((d) => {
     ensureCollections(d);
     const rec = (d.autoCallLeads || []).find((l) => l.id === leadId);
+    const nowIso = new Date().toISOString();
     if (rec) {
       rec.status = status;
       rec.callResult = callResult;
       rec.error = error;
-      rec.dispatchedAt = new Date().toISOString();
-      rec.updatedAt = new Date().toISOString();
+      rec.dispatchedAt = nowIso;
+      rec.updatedAt = nowIso;
+    }
+    if (status !== 'failed') {
+      if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+      const runId = (callResult && callResult.data && (callResult.data.request_uuid || callResult.data.run_id || callResult.data.id || callResult.data.call_id)) || callId;
+      const sharedDid = (agent && agent.telephony && agent.telephony.did) || process.env.VOBIZ_NUMBER || '+918071582519';
+      d.callRecordings.unshift({
+        id: `rec_${runId}`,
+        tenantId: webhookRow.tenantId,
+        dograhRunId: String(runId),
+        phoneNumber: lead.phone,
+        callerNumber: sharedDid,
+        calledNumber: lead.phone,
+        callerName: lead.name || 'Web Inquiry Lead',
+        callerSource: `Auto-Call (${webhookRow.label || 'Speed-to-Lead'})`,
+        direction: 'outbound',
+        dispatchSource: `Auto-Dispatched (${webhookRow.label || 'Speed-to-Lead'})`,
+        status: 'in_progress',
+        durationSeconds: 0,
+        transcript: `Agent (${(agent && agent.name) || 'Seevora AI Voice Receptionist'}): ${(agent && agent.greeting) || 'Namaste! Calling from Seevora AI regarding your inquiry. How may I assist you?'}`,
+        recordingAvailable: false,
+        summary: `Auto-dispatched Speed-to-Lead call to ${lead.name || lead.phone}`,
+        agentId: agent ? agent.id : null,
+        agentName: (agent && agent.name) || 'Seevora AI Voice Receptionist',
+        startedAt: nowIso,
+        syncedAt: nowIso,
+      });
     }
   });
 }

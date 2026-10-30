@@ -51,11 +51,11 @@ const SEEVORA_PLANS = Object.freeze({
     }),
     limits: Object.freeze({
       voiceMinutes: 500,
-      activeWorkflows: 3,
+      activeWorkflows: 25,
       voiceNumbers: 1,
       whatsappNumbers: 1,
       contacts: 1000,
-      users: 2,
+      users: 25,
       serviceMessages: 1000,
       marketingMessages: 100,
     }),
@@ -401,6 +401,46 @@ function assertFeatureAllowed(tenant, featureKey, user) {
     return { allowed: true };
   }
 
+  // 1. Explicit admin tenant feature override
+  if (tenant && tenant.features && typeof tenant.features[featureKey] === 'boolean') {
+    if (tenant.features[featureKey] === false) {
+      const featureLabels = {
+        inbound: 'Inbound Call Receptionist & IVR',
+        campaigns: 'Outbound Voice Campaigns',
+        recordings: 'Call Audio Recordings & Transcripts',
+        crmPipeline: 'Leads & WhatsApp CRM Pipeline',
+        agents: 'AI Voice Agents Creator',
+        talk: 'Talk to Agent Voice Testing',
+        assistant: 'AI Chatbot & Knowledge Base',
+        teams: 'Team & Staff Directory Management',
+        liveMonitor: 'Live Call Monitoring & Decline',
+        didNumbers: 'Virtual DID Telephony Numbers',
+        whatsappMessaging: 'Automated WhatsApp Messaging',
+        webhooksApi: 'Webhooks & Developer APIs',
+        workflows: 'Workflows & Multi-Step Call Automation',
+        broadcasts: 'Broadcasts and automation flows',
+        callToWhatsapp: 'Call-to-WhatsApp follow-ups',
+        tagsAndSegments: 'Tags and custom segments'
+      };
+      const label = featureLabels[featureKey] || featureKey;
+      return {
+        allowed: false,
+        error: label + ' has been disabled for your workspace by the platform administrator.',
+        code: 'feature_disabled_by_admin',
+        feature: featureKey
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Core features enabled by default across all tiers unless admin turned them off
+  const defaultCoreFeatures = ['inbound', 'campaigns', 'recordings', 'crmPipeline', 'agents', 'talk', 'assistant', 'teams', 'liveMonitor', 'didNumbers', 'voiceReceptionist', 'whatsappCrm', 'autoRepliesReminders', 'workflows'];
+  if (defaultCoreFeatures.includes(featureKey)) {
+    return { allowed: true };
+  }
+
+
+
   const planId = (tenant && tenant.plan) || 'starter';
   const plan = getPlan(planId);
 
@@ -446,8 +486,10 @@ function checkWorkflowLimit(db, tenantId, user) {
   const plan = getPlan(tenant && tenant.plan);
   const maxWorkflows = plan.limits.activeWorkflows;
 
-  // Active agents/workflows in this workspace
-  const currentCount = (db.agents || []).filter((a) => a.tenantId === tenantId).length;
+  // Active workflows in this workspace (or active agents fallback)
+  const currentCount = Array.isArray(db.workflows) && db.workflows.some((w) => w.tenantId === tenantId)
+    ? db.workflows.filter((w) => w.tenantId === tenantId && w.status === 'active').length
+    : (db.agents || []).filter((a) => a.tenantId === tenantId).length;
 
   if (user && (user.role === 'super_admin' || user.role === 'admin')) {
     return { allowed: true, current: currentCount, limit: maxWorkflows };
@@ -550,7 +592,21 @@ function getTenantUsageAndLimits(db, tenantId) {
       status: tenant.planStatus || 'active',
     },
     limits: plan.limits,
-    features: plan.features,
+    features: Object.assign({
+      inbound: true,
+      campaigns: true,
+      recordings: true,
+      crmPipeline: true,
+      agents: true,
+      talk: true,
+      assistant: true,
+      teams: true,
+      liveMonitor: true,
+      didNumbers: true,
+      whatsappMessaging: true,
+      workflows: true,
+      webhooksApi: false
+    }, plan.features || {}, tenant.features || {}),
     usage: {
       activeWorkflows,
       contacts,
