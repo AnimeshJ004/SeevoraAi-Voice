@@ -9628,26 +9628,149 @@ async function startCustomRecharge(amount) {
   }
 }
 
+// ============================================================================
+// Support View (Redesigned: Scandinavian Sage Minimalist, Zero Cards)
+// ============================================================================
+
 async function viewSupport(root) {
-  root.appendChild(viewHead('Support', 'Open a ticket and keep every reply attached to your workspace.'));
-  const subject = el('input', { class: 'input', placeholder: 'What do you need help with.' });
-  const message = el('textarea', { class: 'input textarea', placeholder: 'Describe the issue, expected result, and what happened.' });
-  const create = el('button', { class: 'btn btn-primary' }, 'Open ticket');
-  const list = el('div', { class: 'ticket-list' }, (_ticketsCache && _ticketsCache.length)
-    ? _ticketsCache.map((t) => ticketCard(t, false))
-    : [el('div', { class: 'card card-pad muted' }, 'No support tickets yet.')]
-  );
-  create.onclick = async () => {
-    create.disabled = true;
-    try {
-      await api('/api/support/tickets', { method: 'POST', body: { subject: subject.value.trim(), message: message.value.trim(), priority: 'normal' } });
-      subject.value = ''; message.value = ''; toast('Support ticket opened.', 'ok'); await loadTickets(list);
-    } catch (e) { toast(e.message, 'err'); } finally { create.disabled = false; }
-  };
-  root.appendChild(el('div', { class: 'support-layout', style: 'display:flex;flex-direction:column;gap:22px;' }, [
-    el('section', { class: 'card card-pad support-compose', style: 'margin-bottom:22px;' }, [el('h3', { class: 't-h3' }, 'New ticket'), field('Subject', subject), field('Message', message), create]),
-    list
+  root.innerHTML = '';
+  root.classList.add('aria-clients-view', 'aria-support-view');
+
+  const wrap = el('div', { class: 'aria-support-view aria-clients-view', style: 'width:100%;' });
+  root.appendChild(wrap);
+
+  // Top Header
+  const head = viewHead('Support & Help Desk', 'Direct workspace support, ticket tracking, and multi-turn resolution threads.');
+  const headTitle = head.querySelector('h2');
+  if (headTitle) {
+    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Support Operations');
+    headTitle.parentNode.insertBefore(kicker, headTitle);
+  }
+  head.appendChild(el('div', { class: 'view-actions' }, [
+    el('a', {
+      href: 'tel:+918982200895',
+      class: 'btn btn-ghost btn-sm',
+      style: 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;padding:6px 16px;font-size:0.80rem;font-weight:700;text-decoration:none;'
+    }, 'Phone Support: +91 89822 00895')
   ]));
+  wrap.appendChild(head);
+
+  // Flat 4-Column KPI Stats Bar (Connected, Zero Gaps)
+  const kpis = el('div', {
+    class: 'settings-kpi-bar',
+    style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+  }, [
+    el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;' }, [
+      el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'OPEN TICKETS'),
+      el('div', { class: 'kpi-value', id: 'supp-kpi-open', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, '--'),
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Awaiting resolution')
+    ]),
+    el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;' }, [
+      el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'RESOLVED TICKETS'),
+      el('div', { class: 'kpi-value', id: 'supp-kpi-resolved', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, '--'),
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Closed satisfactorily')
+    ]),
+    el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;' }, [
+      el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'RESPONSE SLA'),
+      el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, '< 2 Hours'),
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Priority operational SLA')
+    ]),
+    el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;' }, [
+      el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SUPPORT DESK'),
+      el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'Direct In-App'),
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Attached to workspace')
+    ])
+  ]);
+  wrap.appendChild(kpis);
+
+  // Section 1: Form to Open Ticket (Cardless, Clean Scandinavian Design)
+  const subject = el('input', {
+    class: 'input',
+    placeholder: 'e.g. Hindi Voice Tone calibration query, Webhook latency issue...',
+    style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;padding:11px 16px;font-size:0.90rem;width:100%;box-sizing:border-box;'
+  });
+  const prioritySel = el('select', {
+    class: 'select aria-select',
+    style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;padding:11px 16px;font-size:0.90rem;width:100%;box-sizing:border-box;'
+  }, [
+    el('option', { value: 'normal' }, 'Normal Priority (Standard SLA)'),
+    el('option', { value: 'high' }, 'High Priority (Expedited review)'),
+    el('option', { value: 'urgent' }, 'Urgent (Production block)'),
+    el('option', { value: 'low' }, 'Low Priority (Question / Feature inquiry)')
+  ]);
+  const message = el('textarea', {
+    class: 'input textarea',
+    rows: '3',
+    placeholder: 'Describe the issue, expected result, and any reproduction steps...',
+    style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;padding:12px 16px;font-size:0.90rem;min-height:90px;width:100%;box-sizing:border-box;'
+  });
+  const create = el('button', {
+    type: 'button',
+    class: 'btn btn-primary',
+    style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 26px;font-weight:750;border:none;cursor:pointer;'
+  }, 'Open Support Ticket');
+
+  const formSection = el('section', { style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+    el('div', { style: 'margin-bottom:16px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Create In-App Ticket'),
+      el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;' }, 'Open a New Support Request'),
+      el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Submit inquiries about voice synthesis, Hindi tone calibration, custom CRM webhooks, or telephony.')
+    ]),
+    el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;max-width:840px;margin-bottom:18px;' }, [
+      el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Ticket Subject'),
+        subject
+      ]),
+      el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Priority Level'),
+        prioritySel
+      ])
+    ]),
+    el('div', { style: 'max-width:840px;margin-bottom:20px;' }, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Detailed Message & Logs'),
+      message
+    ]),
+    el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [create])
+  ]);
+  wrap.appendChild(formSection);
+
+  // Section 2: Tickets Register List (Cardless, Transparent Canvas)
+  const list = el('div', { class: 'aria-tickets-host', style: 'display:flex;flex-direction:column;gap:0;margin-bottom:40px;' }, skeleton('sk-card', 2));
+
+  const registerSection = el('section', { style: 'margin-bottom:20px;' }, [
+    el('div', { style: 'margin-bottom:16px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Ticket Register'),
+      el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;' }, 'Workspace Tickets & Discussions'),
+      el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Expand any thread to view full conversation history or send follow-up replies.')
+    ]),
+    list
+  ]);
+  wrap.appendChild(registerSection);
+
+  create.onclick = async () => {
+    const sVal = subject.value.trim();
+    const mVal = message.value.trim();
+    if (!sVal) { toast('Please enter a ticket subject.', 'err'); return; }
+    if (!mVal) { toast('Please enter a message.', 'err'); return; }
+    create.disabled = true;
+    create.textContent = 'Submitting...';
+    try {
+      await api('/api/support/tickets', {
+        method: 'POST',
+        body: { subject: sVal, message: mVal, priority: prioritySel.value }
+      });
+      subject.value = '';
+      message.value = '';
+      toast('Support ticket opened successfully.', 'ok');
+      await loadTickets(list);
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally {
+      create.disabled = false;
+      create.textContent = 'Open Support Ticket';
+    }
+  };
+
   loadTickets(list);
 }
 
@@ -9656,13 +9779,29 @@ async function loadTickets(host) {
     const out = await api('/api/support/tickets');
     _ticketsCache = out.tickets || [];
     host.innerHTML = '';
-    _ticketsCache.forEach((t) => host.appendChild(ticketCard(t, false)));
-    if (!_ticketsCache.length) host.appendChild(el('div', { class: 'card card-pad muted' }, 'No support tickets yet.'));
-  } catch (e) {
-    if (!host.children.length) {
-      host.innerHTML = '';
-      host.appendChild(el('div', { class: 'card card-pad muted' }, e.message));
+
+    // Update KPI counts
+    const openCount = _ticketsCache.filter(t => t.status !== 'resolved' && t.status !== 'closed').length;
+    const resolvedCount = _ticketsCache.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+    const kpiOpen = $('#supp-kpi-open');
+    const kpiRes = $('#supp-kpi-resolved');
+    if (kpiOpen) kpiOpen.textContent = String(openCount);
+    if (kpiRes) kpiRes.textContent = String(resolvedCount);
+
+    if (!_ticketsCache.length) {
+      host.appendChild(el('div', { class: 'empty compact', style: 'padding:40px 20px;text-align:center;border-bottom:1px solid rgba(13,93,65,0.12);' }, [
+        el('div', { class: 'ttl', style: 'font-weight:800;font-size:1.05rem;color:#14221c;margin-bottom:4px;' }, 'No support tickets yet'),
+        el('p', { class: 'muted', style: 'font-size:0.82rem;color:#5d7468;margin:0;' }, 'Use the form above to open a ticket directly with the Seevora support team.')
+      ]));
+      return;
     }
+    _ticketsCache.forEach((t) => host.appendChild(ticketCard(t, false)));
+  } catch (e) {
+    host.innerHTML = '';
+    host.appendChild(el('div', { class: 'error-state', style: 'padding:30px 20px;text-align:center;' }, [
+      el('h4', {}, 'Tickets unavailable'),
+      el('p', { class: 'muted' }, e.message)
+    ]));
   }
 }
 
@@ -9675,93 +9814,114 @@ function ticketCard(t, admin) {
   const msgCount = msgList.length;
 
   const isClosed = (statusVal === 'closed' || statusVal === 'resolved');
-  const badgeStatus = el('span', { class: 'status-badge ' + (isClosed ? 'status-suspended' : 'status-active') }, statusVal.replace(/_/g, ' ').toUpperCase());
+
+  // Compact status badge
+  const badgeStatus = el('span', {
+    class: 'status-badge ' + (isClosed ? 'status-suspended' : 'status-active'),
+    style: 'display:inline-flex !important;width:fit-content !important;align-items:center !important;'
+  }, statusVal.replace(/_/g, ' ').toUpperCase());
+
+  // Compact priority badge
   const badgePriority = el('span', {
     class: 'pill',
-    style: (priorityVal === 'urgent' || priorityVal === 'high') ? 'background:rgba(239,68,68,0.12);color:#dc2626;font-weight:700;' : 'background:rgba(13,93,65,0.08);color:#0d5d41;'
+    style: (priorityVal === 'urgent' || priorityVal === 'high')
+      ? 'background:rgba(239,68,68,0.12) !important;color:#dc2626 !important;font-weight:750 !important;display:inline-flex !important;width:fit-content !important;'
+      : 'background:rgba(13,93,65,0.08) !important;color:#0d5d41 !important;font-weight:700 !important;display:inline-flex !important;width:fit-content !important;'
   }, priorityVal.toUpperCase());
 
   const toggleBtn = el('button', {
+    type: 'button',
     class: 'btn btn-ghost btn-sm',
-    style: 'font-size:12px;padding:6px 12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;'
+    style: 'font-size:12px;padding:6px 12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
   }, [
     el('span', { class: 'ticket-toggle-label' }, 'View & Reply (' + msgCount + ')'),
     el('span', { class: 'ticket-toggle-icon', html: uiIcon('chevron-down', 13) })
   ]);
 
-  // Main row strip (always visible on canvas)
-  const headerRow = el('div', { class: 'admin-ticket-row' }, [
+  // Main row strip: 5 columns aligned with .admin-ticket-row grid
+  const headerRow = el('div', {
+    class: 'admin-ticket-row'
+  }, [
+    // Column 1: Identity (Avatar + Meta)
     el('div', { class: 'admin-ticket-identity' }, [
       el('span', { class: 'ticket-avatar' }, [
         el('span', { html: uiIcon('ticket', 18) })
       ]),
       el('div', { class: 'admin-ticket-meta' }, [
-        el('b', { class: 'ws-truncate', title: t.subject }, t.subject),
+        el('b', { class: 'ws-truncate', title: t.subject || 'Support Ticket' }, t.subject || 'Support Ticket'),
         el('small', { class: 'muted' }, (t.tenantName || t.tenantId || 'Client Ticket') + ' · ' + msgCount + ' message' + (msgCount === 1 ? '' : 's'))
       ])
     ]),
+    // Column 2: Priority Signal
     el('div', { class: 'admin-client-signal' }, [
       el('span', {}, 'Priority'),
       badgePriority
     ]),
+    // Column 3: Updated Signal
     el('div', { class: 'admin-client-signal' }, [
       el('span', {}, 'Updated'),
       el('strong', {}, (t.updatedAt || t.createdAt || '').slice(0, 10) || 'Recent')
     ]),
+    // Column 4: Status Signal
     el('div', { class: 'admin-client-signal' }, [
       el('span', {}, 'Status'),
       badgeStatus
     ]),
+    // Column 5: Action (Toggle button)
     el('div', { style: 'text-align:right;' }, [toggleBtn])
   ]);
 
   // Expandable Drawer Container
-  const drawer = el('div', { class: 'ticket-drawer hide' });
+  const drawer = el('div', {
+    class: 'ticket-drawer hide'
+  });
 
-  // 1. Admin controls (Compact, inline flex)
+  // Admin controls
   if (admin) {
     const statusSelect = el('select', { class: 'select-compact' }, ['open', 'in_progress', 'waiting_on_customer', 'resolved', 'closed'].map((v) => el('option', { value: v }, v.replace(/_/g, ' '))));
     statusSelect.value = statusVal;
-    statusSelect.setAttribute('data-ticket-status', t.id);
 
     const prioSelect = el('select', { class: 'select-compact' }, ['low', 'normal', 'high', 'urgent'].map((v) => el('option', { value: v }, v)));
     prioSelect.value = priorityVal;
-    prioSelect.setAttribute('data-ticket-priority', t.id);
 
     const updateBtn = el('button', {
-      class: 'btn-compact-update',
-      onclick: async () => {
-        updateBtn.disabled = true;
-        try {
-          await api('/api/admin/tickets/update', {
-            method: 'POST',
-            body: { ticketId: t.id, status: statusSelect.value, priority: prioSelect.value }
-          });
-          toast('Ticket status updated.', 'ok');
-          onRoute();
-        } catch (e) {
-          toast(e.message, 'err');
-        } finally {
-          updateBtn.disabled = false;
-        }
-      }
+      type: 'button',
+      class: 'btn-compact-update'
     }, 'Update Status');
+
+    updateBtn.onclick = async () => {
+      updateBtn.disabled = true;
+      try {
+        await api('/api/admin/tickets/update', {
+          method: 'POST',
+          body: { ticketId: t.id, status: statusSelect.value, priority: prioSelect.value }
+        });
+        toast('Ticket status updated.', 'ok');
+        onRoute();
+      } catch (e) {
+        toast(e.message, 'err');
+      } finally {
+        updateBtn.disabled = false;
+      }
+    };
 
     const controls = el('div', { class: 'ticket-controls-bar' }, [
       el('span', { class: 'ticket-controls-label' }, 'Change Status:'),
       statusSelect,
-      el('span', { class: 'ticket-controls-label', style: 'margin-left:10px;' }, 'Priority:'),
+      el('span', { class: 'ticket-controls-label', style: 'margin-left:8px;' }, 'Priority:'),
       prioSelect,
       updateBtn
     ]);
     drawer.appendChild(controls);
   }
 
-  // 2. Conversation Bubbles Thread
+  // Conversation Thread
   const thread = el('div', { class: 'ticket-conversation-thread' });
   msgList.forEach((m) => {
     const isSupport = (m.authorRole === 'support' || m.authorRole === 'super_admin' || m.authorRole === 'admin' || (m.authorName || '').toLowerCase().includes('seevora'));
-    thread.appendChild(el('div', { class: 'ticket-bubble ' + (isSupport ? 'bubble-support' : 'bubble-client') }, [
+    thread.appendChild(el('div', {
+      class: 'ticket-bubble ' + (isSupport ? 'bubble-support' : 'bubble-client')
+    }, [
       el('div', { class: 'bubble-author' }, [
         el('b', {}, m.authorName || m.authorRole || 'User'),
         el('span', { class: 'bubble-role' }, isSupport ? 'Support Team' : 'Client')
@@ -9769,33 +9929,40 @@ function ticketCard(t, admin) {
       el('div', { class: 'bubble-body' }, m.message || m.body || '')
     ]));
   });
+  if (!msgList.length) {
+    thread.appendChild(el('div', { class: 'muted', style: 'font-size:0.82rem;color:#5d7468;padding:8px 0;' }, 'No conversation messages recorded yet. Write a reply below.'));
+  }
   drawer.appendChild(thread);
 
-  // 3. Compact Reply Bar
+  // Compact Reply Bar
   const replyInput = el('input', {
     class: 'ticket-reply-input',
     placeholder: 'Write a response to this ticket...'
   });
   const replyBtn = el('button', {
-    class: 'ticket-reply-btn',
-    onclick: async () => {
-      const msg = replyInput.value.trim();
-      if (!msg) return;
-      replyBtn.disabled = true;
-      try {
-        await api(admin ? '/api/admin/tickets/reply' : '/api/support/tickets/reply', {
-          method: 'POST',
-          body: { ticketId: t.id, message: msg }
-        });
-        toast('Reply sent.', 'ok');
-        onRoute();
-      } catch (e) {
-        toast(e.message, 'err');
-      } finally {
-        replyBtn.disabled = false;
-      }
-    }
+    type: 'button',
+    class: 'ticket-reply-btn'
   }, 'Send Reply');
+
+  replyBtn.onclick = async () => {
+    const msg = replyInput.value.trim();
+    if (!msg) return;
+    replyBtn.disabled = true;
+    replyBtn.textContent = 'Sending...';
+    try {
+      await api(admin ? '/api/admin/tickets/reply' : '/api/support/tickets/reply', {
+        method: 'POST',
+        body: { ticketId: t.id, message: msg }
+      });
+      toast('Reply sent.', 'ok');
+      onRoute();
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally {
+      replyBtn.disabled = false;
+      replyBtn.textContent = 'Send Reply';
+    }
+  };
 
   replyInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -9830,7 +9997,9 @@ function ticketCard(t, admin) {
     }
   };
 
-  const itemContainer = el('div', { class: 'admin-ticket-item' }, [
+  const itemContainer = el('div', {
+    class: 'admin-ticket-item'
+  }, [
     headerRow,
     drawer
   ]);

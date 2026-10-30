@@ -14098,6 +14098,240 @@ button:disabled {
   }
 }
 
+/* ==========================================================================
+   SUPPORT & HELP DESK VIEW (SEEVORA SAGE THEME - CARDLESS CANVAS)
+   ========================================================================== */
+.aria-support-view {
+  background: transparent !important;
+  color: #14221c !important;
+  padding-bottom: 40px !important;
+}
+
+.aria-support-view .card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.aria-support-view .aria-tickets-host {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  background: transparent !important;
+}
+
+.aria-support-view .admin-ticket-item {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.12) !important;
+  transition: background 0.15s ease !important;
+}
+
+.aria-support-view .admin-ticket-item:hover {
+  background: rgba(13, 93, 65, 0.02) !important;
+}
+
+.aria-support-view .admin-ticket-item.is-expanded {
+  background: rgba(13, 93, 65, 0.025) !important;
+}
+
+.aria-support-view .admin-ticket-row {
+  padding: 16px 4px !important;
+  display: grid !important;
+  grid-template-columns: minmax(280px, 2fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(120px, 0.9fr) 140px !important;
+  align-items: center !important;
+  gap: 16px !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+
+.aria-support-view .admin-ticket-row:hover {
+  background: rgba(13, 93, 65, 0.035) !important;
+}
+
+.aria-support-view .admin-ticket-identity {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+.aria-support-view .ticket-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 42px !important;
+  border-radius: 12px !important;
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.aria-support-view .admin-ticket-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.aria-support-view .admin-ticket-meta b {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #14221c !important;
+}
+
+.aria-support-view .admin-ticket-meta small {
+  font-size: 12.5px !important;
+  color: #5d7468 !important;
+}
+
+.aria-support-view .admin-client-signal {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.aria-support-view .admin-client-signal span {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: #5d7468 !important;
+  white-space: nowrap !important;
+}
+
+.aria-support-view .admin-client-signal strong {
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+  white-space: nowrap !important;
+}
+
+.aria-support-view .admin-client-signal .pill,
+.aria-support-view .admin-client-signal .status-badge {
+  display: inline-flex !important;
+  width: fit-content !important;
+  align-items: center !important;
+  margin: 0 !important;
+}
+
+.aria-support-view .ticket-drawer {
+  padding: 16px 20px 22px 20px !important;
+  border-top: 1px dashed rgba(13, 93, 65, 0.15) !important;
+  background: rgba(255, 255, 255, 0.60) !important;
+  border-radius: 0 0 14px 14px !important;
+  margin-bottom: 8px !important;
+}
+
+.aria-support-view .ticket-conversation-thread {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+}
+
+.aria-support-view .ticket-bubble {
+  max-width: 82% !important;
+  padding: 12px 16px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.aria-support-view .ticket-bubble.bubble-client {
+  align-self: flex-start !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.12) !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+.aria-support-view .ticket-bubble.bubble-support {
+  align-self: flex-start !important;
+  background: #eef6f2 !important;
+  border: 1px solid rgba(13, 93, 65, 0.20) !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+.aria-support-view .bubble-author {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.aria-support-view .bubble-author b {
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+}
+
+.aria-support-view .bubble-role {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  background: rgba(13, 93, 65, 0.10) !important;
+  padding: 1px 6px !important;
+  border-radius: 6px !important;
+}
+
+.aria-support-view .bubble-body {
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  color: #24332c !important;
+}
+
+.aria-support-view .ticket-reply-dock {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 6px 8px 6px 14px !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.04) !important;
+}
+
+.aria-support-view .ticket-reply-dock:focus-within {
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.aria-support-view .ticket-reply-input {
+  flex: 1 !important;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  font-size: 13.5px !important;
+  color: #14221c !important;
+}
+
+.aria-support-view .ticket-reply-btn {
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  background: #0d5d41 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+}
+
+.aria-support-view .ticket-reply-btn:hover {
+  opacity: 0.9 !important;
+}
+
+@media (max-width: 900px) {
+  .aria-support-view .admin-ticket-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+
 
 
 
