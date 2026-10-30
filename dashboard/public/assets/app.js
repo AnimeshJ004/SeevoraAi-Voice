@@ -1587,7 +1587,7 @@ function onRoute() {
     settings: viewSettings,
     kb: () => { location.hash = '#/settings?tab=knowledge-base'; },
     'knowledge-base': () => { location.hash = '#/settings?tab=knowledge-base'; },
-    'crm-webhooks': () => { location.hash = '#/settings?tab=crm-webhooks'; },
+    'crm-webhooks': () => { location.hash = '#/settings?tab=integrations'; },
     dograh: () => { location.hash = '#/settings?tab=dograh'; },
     'dograh-flows': () => { location.hash = '#/settings?tab=dograh'; },
     presets: () => { goto('agents'); },
@@ -3362,7 +3362,7 @@ function openEditAgent(a) {
 // AI Voice Agents View (Dual Mode: Clean List & In-Page Cardless Studio)
 // ============================================================================
 async function viewAgents(root) {
-  const wrap = el('div', { class: 'aria-agents-view aria-clients-view' });
+  const wrap = el('div', { class: 'aria-agents-view' });
   root.appendChild(wrap);
 
   function renderCurrent() {
@@ -3483,12 +3483,13 @@ function renderAgentsListPage(wrap) {
     style: 'max-width:320px;border-radius:999px;font-size:0.84rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);background:transparent;'
   });
 
-  // Filter tabs: All, Active on Line, Standby
+  // Filter tabs: All, Active on Line, Standby (Enabled), Disabled
   let currentFilter = 'all';
   const filterTabs = el('div', { class: 'admin-tab-nav', style: 'margin-bottom:0;padding:0;border-bottom:none;' }, [
     el('button', { class: 'admin-tab-btn active', 'data-filter': 'all' }, 'All Agents'),
     el('button', { class: 'admin-tab-btn', 'data-filter': 'active' }, 'Active on Line'),
-    el('button', { class: 'admin-tab-btn', 'data-filter': 'standby' }, 'Standby Personas')
+    el('button', { class: 'admin-tab-btn', 'data-filter': 'standby' }, 'Standby (Enabled)'),
+    el('button', { class: 'admin-tab-btn', 'data-filter': 'disabled' }, 'Disabled')
   ]);
 
   const tabBtns = Array.from(filterTabs.querySelectorAll('button'));
@@ -3956,9 +3957,10 @@ function paintAgents(query, tabFilter) {
   // Update top metrics
   const totalM = $('#agents-metric-total');
   const activeM = $('#agents-metric-active');
+  const enabledCount = agents.filter(a => a.status !== 'disabled').length;
   if (totalM) totalM.textContent = agents.length;
   if (activeM) {
-    const primary = agents.find(a => a.isPrimary) || agents[0];
+    const primary = agents.find(a => a.isPrimary && a.status !== 'disabled') || agents.find(a => a.isPrimary) || agents[0];
     activeM.textContent = primary ? primary.name.split('–')[0].split('-')[0].trim() : 'None';
   }
 
@@ -3967,8 +3969,10 @@ function paintAgents(query, tabFilter) {
   const tf = tabFilter || 'all';
 
   const filtered = agents.filter(a => {
-    if (tf === 'active' && !a.isPrimary) return false;
-    if (tf === 'standby' && a.isPrimary) return false;
+    const isDis = a.status === 'disabled';
+    if (tf === 'active' && (!a.isPrimary || isDis)) return false;
+    if (tf === 'standby' && (a.isPrimary || isDis)) return false;
+    if (tf === 'disabled' && !isDis) return false;
     if (!q) return true;
     const nameMatch = (a.name || '').toLowerCase().includes(q);
     const personaMatch = (a.persona || '').toLowerCase().includes(q);
@@ -3995,12 +3999,63 @@ function paintAgents(query, tabFilter) {
   filtered.forEach(a => grid.appendChild(agentCard(a)));
 }
 
+async function previewAgentVoice(a, btn) {
+  if (!btn) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="boot-spin" style="display:inline-block;margin-right:4px;"></span><span>Loading...</span>';
+  try {
+    const voiceId = (a.rumikVoice || (a.tts && a.tts.voice) || 'ira').toLowerCase();
+    const tone = (a.rumikTone || (a.tts && a.tts.tone) || 'happy').toLowerCase();
+    const model = (a.rumikModel || (a.tts && a.tts.model) || 'mulberry').toLowerCase();
+    const text = a.greeting || ("Hi! Thank you for calling! Main " + a.name.split('-')[0].trim() + " bol rahi hoon. How can I help you today?");
+
+    const res = await api('/api/voice/preview', {
+      method: 'POST',
+      body: { voiceId, tone, model, text }
+    });
+
+    if (res && res.dataUrl) {
+      if (window._currentAgentAudio) {
+        try { window._currentAgentAudio.pause(); } catch (_) {}
+      }
+      const audio = new Audio(res.dataUrl);
+      window._currentAgentAudio = audio;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg><span>Playing...</span>';
+      audio.onended = () => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      };
+      audio.onerror = () => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        toast('Could not play audio waveform', 'err');
+      };
+      await audio.play();
+    } else {
+      throw new Error((res && res.error) || 'Audio preview synthesis returned empty');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    toast('Voice sample preview failed: ' + err.message, 'err');
+  }
+}
+
 function agentCard(a) {
+  const isEnabled = a.status !== 'disabled';
   const tts = a.tts || {};
-  const isMuga = (tts.model || 'muga') === 'muga';
-  const voiceLine = isMuga
-    ? ('Muga • ' + (tts.tone || 'excited'))
-    : ('Mulberry • ' + (tts.speaker || 'speaker_2') + (tts.f0_up_key ? ' (pitch ' + (tts.f0_up_key > 0 ? '+' : '') + tts.f0_up_key + ')' : ''));
+  const vId = (a.rumikVoice || tts.voice || '').toLowerCase();
+  const voiceNames = {
+    ira: 'Ira (Mia · Female)',
+    riya: 'Priya (Sophia · Female)',
+    arav: 'Aarav (Lucas · Male)',
+    ananya: 'Ananya (Emma · Female)',
+    dev: 'Dev (Adam · Male)',
+    kabir: 'Kabir (Noah · Male)'
+  };
+  const voiceLabel = voiceNames[vId] || (tts.model === 'muga' ? ('Muga • ' + (tts.tone || 'neutral')) : ('Mulberry • ' + (tts.speaker || 'speaker_2')));
+  const voiceLine = 'Rumik: ' + voiceLabel;
   const did = a.telephony && a.telephony.did ? a.telephony.did : '+91 80715 82519';
 
   // Test in Browser button
@@ -4033,15 +4088,15 @@ function agentCard(a) {
     el('span', {}, 'Edit')
   ]);
 
-  // Set Active on Line button (if not primary)
-  const activeBtn = !a.isPrimary ? el('button', {
+  // Set Active on Line button (if enabled and not primary)
+  const activeBtn = (!a.isPrimary && isEnabled) ? el('button', {
     type: 'button',
     class: 'btn btn-ghost btn-sm',
     style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.06);color:#0d5d41;font-weight:700;font-size:0.80rem;',
     onclick: async () => {
       try {
         await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
-        toast(a.name + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
+        toast(a.name.split('-')[0].trim() + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
         await ensureAgents(true);
         paintAgents();
       } catch (err) {
@@ -4049,6 +4104,51 @@ function agentCard(a) {
       }
     }
   }, 'Set Active on Line') : null;
+
+  // Enable / Disable Toggle button
+  const toggleBtn = !isEnabled
+    ? el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'border-radius:999px;padding:6px 14px;border:1.5px solid rgba(13,93,65,0.35);color:#0d5d41;background:rgba(13,93,65,0.08);font-weight:750;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
+        title: 'Enable this agent to answer calls and appear in flows',
+        onclick: async () => {
+          try {
+            await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: true } });
+            toast(a.name.split('-')[0].trim() + ' is now ENABLED!', 'ok');
+            await ensureAgents(true);
+            paintAgents();
+          } catch (err) {
+            toast('Could not enable agent: ' + err.message, 'err');
+          }
+        }
+      }, [
+        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' }),
+        el('span', {}, 'Enable')
+      ])
+    : el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(100,116,139,0.25);color:#475569;font-weight:650;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
+        title: 'Disable this agent to pause it from answering calls',
+        onclick: async () => {
+          if (a.isPrimary) {
+            const ok = confirm('"' + a.name.split('-')[0].trim() + '" is currently active on your live phone line. Disabling it will move live call answering to another available agent. Continue?');
+            if (!ok) return;
+          }
+          try {
+            await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: false } });
+            toast(a.name.split('-')[0].trim() + ' has been DISABLED.', 'ok');
+            await ensureAgents(true);
+            paintAgents();
+          } catch (err) {
+            toast('Could not disable agent: ' + err.message, 'err');
+          }
+        }
+      }, [
+        el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' }),
+        el('span', {}, 'Disable')
+      ]);
 
   // Delete button
   const deleteBtn = el('button', {
@@ -4063,7 +4163,7 @@ function agentCard(a) {
   // Construct Flat Agent Row (No Cards!)
   const row = el('div', {
     class: 'aria-agent-row',
-    style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px;border-bottom:1px solid rgba(13,93,65,0.08);transition:background 0.15s ease;'
+    style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px;border-bottom:1px solid rgba(13,93,65,0.08);transition:all 0.15s ease;' + (!isEnabled ? 'opacity:0.72;background:rgba(0,0,0,0.015);' : '')
   });
 
   // Left Section (Avatar + Identity + Greeting + Persona)
@@ -4080,12 +4180,24 @@ function agentCard(a) {
   // Body content
   const bodyWrap = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;' });
 
+  // Role Badge (Receptionist, Customer Care, Sales, VIP Billing, Tech Support)
+  const roleLabel = a.role || (a.name.includes('Receptionist') ? 'Front Desk Receptionist' : (a.name.includes('Customer') ? 'Customer Care' : (a.name.includes('Sales') ? 'Sales Specialist' : (a.name.includes('Billing') ? 'VIP Billing' : (a.name.includes('Technical') ? 'Technical Support' : 'AI Voice Agent')))));
+  const rolePill = el('span', {
+    style: 'font-size:0.72rem;font-weight:750;padding:2px 9px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;letter-spacing:0.02em;border:1px solid rgba(13,93,65,0.18);'
+  }, roleLabel);
+
+  // Status Badge
+  const statusBadge = !isEnabled
+    ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(220,38,38,0.10);color:#dc2626;border:1px solid rgba(220,38,38,0.22);letter-spacing:0.02em;' }, 'Disabled')
+    : (a.isPrimary
+        ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
+        : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, 'Enabled · Standby'));
+
   // Title & Badges line
   const titleLine = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
     el('b', { style: 'font-size:1.02rem;color:#14221c;letter-spacing:-0.01em;' }, a.name),
-    a.isPrimary
-      ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
-      : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.06);color:#5d7468;' }, 'Standby'),
+    rolePill,
+    statusBadge,
     el('span', { style: 'font-size:0.74rem;font-family:var(--mono);color:#5d7468;' }, '📞 ' + did),
     el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, voiceLine)
   ]);
@@ -4128,6 +4240,7 @@ function agentCard(a) {
     previewBtn,
     editBtn,
     activeBtn,
+    toggleBtn,
     (a.sampleTranscript && a.sampleTranscript.length) ? el('button', {
       class: 'btn btn-ghost btn-sm',
       style: 'border-radius:999px;padding:6px 12px;font-size:0.78rem;color:#0d5d41;',
@@ -8963,7 +9076,7 @@ function renderInvoicesListPage(wrap) {
 
 // Master Invoices View Function
 async function viewInvoices(root) {
-  const wrap = el('div', { class: 'aria-invoices-view aria-clients-view', id: 'invoicesViewRoot' });
+  const wrap = el('div', { class: 'aria-invoices-view', id: 'invoicesViewRoot' });
   root.appendChild(wrap);
 
   function renderCurrent() {
@@ -9066,7 +9179,7 @@ async function viewBilling(root) {
     goto('overview');
     return;
   }
-  const wrap = el('div', { class: 'aria-billing-view aria-clients-view' });
+  const wrap = el('div', { class: 'aria-billing-view' });
   root.appendChild(wrap);
 
   const head = viewHead('Platform Billing & Quotas', 'Manage subscriptions, prepaid telephony call balances, and active workspace usage quotas.');
@@ -10013,7 +10126,7 @@ let _adminDataCache = null;
 // Feature Controls View (Redesigned: Scandinavian Minimalist, Zero Nested Cards)
 // ============================================================================
 async function viewFeatureControls(root) {
-  root.classList.add('aria-clients-view', 'aria-feature-controls-view');
+  root.classList.add('aria-features-view', 'aria-feature-controls-view');
   const isSuperAdmin = State.me && State.me.user && ['super_admin', 'admin'].includes(State.me.user.role);
   if (!isSuperAdmin) {
     const head = viewHead('Feature Controls', 'Feature access control is reserved for platform administrators.');
@@ -10288,7 +10401,7 @@ async function viewFeatureControls(root) {
 // Client Workflows View (Redesigned: Scandinavian Minimalist, Zero Nested Cards)
 // ============================================================================
 async function viewWorkflows(root) {
-  root.classList.add('aria-clients-view', 'aria-workflows-view');
+  root.classList.add('aria-workflows-view');
   const head = viewHead('Client Workflows', 'Design, review, and provision autonomous voice call triage workflows across workspaces.');
   const headTitle = head.querySelector('h2');
   if (headTitle) {
@@ -11807,17 +11920,17 @@ async function viewSettings(root) {
   // Read URL query tab
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
   let currentTab = urlParams.get('tab') || 'general';
-  if (!['general', 'vobiz', 'dograh', 'integrations', 'crm-webhooks', 'knowledge-base'].includes(currentTab)) {
+  if (!['general', 'rumik', 'vobiz', 'dograh', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
+    { id: 'rumik', label: 'Rumik Voice & Speech', icon: 'mic' },
     { id: 'vobiz', label: 'VoBiz Phone Numbers', icon: 'phone' },
     { id: 'dograh', label: 'Dograh AI Flows', icon: 'git-branch' },
-    { id: 'integrations', label: 'Inbound Auto-Call', icon: 'phone' },
-    { id: 'crm-webhooks', label: 'CRM Webhooks', icon: 'send' },
+    { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
   ];
 
@@ -11861,10 +11974,10 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
+    else if (tabId === 'rumik') renderRumikVoiceTab(contentHost);
     else if (tabId === 'vobiz') renderVoBizTab(contentHost);
     else if (tabId === 'dograh') renderDograhTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
-    else if (tabId === 'crm-webhooks') renderCrmWebhooksTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
   }
 
@@ -12070,7 +12183,367 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-  // TAB 2: VOBIZ NUMBERS (TELEPHONY LINES & ASSIGNMENTS)
+  // TAB 2: RUMIK VOICE & STREAMING SPEECH STUDIO
+  // ==========================================================================
+  async function renderRumikVoiceTab(panel) {
+    const wrap = el('div', { class: 'settings-tab-inner aria-rumik-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
+    panel.innerHTML = '';
+    panel.appendChild(wrap);
+
+    let catalogData = null;
+    try {
+      catalogData = await api('/api/voice/catalog');
+    } catch (e) {
+      wrap.innerHTML = '';
+      wrap.appendChild(el('div', { style: 'color:#dc2626;padding:24px 0;' }, 'Failed to load voice catalog. Please refresh.'));
+      return;
+    }
+
+    const voices = (catalogData && catalogData.voices) || [];
+    const tones = (catalogData && catalogData.tones) || [];
+    const active = (catalogData && catalogData.activeVoice) || {};
+    const agents = (catalogData && catalogData.agents) || [];
+    const activeWfId = (catalogData && catalogData.activeWorkflowId) || '13027';
+
+    let selectedVoiceId = active.voiceId || 'ira';
+    let selectedTone = active.tone || 'happy';
+    let selectedSpeed = active.speed || 1.0;
+    let selectedAgentId = active.agentId || (agents[0] && agents[0].id) || '';
+    let currentAudio = null;
+    let currentlyPlayingId = null;
+
+    wrap.innerHTML = '';
+
+    // Section 1: Header & Live Ecosystem Status
+    const headerSection = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Rumik Voice & Realtime Speech Studio'),
+      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:760px;line-height:1.5;' },
+        'Listen to and choose the natural voice for your AI receptionist. When you select a voice, it automatically binds to your Dograh flow and VoBiz phone numbers so every caller hears your chosen voice instantly.'
+      ),
+      // Live Pipeline Connectivity Pills (Zero Boxes, pure minimal Scandinavian indicators)
+      el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
+          el('span', { id: 'rumik-active-voice-pill' }, `Active Voice: ${voices.find(v => v.id === selectedVoiceId)?.name || 'Ira'} (Rumik Mulberry)`)
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
+          el('span', {}, `Dograh Pipeline: Synced (#${activeWfId})`)
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
+          el('span', {}, 'VoBiz DID Carrier Line: Ready')
+        ])
+      ])
+    ]);
+    wrap.appendChild(headerSection);
+
+    // Audio Player Helper
+    function stopPlayback() {
+      if (currentAudio) {
+        try {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        } catch (_) {}
+        currentAudio = null;
+      }
+      currentlyPlayingId = null;
+      updatePlayButtons();
+    }
+
+    function playAudioUrl(url, id, onEnd) {
+      stopPlayback();
+      currentlyPlayingId = id;
+      updatePlayButtons();
+      const a = new Audio(url);
+      currentAudio = a;
+      a.onended = () => {
+        stopPlayback();
+        if (onEnd) onEnd();
+      };
+      a.onerror = () => {
+        stopPlayback();
+        toast('Unable to play audio sample.', 'err');
+      };
+      a.play().catch(() => {
+        stopPlayback();
+      });
+    }
+
+    const playBtnElements = new Map();
+    function updatePlayButtons() {
+      voices.forEach((v) => {
+        const btn = playBtnElements.get(v.id);
+        if (!btn) return;
+        const isPlaying = currentlyPlayingId === v.id;
+        btn.innerHTML = isPlaying
+          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Listen Sample';
+        btn.style.background = isPlaying ? '#dc2626' : 'transparent';
+        btn.style.color = isPlaying ? '#ffffff' : '#0d5d41';
+        btn.style.borderColor = isPlaying ? '#dc2626' : '#0d5d41';
+      });
+      const customBtn = playBtnElements.get('custom');
+      if (customBtn) {
+        const isPlaying = currentlyPlayingId === 'custom';
+        customBtn.innerHTML = isPlaying
+          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Audio'
+          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Custom Text';
+        customBtn.style.background = isPlaying ? '#dc2626' : '#0d5d41';
+        customBtn.style.color = '#ffffff';
+      }
+    }
+
+    // Section 2: Voice Catalog List (Strictly Flat Underline Scandinavian Rows)
+    const voiceListHeader = el('div', { style: 'margin-bottom:12px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:2px;' }, 'Available Indian Voices'),
+      el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Select Voice Identity')
+    ]);
+    wrap.appendChild(voiceListHeader);
+
+    const voicesContainer = el('div', { style: 'margin-bottom:32px;display:flex;flex-direction:column;gap:8px;' });
+
+    voices.forEach((v) => {
+      const isSelected = v.id === selectedVoiceId;
+      const row = el('div', {
+        class: 'rumik-voice-row',
+        style: `display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(13,93,65,0.09);border-left:${isSelected ? '3px solid #0d5d41' : '3px solid transparent'};background:${isSelected ? 'rgba(13,93,65,0.035)' : 'transparent'};transition:all 0.18s ease;cursor:pointer;flex-wrap:wrap;gap:14px;`,
+        onclick: () => {
+          selectedVoiceId = v.id;
+          refreshVoiceSelections();
+        }
+      });
+
+      // Left info
+      const avatarEl = el('div', {
+        class: 'rumik-voice-avatar',
+        style: `width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isSelected ? '#0d5d41' : 'rgba(13,93,65,0.09)'};color:${isSelected ? '#ffffff' : '#0d5d41'};font-size:0.90rem;font-weight:800;flex-shrink:0;transition:all 0.18s ease;`
+      }, v.name.slice(0, 1));
+
+      const leftInfo = el('div', { style: 'display:flex;align-items:center;gap:14px;flex:1;min-width:280px;' }, [
+        avatarEl,
+        el('div', { style: 'flex:1;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
+            el('span', { style: 'font-size:1.02rem;font-weight:850;color:#14221c;' }, v.name),
+            el('span', { style: 'font-size:0.68rem;font-weight:800;letter-spacing:0.04em;padding:2px 8px;border-radius:999px;background:rgba(93,116,104,0.12);color:#334d40;' }, v.gender === 'female' ? 'Female' : 'Male'),
+            el('span', { style: 'font-size:0.74rem;color:#5d7468;font-weight:600;' }, v.accent)
+          ]),
+          el('div', { style: 'font-size:0.80rem;color:#5d7468;margin-top:3px;' },
+            el('strong', { style: 'color:#0d5d41;' }, 'Best for: '),
+            el('span', {}, v.recommendedFor)
+          )
+        ])
+      ]);
+
+      // Right action buttons
+      const playBtn = el('button', {
+        type: 'button',
+        class: 'btn-sample-play',
+        style: 'background:transparent;color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
+        onclick: async (e) => {
+          e.stopPropagation();
+          if (currentlyPlayingId === v.id) {
+            stopPlayback();
+            return;
+          }
+          playBtn.textContent = 'Loading...';
+          try {
+            const previewRes = await api('/api/voice/preview', {
+              method: 'POST',
+              body: { voiceId: v.id, tone: selectedTone, text: v.sampleGreeting }
+            });
+            if (previewRes && previewRes.dataUrl) {
+              playAudioUrl(previewRes.dataUrl, v.id);
+            }
+          } catch (err) {
+            toast(err.message || 'Failed to generate voice preview', 'err');
+            stopPlayback();
+          }
+        }
+      });
+      playBtnElements.set(v.id, playBtn);
+
+      const selectBtn = el('button', {
+        type: 'button',
+        class: 'btn-voice-select',
+        style: isSelected
+          ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
+          : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;',
+        onclick: (e) => {
+          e.stopPropagation();
+          selectedVoiceId = v.id;
+          refreshVoiceSelections();
+        }
+      }, isSelected ? '✓ Active Voice' : 'Select Voice');
+
+      const actions = el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [playBtn, selectBtn]);
+      row.appendChild(leftInfo);
+      row.appendChild(actions);
+      voicesContainer.appendChild(row);
+    });
+
+    wrap.appendChild(voicesContainer);
+    updatePlayButtons();
+
+    function refreshVoiceSelections() {
+      const activeVoiceObj = voices.find(v => v.id === selectedVoiceId);
+      const pill = $('#rumik-active-voice-pill');
+      if (pill) pill.textContent = `Active Voice: ${activeVoiceObj?.name || 'Ira'} (Rumik Mulberry)`;
+
+      const rows = wrap.querySelectorAll('.rumik-voice-row');
+      rows.forEach((r, idx) => {
+        const v = voices[idx];
+        if (!v) return;
+        const isSel = v.id === selectedVoiceId;
+        r.style.background = isSel ? 'rgba(13,93,65,0.035)' : 'transparent';
+        r.style.borderLeft = isSel ? '3px solid #0d5d41' : '3px solid transparent';
+        r.style.borderBottom = '1px solid rgba(13,93,65,0.09)';
+
+        const avatar = r.querySelector('.rumik-voice-avatar');
+        if (avatar) {
+          avatar.style.background = isSel ? '#0d5d41' : 'rgba(13,93,65,0.09)';
+          avatar.style.color = isSel ? '#ffffff' : '#0d5d41';
+        }
+        const selBtn = r.querySelector('.btn-voice-select');
+        if (selBtn) {
+          selBtn.textContent = isSel ? '✓ Active Voice' : 'Select Voice';
+          selBtn.style.cssText = isSel
+            ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
+            : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;';
+        }
+      });
+    }
+
+    // Section 3: Speech Delivery & Tone Tuning (Flat Underline Inputs - Zero Boxes)
+    const flatInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
+    const flatLabelStyle = 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;';
+
+    const controlsSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:16px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Tone & Agent Assignment'),
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Speech Energy & Behavior Configuration')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px 28px;max-width:860px;margin-bottom:24px;' }, [
+        // Assign to Agent
+        el('div', {}, [
+          el('label', { style: flatLabelStyle }, 'Assign Voice to Agent'),
+          el('select', {
+            id: 'rumik-agent-select',
+            class: 'select aria-select',
+            style: flatInputStyle,
+            onchange: (e) => { selectedAgentId = e.target.value; }
+          }, agents.map(a => el('option', { value: a.id, selected: a.id === selectedAgentId }, `${a.name}${a.isPrimary ? ' (Primary Agent)' : ''}`)))
+        ]),
+        // Tone Presets
+        el('div', {}, [
+          el('label', { style: flatLabelStyle }, 'Emotion & Energy Tone'),
+          el('select', {
+            id: 'rumik-tone-select',
+            class: 'select aria-select',
+            style: flatInputStyle,
+            onchange: (e) => { selectedTone = e.target.value; }
+          }, tones.map(t => el('option', { value: t.id, selected: t.id === selectedTone }, `${t.label} (${t.emotionTag})`)))
+        ]),
+        // Speech Rate / Speed
+        el('div', {}, [
+          el('label', { style: flatLabelStyle }, 'Speech Delivery Rate'),
+          el('select', {
+            id: 'rumik-speed-select',
+            class: 'select aria-select',
+            style: flatInputStyle,
+            onchange: (e) => { selectedSpeed = parseFloat(e.target.value); }
+          }, [
+            el('option', { value: '0.9' }, '0.90x (Deliberate & Relaxed)'),
+            el('option', { value: '1.0', selected: selectedSpeed === 1.0 }, '1.00x (Standard Conversational)'),
+            el('option', { value: '1.1' }, '1.10x (Brisk & Energetic)'),
+            el('option', { value: '1.2' }, '1.20x (Fast Delivery)')
+          ])
+        ])
+      ]),
+
+      // Custom Phrase Interactive Tester (Flat Underline)
+      el('div', { style: 'max-width:860px;margin-top:16px;' }, [
+        el('label', { style: flatLabelStyle }, 'Test Custom Business Greeting in Selected Voice'),
+        el('div', { style: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;' }, [
+          el('input', {
+            id: 'rumik-custom-text',
+            class: 'input',
+            style: 'flex:1;min-width:280px;' + flatInputStyle,
+            placeholder: 'e.g. Namaste! Welcome to Apollo Dental Clinic. Main aapki appointment book karne mein madad kar sakti hoon.'
+          }),
+          (() => {
+            const customTestBtn = el('button', {
+              type: 'button',
+              style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;'
+            });
+            playBtnElements.set('custom', customTestBtn);
+            customTestBtn.onclick = async () => {
+              if (currentlyPlayingId === 'custom') {
+                stopPlayback();
+                return;
+              }
+              const customVal = $('#rumik-custom-text')?.value.trim();
+              const textToSpeak = customVal || 'Namaste! Welcome to our clinic. Main aapki kya sahayata kar sakti hoon?';
+              customTestBtn.textContent = 'Generating...';
+              try {
+                const res = await api('/api/voice/preview', {
+                  method: 'POST',
+                  body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, text: textToSpeak }
+                });
+                if (res && res.dataUrl) {
+                  playAudioUrl(res.dataUrl, 'custom');
+                }
+              } catch (err) {
+                toast(err.message || 'Failed to preview custom audio', 'err');
+                stopPlayback();
+              }
+            };
+            return customTestBtn;
+          })()
+        ]),
+        el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:6px;' }, 'Enter your exact business name to hear how your callers will experience the greeting.')
+      ])
+    ]);
+    wrap.appendChild(controlsSection);
+    updatePlayButtons();
+
+    // Section 4: Save & Apply Button
+    const saveBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:10px 28px;font-weight:750;border:none;cursor:pointer;'
+    }, 'Apply Voice & Sync to Dograh Flow');
+
+    saveBtn.onclick = async () => {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving & Synchronizing Flow...';
+      try {
+        const res = await api('/api/voice/save', {
+          method: 'POST',
+          body: {
+            voiceId: selectedVoiceId,
+            tone: selectedTone,
+            speed: selectedSpeed,
+            agentId: selectedAgentId,
+            model: 'muga'
+          }
+        });
+        toast(res.message || 'Voice updated successfully and synced with Dograh workflow & phone lines!', 'ok');
+        refreshVoiceSelections();
+      } catch (err) {
+        toast(err.message || 'Failed to apply voice.', 'err');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Apply Voice & Sync to Dograh Flow';
+      }
+    };
+
+    wrap.appendChild(el('div', { style: 'margin-top:20px;' }, [saveBtn]));
+  }
+
+  // ==========================================================================
+  // TAB 3: VOBIZ NUMBERS (TELEPHONY LINES & ASSIGNMENTS)
   // ==========================================================================
   async function renderVoBizTab(panel) {
     const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
@@ -12125,44 +12598,46 @@ async function viewSettings(root) {
           el('span', { html: uiIcon('arrowUpRight', 12) })
         ])
       ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:16px;' }, [
-        el('div', { style: 'padding:16px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.10);border-radius:10px;' }, [
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
           el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;' }, '1'),
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
             el('span', {}, 'Acquire on VoBiz Console')
           ]),
           el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Purchase your 10-digit Indian (+91) phone number on console.vobiz.ai.')
         ]),
-        el('div', { style: 'padding:16px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.10);border-radius:10px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
           el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;' }, '2'),
-            el('span', {}, 'Connect API Credentials')
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
+            el('span', {}, 'Enter API Credentials')
           ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Enter your VoBiz Auth ID and Auth Token below to authenticate the SIP line.')
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your VoBiz Auth ID and Auth Token below to authenticate and register the SIP line.')
         ]),
-        el('div', { style: 'padding:16px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.10);border-radius:10px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
           el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;' }, '3'),
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
             el('span', {}, 'Instant Voice Line Sync')
           ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'The line activates immediately and appears in "All AI Agents" dropdown.')
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'The line activates immediately and becomes selectable across all your AI voice agents.')
         ])
       ])
     ]);
     wrap.appendChild(guideSection);
 
-    // Section 2: Form to Connect VoBiz Number
-    const providerSel = el('select', { class: 'select aria-select' }, [
+    // Section 2: Form to Connect VoBiz Number (Strictly Flat Underline - Zero Cards/Boxes)
+    const vobizInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
+
+    const providerSel = el('select', { class: 'select aria-select', style: vobizInputStyle }, [
       el('option', { value: 'vobiz' }, 'VoBiz (Recommended • Indian +91 Numbers)'),
       el('option', { value: 'twilio' }, 'Twilio'),
       el('option', { value: 'telnyx' }, 'Telnyx'),
       el('option', { value: 'sip' }, 'Custom SIP Trunk')
     ]);
-    const addressInp = el('input', { class: 'input', placeholder: 'e.g. +91 80 7158 2519 or 9876543210' });
-    const labelInp = el('input', { class: 'input', placeholder: 'e.g. Clinic Reception Desk, Support Line' });
-    const authIdInp = el('input', { class: 'input', placeholder: 'e.g. MA_U86WFYDC (from console.vobiz.ai)' });
-    const authTokenInp = el('input', { class: 'input', type: 'password', placeholder: '•••••••• (Auth Token from console.vobiz.ai)' });
-    const tenantSelect = el('select', { class: 'select aria-select' });
+    const addressInp = el('input', { class: 'input', placeholder: 'e.g. +91 80 7158 2519 or 9876543210', style: vobizInputStyle });
+    const labelInp = el('input', { class: 'input', placeholder: 'e.g. Clinic Reception Desk, Support Line', style: vobizInputStyle });
+    const authIdInp = el('input', { class: 'input', placeholder: 'e.g. MA_U86WFYDC (from console.vobiz.ai)', style: vobizInputStyle });
+    const authTokenInp = el('input', { class: 'input', type: 'password', placeholder: 'Auth Token from console.vobiz.ai', style: vobizInputStyle });
+    const tenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
 
     if (isPlatformAdmin) {
       api('/api/admin/tenants').then((res) => {
@@ -12182,8 +12657,14 @@ async function viewSettings(root) {
 
     connectBtn.onclick = async () => {
       const addr = addressInp.value.trim();
+      const authId = authIdInp.value.trim();
+      const authToken = authTokenInp.value.trim();
       if (!addr) {
-        toast('Phone number is required.', 'err');
+        toast('Phone number / DID is required.', 'err');
+        return;
+      }
+      if (providerSel.value === 'vobiz' && (!authId || !authToken)) {
+        toast('VoBiz Auth ID and Auth Token are required to connect your number.', 'err');
         return;
       }
       connectBtn.disabled = true;
@@ -12193,8 +12674,8 @@ async function viewSettings(root) {
           provider: providerSel.value,
           address: addr,
           label: labelInp.value.trim(),
-          authId: authIdInp.value.trim(),
-          authToken: authTokenInp.value.trim()
+          authId: authId,
+          authToken: authToken
         };
         if (isPlatformAdmin && tenantSelect.value) body.tenantId = tenantSelect.value;
         const res = await api('/api/telephony/connect-did', { method: 'POST', body });
@@ -12235,11 +12716,11 @@ async function viewSettings(root) {
           tenantSelect
         ]) : null,
         el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'VoBiz Auth ID (Optional)'),
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'VoBiz Auth ID (Required)'),
           authIdInp
         ]),
         el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'VoBiz Auth Token (Optional)'),
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'VoBiz Auth Token (Required)'),
           authTokenInp
         ])
       ].filter(Boolean)),
@@ -12312,29 +12793,79 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-  // TAB 3: DOGRAH AI FLOWS TAB (ORCHESTRATION PIPELINES)
+// TAB 3: DOGRAH AI FLOWS TAB (ORCHESTRATION PIPELINES & CUSTOM CLIENT FLOW BUILDER)
   // ==========================================================================
   async function renderDograhTab(panel) {
     const wrap = el('div', { class: 'settings-tab-inner aria-dograh-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
+    panel.innerHTML = '';
     panel.appendChild(wrap);
 
-    try {
-      const data = await api('/api/dograh/flows').catch(() => ({
+    let currentTenantFilter = '';
+    const flowStudioState = { active: false, flow: null };
+
+    async function loadData(targetTenantId) {
+      const url = '/api/dograh/flows' + (targetTenantId ? `?tenantId=${encodeURIComponent(targetTenantId)}` : '');
+      return await api(url).catch(() => ({
         flows: [],
+        agents: [],
+        tenants: [],
         activeWorkflowId: '13027',
         defaultWorkflowId: '13027',
         usingShared: true,
         live: true,
-        dashboardUrl: 'https://console.dograh.com'
+        dashboardUrl: 'https://console.dograh.com',
+        isAdmin: false
       }));
+    }
 
+    async function renderCurrent() {
+      wrap.innerHTML = '';
+      if (flowStudioState.active) {
+        const data = await loadData(currentTenantFilter);
+        wrap.appendChild(buildFlowStudioPage(flowStudioState.flow, () => {
+          flowStudioState.active = false;
+          flowStudioState.flow = null;
+          renderCurrent();
+        }, data, () => {
+          flowStudioState.active = false;
+          flowStudioState.flow = null;
+          renderCurrent();
+        }));
+      } else {
+        await renderFlowsListPage();
+      }
+    }
+
+    async function renderFlowsListPage() {
+      wrap.innerHTML = '';
+      wrap.appendChild(skeleton('sk-card', 2));
+      const data = await loadData(currentTenantFilter);
       wrap.innerHTML = '';
 
-      // Header with actions
-      const syncBtn = el('button', {
+      const isAdmin = !!data.isAdmin;
+      const tenants = data.tenants || [];
+      const agents = data.agents || [];
+      let flows = data.flows || [];
+
+      // Top Action Buttons
+      const createFlowBtn = el('button', {
         type: 'button',
         class: 'btn btn-primary btn-sm',
-        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;display:inline-flex;align-items:center;gap:6px;'
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;'
+      }, [
+        el('span', { html: uiIcon('plus', 14) }),
+        el('span', {}, 'Create Voice Flow')
+      ]);
+      createFlowBtn.onclick = () => {
+        flowStudioState.active = true;
+        flowStudioState.flow = null;
+        renderCurrent();
+      };
+
+      const syncBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
       }, [
         el('span', { html: uiIcon('refresh', 14) }),
         el('span', {}, 'Sync from Dograh')
@@ -12345,14 +12876,26 @@ async function viewSettings(root) {
         syncBtn.textContent = 'Syncing...';
         try {
           const res = await api('/api/dograh/sync', { method: 'POST' });
-          toast('Synced successfully with Dograh Workflow #' + ((res.workflow && res.workflow.workflowId) || 13027) + '! Receptionist updated with latest facts.', 'ok');
-          renderDograhTab(panel);
+          toast('Synced with Dograh Workflow #' + ((res.workflow && res.workflow.workflowId) || 13027) + '! Updated receptionist persona.', 'ok');
+          renderCurrent();
         } catch (err) {
           syncBtn.disabled = false;
           syncBtn.textContent = 'Sync from Dograh';
-          toast('Dograh sync failed: ' + err.message, 'err');
+          toast('Dograh sync note: ' + err.message, 'err');
         }
       };
+
+      const assignBtn = isAdmin ? el('button', {
+        type: 'button',
+        class: 'btn btn-ghost btn-sm',
+        style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
+      }, [
+        el('span', { html: uiIcon('git-branch', 14) }),
+        el('span', {}, 'Assign to Workspace')
+      ]) : null;
+      if (assignBtn) {
+        assignBtn.onclick = () => openAdminAssignModal(tenants);
+      }
 
       const consoleLink = el('a', {
         href: data.dashboardUrl || 'https://console.dograh.com',
@@ -12364,217 +12907,1147 @@ async function viewSettings(root) {
         el('span', { html: uiIcon('arrowUpRight', 12) })
       ]);
 
+      // Header strip
       const header = el('div', {
-        style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1.5px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
+        style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
       }, [
         el('div', {}, [
           el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony AI Orchestration'),
           el('h3', { style: 'margin:0 0 6px 0;font-size:1.35rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, 'Dograh AI Voice Flows & Routing'),
-          el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;' }, 'Real-time conversational voice agent orchestration, neural prompt pipelines, and multi-turn audio routing.')
+          el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;' }, 'Create, customize, and orchestrate neural conversational voice flows for your AI agents with real-time carrier dispatch.')
         ]),
-        el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+          createFlowBtn,
+          assignBtn,
           syncBtn,
           consoleLink
-        ])
+        ].filter(Boolean))
       ]);
       wrap.appendChild(header);
 
-      // Flat 4-Column KPI Stats Row
+      // Admin Workspace Filter Bar (If Admin)
+      if (isAdmin && tenants.length > 0) {
+        const filterBar = el('div', {
+          style: 'display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;margin-bottom:24px;flex-wrap:wrap;'
+        }, [
+          el('span', { style: 'font-size:0.76rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#0d5d41;' }, 'Workspace Filter:'),
+          (() => {
+            const sel = el('select', {
+              class: 'select aria-select',
+              style: 'padding:6px 14px;font-size:0.86rem;font-weight:700;border-radius:999px;border:1.5px solid rgba(13,93,65,0.20);background:#fff;color:#14221c;min-width:240px;'
+            }, [
+              el('option', { value: '' }, 'All Workspaces (Admin View)'),
+              ...tenants.map(t => el('option', { value: t.id }, `${t.name} (${t.id})`))
+            ]);
+            sel.value = currentTenantFilter;
+            sel.onchange = async () => {
+              currentTenantFilter = sel.value;
+              renderCurrent();
+            };
+            return sel;
+          })(),
+          el('span', { class: 'muted', style: 'font-size:0.78rem;color:#5d7468;margin-left:auto;' }, 'Admin privilege: switch workspace to configure client voice flows.')
+        ]);
+        wrap.appendChild(filterBar);
+      }
+
+      // Flat 4-Column KPI Stats Row (Zero gaps, connected lines)
+      const activeFlow = flows.find(f => f.isActive) || flows[0];
+      const activeWfId = (activeFlow && activeFlow.workflowId) || data.activeWorkflowId || '13027';
+
       const kpiRow = el('div', {
-        class: 'settings-kpi-bar', style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+        class: 'settings-kpi-bar',
+        style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:28px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
       }, [
         el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
           el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE WORKFLOW'),
-          el('div', { class: 'kpi-value', style: 'font-size:1.30rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, '#' + (data.activeWorkflowId || '13027')),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, data.usingShared ? 'Seevora Shared Core' : 'Dedicated Custom Flow')
+          el('div', { class: 'kpi-value', id: 'dfl-kpi-active-wf', style: 'font-size:1.25rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, '#' + activeWfId),
+          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, activeFlow ? (activeFlow.name || 'Custom Voice Flow') : 'Seevora Shared Core')
         ]),
         el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ORCHESTRATOR STATUS'),
-          el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:800;color:#047857;margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
-            el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#047857;' }),
-            el('span', {}, 'Active & Live')
-          ]),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Real-time WebSocket bridge')
+          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'FLOWS CONFIGURED'),
+          el('div', { class: 'kpi-value', id: 'dfl-kpi-count', style: 'font-size:1.25rem;font-weight:850;color:#14221c;margin:4px 0;' }, String(flows.length)),
+          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Available in workspace')
         ]),
         el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
           el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'CARRIER INTEGRATION'),
           el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'VoBiz Carrier'),
           el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Bi-directional SIP trunking')
         ]),
-        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AUDIO ENGINE'),
-          el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'SmallWebRTC'),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Sub-400ms neural turnaround')
+        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ORCHESTRATOR STATUS'),
+          el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:800;color:#047857;margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+            el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#047857;' }),
+            el('span', {}, 'Active & Live')
+          ]),
+          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Sub-400ms SmallWebRTC')
         ])
       ]);
       wrap.appendChild(kpiRow);
 
-      // Section 1: Active Specifications & Telephony Pipeline
-      const specSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-        el('div', { style: 'margin-bottom:14px;' }, [
-          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Active Architecture'),
-          el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Real-Time Voice Pipeline Architecture')
-        ]),
-        el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;' }, [
-          el('div', { style: 'padding:16px;background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);border-radius:10px;' }, [
-            el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;margin-bottom:4px;' }, 'Neural Dialog Pipeline'),
-            el('div', { style: 'font-weight:800;font-size:0.92rem;color:#14221c;margin-bottom:2px;' }, 'GPT-4o Mini + Deepgram Nova-2'),
-            el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Multi-turn conversational reasoning, dynamic interruption handling, and streaming speech-to-text.')
+      // Active Flow Spotlight Hero Box (Cardless, transparent canvas)
+      if (activeFlow) {
+        const hero = el('div', {
+          style: 'padding:22px 24px;background:rgba(13,93,65,0.025);border:1.5px solid rgba(13,93,65,0.15);border-radius:14px;margin-bottom:32px;box-sizing:border-box;'
+        }, [
+          el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;' }, [
+            el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+              el('span', { style: 'width:34px;height:34px;border-radius:50%;background:#0d5d41;color:#fff;display:inline-flex;align-items:center;justify-content:center;' }, [
+                el('span', { html: uiIcon('sparkle', 16) })
+              ]),
+              el('div', {}, [
+                el('div', { style: 'font-size:1.10rem;font-weight:850;color:#14221c;' }, activeFlow.name || 'Primary Voice Flow'),
+                el('div', { style: 'font-size:0.76rem;color:#5d7468;margin-top:1px;' },
+                  `Dograh Pipeline #${activeFlow.workflowId} · Created by ${activeFlow.assignedBy || 'workspace'}`
+                )
+              ])
+            ]),
+            el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+              el('span', {
+                style: 'display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:750;padding:4px 12px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
+              }, [
+                el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#047857;' }),
+                el('span', {}, 'LIVE ON PHONE LINES')
+              ]),
+              el('button', {
+                type: 'button',
+                class: 'btn btn-primary btn-sm',
+                style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 16px;font-weight:750;border:none;cursor:pointer;',
+                onclick: () => {
+                  flowStudioState.active = true;
+                  flowStudioState.flow = activeFlow;
+                  renderCurrent();
+                }
+              }, 'Edit Flow Details')
+            ])
           ]),
-          el('div', { style: 'padding:16px;background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);border-radius:10px;' }, [
-            el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;margin-bottom:4px;' }, 'Speech Synthesis (TTS)'),
-            el('div', { style: 'font-weight:800;font-size:0.92rem;color:#14221c;margin-bottom:2px;' }, 'Mulberry & Muga Neural Voices'),
-            el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Indian English accents with pitch modulation and conversational micro-inflections.')
-          ]),
-          el('div', { style: 'padding:16px;background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);border-radius:10px;' }, [
-            el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;margin-bottom:4px;' }, 'Telephony Answer Route'),
-            el('div', { style: 'font-weight:700;font-size:0.84rem;color:#0d5d41;font-family:var(--mono);word-break:break-all;margin-bottom:2px;' }, 'https://api.dograh.com/api/v1/telephony/inbound/run'),
-            el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Inbound webhook executed on VoBiz carrier call arrival.')
+          el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;padding-top:14px;border-top:1px dashed rgba(13,93,65,0.14);' }, [
+            el('div', {}, [
+              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'First Spoken Greeting'),
+              el('div', { style: 'font-size:0.84rem;color:#14221c;font-style:italic;line-height:1.45;' }, `"${activeFlow.greeting || 'Namaste! How can I assist you today?'}"`)
+            ]),
+            el('div', {}, [
+              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'Assigned Voice Agent'),
+              el('div', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;' }, activeFlow.agentName || 'Default AI Receptionist')
+            ]),
+            el('div', {}, [
+              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'Human Escalation Number'),
+              el('div', { style: 'font-size:0.86rem;font-weight:750;color:#14221c;font-family:var(--mono);' }, activeFlow.fallbackPhone || '+91 89822 00895')
+            ])
           ])
-        ])
-      ]);
-      wrap.appendChild(specSection);
+        ]);
+        wrap.appendChild(hero);
+      }
 
-      // Section 2: Flow Roster
-      const flows = data.flows || [];
-      const flowsSection = el('section', { style: 'margin-bottom:20px;' }, [
-        el('div', { style: 'margin-bottom:14px;' }, [
-          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Route Inventory'),
-          el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Workspace Voice Flows')
+      // Section: Flows Inventory Roster
+      const rosterSection = el('section', { style: 'margin-bottom:28px;' }, [
+        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;' }, [
+          el('div', {}, [
+            el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Route Inventory & Custom Flows'),
+            el('h4', { style: 'margin:0;font-size:1.18rem;font-weight:850;color:#14221c;' }, 'Workspace Voice Flows'),
+            el('p', { class: 'muted', style: 'margin:3px 0 0 0;font-size:0.82rem;color:#5d7468;' }, 'Each flow defines spoken greeting, behavioral prompts, dialog nodes, and escalation fallback. Click "Set as Active" to switch live call handling.')
+          ]),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 18px;font-weight:750;border:none;cursor:pointer;',
+            onclick: () => {
+              flowStudioState.active = true;
+              flowStudioState.flow = null;
+              renderCurrent();
+            }
+          }, '+ Add New Flow')
         ])
       ]);
 
       if (!flows.length) {
-        flowsSection.appendChild(el('div', {
-          style: 'padding:24px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;'
+        rosterSection.appendChild(el('div', {
+          style: 'padding:32px 20px;text-align:center;border:1px dashed rgba(13,93,65,0.18);border-radius:12px;background:rgba(13,93,65,0.015);'
         }, [
-          el('div', { style: 'max-width:560px;' }, [
-            el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;margin-bottom:4px;' }, 'Running on Seevora Shared Core Engine (Workflow #13027)'),
-            el('div', { style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Your phone lines and voice agents are actively powered by the high-throughput shared Dograh pipeline. All caller transcripts, voice recordings, and CRM webhooks are routed automatically.')
-          ]),
+          el('div', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;margin-bottom:6px;' }, 'No Voice Flows Found'),
+          el('p', { class: 'muted', style: 'font-size:0.84rem;max-width:440px;margin:0 auto 16px;color:#5d7468;' }, 'Create your first voice flow to customize the spoken persona, triage rules, and caller booking sequence.'),
           el('button', {
             type: 'button',
-            class: 'btn btn-ghost btn-sm',
-            style: 'border-radius:999px;padding:7px 18px;border:1px solid rgba(13,93,65,0.25);color:#0d5d41;font-weight:750;',
-            onclick: () => syncBtn.click()
-          }, 'Sync & Verify Active Flow')
+            class: 'btn btn-primary btn-sm',
+            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:7px 20px;font-weight:750;border:none;cursor:pointer;',
+            onclick: () => {
+              flowStudioState.active = true;
+              flowStudioState.flow = null;
+              renderCurrent();
+            }
+          }, 'Create Flow Now')
         ]));
       } else {
-        const table = el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
-          el('thead', {}, el('tr', {}, [
-            el('th', { style: 'text-align:left;' }, 'FLOW NAME'),
-            el('th', { style: 'text-align:left;' }, 'WORKFLOW ID'),
-            el('th', { style: 'text-align:left;' }, 'ASSIGNED AGENT'),
-            el('th', { style: 'text-align:left;' }, 'STATUS'),
-            el('th', { style: 'text-align:right;' }, 'ACTIONS')
-          ])),
-          el('tbody')
-        ]);
-        const tbody = table.querySelector('tbody');
-        flows.forEach(f => {
-          const tr = el('tr', { style: 'border-bottom:1px solid rgba(13,93,65,0.08);' }, [
-            el('td', { style: 'padding:14px 8px;font-weight:750;color:#14221c;' }, f.name || 'Voice Flow'),
-            el('td', { style: 'padding:14px 8px;font-family:var(--mono);color:#0d5d41;font-weight:700;' }, '#' + f.workflowId),
-            el('td', { style: 'padding:14px 8px;color:#5d7468;' }, f.agentName || 'Default Receptionist'),
-            el('td', { style: 'padding:14px 8px;' }, el('span', { style: 'font-size:0.72rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;' }, '● Active')),
-            el('td', { style: 'padding:14px 8px;text-align:right;' }, [
+        const listWrap = el('div', {
+          style: 'display:flex;flex-direction:column;gap:0;border-top:1px solid rgba(13,93,65,0.12);'
+        });
+
+        flows.forEach((f) => {
+          const isLive = !!f.isActive;
+
+          const row = el('div', {
+            style: 'padding:16px 6px;border-bottom:1px solid rgba(13,93,65,0.10);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;transition:background 0.15s ease;'
+          }, [
+            // Column 1: Info & Badges
+            el('div', { style: 'flex:1;min-width:280px;' }, [
+              el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;' }, [
+                el('b', { style: 'font-size:0.98rem;color:#14221c;' }, f.name || 'Voice Flow'),
+                el('span', {
+                  style: 'font-family:var(--mono);font-size:0.74rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;'
+                }, '#' + f.workflowId),
+                el('span', {
+                  style: 'font-size:0.68rem;font-weight:750;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.05);color:#5d7468;'
+                }, f.kind || 'generated'),
+                isLive
+                  ? el('span', {
+                      style: 'font-size:0.70rem;font-weight:750;padding:2px 10px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
+                    }, '● Active & Dialing')
+                  : el('span', {
+                      style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.06);color:#5d7468;'
+                    }, 'Standby')
+              ]),
+              el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-bottom:4px;' },
+                f.description || (f.greeting ? `Greeting: "${f.greeting.slice(0, 90)}..."` : 'Voice conversational flow')
+              ),
+              el('div', { style: 'font-size:0.75rem;color:#0d5d41;' },
+                `Assigned Agent: <strong>${f.agentName || 'Default Receptionist'}</strong> · Language: ${f.language || 'hi-IN'}`
+              )
+            ]),
+
+            // Column 2: Actions
+            el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
+              !isLive ? el('button', {
+                type: 'button',
+                class: 'btn btn-ghost btn-sm',
+                style: 'border-radius:999px;padding:5px 14px;border:1px solid rgba(13,93,65,0.25);color:#0d5d41;font-weight:750;font-size:0.78rem;',
+                onclick: async () => {
+                  try {
+                    await api('/api/dograh/flows/activate', { method: 'POST', body: { id: f.id } });
+                    toast(`"${f.name}" is now the active flow for calls!`, 'ok');
+                    renderCurrent();
+                  } catch (e) { toast(e.message, 'err'); }
+                }
+              }, 'Set as Active') : null,
               el('button', {
                 type: 'button',
                 class: 'btn btn-ghost btn-sm',
-                style: 'border-radius:999px;padding:4px 12px;border:1px solid rgba(13,93,65,0.2);color:#0d5d41;font-size:0.76rem;',
+                style: 'border-radius:999px;padding:5px 14px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:750;font-size:0.78rem;',
+                onclick: () => {
+                  flowStudioState.active = true;
+                  flowStudioState.flow = f;
+                  renderCurrent();
+                }
+              }, 'Edit Flow'),
+              el('button', {
+                type: 'button',
+                class: 'btn btn-ghost btn-sm',
+                style: 'border-radius:999px;padding:5px 12px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.78rem;',
+                title: 'Push latest persona to Dograh upstream',
                 onclick: async () => {
                   try {
-                    await api('/api/dograh/flows/sync', { method: 'POST', body: { flowId: f.id } });
-                    toast('Flow #' + f.workflowId + ' synced.', 'ok');
-                    renderDograhTab(panel);
+                    await api('/api/dograh/flows/sync', { method: 'POST', body: { id: f.id, agentId: f.agentId } });
+                    toast('Flow #' + f.workflowId + ' synced with upstream Dograh.', 'ok');
+                    renderCurrent();
                   } catch (e) { toast(e.message, 'err'); }
                 }
-              }, 'Sync')
-            ])
+              }, 'Sync'),
+              flows.length > 1 ? el('button', {
+                type: 'button',
+                class: 'btn btn-ghost btn-sm',
+                style: 'border-radius:999px;padding:5px 12px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;font-size:0.78rem;',
+                onclick: () => confirmDeleteFlow(f, renderCurrent)
+              }, 'Delete') : null
+            ].filter(Boolean))
           ]);
-          tbody.appendChild(tr);
+          listWrap.appendChild(row);
         });
-        flowsSection.appendChild(table);
+        rosterSection.appendChild(listWrap);
       }
-      wrap.appendChild(flowsSection);
-
-    } catch (err) {
-      wrap.innerHTML = '';
-      wrap.appendChild(el('div', { class: 'error-state', style: 'padding:40px 20px;text-align:center;' }, [
-        el('h3', {}, 'Dograh Flows Unavailable'),
-        el('p', { class: 'muted' }, err.message),
-        el('button', { class: 'btn btn-ghost', style: 'border-radius:999px;', onclick: () => renderDograhTab(panel) }, 'Retry Connection')
-      ]));
+      wrap.appendChild(rosterSection);
     }
+
+    renderCurrent();
   }
 
   // ==========================================================================
-  // TAB 4: INBOUND AUTO-CALL & INTEGRATIONS
+  // VOICE FLOW STUDIO: FULL CARDLESS DASHBOARD CANVAS
   // ==========================================================================
-  function renderIntegrationsTab(panel) {
-    const wrap = el('div', { class: 'settings-tab-inner aria-integrations-tab', style: 'width:100%;' });
-    panel.appendChild(wrap);
-
-    const kpis = el('div', {
-      class: 'settings-kpi-bar', style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
-    }, [
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AUTO-DIAL ENGINE'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Active & Ready'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Webhook lead trigger')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'TRIGGER LATENCY'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, '< 3 Seconds'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Instant lead callout')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'CONNECTORS'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'Meta Ads & Zapier'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Google Sheets / Webhooks')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'VOICE LINE'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'VoBiz Carrier'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Caller ID assigned')
-      ])
-    ]);
-    wrap.appendChild(kpis);
-
-    const ingestUrl = window.location.origin + '/api/leads/ingest?tenantId=' + encodeURIComponent(t.id || 'default');
-    const copyUrlBtn = el('button', {
-      type: 'button',
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:8px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;'
-    }, 'Copy Webhook URL');
-    copyUrlBtn.onclick = () => {
-      navigator.clipboard.writeText(ingestUrl);
-      toast('Inbound lead webhook URL copied!', 'ok');
+  function buildFlowStudioPage(existing, onBack, data, onSaved) {
+    const isEdit = Boolean(existing && existing.id);
+    const flow = existing || {
+      name: '',
+      workflowId: (data && data.defaultWorkflowId) || '13027',
+      agentId: (data && data.agents && data.agents[0] && data.agents[0].id) || '',
+      greeting: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I assist you today?',
+      prompt: 'You are a warm, courteous AI voice receptionist. Speak in natural conversational Hindi/English. Inquire about caller requirements, answer FAQs concisely in 1 to 2 spoken sentences, qualify the lead, and collect caller name and callback number.',
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      isActive: true,
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: 'Greet caller warmly and introduce company.' },
+        { id: '2', type: 'triage', title: 'Query & Qualification', prompt: 'Inquire caller needs, qualify urgency, and answer common questions.' },
+        { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture caller name, phone number, and preferred appointment time.' },
+        { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to specialist or confirm automated WhatsApp callback.' }
+      ]
     };
 
-    const section = el('section', { style: 'margin-bottom:24px;' }, [
-      el('div', { style: 'margin-bottom:16px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Automated Lead-to-Call'),
-        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;' }, 'Inbound Auto-Call & Form Lead Ingestion'),
-        el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'When a prospect fills your Facebook/Meta Lead Form, Website Contact Form, or Google Sheet, your AI Receptionist dials them within 3 seconds.')
-      ]),
-      el('div', { style: 'margin-bottom:20px;max-width:720px;' }, [
-        el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Your Inbound Lead Webhook URL'),
-        el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-          el('input', { class: 'input', readonly: true, value: ingestUrl, style: 'font-family:var(--mono);font-size:0.84rem;' }),
-          copyUrlBtn
-        ])
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+    const agents = (data && data.agents) || [];
+    const page = el('div', { class: 'aria-flow-studio-page', style: 'max-width:1080px;margin:0 auto;padding-bottom:60px;' });
+
+    // Top Breadcrumb & Action Buttons
+    const submitBtnTop = el('button', {
+      type: 'button',
+      class: 'btn btn-primary btn-sm',
+      style: 'border-radius:999px;padding:8px 22px;background:#0d5d41;color:#ffffff;font-weight:750;font-size:0.86rem;border:none;cursor:pointer;'
+    }, isEdit ? 'Save Changes' : 'Deploy Voice Flow');
+
+    const topBar = el('div', {
+      style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 0 16px 0;margin-bottom:24px;border-bottom:1.5px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
+    }, [
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
         el('button', {
           type: 'button',
-          class: 'btn btn-primary',
-          style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;',
-          onclick: () => goto('integrations')
-        }, 'Open Full Integrations Hub')
+          class: 'btn btn-ghost btn-sm',
+          style: 'border-radius:999px;padding:6px 14px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;',
+          onclick: onBack
+        }, [
+          el('span', {}, '← Back to Voice Flows')
+        ]),
+        el('span', { style: 'color:rgba(13,93,65,0.3);font-size:0.9rem;' }, '/'),
+        el('span', { style: 'font-weight:750;font-size:0.96rem;color:#14221c;' }, isEdit ? ('Edit Flow: ' + flow.name) : 'New Voice Flow Studio')
+      ]),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('button', {
+          type: 'button',
+          class: 'btn btn-ghost btn-sm',
+          style: 'border-radius:999px;padding:7px 16px;border:1px solid rgba(13,93,65,0.2);color:#5d7468;font-weight:650;',
+          onclick: onBack
+        }, 'Cancel'),
+        submitBtnTop
       ])
     ]);
-    wrap.appendChild(section);
+    page.appendChild(topBar);
+
+    // Studio Header Kicker & Title
+    const headerSection = el('div', { style: 'margin-bottom:28px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony AI Dialog Logic & Turn Sequence'),
+      el('h2', { style: 'margin:0 0 6px 0;font-size:1.45rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, isEdit ? ('Edit ' + flow.name) : 'Create Autonomous Voice Flow'),
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Define conversational turn logic, configure neural spoken greeting, behavioral instructions, and carrier escalation fallback with zero cards.')
+    ]);
+    page.appendChild(headerSection);
+
+    // 3-Step Visual Progress Stepper (Zero cards)
+    const stepper = el('div', {
+      style: 'display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-bottom:36px;padding-bottom:20px;border-bottom:1px solid rgba(13,93,65,0.10);'
+    }, [
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '1'),
+        el('div', {}, [
+          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'IDENTITY & AGENT'),
+          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Name, persona & line')
+        ])
+      ]),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '2'),
+        el('div', {}, [
+          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'GREETING & PERSONA'),
+          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Opener & turn rules')
+        ])
+      ]),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '3'),
+        el('div', {}, [
+          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'DIALOG STAGES & ESCALATION'),
+          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Sequential steps & transfer')
+        ])
+      ])
+    ]);
+    page.appendChild(stepper);
+
+    // Form Canvas (Zero Cards, pure clean layout)
+    const form = el('form', { class: 'aria-flow-studio-canvas' });
+
+    // Inputs:
+    const nameI = el('input', {
+      class: 'input',
+      type: 'text',
+      value: flow.name || '',
+      placeholder: 'e.g. 24/7 AI Receptionist & Triage',
+      maxlength: 100,
+      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
+    });
+
+    const agentSel = el('select', {
+      class: 'select aria-select',
+      style: 'width:100%;padding:10px 14px;font-size:0.90rem;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
+    }, [
+      el('option', { value: '' }, 'Default System Receptionist'),
+      ...agents.map(a => el('option', { value: a.id, selected: a.id === flow.agentId }, `${a.name}${a.isPrimary ? ' (Primary)' : ''}`))
+    ]);
+
+    const wfIdI = el('input', {
+      class: 'input',
+      type: 'text',
+      value: flow.workflowId || '13027',
+      placeholder: '13027',
+      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-family:var(--mono);box-sizing:border-box;'
+    });
+
+    const greetI = el('textarea', {
+      class: 'input textarea',
+      rows: '2',
+      placeholder: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I assist you today?',
+      style: 'width:100%;font-size:0.90rem;line-height:1.45;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
+    }, flow.greeting || '');
+
+    const personaI = el('textarea', {
+      class: 'input textarea',
+      rows: '5',
+      placeholder: 'Describe the agent tone, business facts, qualification questions, and speech rules...',
+      style: 'width:100%;font-size:0.88rem;line-height:1.5;padding:12px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;resize:vertical;box-sizing:border-box;'
+    }, flow.prompt || '');
+
+    const fallbackI = el('input', {
+      class: 'input',
+      type: 'text',
+      value: flow.fallbackPhone || '+91 89822 00895',
+      placeholder: '+91 89822 00895',
+      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-family:var(--mono);box-sizing:border-box;'
+    });
+
+    const activeChk = el('input', {
+      type: 'checkbox',
+      id: 'flow_active_chk',
+      style: 'width:20px;height:20px;cursor:pointer;accent-color:#0d5d41;'
+    });
+    activeChk.checked = !isEdit ? true : !!flow.isActive;
+
+    // Fast Role Presets (Chips on plain canvas)
+    const presets = [
+      {
+        title: 'Front Desk Receptionist',
+        greeting: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I help you today?',
+        prompt: 'You are an AI voice receptionist. Be polite, warm, and helpful. Inquire about caller requirements, answer FAQs concisely in 1 to 2 spoken sentences, collect caller name and phone number, and book an appointment or callback.'
+      },
+      {
+        title: 'Clinic OPD & Patient Care',
+        greeting: 'Namaste! Welcome to the Clinic. Main OPD AI coordinator bol rahi hoon. Do you want to book a doctor appointment or lab test?',
+        prompt: 'You are a medical clinic voice receptionist. Triage patient concerns with empathy. Ask if they need doctor consultation or diagnostic testing, preferred time slot, and patient name. Never give medical diagnosis.'
+      },
+      {
+        title: 'Real Estate Buyer Screening',
+        greeting: 'Hello, thanks for calling! Are you looking for residential apartments or commercial properties?',
+        prompt: 'You are a luxury real estate AI consultant. Ask caller about BHK preference, budget range (e.g. 50 Lakhs to 2 Crores), location preference, and arrange a private site visit.'
+      },
+      {
+        title: 'Customer Support & Triage',
+        greeting: 'Hi, thank you for reaching out to support! Can you please tell me what issue you are experiencing?',
+        prompt: 'You are a technical support AI specialist. Identify caller account, troubleshoot common errors, and transfer to a human specialist if unresolved.'
+      }
+    ];
+
+    const presetChips = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, presets.map(p => {
+      return el('button', {
+        type: 'button',
+        class: 'admin-tab-btn',
+        style: 'font-size:0.78rem;padding:5px 14px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.03);color:#0d5d41;font-weight:700;',
+        onclick: () => {
+          greetI.value = p.greeting;
+          personaI.value = p.prompt;
+          if (!isEdit && !nameI.value.trim()) nameI.value = p.title;
+          toast(`Applied "${p.title}" template!`, 'ok');
+        }
+      }, p.title);
+    }));
+
+    agentSel.onchange = () => {
+      const ag = agents.find(a => a.id === agentSel.value);
+      if (ag) {
+        if (ag.greeting && !greetI.value.trim()) greetI.value = ag.greeting;
+        if (ag.persona && !personaI.value.trim()) personaI.value = ag.persona;
+      }
+    };
+
+    // ------------------------------------------------------------------------
+    // SECTION 1: FLOW IDENTITY & CARRIER LINE
+    // ------------------------------------------------------------------------
+    const sec1 = el('div', { style: 'margin-bottom:32px;' }, [
+      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
+        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '1.'),
+        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Flow Identity & Assigned Telephony Line'),
+        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Name, linked AI agent, and Dograh pipeline ID')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr);gap:20px;margin-bottom:18px;' }, [
+        el('div', { class: 'field' }, [
+          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'VOICE FLOW NAME *'),
+          nameI,
+          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Internal name shown on call logs and routing records.')
+        ]),
+        el('div', { class: 'field' }, [
+          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'ATTACHED VOICE AGENT'),
+          agentSel,
+          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Inherits voice timbre, TTS acoustic tone, and name.')
+        ]),
+        el('div', { class: 'field' }, [
+          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'DOGRAH PIPELINE ID'),
+          wfIdI,
+          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Upstream workflow orchestration pipeline.')
+        ])
+      ])
+    ]);
+    form.appendChild(sec1);
+
+    // Section Divider
+    form.appendChild(el('div', { style: 'height:1px;background:rgba(13,93,65,0.10);margin:32px 0;' }));
+
+    // ------------------------------------------------------------------------
+    // SECTION 2: GREETING & BEHAVIORAL PERSONA
+    // ------------------------------------------------------------------------
+    const sec2 = el('div', { style: 'margin-bottom:32px;' }, [
+      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
+        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '2.'),
+        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Spoken Greeting & Behavioral Persona'),
+        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Opener, conversational directives & quick templates')
+      ]),
+      el('div', { class: 'field', style: 'margin-bottom:20px;' }, [
+        el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'FIRST SPOKEN GREETING (CALL OPENER) *'),
+        greetI,
+        el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Spoken immediately upon live connection. Supports natural Hindi, Hinglish, and English.')
+      ]),
+      el('div', { class: 'field' }, [
+        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;' }, [
+          el('label', { style: 'font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;' }, 'BEHAVIORAL DIRECTIVES (SYSTEM PROMPT) *'),
+          presetChips
+        ]),
+        personaI,
+        el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Detailed instructions for how the AI handles inquiries, qualifies leads, and resolves caller objections.')
+      ])
+    ]);
+    form.appendChild(sec2);
+
+    // Section Divider
+    form.appendChild(el('div', { style: 'height:1px;background:rgba(13,93,65,0.10);margin:32px 0;' }));
+
+    // ------------------------------------------------------------------------
+    // SECTION 3: DIALOG EXECUTION STAGES (ZERO CARDS, CLEAN NATIVE STEPPER)
+    // ------------------------------------------------------------------------
+    const initialNodes = (flow.nodes && flow.nodes.length) ? flow.nodes : [
+      { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: 'Greet caller warmly and introduce company.' },
+      { id: '2', type: 'triage', title: 'Query & Qualification', prompt: 'Inquire caller needs, qualify urgency, and answer common questions.' },
+      { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture caller name, phone number, and preferred appointment time.' },
+      { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to specialist or confirm automated WhatsApp callback.' }
+    ];
+
+    const stagesHost = el('div', { style: 'display:flex;flex-direction:column;gap:18px;margin-bottom:24px;' });
+
+    initialNodes.forEach((node, idx) => {
+      const stepRow = el('div', {
+        style: 'display:grid;grid-template-columns:36px minmax(200px, 1fr) minmax(320px, 2fr);align-items:center;gap:16px;padding:8px 0;border-bottom:1px solid rgba(13,93,65,0.08);'
+      }, [
+        // Number badge
+        el('div', {
+          style: 'width:32px;height:32px;border-radius:50%;background:#0d5d41;color:#fff;font-size:0.82rem;font-weight:800;display:flex;align-items:center;justify-content:center;'
+        }, String(idx + 1)),
+
+        // Stage Title Input (Cardless, transparent canvas)
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.70rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, `STAGE ${idx + 1} INTENT`),
+          el('input', {
+            class: 'input node-title-input',
+            value: node.title || `Stage ${idx + 1}`,
+            placeholder: 'Stage Title',
+            style: 'width:100%;font-weight:750;font-size:0.86rem;padding:9px 12px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
+          })
+        ]),
+
+        // Stage Prompt Input (Cardless, transparent canvas)
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.70rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, `TURN INSTRUCTIONS`),
+          el('input', {
+            class: 'input node-prompt-input',
+            value: node.prompt || '',
+            placeholder: 'Instructions for what the AI asks or resolves in this turn...',
+            style: 'width:100%;font-size:0.86rem;padding:9px 12px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
+          })
+        ])
+      ]);
+      stagesHost.appendChild(stepRow);
+    });
+
+    const sec3 = el('div', { style: 'margin-bottom:32px;' }, [
+      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
+        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '3.'),
+        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Dialog Execution Stages & Telephony Routing'),
+        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Sequential turn logic, carrier lines, and escalation fallback')
+      ]),
+      stagesHost,
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;margin-bottom:24px;' }, [
+        el('div', { class: 'field' }, [
+          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'HUMAN ESCALATION FALLBACK NUMBER *'),
+          fallbackI,
+          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Live transfers to this number if caller requests human or if AI is stuck.')
+        ]),
+        el('div', { class: 'field' }, [
+          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'ACTIVE CARRIER LINE (DID)'),
+          (() => {
+            const didI = el('input', {
+              class: 'input',
+              type: 'text',
+              value: flow.assignedPhone || '+91 80715 82519',
+              readonly: true,
+              style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.14);border-radius:8px;background:rgba(13,93,65,0.02);font-family:var(--mono);color:#5d7468;box-sizing:border-box;'
+            });
+            return didI;
+          })(),
+          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Managed in VoBiz virtual phone lines tab.')
+        ])
+      ]),
+      // Active Voice Flow Checkbox Row (Native, NO CARD)
+      el('div', {
+        style: 'display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px dashed rgba(13,93,65,0.15);margin-top:14px;'
+      }, [
+        activeChk,
+        el('label', { for: 'flow_active_chk', style: 'font-size:0.88rem;font-weight:750;color:#14221c;cursor:pointer;' },
+          'Set as active voice flow (Immediately routes live incoming & outbound calls through this logic)'
+        )
+      ])
+    ]);
+    form.appendChild(sec3);
+
+    // Bottom Action Bar
+    const bottomBar = el('div', {
+      style: 'display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-top:24px;border-top:1.5px solid rgba(13,93,65,0.12);'
+    }, [
+      el('button', {
+        type: 'button',
+        class: 'btn btn-ghost',
+        style: 'border-radius:999px;padding:8px 20px;border:1px solid rgba(13,93,65,0.2);color:#5d7468;font-weight:650;',
+        onclick: onBack
+      }, 'Cancel'),
+      el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'border-radius:999px;padding:9px 26px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;cursor:pointer;',
+        onclick: async () => {
+          submitBtnTop.click();
+        }
+      }, isEdit ? 'Save Changes' : 'Deploy Voice Flow')
+    ]);
+    page.appendChild(form);
+    page.appendChild(bottomBar);
+
+    // Submit handler
+    submitBtnTop.onclick = async () => {
+      const name = nameI.value.trim();
+      if (!name) { toast('Please enter a voice flow name', 'err'); nameI.focus(); return; }
+
+      const greeting = greetI.value.trim();
+      if (!greeting) { toast('Please provide the first spoken greeting', 'err'); greetI.focus(); return; }
+
+      const prompt = personaI.value.trim();
+      if (!prompt) { toast('Please provide the voice agent instructions', 'err'); personaI.focus(); return; }
+
+      const agentId = agentSel.value;
+      const workflowId = wfIdI.value.trim() || '13027';
+      const fallbackPhone = fallbackI.value.trim() || '+91 89822 00895';
+      const isActive = activeChk.checked;
+
+      // Collect stages
+      const nodeRows = stagesHost.querySelectorAll('div[style*="grid-template-columns"]');
+      const nodes = [];
+      nodeRows.forEach((r, i) => {
+        const tInp = r.querySelector('.node-title-input');
+        const pInp = r.querySelector('.node-prompt-input');
+        if (tInp && pInp) {
+          nodes.push({
+            id: String(i + 1),
+            type: i === 0 ? 'greeting' : (i === nodeRows.length - 1 ? 'escalation' : 'triage'),
+            title: tInp.value.trim() || `Stage ${i + 1}`,
+            prompt: pInp.value.trim() || ''
+          });
+        }
+      });
+
+      submitBtnTop.disabled = true;
+      submitBtnTop.textContent = 'Deploying...';
+
+      const payload = {
+        name,
+        greeting,
+        prompt,
+        agentId,
+        workflowId,
+        fallbackPhone,
+        nodes,
+        activate: isActive,
+        isActive
+      };
+
+      try {
+        if (isEdit) {
+          payload.id = flow.id;
+          await api('/api/dograh/flows/update', { method: 'POST', body: payload });
+          toast('Voice flow updated and deployed successfully.', 'ok');
+        } else {
+          await api('/api/dograh/flows', { method: 'POST', body: payload });
+          toast('New voice flow created and deployed.', 'ok');
+        }
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) {
+        toast(err.message, 'err');
+      } finally {
+        submitBtnTop.disabled = false;
+        submitBtnTop.textContent = isEdit ? 'Save Changes' : 'Deploy Voice Flow';
+      }
+    };
+
+    return page;
+  }
+
+  // ==========================================================================
+  // ADMIN ASSIGN MODAL (ADMIN ONLY)
+  // ==========================================================================
+  function openAdminAssignModal(tenants) {
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' });
+
+    body.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Select Client Workspace *'),
+      (() => {
+        const sel = el('select', {
+          class: 'select aria-select',
+          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;background:#fff;'
+        }, [
+          ...tenants.map(t => el('option', { value: t.id }, `${t.name} (${t.id})`))
+        ]);
+        sel.id = 'dfl-assign-tenant';
+        return sel;
+      })()
+    ]));
+
+    body.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Dograh Workflow ID (Numeric) *'),
+      (() => {
+        const inp = el('input', {
+          class: 'input',
+          placeholder: '13027',
+          value: '13027',
+          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;font-family:var(--mono);'
+        });
+        inp.id = 'dfl-assign-wfid';
+        return inp;
+      })()
+    ]));
+
+    body.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Assigned Flow Label *'),
+      (() => {
+        const inp = el('input', {
+          class: 'input',
+          placeholder: 'e.g. Dedicated Enterprise Hindi Flow',
+          value: '',
+          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;'
+        });
+        inp.id = 'dfl-assign-name';
+        return inp;
+      })()
+    ]));
+
+    const activateChk = el('input', { type: 'checkbox', checked: true, style: 'width:18px;height:18px;accent-color:#0d5d41;' });
+    activateChk.id = 'dfl-assign-active';
+    body.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+      activateChk,
+      el('label', { for: 'dfl-assign-active', style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'Immediately activate this workflow for the client')
+    ]));
+
+    modal({
+      title: 'Assign Existing Dograh Flow to Client',
+      body,
+      confirmText: 'Assign Flow',
+      confirmKind: 'primary',
+      onConfirm: async () => {
+        const tenantId = ($('#dfl-assign-tenant') && $('#dfl-assign-tenant').value) || '';
+        const workflowId = ($('#dfl-assign-wfid') && $('#dfl-assign-wfid').value.trim()) || '';
+        const name = ($('#dfl-assign-name') && $('#dfl-assign-name').value.trim()) || `Flow #${workflowId}`;
+        const activate = !!($('#dfl-assign-active') && $('#dfl-assign-active').checked);
+
+        if (!tenantId) throw new Error('Please select a workspace');
+        if (!workflowId) throw new Error('Please enter a Dograh workflow ID');
+
+        await api('/api/dograh/flows/assign', {
+          method: 'POST',
+          body: { tenantId, workflowId, name, activate }
+        });
+        toast(`Workflow #${workflowId} assigned to workspace.`, 'ok');
+      }
+    });
+  }
+
+  // Confirm Delete Flow
+  function confirmDeleteFlow(flow, onDone) {
+    modal({
+      title: 'Delete Voice Flow',
+      body: el('div', { style: 'font-size:0.90rem;color:#14221c;line-height:1.5;' }, [
+        el('p', {}, `Are you sure you want to remove the flow "${flow.name}" (#${flow.workflowId})?`),
+        el('p', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;' }, 'This will unlink the flow from this workspace. If active, another flow will be set as active.')
+      ]),
+      confirmText: 'Delete Flow',
+      confirmKind: 'danger',
+      onConfirm: async () => {
+        await api('/api/dograh/flows/delete', { method: 'POST', body: { id: flow.id } });
+        toast(`Flow "${flow.name}" deleted.`, 'ok');
+        if (typeof onDone === 'function') onDone();
+      }
+    });
+  }
+
+  // ==========================================================================
+// ==========================================================================
+// ==========================================================================
+// ==========================================================================
+  // TAB 4: INBOUND AUTO-CALL & INTEGRATIONS + CONNECTED APPS HUB
+  // ==========================================================================
+  async function renderIntegrationsTab(panel) {
+    const wrap = el('div', { class: 'settings-tab-inner aria-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
+    panel.appendChild(wrap);
+
+    let cfg = {};
+    try {
+      const out = await api('/api/crm-integrations/config').catch(() => ({ config: {} }));
+      cfg = out.config || {};
+    } catch (_) { cfg = {}; }
+
+    wrap.innerHTML = '';
+
+    const ALL_CHANNELS = ['whatsapp', 'hubspot', 'email', 'razorpay', 'googleCalendar', 'googleSheets', 'zohoCrm', 'slack'];
+    const connectedCount = ALL_CHANNELS.filter(k => cfg[k] && cfg[k].status === 'connected').length;
+    const enabledCount   = ALL_CHANNELS.filter(k => cfg[k] && cfg[k].enabled).length;
+
+    // ---- KPI Bar (Dynamic 8-Channel Counts) ----
+    wrap.appendChild(el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:0;margin-bottom:36px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'CONNECTED APPS'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, connectedCount + ' / 8'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Live verified services')
+      ]),
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE DISPATCHERS'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, enabledCount ? enabledCount + ' Enabled' : 'None Active'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Auto-dispatching on call end')
+      ]),
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'EXECUTION ENGINE'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'Parallel Async (Zero Lag)'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Promise.allSettled concurrency')
+      ]),
+      el('div', { style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'DATA PIPELINE'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Real-time Webhook & API'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Call completed & booking triggers')
+      ])
+    ]));
+
+    // ---- Section Header ----
+    wrap.appendChild(el('div', { style: 'margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Ecosystem & CRM Automation'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.4rem;font-weight:850;color:#14221c;' }, 'Connected Apps & Live Software Integrations'),
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:720px;' }, 'Connect your business stack. Whenever your AI voice receptionist finishes a call, qualifies a caller, or books an appointment, data is pushed to all enabled destinations instantly without cards or boxes.')
+    ]));
+
+    // ---- Comprehensive 8 Integrations Metadata (Zero Emojis, Zero Boxes) ----
+    const INTEGRATIONS_META = [
+      {
+        key: 'whatsapp',
+        badge: 'POPULAR IN INDIA',
+        badgeColor: '#059669',
+        label: 'WhatsApp Business',
+        iconName: 'whatsapp',
+        description: 'Sends instant WhatsApp updates, call confirmations, and appointment details directly to the caller mobile number via Meta Cloud API or VoBiz Line.',
+        fields: [
+          { key: 'metaToken', label: 'Meta System User Permanent Access Token', placeholder: 'EAAG...', type: 'password', hint: 'Generate from Meta Business Manager -> System Users with whatsapp_business_messaging.' },
+          { key: 'metaPhoneId', label: 'Meta WhatsApp Phone Number ID', placeholder: 'e.g. 104829182390192', type: 'text', hint: 'Found under WhatsApp -> API Setup in Meta Developer Dashboard.' },
+          { key: 'senderNumber', label: 'VoBiz / Sender WhatsApp Number', placeholder: '+91 80715 82519', type: 'text' },
+          { key: 'companyName', label: 'Display Brand / Business Name', placeholder: 'Seevora AI Voice', type: 'text' }
+        ],
+        setupGuide: 'Add your VoBiz number in Meta Developer Portal via Voice Call OTP verification. Paste your Phone Number ID and Permanent Access Token above.'
+      },
+      {
+        key: 'hubspot',
+        badge: 'GLOBAL CRM',
+        badgeColor: '#2563eb',
+        label: 'HubSpot CRM',
+        iconName: 'pipeline',
+        description: 'Auto-creates or updates Contacts and attaches full call summaries, duration, recording URL, and sentiment as CRM Notes in your sales pipeline.',
+        fields: [
+          { key: 'accessToken', label: 'HubSpot Private App Access Token', placeholder: 'pat-na1-... or pat-eu1-...', type: 'password', hint: 'Generate from HubSpot Settings -> Integrations -> Private Apps (Scopes: crm.objects.contacts.write, crm.objects.custom.write).' },
+          { key: 'portalId', label: 'HubSpot Hub ID / Portal ID (Optional)', placeholder: 'e.g. 45892103', type: 'text' }
+        ],
+        setupGuide: 'In your HubSpot portal, navigate to Settings -> Integrations -> Private Apps -> Create App. Grant Contacts & Timeline scopes, copy the token.'
+      },
+      {
+        key: 'email',
+        badge: 'HIGH PRIORITY',
+        badgeColor: '#0d5d41',
+        label: 'Email & Gmail Notifications',
+        iconName: 'send',
+        description: 'Delivers a formatted email dossier of every completed call and appointment booking to your sales team inbox via direct Google SMTP (port 465 SSL).',
+        fields: [
+          { key: 'senderEmail', label: 'Sender Gmail / SMTP Email Address', placeholder: 'yourbusiness@gmail.com', type: 'text' },
+          { key: 'appPassword', label: '16-Character Google App Password', placeholder: 'abcd efgh ijkl mnop', type: 'password', hint: 'Created in Google Account -> Security -> 2-Step Verification -> App Passwords.' },
+          { key: 'recipientEmail', label: 'Lead Alert Destination Email', placeholder: 'sales@yourcompany.com', type: 'text' },
+          { key: 'smtpHost', label: 'SMTP Server Host', placeholder: 'smtp.gmail.com', type: 'text' }
+        ],
+        setupGuide: 'Turn on 2-Step Verification on your Google Account, generate a 16-character App Password for Mail, and paste it here with your destination inbox.'
+      },
+      {
+        key: 'razorpay',
+        badge: 'INSTANT PAYMENTS',
+        badgeColor: '#7c3aed',
+        label: 'Razorpay Payment Links',
+        iconName: 'wallet',
+        description: 'Generates and dispatches a verified Razorpay Payment Link via SMS/WhatsApp whenever an AI Voice Agent schedules a paid booking or consultation.',
+        fields: [
+          { key: 'keyId', label: 'Razorpay Key ID', placeholder: 'rzp_live_... or rzp_test_...', type: 'text', hint: 'Obtained from dashboard.razorpay.com -> Settings -> API Keys.' },
+          { key: 'keySecret', label: 'Razorpay Key Secret', placeholder: 'Your Razorpay Secret Key', type: 'password' },
+          { key: 'amountPaise', label: 'Default Booking Deposit (in Paise)', placeholder: '50000 (which equals INR 500)', type: 'number' },
+          { key: 'description', label: 'Payment Link Line Item Description', placeholder: 'AI Voice Consultation Booking Deposit', type: 'text' }
+        ],
+        setupGuide: 'Log in to Razorpay Dashboard -> Settings -> API Keys -> Generate Key. Paste the Key ID and Key Secret to enable automated payment links on calls.'
+      },
+      {
+        key: 'googleCalendar',
+        badge: 'CALENDAR SYNC',
+        badgeColor: '#0284c7',
+        label: 'Google Calendar',
+        iconName: 'template',
+        description: 'Auto-schedules a calendar event for booked appointments - complete with caller name, phone number, meeting link, and AI conversation summary.',
+        fields: [
+          { key: 'webhookUrl', label: 'Google Apps Script Webhook URL', placeholder: 'https://script.google.com/macros/s/.../exec', type: 'url', hint: 'Deploy a Google Apps Script as a web app - paste its URL here.' },
+          { key: 'calendarId', label: 'Target Calendar ID', placeholder: 'primary', type: 'text' },
+          { key: 'defaultDurationMin', label: 'Default Meeting Duration (Minutes)', placeholder: '30', type: 'number' }
+        ],
+        setupGuide: 'Deploy a Google Apps Script web app with action="create_event" and access set to "Anyone". Paste the deployment URL above.'
+      },
+      {
+        key: 'googleSheets',
+        badge: 'SPREADSHEET',
+        badgeColor: '#16a34a',
+        label: 'Google Sheets (Spreadsheet)',
+        iconName: 'grid',
+        description: 'Appends a real-time data row for every completed call: Timestamp, Caller Name, Phone, Duration, Sentiment, Outcome, Summary, and Audio Link.',
+        fields: [
+          { key: 'webhookUrl', label: 'Google Apps Script Web App URL', placeholder: 'https://script.google.com/macros/s/.../exec', type: 'url', hint: 'Deploy a script bound to your Google Sheet with action="append_row".' },
+          { key: 'sheetName', label: 'Target Sheet / Tab Name', placeholder: 'Leads', type: 'text' }
+        ],
+        setupGuide: 'Open your Google Sheet -> Extensions -> Apps Script. Paste the append_row webhook handler and deploy as Web App with public POST access.'
+      },
+      {
+        key: 'zohoCrm',
+        badge: 'INDIAN CRM',
+        badgeColor: '#ea580c',
+        label: 'Zoho CRM',
+        iconName: 'users',
+        description: 'Creates or updates Leads in Zoho CRM with caller details, lead score, audio recording link, and full call conversation notes.',
+        fields: [
+          { key: 'clientId', label: 'Zoho OAuth Client ID', placeholder: '1000.XXXXXXXXXXXX', type: 'text' },
+          { key: 'clientSecret', label: 'Zoho OAuth Client Secret', placeholder: 'Your Zoho client secret', type: 'password' },
+          { key: 'refreshToken', label: 'Zoho Permanent Refresh Token', placeholder: 'Refresh token generated from Zoho OAuth flow', type: 'password' },
+          { key: 'apiDomain', label: 'Zoho API Domain', placeholder: 'https://www.zohoapis.in', type: 'url' }
+        ],
+        setupGuide: 'In Zoho API Console, create a Server-based application, grant CRM module scopes (ZohoCRM.modules.ALL), and generate the refresh token.'
+      },
+      {
+        key: 'slack',
+        badge: 'TEAM ALERTS',
+        badgeColor: '#4f46e5',
+        label: 'Slack Channel Notifications',
+        iconName: 'chat',
+        description: 'Dispatches instant interactive Block Kit notifications to your internal sales or operations Slack channel when high-intent leads finish calls.',
+        fields: [
+          { key: 'webhookUrl', label: 'Slack Incoming Webhook URL', placeholder: 'https://hooks.slack.com/services/T.../B.../...', type: 'url', hint: 'Generate from your Slack Workspace -> Apps -> Incoming Webhooks.' },
+          { key: 'channel', label: 'Channel Reference / Label', placeholder: '#leads-hot', type: 'text' }
+        ],
+        setupGuide: 'Create an incoming webhook in your Slack workspace settings, assign it to your sales channel, and paste the webhook URL here.'
+      }
+    ];
+
+    const rowStyle = 'padding:24px 0;border-bottom:1px solid rgba(13,93,65,0.09);';
+    const labelStyle = 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;';
+    const inputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
+    const pillGreen = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(4,120,87,0.10);color:#047857;font-size:0.72rem;font-weight:750;border-radius:999px;';
+    const pillGray  = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(93,116,104,0.10);color:#5d7468;font-size:0.72rem;font-weight:750;border-radius:999px;';
+    const pillRed   = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(220,38,38,0.10);color:#dc2626;font-size:0.72rem;font-weight:750;border-radius:999px;';
+
+    INTEGRATIONS_META.forEach((intg) => {
+      const intgCfg   = cfg[intg.key] || {};
+      const isEnabled = intgCfg.enabled || false;
+      const status    = intgCfg.status || 'not_connected';
+
+      const row = el('div', { style: rowStyle });
+
+      // -- Status Indicator (CSS Dot, Zero Emojis) --
+      const statusDotColor = status === 'connected' ? '#047857' : (status === 'error' ? '#dc2626' : '#5d7468');
+      const statusLabel = status === 'connected' ? 'Connected' : (status === 'error' ? 'Error' : 'Not Connected');
+      const statusPill = el('span', {
+        style: status === 'connected' ? pillGreen : status === 'error' ? pillRed : pillGray
+      }, [
+        el('span', { style: `width:6px;height:6px;border-radius:50%;background:${statusDotColor};display:inline-block;` }),
+        el('span', {}, statusLabel)
+      ]);
+
+      const enableToggle = el('input', {
+        type: 'checkbox',
+        checked: isEnabled,
+        style: 'accent-color:#0d5d41;width:18px;height:18px;cursor:pointer;'
+      });
+
+      enableToggle.onchange = async () => {
+        try {
+          await api('/api/crm-integrations/toggle', { method: 'POST', body: { channel: intg.key, enabled: enableToggle.checked } });
+          toast(intg.label + (enableToggle.checked ? ' enabled.' : ' disabled.'), 'ok');
+        } catch (e) {
+          toast(e.message, 'err');
+          enableToggle.checked = !enableToggle.checked;
+        }
+      };
+
+      // -- Clean SVG Icon (Zero Box Container) --
+      const iconEl = el('div', {
+        style: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#0d5d41;flex-shrink:0;'
+      });
+      iconEl.innerHTML = navIcon(intg.iconName || 'link');
+
+      row.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;' }, [
+        iconEl,
+        el('div', { style: 'flex:1;min-width:240px;' }, [
+          el('div', { style: 'font-size:1.02rem;font-weight:800;color:#14221c;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+            el('span', {}, intg.label),
+            statusPill
+          ]),
+          el('div', { style: 'font-size:0.83rem;color:#5d7468;margin-top:3px;' }, intg.description)
+        ]),
+        el('label', { style: 'display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;color:#14221c;font-weight:750;' }, [
+          enableToggle,
+          el('span', {}, 'Auto-Dispatch')
+        ])
+      ]));
+
+      // -- Flat Underline Input Fields Grid (Strictly NO BOXES / NO CARDS) --
+      const fieldValues = {};
+      const fieldsGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px 28px;margin:16px 0;max-width:920px;' });
+
+      intg.fields.forEach((f) => {
+        const existing = intgCfg[f.key] !== undefined ? String(intgCfg[f.key]) : '';
+        const masked   = (f.type === 'password' && existing) ? '••••••••' : existing;
+        const inp = el('input', {
+          class: 'input',
+          type: f.type === 'password' ? 'password' : (f.type === 'number' ? 'number' : 'text'),
+          value: masked,
+          placeholder: f.placeholder,
+          style: inputStyle
+        });
+        inp.onfocus = () => { if (f.type === 'password' && inp.value === '••••••••') inp.value = ''; };
+        fieldValues[f.key] = inp;
+
+        const wrapper = el('div', {}, [
+          el('label', { style: labelStyle }, f.label),
+          inp
+        ]);
+        if (f.hint) wrapper.appendChild(el('div', { style: 'font-size:0.71rem;color:#5d7468;margin-top:4px;' }, f.hint));
+        fieldsGrid.appendChild(wrapper);
+      });
+      row.appendChild(fieldsGrid);
+
+      // -- Setup Guide Plain Text (Zero Box Containers) --
+      row.appendChild(el('div', {
+        style: 'font-size:0.78rem;color:#5d7468;margin:10px 0 16px;line-height:1.5;max-width:780px;'
+      }, [
+        el('span', { style: 'font-weight:750;color:#0d5d41;' }, 'Setup: '),
+        el('span', {}, intg.setupGuide)
+      ]));
+
+      // -- Action buttons: Save + Test Connection --
+      const saveBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;border:none;font-size:0.84rem;'
+      }, 'Save Settings');
+
+      saveBtn.onclick = async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        const config = {};
+        intg.fields.forEach((f) => {
+          const val = fieldValues[f.key].value.trim();
+          if (val && val !== '••••••••') config[f.key] = f.type === 'number' ? Number(val) : val;
+        });
+        try {
+          await api('/api/crm-integrations/save', { method: 'POST', body: { channel: intg.key, config } });
+          toast(intg.label + ' credentials saved.', 'ok');
+          panel.innerHTML = '';
+          renderIntegrationsTab(panel);
+        } catch (e) {
+          toast('Save failed: ' + e.message, 'err');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Settings';
+        }
+      };
+
+      const testBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-ghost',
+        style: 'border-radius:999px;padding:8px 20px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.84rem;'
+      }, 'Test Live Connection');
+
+      testBtn.onclick = async () => {
+        testBtn.disabled = true;
+        testBtn.textContent = 'Testing...';
+        try {
+          const res = await api('/api/crm-integrations/test', { method: 'POST', body: { channel: intg.key } });
+          toast(res.message || 'Connection test successful.', res.ok ? 'ok' : 'err');
+          if (res.ok) { panel.innerHTML = ''; renderIntegrationsTab(panel); }
+        } catch (e) {
+          toast('Test failed: ' + e.message, 'err');
+        } finally {
+          testBtn.disabled = false;
+          testBtn.textContent = 'Test Live Connection';
+        }
+      };
+
+      const lastSync = intgCfg.lastSyncAt ? 'Last sync: ' + new Date(intgCfg.lastSyncAt).toLocaleString('en-IN') : '';
+      const lastErr  = intgCfg.lastError ? ' · Error: ' + String(intgCfg.lastError).slice(0, 90) : '';
+
+      row.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
+        saveBtn,
+        testBtn,
+        ...(lastSync ? [el('span', { style: 'font-size:0.76rem;color:#5d7468;' }, lastSync + lastErr)] : [])
+      ]));
+
+      wrap.appendChild(row);
+    });
+
+    // ---- Inbound Auto-Call Section (Speed-to-Lead) ----
+    const ingestUrl = window.location.origin + '/api/leads/ingest?tenantId=' + encodeURIComponent(t.id || 'default');
+    const copyUrlBtn2 = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;flex-shrink:0;'
+    }, 'Copy Webhook URL');
+    copyUrlBtn2.onclick = () => { navigator.clipboard.writeText(ingestUrl); toast('Inbound lead webhook URL copied.', 'ok'); };
+
+    wrap.appendChild(el('section', { style: 'margin-top:40px;padding-top:32px;border-top:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Speed-to-Lead Inbound Webhook'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Inbound Lead-to-Call Relay URL'),
+      el('p', { style: 'margin:0 0 16px;font-size:0.84rem;color:#5d7468;max-width:720px;' }, 'Paste this URL into Meta / Facebook Lead Ads, Zapier, Webflow, or Google Forms. Whenever someone submits their contact form, your AI receptionist immediately places an outbound call within 3 seconds.'),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;max-width:720px;' }, [
+        el('input', { class: 'input', readonly: true, value: ingestUrl, style: 'font-family:var(--mono);font-size:0.83rem;background:transparent;border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;box-shadow:none;' }),
+        copyUrlBtn2
+      ])
+    ]));
   }
 
   // ==========================================================================
@@ -13240,7 +14713,7 @@ async function viewAssistant(wrap) {
       el('button', {
         class: 'chat-rail-btn',
         title: 'Connected Apps & Channels',
-        onclick: openIntegrationsGridModal,
+        onclick: () => { window.location.hash = '#settings?tab=integrations'; },
         html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>'
       }),
       el('button', {
@@ -13298,10 +14771,114 @@ async function viewAssistant(wrap) {
   ]);
   centerPane.appendChild(confirmBar);
 
-  // Bottom input dock
+  // Bottom input dock with file/image attachment support
   const inputDock = el('div', { class: 'chat-input-dock' });
+
+  // File and Image upload handling (+ icon)
+  let pendingAttachments = [];
+  const fileInput = el('input', {
+    type: 'file',
+    multiple: true,
+    accept: 'image/*,.pdf,.doc,.docx,.txt,.csv,.json,.xlsx',
+    style: 'display:none;'
+  });
+  centerPane.appendChild(fileInput);
+
+  const attachmentPreview = el('div', {
+    class: 'chat-attachment-preview',
+    style: 'display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 20px 8px;margin:0 28px;'
+  });
+
+  function renderAttachmentPreviews() {
+    attachmentPreview.innerHTML = '';
+    if (!pendingAttachments.length) {
+      attachmentPreview.style.display = 'none';
+      return;
+    }
+    attachmentPreview.style.display = 'flex';
+    pendingAttachments.forEach((att, idx) => {
+      const chip = el('div', {
+        style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(13,93,65,0.08);border:1px solid rgba(13,93,65,0.18);border-radius:999px;font-size:0.75rem;color:#14221c;'
+      });
+      if (att.isImage && att.dataUrl) {
+        chip.appendChild(el('img', { src: att.dataUrl, style: 'width:18px;height:18px;border-radius:3px;object-fit:cover;' }));
+      } else {
+        chip.appendChild(el('span', { html: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0d5d41" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' }));
+      }
+      chip.appendChild(el('span', { style: 'max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650;' }, att.name));
+      chip.appendChild(el('span', { style: 'color:#5d7468;font-size:0.68rem;' }, `(${Math.round(att.size / 1024)} KB)`));
+      const removeBtn = el('button', {
+        type: 'button',
+        title: 'Remove file',
+        style: 'background:none;border:none;color:#5d7468;cursor:pointer;font-size:1rem;line-height:1;padding:0 2px;margin-left:2px;',
+        onclick: () => {
+          pendingAttachments.splice(idx, 1);
+          renderAttachmentPreviews();
+        }
+      }, '×');
+      chip.appendChild(removeBtn);
+      attachmentPreview.appendChild(chip);
+    });
+  }
+
+  fileInput.onchange = async () => {
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      if (file.size > 15 * 1024 * 1024) {
+        toast(`File "${file.name}" exceeds 15MB limit.`, 'err');
+        continue;
+      }
+      const isImg = file.type.startsWith('image/');
+      const isTextLike = !isImg && !!file.name.match(/\.(txt|csv|json|tsv|md|xml|html|htm|rtf|log)$/i);
+
+      const att = {
+        name: file.name,
+        size: file.size,
+        type: file.type || (isImg ? 'image/png' : 'application/octet-stream'),
+        isImage: isImg,
+        dataUrl: '',
+        textContent: ''
+      };
+
+      // Always read as DataURL so binary files (.docx, .xlsx, .pdf, .doc, images) are fully captured in base64
+      await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          att.dataUrl = reader.result;
+          resolve();
+        };
+        reader.onerror = () => resolve();
+        reader.readAsDataURL(file);
+      });
+
+      // For text files or .doc (which may be HTML/RTF based reports), also attempt reading text
+      if (isTextLike || file.name.match(/\.doc$/i)) {
+        await new Promise((resolve) => {
+          const textReader = new FileReader();
+          textReader.onload = () => {
+            if (typeof textReader.result === 'string') {
+              att.textContent = textReader.result;
+            }
+            resolve();
+          };
+          textReader.onerror = () => resolve();
+          textReader.readAsText(file);
+        });
+      }
+
+      pendingAttachments.push(att);
+    }
+    fileInput.value = '';
+    renderAttachmentPreviews();
+  };
+
   const capsule = el('div', { class: 'chat-input-capsule' });
-  const attachBtn = el('button', { class: 'chat-attach-btn', title: 'Attach knowledge or media', onclick: openFileReaderModal }, '+');
+  const attachBtn = el('button', {
+    class: 'chat-attach-btn',
+    title: 'Upload images, documents or audio files',
+    onclick: () => fileInput.click()
+  }, '+');
   const textInput = el('input', { class: 'chat-text-input', placeholder: 'Type your message...', maxlength: '4000' });
   const sendBtn = el('button', {
     class: 'chat-send-btn',
@@ -13312,6 +14889,7 @@ async function viewAssistant(wrap) {
   capsule.appendChild(attachBtn);
   capsule.appendChild(textInput);
   capsule.appendChild(sendBtn);
+  inputDock.appendChild(attachmentPreview);
   inputDock.appendChild(capsule);
   centerPane.appendChild(inputDock);
   card.appendChild(centerPane);
@@ -13323,46 +14901,30 @@ async function viewAssistant(wrap) {
     }
   });
 
-  // ---- 3. Right Connectivity & History Panel ----
-  // (Top models section removed as requested by user)
+  // ---- 3. Right History & Context Panel (Clean Scandinavian Sage, No Duplicate Widgets) ----
   const rightPanel = el('div', { class: 'chat-right-panel' });
 
-  function createIntegrationItem(id, name, color, iconSvg, countOrStatus, onclick) {
-    return el('div', { class: 'chat-integration-item', id: `conn-item-${id}`, onclick }, [
-      el('div', { class: 'integration-left' }, [
-        el('div', { class: 'integration-icon', html: iconSvg }),
-        el('span', { class: 'integration-name' }, name)
-      ]),
-      el('span', { class: 'integration-count', id: `conn-status-${id}` }, countOrStatus)
-    ]);
-  }
-
-  // Connectivity integrations list (Workable with backend)
-  const integrationsList = el('div', { class: 'chat-integrations-list' }, [
-    createIntegrationItem('calendar', 'Calendar & Planning', '#4285F4', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="#4285F4" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="#4285F4" stroke-width="2"/></svg>', 'Disconnected', openCalendarModal),
-    createIntegrationItem('file', 'File Reader', '#107C41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#107C41" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="#107C41" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="#107C41" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="#107C41" stroke-width="2"/></svg>', 'Disconnected', openFileReaderModal),
-    createIntegrationItem('media', 'Media Files', '#89cfab', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="2" width="20" height="20" rx="2.18" stroke="#89cfab" stroke-width="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#89cfab"/></svg>', '0 Files', openMediaFilesModal),
-    createIntegrationItem('gmail', 'Gmail Dispatch', '#EA4335', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#EA4335" stroke-width="2"/><polyline points="22,6 12,13 2,6" stroke="#EA4335" stroke-width="2"/></svg>', 'Disconnected', openGmailModal),
-    createIntegrationItem('whatsapp', 'WhatsApp Voice Alerts', '#25D366', '<svg viewBox="0 0 24 24" width="18" height="18" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.71 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>', 'Disconnected', openWhatsAppModal),
-    createIntegrationItem('crm', 'CRM Pipeline Sync', '#0d5d41', '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0d5d41" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', 'Disconnected', openCrmModal)
-  ]);
-  rightPanel.appendChild(integrationsList);
-
-  // Share button
-  const shareBtn = el('button', {
-    class: 'chat-share-btn',
-    onclick: () => {
-      navigator.clipboard.writeText(window.location.href);
-      toast('Conversation link copied to clipboard!');
-    }
+  // Header with "+ New Chat" Button
+  const rightHeader = el('div', {
+    class: 'chat-right-header',
+    style: 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;border-bottom:1.5px solid rgba(13,93,65,0.10);margin-bottom:8px;'
   }, [
-    el('span', { html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' }),
-    el('span', {}, 'Share')
+    el('div', { style: 'font-size:0.75rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;' }, 'Chat History'),
+    el('button', {
+      type: 'button',
+      class: 'btn-new-chat-pill',
+      title: 'Start a fresh conversation',
+      style: 'background:#0d5d41;color:#ffffff;border:none;border-radius:999px;padding:4px 12px;font-size:0.74rem;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
+      onclick: startNewChat
+    }, [
+      el('span', { style: 'font-size:0.9rem;line-height:1;' }, '+'),
+      el('span', {}, 'New Chat')
+    ])
   ]);
-  rightPanel.appendChild(shareBtn);
+  rightPanel.appendChild(rightHeader);
 
   // Categorized chat history (Real-time dynamic data)
-  const historySection = el('div', { class: 'chat-history-section' });
+  const historySection = el('div', { class: 'chat-history-section', style: 'flex:1;overflow-y:auto;' });
   rightPanel.appendChild(historySection);
 
   function refreshHistoryUI(sessions) {
@@ -13449,20 +15011,103 @@ async function viewAssistant(wrap) {
     return group;
   }
 
-  // 3D Assistant Robot companion badge
-  const robotBadge = el('div', { class: 'chat-robot-assistant-badge' }, [
-    el('div', { class: 'robot-speech-bubble', onclick: () => doSendPrompt('Help me automate call answering for my business') }, 'Stuck on something? Let me help, get a quick assist.'),
-    el('div', { class: 'robot-figure-svg', onclick: () => doSendPrompt('What can you help me with?') }, [
-      createRobotSvg()
+  // Active Session Uploaded Media & Documents Section
+  const sessionFilesSection = el('div', {
+    class: 'chat-session-files',
+    style: 'padding:14px;border-top:1.5px solid rgba(13,93,65,0.09);background:rgba(13,93,65,0.02);'
+  }, [
+    el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#5d7468;' }, 'Uploaded in this Session'),
+      el('span', { id: 'session-files-badge', style: 'font-size:0.68rem;padding:2px 7px;background:rgba(13,93,65,0.08);color:#0d5d41;border-radius:999px;font-weight:750;' }, '0 Files')
+    ]),
+    el('div', {
+      id: 'session-files-list',
+      style: 'display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;font-size:0.75rem;color:#5d7468;'
+    }, [
+      el('div', { class: 'session-no-files', style: 'font-style:italic;padding:4px 0;' }, 'Click + below to attach images or docs.')
     ])
   ]);
-  rightPanel.appendChild(robotBadge);
+  rightPanel.appendChild(sessionFilesSection);
+
+  // Clean minimalist status footer linking directly to Settings
+  const rightFooter = el('div', {
+    style: 'padding:10px 14px;border-top:1px solid rgba(13,93,65,0.08);font-size:0.70rem;color:#5d7468;display:flex;align-items:center;justify-content:space-between;'
+  }, [
+    el('span', { style: 'display:inline-flex;align-items:center;gap:6px;' }, [
+      el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#047857;display:inline-block;' }),
+      el('span', {}, 'Integrations Synced')
+    ]),
+    el('button', {
+      type: 'button',
+      style: 'background:none;border:none;color:#0d5d41;font-weight:750;font-size:0.70rem;cursor:pointer;padding:0;',
+      onclick: () => { window.location.hash = '#settings?tab=integrations'; }
+    }, 'Settings →')
+  ]);
+  rightPanel.appendChild(rightFooter);
   card.appendChild(rightPanel);
 
-  function appendUserBubble(text, tsStr) {
+  function resetSessionFilesList() {
+    const list = $('#session-files-list');
+    if (list) list.innerHTML = '<div class="session-no-files" style="font-style:italic;padding:4px 0;">Click + below to attach images or docs.</div>';
+    const b = $('#session-files-badge');
+    if (b) b.textContent = '0 Files';
+  }
+
+  function recordSessionAttachments(attachments) {
+    if (!Array.isArray(attachments) || !attachments.length) return;
+    const listEl = $('#session-files-list');
+    const badgeEl = $('#session-files-badge');
+    if (!listEl) return;
+    const noFiles = listEl.querySelector('.session-no-files');
+    if (noFiles) noFiles.remove();
+    attachments.forEach((att) => {
+      const item = el('div', {
+        style: 'display:flex;align-items:center;justify-content:space-between;padding:4px 6px;background:rgba(13,93,65,0.04);border-radius:4px;gap:6px;'
+      }, [
+        el('div', { style: 'display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;' }, [
+          el('span', { html: att.isImage ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#0d5d41" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#0d5d41" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>' }),
+          el('span', { style: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#14221c;max-width:140px;' }, att.name || 'File')
+        ]),
+        el('span', { style: 'font-size:0.66rem;color:#5d7468;flex-shrink:0;' }, att.size ? `${Math.round(att.size / 1024)} KB` : '')
+      ]);
+      listEl.appendChild(item);
+    });
+    if (badgeEl) {
+      const count = listEl.children.length;
+      badgeEl.textContent = `${count} File${count === 1 ? '' : 's'}`;
+    }
+  }
+
+  function appendUserBubble(text, tsStr, attachments) {
     const timeDisplay = tsStr ? new Date(tsStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const bubbleChildren = [];
+    if (Array.isArray(attachments) && attachments.length) {
+      const attWrap = el('div', { style: 'display:flex;flex-direction:column;gap:6px;margin-bottom:6px;' });
+      attachments.forEach((att) => {
+        if (att.isImage && att.dataUrl) {
+          attWrap.appendChild(el('img', {
+            src: att.dataUrl,
+            alt: att.name || 'Uploaded image',
+            style: 'max-width:240px;max-height:160px;border-radius:8px;object-fit:cover;display:block;cursor:pointer;border:1px solid rgba(255,255,255,0.25);',
+            onclick: () => { window.open(att.dataUrl, '_blank'); }
+          }));
+        } else {
+          attWrap.appendChild(el('div', {
+            style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(13,93,65,0.08);border:1px solid rgba(13,93,65,0.22);border-radius:6px;font-size:0.75rem;color:#0d5d41;'
+          }, [
+            el('span', { html: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0d5d41" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' }),
+            el('span', { style: 'font-weight:700;' }, att.name || 'Document'),
+            el('span', { style: 'opacity:0.75;font-size:0.68rem;' }, att.size ? `(${Math.round(att.size / 1024)} KB)` : '')
+          ]));
+        }
+      });
+      bubbleChildren.push(attWrap);
+    }
+    if (text) {
+      bubbleChildren.push(el('div', {}, text));
+    }
     const row = el('div', { class: 'chat-row user' }, [
-      el('div', { class: 'chat-bubble-user' }, text),
+      el('div', { class: 'chat-bubble-user' }, bubbleChildren.length ? bubbleChildren : text),
       el('div', { class: 'chat-ts' }, timeDisplay)
     ]);
     messagesContainer.appendChild(row);
@@ -13680,24 +15325,32 @@ async function viewAssistant(wrap) {
   // ---- Message handling & API ----
   async function submitCurrent() {
     const text = textInput.value.trim();
-    if (!text || isSending) return;
+    const attachments = pendingAttachments.slice();
+    if (!text && !attachments.length) return;
+    if (isSending) return;
     textInput.value = '';
-    await doSendPrompt(text);
+    pendingAttachments = [];
+    renderAttachmentPreviews();
+    await doSendPrompt(text, null, attachments);
   }
 
-  async function doSendPrompt(text, token) {
-    if ((!text && !token) || isSending) return;
+  async function doSendPrompt(text, token, attachments) {
+    if ((!text && !token && (!attachments || !attachments.length)) || isSending) return;
     isSending = true;
     sendBtn.disabled = true;
 
-    if (text) {
-      appendUserBubble(text);
-      cachedMessages.push({ role: 'user', text, ts: new Date().toISOString() });
+    if (attachments && attachments.length) {
+      recordSessionAttachments(attachments);
+    }
+
+    if (text || (attachments && attachments.length)) {
+      appendUserBubble(text, null, attachments);
+      cachedMessages.push({ role: 'user', text, attachments, ts: new Date().toISOString() });
     }
     showTyping();
 
     try {
-      const payload = { text: text || '', sessionId: currentSessionId };
+      const payload = { text: text || '', sessionId: currentSessionId, attachments };
       if (token) payload.confirmToken = token;
 
       const data = await api('/api/assistant/chat', { method: 'POST', body: payload });
@@ -13771,6 +15424,9 @@ async function viewAssistant(wrap) {
 
   // Create new chat session
   async function startNewChat() {
+    resetSessionFilesList();
+    pendingAttachments = [];
+    renderAttachmentPreviews();
     try {
       const data = await api('/api/assistant/sessions', { method: 'POST', body: { title: 'New Conversation' } });
       if (data && data.session) {
@@ -13839,12 +15495,14 @@ async function viewAssistant(wrap) {
     try {
       const data = await api('/api/assistant/sessions/' + sessionId);
       messagesContainer.innerHTML = '';
+      resetSessionFilesList();
 
       if (data && data.session && Array.isArray(data.session.messages) && data.session.messages.length) {
         cachedMessages = data.session.messages.slice();
         data.session.messages.forEach((m) => {
           if (m.role === 'user') {
-            appendUserBubble(m.text, m.ts);
+            appendUserBubble(m.text, m.ts, m.attachments);
+            if (m.attachments) recordSessionAttachments(m.attachments);
           } else {
             let extra = null;
             if (m.intent === 'build_agent') extra = createFanCards();

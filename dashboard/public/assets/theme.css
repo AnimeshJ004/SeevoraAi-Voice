@@ -8432,7 +8432,7 @@ h1 .blue, .blue-grad, .t-blue {
 }
 
 /* KPI Metrics Bar: Clean Transparent Canvas Stats */
-.aria-clients-view .admin-kpi-grid {
+.aria-clients-view:not(.aria-feature-controls-view):not(.aria-workflows-view):not(.aria-agents-view):not(.aria-invoices-view):not(.aria-billing-view):not(.aria-support-view) .admin-kpi-grid {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   gap: 20px !important;
@@ -8442,42 +8442,129 @@ h1 .blue, .blue-grad, .t-blue {
   padding: 8px 0 24px 0 !important;
   margin-bottom: 24px !important;
   border-bottom: 1.5px solid rgba(13, 93, 65, 0.10) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.aria-clients-view .agency-metric {
+.aria-feature-controls-view .admin-kpi-grid,
+.aria-feature-controls-view .admin-kpi-grid.aria-kpi-grid,
+.aria-features-view .admin-kpi-grid,
+.aria-features-view .admin-kpi-grid.aria-kpi-grid,
+.aria-workflows-view .admin-kpi-grid,
+.aria-workflows-view .admin-kpi-grid.aria-kpi-grid,
+.aria-agents-view .admin-kpi-grid,
+.aria-agents-view .admin-kpi-grid.aria-kpi-grid,
+.aria-invoices-view .admin-kpi-grid,
+.aria-invoices-view .admin-kpi-grid.aria-kpi-grid,
+.aria-billing-view .admin-kpi-grid,
+.aria-billing-view .admin-kpi-grid.aria-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 0 24px 0 !important;
+  margin-bottom: 24px !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.10) !important;
+}
+
+.admin-kpi-grid .agency-metric,
+.aria-kpi-grid .agency-metric,
+.aria-clients-view .agency-metric,
+.aria-feature-controls-view .agency-metric,
+.aria-features-view .agency-metric,
+.aria-workflows-view .agency-metric,
+.aria-agents-view .agency-metric,
+.aria-invoices-view .agency-metric,
+.aria-billing-view .agency-metric {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   padding: 0 16px 0 0 !important;
   border-right: 1px solid rgba(13, 93, 65, 0.10) !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
 }
 
-.aria-clients-view .agency-metric:last-child {
+.admin-kpi-grid .agency-metric:last-child,
+.aria-kpi-grid .agency-metric:last-child,
+.aria-clients-view .agency-metric:last-child,
+.aria-feature-controls-view .agency-metric:last-child,
+.aria-features-view .agency-metric:last-child,
+.aria-workflows-view .agency-metric:last-child,
+.aria-agents-view .agency-metric:last-child,
+.aria-invoices-view .agency-metric:last-child,
+.aria-billing-view .agency-metric:last-child {
   border-right: none !important;
+  padding-right: 0 !important;
 }
 
-.aria-clients-view .agency-metric-label {
+.admin-kpi-grid .agency-metric-label,
+.aria-kpi-grid .agency-metric-label,
+.aria-clients-view .agency-metric-label,
+.aria-feature-controls-view .agency-metric-label,
+.aria-features-view .agency-metric-label,
+.aria-workflows-view .agency-metric-label,
+.aria-agents-view .agency-metric-label,
+.aria-invoices-view .agency-metric-label,
+.aria-billing-view .agency-metric-label {
   font-size: 11px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   color: #5d7468 !important;
   margin-bottom: 2px !important;
+  display: block !important;
 }
 
-.aria-clients-view .agency-metric-value {
+.admin-kpi-grid .agency-metric-value,
+.aria-kpi-grid .agency-metric-value,
+.aria-clients-view .agency-metric-value,
+.aria-feature-controls-view .agency-metric-value,
+.aria-features-view .agency-metric-value,
+.aria-workflows-view .agency-metric-value,
+.aria-agents-view .agency-metric-value,
+.aria-invoices-view .agency-metric-value,
+.aria-billing-view .agency-metric-value {
   font-size: 30px !important;
   font-weight: 800 !important;
   color: #0d5d41 !important;
   letter-spacing: -0.03em !important;
   margin: 4px 0 2px 0 !important;
   font-variant-numeric: tabular-nums !important;
+  line-height: 1.1 !important;
+  display: block !important;
 }
 
-.aria-clients-view .agency-metric-note {
+.admin-kpi-grid .agency-metric-sub,
+.admin-kpi-grid .agency-metric-note,
+.aria-kpi-grid .agency-metric-sub,
+.aria-kpi-grid .agency-metric-note,
+.aria-clients-view .agency-metric-sub,
+.aria-clients-view .agency-metric-note,
+.aria-feature-controls-view .agency-metric-sub,
+.aria-feature-controls-view .agency-metric-note,
+.aria-features-view .agency-metric-sub,
+.aria-features-view .agency-metric-note,
+.aria-workflows-view .agency-metric-sub,
+.aria-workflows-view .agency-metric-note,
+.aria-agents-view .agency-metric-sub,
+.aria-agents-view .agency-metric-note,
+.aria-invoices-view .agency-metric-sub,
+.aria-invoices-view .agency-metric-note,
+.aria-billing-view .agency-metric-sub,
+.aria-billing-view .agency-metric-note {
   font-size: 12px !important;
   color: #83978c !important;
+  font-weight: 500 !important;
+  margin-top: 2px !important;
+  display: block !important;
 }
 
 /* Client Portfolio List: Pure Canvas (No Card Box) */
@@ -10616,7 +10703,7 @@ button:disabled {
 .aria-workflows-view .admin-kpi-grid,
 .aria-workflows-view .admin-kpi-grid.aria-kpi-grid {
   display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 22px !important;
   background: transparent !important;
   border: none !important;
@@ -10627,7 +10714,8 @@ button:disabled {
   border-bottom: 1.5px solid rgba(13, 93, 65, 0.10) !important;
 }
 
-.aria-workflows-view .kpi-card {
+.aria-workflows-view .kpi-card,
+.aria-workflows-view .agency-metric {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -10641,8 +10729,10 @@ button:disabled {
   transform: none !important;
 }
 
-.aria-workflows-view .kpi-card:last-child {
+.aria-workflows-view .kpi-card:last-child,
+.aria-workflows-view .agency-metric:last-child {
   border-right: none !important;
+  padding-right: 0 !important;
 }
 
 .aria-workflows-view .kpi-card:hover {
@@ -13833,24 +13923,30 @@ button:disabled {
   border-bottom: none !important;
 }
 
-/* High-specificity inputs: Clean rounded boxes (NOT flat underline) */
+/* Cardless Settings: Flat underline fields (Strictly NO BOXES / NO CARDS) */
 .shell:not([data-route="overview"]) .main .settings-tab-panel input.input,
 .shell:not([data-route="overview"]) .main .settings-tab-panel select.select,
 .shell:not([data-route="overview"]) .main .settings-tab-panel textarea.textarea,
 .shell:not([data-route="overview"]) .main .settings-tab-panel textarea.input,
 .settings-tab-panel input.input,
 .settings-tab-panel select.select,
-.settings-tab-panel textarea.textarea {
-  background: #ffffff !important;
-  border: 1px solid rgba(13, 93, 65, 0.22) !important;
-  border-radius: 9px !important;
-  padding: 10px 14px !important;
-  font-size: 0.88rem !important;
+.settings-tab-panel textarea.textarea,
+.aria-settings-view input.input,
+.aria-settings-view select.select,
+.aria-settings-view textarea.input,
+.aria-settings-view textarea.textarea {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  padding: 8px 0 !important;
+  font-size: 0.90rem !important;
   color: #14221c !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.16s ease !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s ease !important;
   outline: none !important;
   box-sizing: border-box !important;
+  width: 100% !important;
 }
 
 .shell:not([data-route="overview"]) .main .settings-tab-panel input.input:focus,
@@ -13858,9 +13954,15 @@ button:disabled {
 .shell:not([data-route="overview"]) .main .settings-tab-panel textarea.textarea:focus,
 .settings-tab-panel input.input:focus,
 .settings-tab-panel select.select:focus,
-.settings-tab-panel textarea.textarea:focus {
-  border-color: #0d5d41 !important;
-  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+.settings-tab-panel textarea.textarea:focus,
+.aria-settings-view input.input:focus,
+.aria-settings-view select.select:focus,
+.aria-settings-view textarea.input:focus,
+.aria-settings-view textarea.textarea:focus {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid #0d5d41 !important;
+  box-shadow: none !important;
   outline: none !important;
 }
 
@@ -13978,28 +14080,79 @@ button:disabled {
   box-shadow: 0 2px 6px rgba(13, 93, 65, 0.20) !important;
 }
 
-.aria-settings-view input.input,
-.aria-settings-view select.select,
-.aria-settings-view textarea.input,
-.aria-settings-view textarea.textarea {
-  background: #ffffff !important;
-  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
-  border-radius: 10px !important;
-  padding: 11px 16px !important;
+.aria-settings-view input,
+.aria-settings-view select,
+.aria-settings-view textarea,
+.aria-settings-view .input,
+.aria-settings-view .select,
+.aria-settings-view input[type="text"],
+.aria-settings-view input[type="password"],
+.aria-settings-view input[type="number"],
+.aria-settings-view input[type="tel"],
+.aria-settings-view input[type="email"],
+.aria-settings-view input[type="url"],
+#settings-subtab-host input,
+#settings-subtab-host select,
+#settings-subtab-host textarea,
+#settings-subtab-host .input,
+#settings-subtab-host .select,
+#settings-subtab-host input[type="text"],
+#settings-subtab-host input[type="password"],
+#settings-subtab-host input[type="number"],
+#settings-subtab-host input[type="tel"],
+#settings-subtab-host input[type="email"],
+#settings-subtab-host input[type="url"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.25) !important;
+  border-radius: 0 !important;
+  padding: 8px 0 !important;
   font-size: 0.90rem !important;
   color: #14221c !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  transition: all 0.16s ease !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s ease !important;
+  outline: none !important;
 }
 
-.aria-settings-view input.input:focus,
-.aria-settings-view select.select:focus,
-.aria-settings-view textarea.input:focus,
-.aria-settings-view textarea.textarea:focus {
-  border-color: #0d5d41 !important;
-  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+.aria-settings-view input:focus,
+.aria-settings-view select:focus,
+.aria-settings-view textarea:focus,
+.aria-settings-view .input:focus,
+.aria-settings-view .select:focus,
+#settings-subtab-host input:focus,
+#settings-subtab-host select:focus,
+#settings-subtab-host textarea:focus,
+#settings-subtab-host .input:focus,
+#settings-subtab-host .select:focus {
+  border-bottom-color: #0d5d41 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
   outline: none !important;
+}
+
+.aria-settings-view select,
+.aria-settings-view select.select,
+#settings-subtab-host select,
+#settings-subtab-host select.select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230d5d41' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 6px center !important;
+  background-size: 12px 12px !important;
+  padding-right: 26px !important;
+  cursor: pointer !important;
+}
+
+.aria-settings-view select option,
+#settings-subtab-host select option {
+  background: #ffffff !important;
+  color: #14221c !important;
 }
 
 .aria-settings-view label {
@@ -14335,3 +14488,48 @@ button:disabled {
 
 
 
+
+/* ============================================================================
+   UNIVERSAL ZERO-GAP DYNAMIC KPI GRIDS
+   Automatically adjusts columns based on child card count (1 to 5) so the grid
+   ALWAYS fills 100% width with zero right-side dead gap across all views.
+   ============================================================================ */
+.admin-kpi-grid,
+.aria-kpi-grid,
+.recordings-kpi-grid,
+.inbound-kpi-grid,
+.outbound-kpi-grid,
+.pipeline-kpi-grid {
+  display: grid !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.admin-kpi-grid:has(> :nth-child(4):last-child),
+.aria-kpi-grid:has(> :nth-child(4):last-child),
+.recordings-kpi-grid:has(> :nth-child(4):last-child),
+.inbound-kpi-grid:has(> :nth-child(4):last-child),
+.outbound-kpi-grid:has(> :nth-child(4):last-child),
+.pipeline-kpi-grid:has(> :nth-child(4):last-child) {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.admin-kpi-grid:has(> :nth-child(5):last-child),
+.aria-kpi-grid:has(> :nth-child(5):last-child) {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.admin-kpi-grid:has(> :nth-child(3):last-child),
+.aria-kpi-grid:has(> :nth-child(3):last-child) {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.admin-kpi-grid:has(> :nth-child(2):last-child),
+.aria-kpi-grid:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.admin-kpi-grid:has(> :nth-child(1):last-child),
+.aria-kpi-grid:has(> :nth-child(1):last-child) {
+  grid-template-columns: 1fr !important;
+}

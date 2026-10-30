@@ -159,6 +159,377 @@ const CALL_TEMPLATES = [
   }
 ];
 
+
+const SEEVORA_FACTS = [
+  'Company name: Seevora',
+  'Website: seevora.in',
+  'Location: Indore, Madhya Pradesh, India',
+  'Founder and CEO: Chaitanya Panwar',
+  'What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.',
+  'Services Seevora offers:',
+  '1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock',
+  '2. Lead Qualification and Follow-up Automation for customer engagement',
+  '3. CRM Integrations to connect AI automation with existing business tools',
+  '4. Custom AI Chatbots for websites and mobile apps',
+  '5. Lead Qualification through automated voice and chat conversations',
+  '6. Appointment Booking automation',
+  '7. E-commerce Automation for order updates, queries, and customer support',
+  'Phone: +91 8071582519',
+  'Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.',
+  'Pricing: Custom pricing based on business requirements and call volume. Offer a free callback from the team.'
+].join('\n');
+
+const COMMON_SPEECH_RULES = `
+# HOW YOU SPEAK (CRITICAL FOR LIVE TELEPHONY)
+- STRICT LANGUAGE MIRRORING: If caller speaks Hindi/Hinglish, reply in natural conversational Hindi/Hinglish. If English, reply in English.
+- Strictly ONE or TWO short spoken sentences per turn. Never speak long essays.
+- Natural spoken phrasing. No bullet points, no markdown, no emojis.
+- Never write or say "/" or raw symbols. Always speak words out loud.`;
+
+function getPreconfiguredAgents(tid, seevoraFacts) {
+  const tidClean = tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+  const facts = seevoraFacts || SEEVORA_FACTS;
+
+  return [
+    {
+      id: `ag_${tidClean}_ria`,
+      tenantId: tid,
+      name: 'Ria - AI Voice Receptionist & Front Desk',
+      role: 'Front Desk Receptionist',
+      department: 'Front Desk & Reception',
+      language: 'hi-IN',
+      isPrimary: true,
+      voiceProvider: 'rumik',
+      rumikVoice: 'ira',
+      rumikModel: 'mulberry',
+      rumikTone: 'happy',
+      tts: {
+        provider: 'rumik',
+        model: 'mulberry',
+        voice: 'ira',
+        speaker: 'speaker_2',
+        f0_up_key: -1,
+        tone: 'happy',
+        description: 'Warm, clear Indian-English female voice with natural conversational pacing, friendly and welcoming'
+      },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: "Hi! Thank you for calling! Main Ria bol rahi hoon reception desk se. How can I help you today?",
+      persona: `# WHO YOU ARE
+You are Ria, the virtual front-desk receptionist for Seevora. You are answering incoming phone calls with a warm, welcoming, and helpful energy.
+
+# PRIMARY RESPONSIBILITIES
+1. Greet callers cheerfully and understand the reason for their call.
+2. Provide quick, accurate answers regarding office location, working hours, and available service offerings.
+3. Schedule appointments and consultations swiftly, capturing caller name and callback contact.
+4. If the caller needs human assistance, offer to transfer or have a senior team member call back.
+${COMMON_SPEECH_RULES}`,
+      knowledge: facts,
+      createdAt: new Date(Date.now() - 25 * 86400000).toISOString()
+    },
+    {
+      id: `ag_${tidClean}_priya`,
+      tenantId: tid,
+      name: 'Priya - Customer Care & Client Support Specialist',
+      role: 'Customer Support Specialist',
+      department: 'Customer Care & Support',
+      language: 'hi-IN',
+      isPrimary: false,
+      voiceProvider: 'rumik',
+      rumikVoice: 'riya',
+      rumikModel: 'mulberry',
+      rumikTone: 'happy',
+      tts: {
+        provider: 'rumik',
+        model: 'mulberry',
+        voice: 'riya',
+        speaker: 'speaker_1',
+        f0_up_key: 1,
+        tone: 'happy',
+        description: 'Empathetic, patient, active listening Indian female voice ideal for resolving customer issues'
+      },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: "Namaste! Main Priya bol rahi hoon customer support desk se. Kripya batayein main aapki kya sahayata kar sakti hoon?",
+      persona: `# WHO YOU ARE
+You are Priya, a customer care and client support specialist. You are patient, deeply empathetic, and dedicated to solving caller problems.
+
+# PRIMARY RESPONSIBILITIES
+1. Listen carefully to caller issues, questions, or service feedback without interrupting.
+2. Calmly acknowledge difficulties, take down details, and provide step-by-step resolution.
+3. Check ticket or request status and provide clear timelines for pending deliverables.
+4. Escalate critical or urgent complaints to supervisor staff immediately.
+${COMMON_SPEECH_RULES}`,
+      knowledge: facts,
+      createdAt: new Date(Date.now() - 22 * 86400000).toISOString()
+    },
+    {
+      id: `ag_${tidClean}_aarav`,
+      tenantId: tid,
+      name: 'Aarav - Inbound Sales & Lead Qualification Specialist',
+      role: 'Sales & Lead Qualification',
+      department: 'Sales & Business Development',
+      language: 'hi-IN',
+      isPrimary: false,
+      voiceProvider: 'rumik',
+      rumikVoice: 'arav',
+      rumikModel: 'mulberry',
+      rumikTone: 'neutral',
+      tts: {
+        provider: 'rumik',
+        model: 'mulberry',
+        voice: 'arav',
+        speaker: 'speaker_3',
+        f0_up_key: -2,
+        tone: 'neutral',
+        description: 'Authoritative, confident, crisp male voice for high-conversion sales and discovery'
+      },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: "Hello! Thank you for calling our sales team. This is Aarav. How can I assist you with your project requirements today?",
+      persona: `# WHO YOU ARE
+You are Aarav, an inbound sales and discovery specialist. You are sharp, knowledgeable, and focused on understanding business needs and qualification.
+
+# PRIMARY RESPONSIBILITIES
+1. Understand the caller's company goals, current bottlenecks, and target timeline.
+2. Qualify lead fit (approximate call volume, budget, tech readiness).
+3. Highlight high-value automation benefits without sounding pushy.
+4. Lock in a dedicated 20-minute solution walkthrough or demo call with the senior solutions team.
+${COMMON_SPEECH_RULES}`,
+      knowledge: facts,
+      createdAt: new Date(Date.now() - 20 * 86400000).toISOString()
+    },
+    {
+      id: `ag_${tidClean}_ananya`,
+      tenantId: tid,
+      name: 'Ananya - Executive Relationship & VIP Billing Coordinator',
+      role: 'VIP Relationship & Billing Coordinator',
+      department: 'Executive Accounts & Finance',
+      language: 'hi-IN',
+      isPrimary: false,
+      voiceProvider: 'rumik',
+      rumikVoice: 'ananya',
+      rumikModel: 'mulberry',
+      rumikTone: 'happy',
+      tts: {
+        provider: 'rumik',
+        model: 'mulberry',
+        voice: 'ananya',
+        speaker: 'speaker_2',
+        f0_up_key: 0,
+        tone: 'happy',
+        description: 'Polished, articulate, modern Indian female voice with executive clarity'
+      },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: "Good day! You have reached our executive relationship desk, Ananya speaking. How may I assist with your account today?",
+      persona: `# WHO YOU ARE
+You are Ananya, an executive relationship and VIP billing coordinator. You speak with refined elegance, articulate diction, and high-touch attentiveness.
+
+# PRIMARY RESPONSIBILITIES
+1. Assist enterprise clients, corporate partners, and account executives with account inquiries.
+2. Handle billing queries, invoice disbursements, payment receipts, and contract renewal details.
+3. Coordinate priority requests with executive leadership.
+4. Maintain a professional, polite, and confidential demeanor at all times.
+${COMMON_SPEECH_RULES}`,
+      knowledge: facts,
+      createdAt: new Date(Date.now() - 18 * 86400000).toISOString()
+    },
+    {
+      id: `ag_${tidClean}_dev`,
+      tenantId: tid,
+      name: 'Dev - Technical Support & Operations Helpdesk',
+      role: 'Technical Support Engineer',
+      department: 'Technical Support & IT Operations',
+      language: 'hi-IN',
+      isPrimary: false,
+      voiceProvider: 'rumik',
+      rumikVoice: 'dev',
+      rumikModel: 'mulberry',
+      rumikTone: 'neutral',
+      tts: {
+        provider: 'rumik',
+        model: 'mulberry',
+        voice: 'dev',
+        speaker: 'speaker_4',
+        f0_up_key: -3,
+        tone: 'neutral',
+        description: 'Calm, reassuring, deep male voice specialized in step-by-step technical problem solving'
+      },
+      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
+      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
+      telephony: { provider: 'vobiz', did: '+918071582519' },
+      greeting: "Namaste! Technical helpdesk par aapka swagat hai, Dev bol raha hoon. Kripya batayein aapko kis system ya service mein issue aa raha hai?",
+      persona: `# WHO YOU ARE
+You are Dev, a technical support and IT operations specialist. You are methodical, calm, and guide callers step-by-step through technical checks.
+
+# PRIMARY RESPONSIBILITIES
+1. Triage technical incidents, service disruptions, or integration errors systematically.
+2. Ask clear, structured diagnostic questions (error codes, affected numbers, webhook payloads).
+3. Walk callers through standard self-serve remedies calmly.
+4. If unresolved, log a Priority-1 engineering ticket and provide a ticket reference number.
+${COMMON_SPEECH_RULES}`,
+      knowledge: facts,
+      createdAt: new Date(Date.now() - 15 * 86400000).toISOString()
+    }
+  ];
+}
+
+function getPreconfiguredFlows(tid, agents) {
+  const tidClean = tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+  const agentMap = {};
+  (agents || []).forEach(a => {
+    const n = (a.name || '').toLowerCase();
+    if (n.includes('ria')) agentMap.ria = a;
+    else if (n.includes('priya')) agentMap.priya = a;
+    else if (n.includes('aarav') || n.includes('arav')) agentMap.aarav = a;
+    else if (n.includes('ananya')) agentMap.ananya = a;
+    else if (n.includes('dev')) agentMap.dev = a;
+  });
+
+  return [
+    {
+      id: `dfl_${tidClean}_ria`,
+      tenantId: tid,
+      workflowId: '13027',
+      name: 'Ria - Front Desk & Inbound Reception Flow',
+      kind: 'generated',
+      status: 'active',
+      isActive: true,
+      agentId: agentMap.ria ? agentMap.ria.id : null,
+      description: 'Autonomous front desk receptionist for greetings, business hours, and consultation booking',
+      greeting: (agentMap.ria && agentMap.ria.greeting) || "Hi! Thank you for calling! Main Ria bol rahi hoon reception desk se. How can I help you today?",
+      prompt: (agentMap.ria && agentMap.ria.persona) || "You are Ria, virtual receptionist for Seevora.",
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: 'Greet caller warmly and introduce front desk.' },
+        { id: '2', type: 'triage', title: 'Query & Qualification', prompt: 'Identify caller inquiry regarding services, timings, or office location.' },
+        { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture contact details and schedule consultation slot.' },
+        { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to staff member if caller asks or if unresolved.' }
+      ],
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      assignedBy: 'system',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString()
+    },
+    {
+      id: `dfl_${tidClean}_priya`,
+      tenantId: tid,
+      workflowId: '13028',
+      name: 'Priya - Customer Care & Client Support Flow',
+      kind: 'generated',
+      status: 'active',
+      isActive: false,
+      agentId: agentMap.priya ? agentMap.priya.id : null,
+      description: 'Empathetic issue resolution, complaint handling, and ticket tracking flow',
+      greeting: (agentMap.priya && agentMap.priya.greeting) || "Namaste! Main Priya bol rahi hoon customer support desk se. Kripya batayein main aapki kya sahayata kar sakti hoon?",
+      prompt: (agentMap.priya && agentMap.priya.persona) || "You are Priya, customer support specialist.",
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Empathetic Welcome', prompt: 'Welcome caller with warm, patient empathy.' },
+        { id: '2', type: 'triage', title: 'Issue Intake', prompt: 'Listen actively, capture complaint or service question details.' },
+        { id: '3', type: 'resolution', title: 'Resolution & Status', prompt: 'Provide status update or step-by-step solution.' },
+        { id: '4', type: 'escalation', title: 'Supervisor Handoff', prompt: 'Escalate to human supervisor if unresolved.' }
+      ],
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      assignedBy: 'system',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString()
+    },
+    {
+      id: `dfl_${tidClean}_aarav`,
+      tenantId: tid,
+      workflowId: '13029',
+      name: 'Aarav - Inbound Sales & Lead Qualification Flow',
+      kind: 'generated',
+      status: 'active',
+      isActive: false,
+      agentId: agentMap.aarav ? agentMap.aarav.id : null,
+      description: 'Discovery, requirement qualification, pricing triage, and strategy demo scheduling',
+      greeting: (agentMap.aarav && agentMap.aarav.greeting) || "Hello! Thank you for calling our sales team. This is Aarav. How can I assist you with your project requirements today?",
+      prompt: (agentMap.aarav && agentMap.aarav.persona) || "You are Aarav, sales and lead qualification specialist.",
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Sales Welcome', prompt: 'Professional corporate greeting and icebreaker.' },
+        { id: '2', type: 'triage', title: 'Qualification & Needs', prompt: 'Ask about business volume, goals, and timeline.' },
+        { id: '3', type: 'booking', title: 'Demo / Call Schedule', prompt: 'Schedule executive solution walkthrough.' },
+        { id: '4', type: 'escalation', title: 'Sales Lead Transfer', prompt: 'Transfer hot lead to sales director.' }
+      ],
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      assignedBy: 'system',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString()
+    },
+    {
+      id: `dfl_${tidClean}_ananya`,
+      tenantId: tid,
+      workflowId: '13030',
+      name: 'Ananya - Executive Relationship & VIP Billing Flow',
+      kind: 'generated',
+      status: 'active',
+      isActive: false,
+      agentId: agentMap.ananya ? agentMap.ananya.id : null,
+      description: 'High-touch executive client concierge, contract reviews, and billing inquiries',
+      greeting: (agentMap.ananya && agentMap.ananya.greeting) || "Good day! You have reached our executive relationship desk, Ananya speaking. How may I assist with your account today?",
+      prompt: (agentMap.ananya && agentMap.ananya.persona) || "You are Ananya, VIP relationship manager.",
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Concierge Greeting', prompt: 'Polite, articulate executive welcome.' },
+        { id: '2', type: 'triage', title: 'Account / Billing Verification', prompt: 'Verify account name and billing query.' },
+        { id: '3', type: 'action', title: 'Invoice & Payment Delivery', prompt: 'Send invoice PDF or confirm payment status.' },
+        { id: '4', type: 'escalation', title: 'Finance Executive Transfer', prompt: 'Transfer to finance head for special concessions.' }
+      ],
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      assignedBy: 'system',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString()
+    },
+    {
+      id: `dfl_${tidClean}_dev`,
+      tenantId: tid,
+      workflowId: '13031',
+      name: 'Dev - Technical Support & Operations Flow',
+      kind: 'generated',
+      status: 'active',
+      isActive: false,
+      agentId: agentMap.dev ? agentMap.dev.id : null,
+      description: 'Technical troubleshooting, system status diagnostic, and engineering dispatch',
+      greeting: (agentMap.dev && agentMap.dev.greeting) || "Namaste! Technical helpdesk par aapka swagat hai, Dev bol raha hoon. Kripya batayein aapko kis system ya service mein issue aa raha hai?",
+      prompt: (agentMap.dev && agentMap.dev.persona) || "You are Dev, technical support engineer.",
+      nodes: [
+        { id: '1', type: 'greeting', title: 'Helpdesk Welcome', prompt: 'Calm, technical greeting.' },
+        { id: '2', type: 'triage', title: 'Diagnostic Intake', prompt: 'Identify system error, API status, or device details.' },
+        { id: '3', type: 'action', title: 'Troubleshooting & Fix', prompt: 'Guide user through step-by-step fix or log ticket.' },
+        { id: '4', type: 'escalation', title: 'Engineering Escalation', prompt: 'Escalate to engineering on-call engineer.' }
+      ],
+      fallbackPhone: '+91 89822 00895',
+      assignedPhone: '+91 80715 82519',
+      language: 'hi-IN',
+      assignedBy: 'system',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString()
+    }
+  ];
+}
+
 function seedTenantDataIfEmpty(d, tid, tenantName) {
   if (!d || !tid) return;
 
@@ -181,84 +552,45 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
     w.balancePaise = 250000;
   }
 
-  // 2. Active Agent
-  const seevoraFacts = [
-    'Company name: Seevora',
-    'Website: seevora.in',
-    'Location: Indore, Madhya Pradesh, India',
-    'Founder and CEO: Chaitanya Panwar',
-    'What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.',
-    'Services Seevora offers:',
-    '1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock',
-    '2. Lead Qualification and Follow-up Automation for customer engagement',
-    '3. CRM Integrations to connect AI automation with existing business tools',
-    '4. Custom AI Chatbots for websites and mobile apps',
-    '5. Lead Qualification through automated voice and chat conversations',
-    '6. Appointment Booking automation',
-    '7. E-commerce Automation for order updates, queries, and customer support',
-    'Phone: +91 8071582519',
-    'Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM IST.',
-    'Pricing: Custom pricing based on business requirements and call volume. Offer a free callback from the team.'
-  ].join('\n');
+  // 2. Pre-configured AI Agents & Dograh Voice Flows
+  if (!Array.isArray(d.dograhFlows)) d.dograhFlows = [];
+  const preconfiguredAgents = getPreconfiguredAgents(tid, SEEVORA_FACTS);
+  preconfiguredAgents.forEach((pa) => {
+    let existing = d.agents.find((a) => a.tenantId === tid && (a.id === pa.id || a.name.split('-')[0].trim().toLowerCase() === pa.name.split('-')[0].trim().toLowerCase()));
+    if (!existing) {
+      d.agents.push(pa);
+    } else {
+      existing.role = pa.role;
+      existing.department = pa.department;
+      existing.voiceProvider = pa.voiceProvider;
+      existing.rumikVoice = pa.rumikVoice;
+      existing.rumikModel = pa.rumikModel;
+      existing.rumikTone = pa.rumikTone;
+      existing.tts = pa.tts;
+      if (!existing.greeting) existing.greeting = pa.greeting;
+      if (!existing.persona) existing.persona = pa.persona;
+      existing.knowledge = SEEVORA_FACTS;
+    }
+  });
 
-  const dograhPrompt = `# WHO YOU ARE
-You are Ria, the AI receptionist for Seevora. You are on a live phone call.
-
-# SEEVORA COMPANY FACTS (answer ONLY from these, never guess or invent)
-Company name: Seevora
-Website: seevora.in
-Location: Indore, Madhya Pradesh, India
-Founder and CEO: Chaitanya Panwar
-What Seevora does: Seevora builds custom AI automation solutions for Indian businesses.
-Services Seevora offers:
-1. Twenty-four seven AI Voice Receptionists that answer business phone calls round the clock
-2. Lead Qualification and Follow-up Automation for customer engagement
-3. CRM Integrations to connect AI automation with existing business tools
-4. Custom AI Chatbots for websites and mobile apps
-5. Lead Qualification through automated voice and chat conversations
-6. Appointment Booking automation
-7. E-commerce Automation for order updates, queries, and customer support
-
-If asked about pricing: say it depends on the specific use case and offer to have the Seevora team call back with a quote.
-If asked anything not covered above: say honestly you will have the team follow up, and do not make up any answer.
-
-# HOW YOU SPEAK, THIS MATTERS MORE THAN ANYTHING
-- STRICT LANGUAGE MIRRORING (CRITICAL): You MUST ALWAYS reply in the exact language the caller speaks!
-  * If the caller speaks Hindi or Hinglish (e.g. "Seevora ke baare me batao", "Aap kya karte ho?", "Founder kaun hai?"): YOU MUST REPLY IN NATURAL CONVERSATIONAL HINDI / HINGLISH. NEVER reply in English to a Hindi question!
-  * If the caller speaks English (e.g. "Tell me about Seevora", "Who is the CEO?"): Reply in natural English.
-  * Always mirror the caller's language dynamically from turn to turn.
-- ONE or TWO short spoken sentences per turn. Never more. This is a phone call, not an essay.
-- Natural spoken phrasing. No bullet points, no lists, no markdown, no emoji.
-- Warm, quick, confident. Like a sharp receptionist who genuinely wants to help.
-- NEVER say "sorry, I didn't catch that" repeatedly. Roll with remarks and steer back to how you can assist.`;
-
-  let agent = d.agents.find((a) => a.tenantId === tid);
-  if (!agent) {
-    agent = {
-      id: 'ag_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12),
-      tenantId: tid,
-      name: 'Ria - Seevora AI Voice Receptionist',
-      role: 'receptionist',
-      language: 'hi-IN',
-      tts: { provider: 'rumik', model: 'muga', voice: 'ira', speaker: 'speaker_2', tone: 'neutral', description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional' },
-      stt: { provider: 'deepgram', model: 'nova-3', language: 'multi' },
-      llm: { provider: 'groq', model: 'qwen/qwen3.8-27b' },
-      telephony: { provider: 'vobiz', did: '+918071582519' },
-      greeting: "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?",
-      persona: dograhPrompt,
-      knowledge: seevoraFacts,
-      createdAt: new Date(Date.now() - 25 * 86400000).toISOString()
-    };
-    d.agents.push(agent);
-  } else {
-    // Keep agent synced with Seevora facts
-    agent.name = 'Ria - Seevora AI Voice Receptionist';
-    agent.persona = dograhPrompt;
-    agent.knowledge = seevoraFacts;
-    agent.greeting = "Hi! Thank you for calling Seevora! I'm your AI assistant. How can I help you today?";
-    agent.llm = { provider: 'groq', model: 'qwen/qwen3.8-27b' };
-    agent.tts = { provider: 'rumik', model: 'muga', voice: 'ira', speaker: 'speaker_2', tone: 'neutral', description: 'a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional' };
+  // Ensure primary line assignment
+  const tenantAgents = d.agents.filter((a) => a.tenantId === tid);
+  if (!tenantAgents.some((a) => a.isPrimary) && tenantAgents.length > 0) {
+    tenantAgents[0].isPrimary = true;
   }
+
+  // Pre-configured Dograh Flows
+  const preconfiguredFlows = getPreconfiguredFlows(tid, tenantAgents);
+  preconfiguredFlows.forEach((pf) => {
+    let existing = d.dograhFlows.find((f) => f.tenantId === tid && (f.id === pf.id || f.name === pf.name || (f.agentId && f.agentId === pf.agentId)));
+    if (!existing) {
+      d.dograhFlows.push(pf);
+    } else {
+      if (!existing.agentId) existing.agentId = pf.agentId;
+      if (!existing.greeting) existing.greeting = pf.greeting;
+      if (!existing.prompt) existing.prompt = pf.prompt;
+    }
+  });
 
   // 3. 14 Days Usage
   const existingDays = new Set(d.usage.filter((u) => u.tenantId === tid).map((u) => u.day));
@@ -469,5 +801,8 @@ function seedAllTenants(d) {
 module.exports = {
   seedTenantDataIfEmpty,
   seedAllTenants,
-  CALL_TEMPLATES
+  CALL_TEMPLATES,
+  getPreconfiguredAgents,
+  getPreconfiguredFlows,
+  SEEVORA_FACTS
 };

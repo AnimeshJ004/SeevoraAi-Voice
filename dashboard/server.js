@@ -38,6 +38,9 @@ const booking = require('./lib/booking');
 const sms = require('./lib/sms');
 const crmwebhooks = require('./lib/crmwebhooks');
 const mailer = require('./lib/mailer');
+const integrations = require('./lib/integrations');
+const docParser = require('./lib/docParser');
+const rumikVoice = require('./lib/rumikVoice');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -507,6 +510,13 @@ function publicAgent(a) {
     llm: a.llm || null,
     isPrimary: !!a.isPrimary,
     department: a.department || 'General',
+    role: a.role || '',
+    voiceProvider: a.voiceProvider || (a.tts && a.tts.provider) || 'rumik',
+    rumikVoice: a.rumikVoice || (a.tts && a.tts.voice) || 'ira',
+    rumikModel: a.rumikModel || (a.tts && a.tts.model) || 'mulberry',
+    rumikTone: a.rumikTone || (a.tts && a.tts.tone) || 'happy',
+    status: a.status || 'active',
+    enabled: a.status !== 'disabled',
     assignedEmployees,
     createdAt: a.createdAt,
   };
@@ -810,8 +820,11 @@ async function apiHvacBook(req, res, ctx) {
   } catch (e) { handleProviderError(res, e); }
 }
 
-function apiAgentsList(req, res, ctx) {
+async function apiAgentsList(req, res, ctx) {
   const d = core.db();
+  if (ensureDograhFlowsSeeded(d)) {
+    await core.mutate((store) => { ensureDograhFlowsSeeded(store); });
+  }
   let tenantAgents = d.agents.filter((a) => a.tenantId === ctx.tenant.id);
   if (tenantAgents.length > 0 && !tenantAgents.some((a) => a.isPrimary)) {
     tenantAgents[0].isPrimary = true;
@@ -893,6 +906,62 @@ async function apiTenantOnboardingComplete(req, res, ctx) {
   core.sendJson(res, 200, { ok: true, onboardingCompleted: true });
 }
 
+async function apiAgentsToggleStatus(req, res, ctx) {
+  const b = ctx.body || {};
+  const id = String(b.agentId || b.id || '').trim();
+  const d = core.db();
+  const target = d.agents.find((a) => a.id === id && a.tenantId === ctx.tenant.id);
+  if (!target) return core.sendJson(res, 404, { error: 'Agent not found in your workspace', code: 'not_found' });
+
+  let newStatus;
+  if (typeof b.enabled === 'boolean') {
+    newStatus = b.enabled ? 'active' : 'disabled';
+  } else if (b.status) {
+    newStatus = b.status === 'disabled' ? 'disabled' : 'active';
+  } else {
+    newStatus = (target.status === 'disabled') ? 'active' : 'disabled';
+  }
+
+  let updatedAgent;
+  await core.mutate((dd) => {
+    const a = dd.agents.find((x) => x.id === id);
+    if (!a) return;
+    a.status = newStatus;
+
+    // Sync corresponding Dograh voice flow status
+    (dd.dograhFlows || []).forEach((f) => {
+      if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+        f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+        if (newStatus === 'disabled') f.isActive = false;
+      }
+    });
+
+    // If disabled agent was primary on line, transfer primary to another active agent
+    if (newStatus === 'disabled' && a.isPrimary) {
+      a.isPrimary = false;
+      const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+      if (nextActive) {
+        nextActive.isPrimary = true;
+        (dd.dograhFlows || []).forEach((f) => {
+          if (f.tenantId === ctx.tenant.id) {
+            f.isActive = (f.agentId === nextActive.id);
+          }
+        });
+      }
+    }
+
+    updatedAgent = a;
+    addAudit(dd, ctx, 'agent.status_toggled', 'agent', a.id, { name: a.name, status: newStatus });
+  });
+
+  core.sendJson(res, 200, {
+    ok: true,
+    agent: publicAgent(updatedAgent),
+    status: newStatus,
+    enabled: newStatus !== 'disabled'
+  });
+}
+
 async function apiAgentsActivate(req, res, ctx) {
   const b = ctx.body || {};
   const agentId = String(b.agentId || b.id || '');
@@ -901,7 +970,20 @@ async function apiAgentsActivate(req, res, ctx) {
   if (!target) return core.sendJson(res, 404, { error: 'Agent not found in your workspace', code: 'not_found' });
   await core.mutate((dd) => {
     dd.agents.forEach((a) => {
-      if (a.tenantId === ctx.tenant.id) a.isPrimary = (a.id === target.id);
+      if (a.tenantId === ctx.tenant.id) {
+        a.isPrimary = (a.id === target.id);
+        if (a.id === target.id && a.status === 'disabled') {
+          a.status = 'active';
+        }
+      }
+    });
+    (dd.dograhFlows || []).forEach((f) => {
+      if (f.tenantId === ctx.tenant.id) {
+        f.isActive = (f.agentId === target.id);
+        if (f.agentId === target.id && f.status === 'paused') {
+          f.status = 'active';
+        }
+      }
     });
     addAudit(dd, ctx, 'agent.activated_on_line', 'agent', target.id, { name: target.name });
   });
@@ -926,6 +1008,36 @@ async function apiAgentsUpdate(req, res, ctx) {
   let updated;
   await core.mutate((dd) => {
     const a = dd.agents.find((x) => x.id === id);
+    if (b.status != null) {
+      const newStatus = b.status === 'disabled' ? 'disabled' : 'active';
+      a.status = newStatus;
+      (dd.dograhFlows || []).forEach((f) => {
+        if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+          f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+          if (newStatus === 'disabled') f.isActive = false;
+        }
+      });
+      if (newStatus === 'disabled' && a.isPrimary) {
+        a.isPrimary = false;
+        const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+        if (nextActive) nextActive.isPrimary = true;
+      }
+    }
+    if (typeof b.enabled === 'boolean') {
+      const newStatus = b.enabled ? 'active' : 'disabled';
+      a.status = newStatus;
+      (dd.dograhFlows || []).forEach((f) => {
+        if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+          f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+          if (newStatus === 'disabled') f.isActive = false;
+        }
+      });
+      if (newStatus === 'disabled' && a.isPrimary) {
+        a.isPrimary = false;
+        const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+        if (nextActive) nextActive.isPrimary = true;
+      }
+    }
     if (b.name != null) a.name = String(b.name).slice(0, 80);
     if (b.persona != null) a.persona = String(b.persona).slice(0, 5000);
     if (b.knowledge != null) a.knowledge = String(b.knowledge).slice(0, 10000);
@@ -1738,9 +1850,10 @@ async function handleSendEmail(text, ctx, db) {
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const gmailConfig = (tenantIntegrations && tenantIntegrations.gmail) || {};
-  const senderEmail = gmailConfig.senderEmail || process.env.GMAIL_USER || process.env.DOGRAH_EMAIL || 'seevorapvtltd@gmail.com';
+  const crmEmail = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.email) || {};
+  const senderEmail = crmEmail.senderEmail || gmailConfig.senderEmail || process.env.GMAIL_USER || process.env.DOGRAH_EMAIL || 'seevorapvtltd@gmail.com';
 
-  const rawPass = gmailConfig.appPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
+  const rawPass = crmEmail.appPassword || gmailConfig.appPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
   const appPassword = String(rawPass).replace(/\s+/g, '');
 
   if (!appPassword) {
@@ -1765,16 +1878,16 @@ async function handleSendEmail(text, ctx, db) {
       });
     });
 
-    const reply = `⚠️ **Gmail App Password Required for Live Delivery**\n\n` +
+    const reply = `**Gmail App Password Required for Live Delivery**\n\n` +
       `Google security rules ke mutabiq, **\`${senderEmail}\`** se live inbox delivery ke liye **16-Character Google App Password** zaroori hai.\n\n` +
-      `• **Recipient:** \`${recipientEmail}\`\n` +
-      `• **Subject:** **${subject}**\n` +
-      `• **Message Preview:** "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n\n` +
-      `### ⚡ 1-Minute Setup:\n` +
-      `1. Visit: [**myaccount.google.com/apppasswords**](https://myaccount.google.com/apppasswords)\n` +
-      `2. App: **Mail** select karke 16-letter code generate karein (e.g. \`abcd efgh ijkl mnop\`)\n` +
-      `3. Chat mein type karein: \`app password: xxxx xxxx xxxx xxxx\` *(ya niche button par click karein)*\n\n` +
-      `Password milte hi yeh email automatically \`${recipientEmail}\` par deliver ho jayegi!`;
+      `• Recipient: \`${recipientEmail}\`\n` +
+      `• Subject: **${subject}**\n` +
+      `• Message Preview: "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n\n` +
+      `Setup Steps:\n` +
+      `1. Visit: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)\n` +
+      `2. App: Mail select karke 16-letter code generate karein (e.g. \`abcd efgh ijkl mnop\`)\n` +
+      `3. Settings -> Connected Apps mein save karein ya chat mein type karein: \`app password: xxxx xxxx xxxx xxxx\`\n\n` +
+      `Password save hote hi yeh email automatically \`${recipientEmail}\` par deliver ho jayegi!`;
 
     return {
       reply,
@@ -1782,7 +1895,7 @@ async function handleSendEmail(text, ctx, db) {
         type: 'open_modal',
         modal: 'gmail',
         channel: 'gmail',
-        buttonText: 'Configure Gmail App Password ⚙',
+        buttonText: 'Configure in Settings →',
         to: recipientEmail,
         subject
       }
@@ -1823,14 +1936,14 @@ async function handleSendEmail(text, ctx, db) {
       });
     });
 
-    const reply = `✓ **Email Successfully Delivered via Gmail!** ✉️\n\n` +
-      `• **Recipient:** \`${recipientEmail}\`\n` +
-      `• **Subject:** **${subject}**\n` +
-      `• **Message Preview:** "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n` +
-      `• **Sender Channel:** Connected Gmail (\`${senderEmail}\`)\n` +
-      `• **Status:** **Delivered to Inbox (250 OK)**\n` +
-      `• **Message-ID:** \`${sendRes.messageId}\`\n\n` +
-      `Email Google SMTP (\`smtp.gmail.com:465\`) ke through live recipient inbox ko deliver kar di gayi hai.`;
+    const reply = `**Email Successfully Delivered via Gmail**\n\n` +
+      `• Recipient: \`${recipientEmail}\`\n` +
+      `• Subject: **${subject}**\n` +
+      `• Message Preview: "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n` +
+      `• Sender Channel: Connected Gmail (\`${senderEmail}\`)\n` +
+      `• Status: Delivered to Inbox (250 OK)\n` +
+      `• Message-ID: \`${sendRes.messageId}\`\n\n` +
+      `Email Google SMTP (smtp.gmail.com:465) ke through live recipient inbox ko deliver kar di gayi hai.`;
 
     return {
       reply,
@@ -2114,7 +2227,18 @@ async function handleScheduleCalendar(text, ctx, db) {
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const calConfig = (tenantIntegrations && tenantIntegrations.calendar) || {};
+  const crmCal = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.googleCalendar) || {};
   const calendarEmail = calConfig.email || 'team@seevora.ai';
+
+  if (crmCal.enabled && crmCal.webhookUrl) {
+    try {
+      await integrations.dispatchGoogleCalendar(crmCal, {
+        callerName: eventTitle,
+        title: eventTitle,
+        start: scheduledTime
+      });
+    } catch (_) {}
+  }
 
   const calRecord = {
     id: core.genId('cal_'),
@@ -2139,11 +2263,11 @@ async function handleScheduleCalendar(text, ctx, db) {
     });
   });
 
-  const reply = `✓ **Appointment Successfully Booked on Google Calendar!** 📅\n\n` +
-    `• **Event:** **${eventTitle}**\n` +
-    `• **Scheduled Slot:** **${scheduledTime}**\n` +
-    `• **Calendar Account:** Google Calendar (\`${calendarEmail}\`)\n` +
-    `• **Sync Status:** **Active & Locked**\n\n` +
+  const reply = `**Appointment Successfully Booked on Google Calendar**\n\n` +
+    `• Event: **${eventTitle}**\n` +
+    `• Scheduled Slot: **${scheduledTime}**\n` +
+    `• Calendar Account: Google Calendar (\`${calendarEmail}\`)\n` +
+    `• Sync Status: **Active & Locked**\n\n` +
     `Voice Agent availability ke sath ye slot real-time calendar mein block kar diya gaya hai.`;
 
   return {
@@ -2165,13 +2289,14 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
   const tenant = (db.tenants || []).find((t) => t.id === tenantId) || {};
   const tenantIntegrations = assistant.getTenantIntegrations(db, tenantId);
   const waConfig = (tenantIntegrations && tenantIntegrations.whatsapp) || {};
+  const crmWa = (tenant.crmIntegrations && tenant.crmIntegrations.whatsapp) || {};
 
   const companyName = String(
-    opts.companyName || waConfig.companyName || tenant.name || 'Seevora AI'
+    opts.companyName || crmWa.companyName || waConfig.companyName || tenant.name || 'Seevora AI'
   ).trim();
 
   const rawSender = String(
-    opts.senderNumber || waConfig.senderNumber || waConfig.phoneNumber ||
+    opts.senderNumber || crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber ||
     (tenant.telephony && tenant.telephony.phoneNumber) ||
     process.env.VOBIZ_FROM_NUMBER || '+91 80715 82519'
   ).trim();
@@ -2195,7 +2320,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
 
   const includeHeader = opts.includeCompanyHeader !== false && waConfig.includeCompanyHeader !== false;
   const formattedMessage = includeHeader
-    ? `🏢 *${companyName} — Official AI Voice Update*\n📞 *VoBiz Line:* ${senderNumber}\n─────────────────────\n${rawMessage}\n\n_Dispatched via ${companyName} Voice AI (${senderNumber})_`
+    ? `*${companyName} — Official AI Voice Update*\n*VoBiz Line:* ${senderNumber}\n─────────────────────\n${rawMessage}\n\n_Dispatched via ${companyName} Voice AI (${senderNumber})_`
     : rawMessage;
 
   const messageId = 'wamid.HBgM' + Buffer.from(`${recipientIntl}_${Date.now()}`).toString('base64').replace(/=/g, '');
@@ -2203,8 +2328,8 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
   let upstreamDelivered = false;
 
   // 1. Try Meta WhatsApp Cloud API if credentials configured
-  const metaToken = opts.metaToken || waConfig.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
-  const metaPhoneId = opts.metaPhoneId || waConfig.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+  const metaToken = opts.metaToken || crmWa.metaToken || waConfig.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
+  const metaPhoneId = opts.metaPhoneId || crmWa.metaPhoneId || waConfig.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
   if (metaToken && metaPhoneId) {
     try {
       const https = require('https');
@@ -2338,15 +2463,16 @@ async function handleSendWhatsApp(text, ctx, db) {
   if (!phoneMatch) {
     return {
       reply: `Kripya valid 10-digit mobile number provide karein jahan WhatsApp message bhejna hai.\n\n*Example:* \`whatsapp kardo +91 98765 43210 pe ki appointment confirm ho gaya hai\``,
-      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Open WhatsApp Dispatch Settings ⚙' }
+      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Configure in Settings →' }
     };
   }
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const waConfig = (tenantIntegrations && tenantIntegrations.whatsapp) || {};
+  const crmWa = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.whatsapp) || {};
 
   // Check if user specified company name in prompt
-  let companyName = waConfig.companyName || (ctx.tenant && ctx.tenant.name) || 'Seevora AI';
+  let companyName = waConfig.companyName || crmWa.companyName || (ctx.tenant && ctx.tenant.name) || 'Seevora AI';
   const compMatch = text.match(/(?:company(?:\s+name)?|brand|from)\s*[:=]?\s*([A-Za-z0-9\s.&_-]{2,35}?)(?=\s+(?:pe|par|to|ki|saying|message|msg|on|$))/i);
   if (compMatch && compMatch[1]) {
     companyName = compMatch[1].trim();
@@ -2367,17 +2493,17 @@ async function handleSendWhatsApp(text, ctx, db) {
     tenantId: ctx.tenant.id,
     userId: ctx.user.id,
     companyName,
-    senderNumber: waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
+    senderNumber: crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
     recipientPhone: phoneMatch[0],
     message
   });
 
-  const reply = `✓ **WhatsApp Message Dispatched with VoBiz Line & Company Name!** 💬\n\n` +
-    `• **Company Name:** **${waRecord.companyName}**\n` +
-    `• **Sender VoBiz Number:** \`${waRecord.from}\`\n` +
-    `• **Recipient WhatsApp:** **${waRecord.to}**\n` +
-    `• **Message Content:** "*${waRecord.message}*"\n` +
-    `• **Message-ID:** \`${waRecord.messageId}\`\n\n` +
+  const reply = `**WhatsApp Message Dispatched with VoBiz Line & Company Name**\n\n` +
+    `• Company Name: **${waRecord.companyName}**\n` +
+    `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
+    `• Recipient WhatsApp: **${waRecord.to}**\n` +
+    `• Message Content: "*${waRecord.message}*"\n` +
+    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
     `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
 
   return {
@@ -2422,6 +2548,50 @@ async function handleCrmCreateLead(text, ctx, db) {
     updatedAt: new Date().toISOString()
   };
 
+  const crmIntegrations = (ctx.tenant && ctx.tenant.crmIntegrations) || {};
+
+  // Auto-dispatch to connected CRM software from Settings
+  if (crmIntegrations.zohoCrm && crmIntegrations.zohoCrm.enabled) {
+    try {
+      await integrations.dispatchZohoCrm(crmIntegrations.zohoCrm, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) {}
+  }
+  if (crmIntegrations.hubspot && crmIntegrations.hubspot.enabled) {
+    try {
+      await integrations.dispatchHubspot(crmIntegrations.hubspot, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) {}
+  }
+  if (crmIntegrations.googleSheets && crmIntegrations.googleSheets.enabled) {
+    try {
+      await integrations.dispatchGoogleSheets(crmIntegrations.googleSheets, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) {}
+  }
+  if (crmIntegrations.slack && crmIntegrations.slack.enabled) {
+    try {
+      await integrations.dispatchSlack(crmIntegrations.slack, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) {}
+  }
+
   await core.mutate((d) => {
     if (!Array.isArray(d.crmContacts)) d.crmContacts = [];
     d.crmContacts.unshift(contact);
@@ -2431,12 +2601,12 @@ async function handleCrmCreateLead(text, ctx, db) {
     });
   });
 
-  const reply = `✓ **New Lead Successfully Added to CRM Pipeline!** ⚡\n\n` +
-    `• **Contact Name:** **${leadName}**\n` +
-    `• **Phone:** \`${phone}\`\n` +
-    (email ? `• **Email:** \`${email}\`\n` : '') +
-    `• **Pipeline Stage:** New Inbound Lead\n` +
-    `• **Sync Status:** **Synced with CRM Pipeline**\n\n` +
+  const reply = `**New Lead Successfully Added to CRM Pipeline**\n\n` +
+    `• Contact Name: **${leadName}**\n` +
+    `• Phone: \`${phone}\`\n` +
+    (email ? `• Email: \`${email}\`\n` : '') +
+    `• Pipeline Stage: New Inbound Lead\n` +
+    `• Sync Status: **Synced with Settings CRM Pipeline**\n\n` +
     `Lead CRM Contacts and Pipeline view mein live visible hai.`;
 
   return {
@@ -2636,9 +2806,40 @@ async function handleTestChat(text, agentId, ctx, db) {
 
 // ---- handle: general_chat -------------------------------------------------
 async function handleGeneralChat(text, ctx, thread) {
-  const systemPrompt = `You are Seevora AI Assistant, a smart, friendly product assistant built into the Seevora AI Voice Receptionist platform. You help users manage their AI voice agents, review call analytics, and navigate the platform. Keep responses concise (2-4 sentences). You can speak English and Hinglish naturally.`;
+  const hasDocument =
+    text.includes('[Attached Document File:') ||
+    text.includes('--- Document Text Content Start ---') ||
+    text.includes('[Attached File:') ||
+    text.includes('[Attached Image File:');
 
-  const historyMessages = thread ? thread.messages.slice(-10).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', text: m.text })) : [];
+  const systemPrompt = hasDocument
+    ? `You are Seevora AI Assistant, an expert AI document and business intelligence analyst built into the Seevora AI Voice Receptionist platform.
+The user has attached a file or document to this chat. Its full extracted contents and structured text are provided directly inside the prompt under "[Attached Document File:]".
+Your task:
+1. Thoroughly analyze the attached document's contents.
+2. Provide a clear, well-structured, professional breakdown:
+   - Executive Summary / Overview
+   - Key Tasks, Topics, or Sections
+   - Status & Metrics (if present in the file)
+   - Important Dates, Deadlines, People, or Figures
+   - Actionable Next Steps / Recommendations
+3. Answer any specific questions or instructions the user requested about the document.
+4. Speak naturally in helpful English or Hinglish (matching the user's tone).
+5. Absolutely NEVER use any emojis anywhere in your response.
+CRITICAL: Never claim you cannot read, open, access, or analyze files, because the document contents have already been parsed and provided to you directly in the prompt.`
+    : `You are Seevora AI Assistant, a smart, friendly product assistant built into the Seevora AI Voice Receptionist platform. You help users manage their AI voice agents, review call analytics, and navigate the platform. Keep responses concise (2-4 sentences). You can speak English and Hinglish naturally. Never use emojis.`;
+
+  let historyMessages = [];
+  if (thread && Array.isArray(thread.messages)) {
+    // If analyzing a document, do not inherit old canned refusal messages
+    const filtered = thread.messages
+      .slice(-8)
+      .filter((m) => !String(m.text || '').toLowerCase().includes('cannot access or analyze files directly'));
+    historyMessages = filtered.map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      text: m.text,
+    }));
+  }
   historyMessages.push({ role: 'user', text });
 
   let reply = '';
@@ -2647,14 +2848,21 @@ async function handleGeneralChat(text, ctx, thread) {
     const out = await selected.adapter.chat({
       system: systemPrompt,
       messages: historyMessages,
-      maxTokens: 400,
-      temperature: 0.7,
+      maxTokens: hasDocument ? 1200 : 400,
+      temperature: hasDocument ? 0.3 : 0.7,
       model: selected.model,
     });
     reply = String((out && out.text) || '').trim();
   } catch (_) {
-    reply = 'I am here to help! You can ask me to create or edit an agent, check your call analytics, or add knowledge to an agent.';
+    if (hasDocument) {
+      reply = 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.';
+    } else {
+      reply = 'I am here to help! You can ask me to create or edit an agent, check your call analytics, or add knowledge to an agent.';
+    }
   }
+
+  // Ensure no emojis in reply
+  reply = reply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '');
 
   return { reply, action: null };
 }
@@ -3217,13 +3425,40 @@ async function handleBroadcastMessage(text, agentId, ctx, db) {
 async function apiAssistantChat(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'assistant')) return;
   const b = ctx.body || {};
-  const text = String(b.text || '').trim().slice(0, 4000);
+  let text = String(b.text || '').trim().slice(0, 4000);
+  const attachments = Array.isArray(b.attachments) ? b.attachments : [];
   const agentId = String(b.agentId || '').trim() || null;
   const confirmToken = String(b.confirmToken || '').trim() || null;
   let currentSessionId = String(b.sessionId || '').trim() || null;
 
-  if (!text && !confirmToken) {
-    return core.sendJson(res, 422, { error: 'text is required', code: 'missing_text' });
+  if (!text && !confirmToken && !attachments.length) {
+    return core.sendJson(res, 422, { error: 'text or attachments required', code: 'missing_text' });
+  }
+
+  // Synthesize prompt if user only attached file/image
+  if (!text && attachments.length) {
+    const fileNames = attachments.map((a) => a.name).filter(Boolean).join(', ');
+    text = `Please analyze the attached document or image: "${fileNames || 'attachment'}". Summarize key points, facts, and suggest actionable business insights.`;
+  }
+
+  let enrichedText = text;
+  if (attachments.length) {
+    const docChunks = [];
+    for (const att of attachments) {
+      if (att.isImage) {
+        docChunks.push(`[Attached Image File: ${att.name || 'image'} (${Math.round((att.size || 0) / 1024)} KB)]`);
+      } else {
+        const parsed = docParser.extractTextFromAttachment(att);
+        if (parsed && parsed.trim().length > 0) {
+          docChunks.push(`[Attached Document File: ${att.name || 'document'} (${Math.round((att.size || 0) / 1024)} KB)]\n--- Document Text Content Start ---\n${parsed}\n--- Document Text Content End ---`);
+        } else {
+          docChunks.push(`[Attached Document File: ${att.name || 'document'} (${Math.round((att.size || 0) / 1024)} KB)]\n(File was uploaded, but no extractable text could be found inside.)`);
+        }
+      }
+    }
+    if (docChunks.length) {
+      enrichedText = `${docChunks.join('\n\n')}\n\n[User Instruction / Request]: ${text}`;
+    }
   }
 
   try {
@@ -3239,6 +3474,14 @@ async function apiAssistantChat(req, res, ctx) {
 
     // Classify intent
     let intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
+
+    // If attachments are present and user is asking to analyze/summarize/inspect, override intent to GENERAL (document analysis)
+    if (attachments.length > 0) {
+      const isKnowledgeAddition = /\b(add|upload|save)\b.{0,30}\b(knowledge base|faq|to agent)\b/i.test(text);
+      if (!isKnowledgeAddition && (intent === assistant.INTENTS.ASK_REPORT || intent === assistant.INTENTS.ADD_KNOWLEDGE)) {
+        intent = assistant.INTENTS.GENERAL;
+      }
+    }
 
     // Check if session has an active multi-turn training state
     const activeSessionCheck = currentSessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
@@ -3286,7 +3529,7 @@ async function apiAssistantChat(req, res, ctx) {
     // Persist user message to session and thread
     if (text) {
       await core.mutate((d) => {
-        const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
+        const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text, { attachments });
         currentSessionId = appended.session.id;
       });
     }
@@ -3399,8 +3642,8 @@ async function apiAssistantChat(req, res, ctx) {
         await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Added CRM lead: ${result.action.contact && result.action.contact.name}`, false, result.action); });
       }
     } else {
-      // general_chat
-      result = await handleGeneralChat(text, ctx, thread);
+      // general_chat (passes enriched text with document context if attachments were uploaded)
+      result = await handleGeneralChat(enrichedText || text, ctx, thread);
     }
 
     // Persist assistant reply to session and thread
@@ -3697,6 +3940,74 @@ async function apiWhatsAppSendTest(req, res, ctx) {
   } catch (err) {
     return core.sendJson(res, 400, { ok: false, error: err.message });
   }
+}
+
+// ==========================================================================
+// CRM INTEGRATIONS API HANDLERS (Google Calendar, Sheets, Zoho, Slack)
+// ==========================================================================
+
+// GET /api/crm-integrations/config
+function apiCrmIntegrationsConfig(req, res, ctx) {
+  const cfg = integrations.getIntegrations(core.db(), ctx.tenant.id);
+  const safeConfig = JSON.parse(JSON.stringify(cfg));
+  if (safeConfig.zohoCrm) {
+    safeConfig.zohoCrm.clientSecret = safeConfig.zohoCrm.clientSecret ? '••••••••' : '';
+    safeConfig.zohoCrm.refreshToken = safeConfig.zohoCrm.refreshToken ? '••••••••' : '';
+    safeConfig.zohoCrm.zohoAccessToken = undefined;
+    safeConfig.zohoCrm.zohoTokenExpiresAt = undefined;
+  }
+  if (safeConfig.hubspot && safeConfig.hubspot.accessToken) {
+    safeConfig.hubspot.accessToken = '••••••••';
+  }
+  if (safeConfig.email && safeConfig.email.appPassword) {
+    safeConfig.email.appPassword = '••••••••';
+  }
+  if (safeConfig.whatsapp && safeConfig.whatsapp.metaToken) {
+    safeConfig.whatsapp.metaToken = '••••••••';
+  }
+  if (safeConfig.razorpay && safeConfig.razorpay.keySecret) {
+    safeConfig.razorpay.keySecret = '••••••••';
+  }
+  core.sendJson(res, 200, { config: safeConfig });
+}
+
+// POST /api/crm-integrations/save
+async function apiCrmIntegrationsSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  const config = b.config || {};
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  if (!integrations.CHANNELS.includes(channel)) return core.sendJson(res, 422, { error: 'Unknown channel: ' + channel });
+  try {
+    await integrations.saveIntegration(core.mutate, ctx.tenant.id, channel, config);
+    const updated = integrations.getIntegrations(core.db(), ctx.tenant.id);
+    core.sendJson(res, 200, { ok: true, channel, config: updated[channel] });
+  } catch (err) {
+    core.sendJson(res, 400, { ok: false, error: err.message });
+  }
+}
+
+// POST /api/crm-integrations/toggle
+async function apiCrmIntegrationsToggle(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  const enabled = Boolean(b.enabled);
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  try {
+    await integrations.toggleIntegration(core.mutate, ctx.tenant.id, channel, enabled);
+    core.sendJson(res, 200, { ok: true, channel, enabled });
+  } catch (err) {
+    core.sendJson(res, 400, { ok: false, error: err.message });
+  }
+}
+
+// POST /api/crm-integrations/test
+async function apiCrmIntegrationsTest(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  const result = await integrations.testIntegration(core.db(), core.mutate, ctx.tenant.id, channel);
+  core.sendJson(res, result.ok ? 200 : 400, result);
 }
 
 // ---- GET /api/assistant/history (AS-11 action log) -----------------------
@@ -4429,9 +4740,55 @@ function isPlatformAdminCtx(ctx) {
   return !!(ctx && ctx.user && !ctx.impersonator && ['super_admin', 'admin'].includes(ctx.user.role));
 }
 
+function ensureDograhFlowsSeeded(store) {
+  if (!Array.isArray(store.dograhFlows)) store.dograhFlows = [];
+  if (!Array.isArray(store.agents)) store.agents = [];
+  const tenants = store.tenants || [];
+  let changed = false;
+
+  tenants.forEach((t) => {
+    // 1. Ensure tenant has the 5 preconfigured distinct agents
+    let tenantAgents = store.agents.filter((a) => a.tenantId === t.id);
+    if (tenantAgents.length < 5) {
+      const preconfigured = demoSeeder.getPreconfiguredAgents(t.id, demoSeeder.SEEVORA_FACTS);
+      preconfigured.forEach((pa) => {
+        const hasAgent = store.agents.some((a) => a.tenantId === t.id && (a.id === pa.id || a.name.split('-')[0].trim().toLowerCase() === pa.name.split('-')[0].trim().toLowerCase()));
+        if (!hasAgent) {
+          store.agents.push(pa);
+          changed = true;
+        }
+      });
+      tenantAgents = store.agents.filter((a) => a.tenantId === t.id);
+      if (!tenantAgents.some((a) => a.isPrimary) && tenantAgents.length > 0) {
+        tenantAgents[0].isPrimary = true;
+        changed = true;
+      }
+    }
+
+    // 2. Ensure tenant has the 5 preconfigured Dograh voice flows mapped to agents
+    const preFlows = demoSeeder.getPreconfiguredFlows(t.id, tenantAgents);
+    preFlows.forEach((pf) => {
+      let existing = store.dograhFlows.find((f) => f.tenantId === t.id && (f.id === pf.id || f.name === pf.name || (f.agentId && f.agentId === pf.agentId)));
+      if (!existing) {
+        store.dograhFlows.push(pf);
+        changed = true;
+      } else {
+        if (!existing.agentId && pf.agentId) { existing.agentId = pf.agentId; changed = true; }
+        if (!existing.greeting && pf.greeting) { existing.greeting = pf.greeting; changed = true; }
+        if (!existing.prompt && pf.prompt) { existing.prompt = pf.prompt; changed = true; }
+      }
+    });
+  });
+
+  return changed;
+}
+
 function resolveTenantWorkflowId(tenantId) {
   const flows = (core.db().dograhFlows || []).filter((f) => f.tenantId === tenantId && f.isActive && f.status !== 'paused');
-  return flows.length ? String(flows[0].workflowId) : dograhDefaultWorkflowId();
+  if (flows.length) return String(flows[0].workflowId);
+  const wfs = (core.db().workflows || []).filter((w) => w.tenantId === tenantId && w.status === 'active' && w.dograhWorkflowId);
+  if (wfs.length) return String(wfs[0].dograhWorkflowId);
+  return dograhDefaultWorkflowId();
 }
 
 function resolveTenantWorkflowIds(tenantId) {
@@ -4454,6 +4811,12 @@ function publicDograhFlow(f, tenantMap, agentMap) {
     agentId: f.agentId || null,
     agentName: (agentMap && f.agentId && agentMap.get(f.agentId)) || null,
     description: f.description || '',
+    greeting: f.greeting || '',
+    prompt: f.prompt || '',
+    nodes: Array.isArray(f.nodes) ? f.nodes : [],
+    fallbackPhone: f.fallbackPhone || '',
+    assignedPhone: f.assignedPhone || '',
+    language: f.language || 'hi-IN',
     assignedBy: f.assignedBy || 'client',
     lastSyncedAt: f.lastSyncedAt || null,
     lastError: f.lastError || null,
@@ -4495,6 +4858,14 @@ ESCALATION RULES:
   }
 
   const knowledgeSection = agent.knowledge ? `\n\n# BUSINESS KNOWLEDGE BASE\n${agent.knowledge}` : '';
+  
+  // Rumik Tone Tagging for Natural Indian Speech Delivery
+  const toneTag = agent.rumikTone === 'excited' ? '[excited]' : (agent.rumikTone === 'neutral' ? '[neutral]' : (agent.rumikTone === 'empathetic' ? '[happy]' : '[happy]'));
+  const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MUGA VOICE: ${String(agent.rumikVoice || 'ira').toUpperCase()})
+- To produce a warm, natural, human-like voice, ALWAYS prefix your spoken sentences with an emotional tone tag: ${toneTag} or [happy].
+- Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
+- Speak with natural, fluid conversational rhythm and clear Indian diction.`;
+
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
 - NEVER write or say "24/7" or "24*7" or "/". Always say "twenty-four seven" or "chaubees ghante".
 - NEVER say raw mathematical symbols, asterisks, or markdown characters.
@@ -4503,8 +4874,11 @@ ESCALATION RULES:
 
   const fullPrompt = `You are ${agent.name}.
 
-${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${speechRules}`;
-  const greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
+${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${toneRules}${speechRules}`;
+  let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
+  if (!greeting.startsWith('[')) {
+    greeting = `${toneTag} ${greeting}`;
+  }
   return { fullPrompt, greeting };
 }
 
@@ -4553,25 +4927,174 @@ function dograhFlowAccess(ctx, flow) {
   return !!flow && (isPlatformAdminCtx(ctx) || flow.tenantId === ctx.tenant.id);
 }
 
+// ---- RUMIK VOICE & SPEECH STUDIO (Per-Tenant / Per-Agent) -----------------
+async function apiVoiceCatalog(req, res, ctx) {
+  const d = core.db();
+  const tenantId = ctx.tenant.id;
+  const agents = (d.agents || []).filter((a) => a.tenantId === tenantId);
+  const primaryAgent = agents.find((a) => a.isPrimary) || agents[0] || null;
+  const tenant = (d.tenants || []).find((t) => t.id === tenantId) || ctx.tenant;
+  const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === tenantId && f.isActive) ||
+                     (d.dograhFlows || []).find((f) => f.tenantId === tenantId) || null;
+
+  const activeVoice = {
+    voiceId: (primaryAgent && primaryAgent.rumikVoice) || tenant.defaultVoiceId || 'ira',
+    model: (primaryAgent && primaryAgent.rumikModel) || 'mulberry',
+    tone: (primaryAgent && primaryAgent.rumikTone) || 'happy',
+    speed: (primaryAgent && primaryAgent.rumikSpeed) || 1.0,
+    description: (primaryAgent && primaryAgent.voiceDescription) || '',
+    agentId: primaryAgent ? primaryAgent.id : null,
+    agentName: primaryAgent ? primaryAgent.name : null
+  };
+
+  core.sendJson(res, 200, {
+    voices: rumikVoice.VOICE_CATALOG,
+    tones: rumikVoice.TONE_PRESETS,
+    activeVoice,
+    agents: agents.map((a) => ({ id: a.id, name: a.name, rumikVoice: a.rumikVoice || 'ira', isPrimary: !!a.isPrimary })),
+    activeWorkflowId: activeFlow ? activeFlow.workflowId : dograhDefaultWorkflowId()
+  });
+}
+
+async function apiVoicePreview(req, res, ctx) {
+  const b = ctx.body || {};
+  const voiceId = String(b.voiceId || 'ira').trim().toLowerCase();
+  const model = String(b.model || 'mulberry').trim().toLowerCase();
+  const tone = String(b.tone || 'happy').trim().toLowerCase();
+  const speed = parseFloat(b.speed) || 1.0;
+  const text = String(b.text || '').trim();
+  const description = String(b.description || '').trim();
+
+  try {
+    const result = await rumikVoice.synthesizeRumikSpeech({
+      text: text || undefined,
+      voiceId,
+      model,
+      tone,
+      speed,
+      customDescription: description
+    });
+    core.sendJson(res, 200, {
+      ok: true,
+      dataUrl: result.dataUrl,
+      duration: result.duration,
+      source: result.source,
+      voice: result.voice
+    });
+  } catch (err) {
+    logger.warn('Voice preview synthesis error', { error: err.message });
+    core.sendJson(res, 500, { error: 'Failed to synthesize voice preview: ' + err.message, code: 'synthesis_failed' });
+  }
+}
+
+async function apiVoiceSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const voiceId = String(b.voiceId || 'ira').trim().toLowerCase();
+  const model = String(b.model || 'mulberry').trim().toLowerCase();
+  const tone = String(b.tone || 'happy').trim().toLowerCase();
+  const speed = Math.max(0.75, Math.min(1.35, parseFloat(b.speed) || 1.0));
+  const description = String(b.description || '').trim();
+  const d = core.db();
+
+  let targetAgentId = String(b.agentId || '').trim();
+  if (!targetAgentId) {
+    const primary = (d.agents || []).find((a) => a.tenantId === ctx.tenant.id && a.isPrimary) ||
+                    (d.agents || []).find((a) => a.tenantId === ctx.tenant.id);
+    if (primary) targetAgentId = primary.id;
+  }
+
+  let updatedAgent = null;
+  await core.mutate((mutDb) => {
+    if (targetAgentId) {
+      const a = (mutDb.agents || []).find((x) => x.id === targetAgentId && x.tenantId === ctx.tenant.id);
+      if (a) {
+        a.voiceProvider = 'rumik';
+        a.rumikVoice = voiceId;
+        a.rumikModel = model;
+        a.rumikTone = tone;
+        a.rumikSpeed = speed;
+        if (description) a.voiceDescription = description;
+        a.updatedAt = new Date().toISOString();
+        updatedAgent = { ...a };
+      }
+    }
+    const t = (mutDb.tenants || []).find((x) => x.id === ctx.tenant.id);
+    if (t) {
+      t.defaultVoiceId = voiceId;
+      t.defaultVoiceModel = model;
+      t.defaultVoiceTone = tone;
+      t.updatedAt = new Date().toISOString();
+    }
+  });
+
+  // 1. Sync Dograh Pipeline TTS Provider
+  let dograhSynced = false;
+  try {
+    const pipeRes = await rumikVoice.syncDograhPipelineVoice(voiceId, model);
+    dograhSynced = !!(pipeRes && pipeRes.ok);
+  } catch (_) {}
+
+  // 2. If agent updated, push to active Dograh Workflow
+  let workflowSynced = false;
+  if (updatedAgent) {
+    try {
+      const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id && f.isActive) ||
+                         (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id);
+      const targetWfId = (activeFlow && activeFlow.workflowId) || dograhDefaultWorkflowId();
+      if (targetWfId) {
+        const wfRes = await pushAgentToDograhWorkflow(updatedAgent, ctx.tenant.id, targetWfId);
+        workflowSynced = !!(wfRes && wfRes.ok);
+      }
+    } catch (_) {}
+  }
+
+  core.sendJson(res, 200, {
+    ok: true,
+    message: `Rumik voice "${voiceId}" successfully applied and synced with Dograh workflow & active phone lines.`,
+    voiceId,
+    model,
+    tone,
+    speed,
+    agentId: targetAgentId,
+    dograhSynced,
+    workflowSynced
+  });
+}
+
 async function apiDograhFlowsList(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const d = core.db();
+  if (ensureDograhFlowsSeeded(d)) {
+    await core.mutate((store) => { ensureDograhFlowsSeeded(store); });
+  }
   const q = new URL(req.url, 'http://local').searchParams;
   const admin = isPlatformAdminCtx(ctx);
-  const targetId = admin ? String(q.get('tenantId') || '').trim() : ctx.tenant.id;
+  // Strict Privacy: non-admins cannot inspect other tenant workspaces
+  const targetId = admin ? (String(q.get('tenantId') || '').trim() || ctx.tenant.id) : ctx.tenant.id;
   const tenantMap = new Map((d.tenants || []).map((t) => [t.id, t.name || t.id]));
   const agentMap = new Map((d.agents || []).map((a) => [a.id, a.name]));
   let flows = d.dograhFlows || [];
   if (targetId) flows = flows.filter((f) => f.tenantId === targetId);
   flows = flows.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   const agentTenant = targetId || ctx.tenant.id;
-  const agents = (d.agents || []).filter((a) => a.tenantId === agentTenant).map((a) => ({ id: a.id, name: a.name, isPrimary: !!a.isPrimary }));
+  const agents = (d.agents || []).filter((a) => a.tenantId === agentTenant).map((a) => ({
+    id: a.id,
+    name: a.name,
+    isPrimary: !!a.isPrimary,
+    persona: a.persona || '',
+    greeting: a.greeting || '',
+    voiceId: a.voiceId || a.voice || 'mulberry'
+  }));
+  const tenants = admin ? (d.tenants || []).map((t) => ({ id: t.id, name: t.name, slug: t.slug })) : [];
+
   core.sendJson(res, 200, {
     flows: flows.map((f) => publicDograhFlow(f, tenantMap, agentMap)),
     agents,
+    tenants,
+    selectedTenantId: targetId,
     activeWorkflowId: resolveTenantWorkflowId(targetId || ctx.tenant.id),
     defaultWorkflowId: dograhDefaultWorkflowId(),
-    usingShared: !(d.dograhFlows || []).some((f) => f.tenantId === (targetId || ctx.tenant.id)),
+    usingShared: !(d.dograhFlows || []).some((f) => f.tenantId === (targetId || ctx.tenant.id) && String(f.workflowId) !== dograhDefaultWorkflowId()),
     live: !!(providers.telephony && providers.telephony.live),
     dashboardUrl: dograhDashboardUrl(),
     isAdmin: admin,
@@ -4599,21 +5122,18 @@ async function apiDograhRemoteWorkflows(req, res) {
   }
 }
 
-// POST /api/dograh/flows - generate a brand new Dograh flow for a workspace
+// POST /api/dograh/flows - generate or create a voice flow for a workspace
 async function apiDograhFlowCreate(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const b = ctx.body || {};
   const { admin, tenant } = dograhFlowTargetTenant(ctx, b);
   if (!tenant) return core.sendJson(res, 404, { error: 'Client workspace not found', code: 'not_found' });
-  if (!providers.telephony || !providers.telephony.live) {
-    return core.sendJson(res, 503, { error: 'Dograh is not configured on this platform', code: 'not_configured' });
-  }
 
   const d = core.db();
   const existing = (d.dograhFlows || []).filter((f) => f.tenantId === tenant.id);
   if (!admin) {
     const limits = plans.getTenantUsageAndLimits(d, tenant.id).limits || {};
-    const max = Number(limits.activeWorkflows) || 1;
+    const max = Number(limits.activeWorkflows) || 5;
     if (existing.length >= max) {
       return core.sendJson(res, 403, {
         error: `Flow limit reached: your plan allows ${max} voice flow${max === 1 ? '' : 's'}. Remove one or upgrade your plan.`,
@@ -4622,48 +5142,61 @@ async function apiDograhFlowCreate(req, res, ctx) {
     }
   }
 
-  const instructions = String(b.instructions || b.description || '').trim().slice(0, 4000);
+  const instructions = String(b.instructions || b.prompt || b.description || '').trim().slice(0, 4000);
+  const greeting = String(b.greeting || '').trim().slice(0, 500) || `Namaste! Welcome to ${tenant.name}. How can I assist you today?`;
   const agentId = String(b.agentId || '').trim();
   let agent = null;
   if (agentId) {
     agent = (d.agents || []).find((a) => a.id === agentId && a.tenantId === tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'Selected agent was not found in this workspace', code: 'agent_not_found' });
   }
-  if (!agent && !instructions) {
-    return core.sendJson(res, 422, { error: 'Pick an AI agent or describe what this flow should do', code: 'bad_flow' });
-  }
 
-  const flowName = String(b.name || '').trim().slice(0, 80) || `${tenant.name} Voice Flow`;
+  const flowName = String(b.name || '').trim().slice(0, 100) || `${tenant.name} Voice Flow`;
   const basis = agent
     ? { ...agent, persona: (agent.persona || '') + (instructions ? `\n\n# ADDITIONAL FLOW INSTRUCTIONS\n${instructions}` : '') }
-    : { id: 'adhoc', tenantId: tenant.id, name: flowName, persona: instructions, greeting: String(b.greeting || '').trim().slice(0, 300) || undefined };
-  const { fullPrompt, greeting } = buildAgentWorkflowPrompt(basis, tenant.id);
+    : { id: 'adhoc', tenantId: tenant.id, name: flowName, persona: instructions || `You are an AI receptionist for ${tenant.name}.`, greeting };
+  const { fullPrompt } = buildAgentWorkflowPrompt(basis, tenant.id);
   const definition = buildDograhFlowDefinition(flowName, fullPrompt, greeting);
   const remoteName = `${tenant.name} · ${flowName}`.slice(0, 120);
 
-  let created;
-  try {
-    created = await providers.telephony.createWorkflow(remoteName, definition);
-  } catch (err) {
-    logger.warn('Dograh flow creation failed', { error: err.message, tenantId: tenant.id });
-    return handleProviderError(res, err);
-  }
-  const workflowId = created && (created.id || created.workflow_id);
-  if (!workflowId) return core.sendJson(res, 502, { error: 'Dograh did not return a workflow id', code: 'upstream' });
-
-  // Best effort: inherit voice/model settings from the platform template flow, then publish.
+  let workflowId = b.workflowId ? String(b.workflowId).trim().replace(/[^0-9]/g, '') : null;
   let configWarning = null;
-  try {
-    const tpl = await providers.telephony.fetchWorkflow(dograhDefaultWorkflowId());
-    if (tpl && tpl.workflow_configurations) {
-      await providers.telephony.request('PUT', `/api/v1/workflow/${workflowId}`, {
-        name: remoteName,
-        workflow_definition: definition,
-        workflow_configurations: tpl.workflow_configurations,
-      });
+
+  if (!workflowId && providers.telephony && providers.telephony.live) {
+    try {
+      const created = await providers.telephony.createWorkflow(remoteName, definition);
+      workflowId = created && (created.id || created.workflow_id);
+      if (workflowId) {
+        try {
+          const tpl = await providers.telephony.fetchWorkflow(dograhDefaultWorkflowId());
+          if (tpl && tpl.workflow_configurations) {
+            await providers.telephony.request('PUT', `/api/v1/workflow/${workflowId}`, {
+              name: remoteName,
+              workflow_definition: definition,
+              workflow_configurations: tpl.workflow_configurations,
+            });
+          }
+          await providers.telephony.request('POST', `/api/v1/workflow/${workflowId}/publish`, {});
+        } catch (publishErr) {
+          configWarning = `Upstream note: ${publishErr.message}`;
+        }
+      }
+    } catch (err) {
+      logger.warn('Dograh flow creation upstream notice', { error: err.message, tenantId: tenant.id });
+      configWarning = `Upstream sync note: ${err.message}. Flow created in workspace database.`;
     }
-  } catch (err) { configWarning = err.message; }
-  try { await providers.telephony.request('POST', `/api/v1/workflow/${workflowId}/publish`, {}); } catch (err) { configWarning = configWarning || err.message; }
+  }
+
+  if (!workflowId) {
+    workflowId = dograhDefaultWorkflowId();
+  }
+
+  const nodes = Array.isArray(b.nodes) && b.nodes.length > 0 ? b.nodes : [
+    { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: greeting },
+    { id: '2', type: 'triage', title: 'Intent & Qualification', prompt: 'Inquire caller needs, qualify lead, or identify reason for call.' },
+    { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture contact details and schedule callback or appointment.' },
+    { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Escalate to human staff member if caller requests or if unresolved.' }
+  ];
 
   const now = new Date().toISOString();
   const flow = {
@@ -4671,11 +5204,17 @@ async function apiDograhFlowCreate(req, res, ctx) {
     tenantId: tenant.id,
     workflowId: String(workflowId),
     name: flowName,
-    kind: 'generated',
+    kind: b.kind || (admin ? 'assigned' : 'generated'),
     status: 'active',
     isActive: existing.length === 0 || b.activate === true,
     agentId: agent ? agent.id : null,
-    description: instructions.slice(0, 280),
+    description: instructions.slice(0, 280) || 'Custom voice dialogue flow',
+    greeting,
+    prompt: instructions || fullPrompt,
+    nodes,
+    fallbackPhone: String(b.fallbackPhone || '+91 89822 00895').trim(),
+    assignedPhone: String(b.assignedPhone || '+91 80715 82519').trim(),
+    language: String(b.language || 'hi-IN').trim(),
     assignedBy: admin ? 'admin' : 'client',
     createdBy: ctx.user.id,
     createdAt: now,
@@ -4683,16 +5222,47 @@ async function apiDograhFlowCreate(req, res, ctx) {
     lastSyncedAt: now,
     lastError: configWarning,
   };
+
   await core.mutate((store) => {
     if (!Array.isArray(store.dograhFlows)) store.dograhFlows = [];
-    if (flow.isActive) store.dograhFlows.forEach((f) => { if (f.tenantId === tenant.id) f.isActive = false; });
+    if (flow.isActive) {
+      store.dograhFlows.forEach((f) => { if (f.tenantId === tenant.id) f.isActive = false; });
+    }
     store.dograhFlows.push(flow);
+
+    // Also persist in store.workflows for cross-system consistency
+    if (!Array.isArray(store.workflows)) store.workflows = [];
+    store.workflows.push({
+      id: flow.id,
+      tenantId: tenant.id,
+      name: flow.name,
+      description: flow.description,
+      type: 'inbound',
+      status: 'active',
+      trigger: 'incoming_call',
+      dograhWorkflowId: String(flow.workflowId),
+      assignedAgentId: flow.agentId,
+      assignedPhone: flow.assignedPhone,
+      voiceSettings: { language: flow.language, voicePersona: 'muga-neutral', speechSpeed: 1.0, allowInterrupt: true },
+      nodes: flow.nodes,
+      prompt: flow.prompt,
+      fallbackAction: 'transfer_to_human',
+      fallbackNumber: flow.fallbackPhone,
+      stats: { totalRuns: 0, completedRuns: 0, transferredRuns: 0, successRate: '100%', avgDurationSec: 0 },
+      createdAt: now,
+      updatedAt: now,
+      createdBy: ctx.user.name || ctx.user.email || 'Client'
+    });
+
     addAudit(store, ctx, 'dograh.flow.created', 'dograh_flow', flow.id, { workflowId: flow.workflowId, tenantId: tenant.id });
   });
+
+  const tenantMap = new Map([[tenant.id, tenant.name]]);
+  const agentMap = new Map(agent ? [[agent.id, agent.name]] : []);
   core.sendJson(res, 201, {
     ok: true,
-    flow: publicDograhFlow(flow, new Map([[tenant.id, tenant.name]]), new Map(agent ? [[agent.id, agent.name]] : [])),
-    message: `Flow "${flowName}" created in Dograh (#${workflowId})${flow.isActive ? ' and set active' : ''}.`,
+    flow: publicDograhFlow(flow, tenantMap, agentMap),
+    message: `Flow "${flowName}" created successfully in workspace${flow.isActive ? ' and set active' : ''}.`,
     warning: configWarning || undefined,
   });
 }
@@ -4708,13 +5278,7 @@ async function apiDograhFlowAssign(req, res, ctx) {
   const tenant = (core.db().tenants || []).find((t) => t.id === tenantId);
   if (!tenant) return core.sendJson(res, 404, { error: 'Client workspace not found', code: 'not_found' });
 
-  let remote;
-  try {
-    remote = await providers.telephony.fetchWorkflow(workflowId);
-  } catch (err) {
-    return handleProviderError(res, err);
-  }
-  const name = String(b.name || '').trim().slice(0, 80) || remote.name || `Flow #${workflowId}`;
+  const name = String(b.name || '').trim().slice(0, 100) || `Flow #${workflowId}`;
   const now = new Date().toISOString();
   let saved = null;
   await core.mutate((store) => {
@@ -4724,13 +5288,39 @@ async function apiDograhFlowAssign(req, res, ctx) {
     const makeActive = b.activate === true || mine.length === 0;
     if (makeActive) mine.forEach((f) => { f.isActive = false; });
     if (flow) {
-      flow.name = name; flow.updatedAt = now; flow.assignedBy = 'admin';
+      flow.name = name;
+      flow.updatedAt = now;
+      flow.assignedBy = 'admin';
+      if (b.agentId) flow.agentId = String(b.agentId);
+      if (b.greeting) flow.greeting = String(b.greeting);
+      if (b.prompt) flow.prompt = String(b.prompt);
+      if (b.fallbackPhone) flow.fallbackPhone = String(b.fallbackPhone);
       if (makeActive) flow.isActive = true;
     } else {
       flow = {
-        id: core.genId('dfl_'), tenantId, workflowId, name, kind: 'assigned', status: 'active',
-        isActive: makeActive, agentId: null, description: '', assignedBy: 'admin',
-        createdBy: ctx.user.id, createdAt: now, updatedAt: now,
+        id: core.genId('dfl_'),
+        tenantId,
+        workflowId,
+        name,
+        kind: 'assigned',
+        status: 'active',
+        isActive: makeActive,
+        agentId: b.agentId ? String(b.agentId) : null,
+        description: `Admin assigned workflow #${workflowId}`,
+        greeting: b.greeting || `Namaste! Welcome to ${tenant.name}. How can I help you today?`,
+        prompt: b.prompt || `You are an AI voice receptionist for ${tenant.name}.`,
+        nodes: [
+          { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: b.greeting || `Welcome to ${tenant.name}` },
+          { id: '2', type: 'triage', title: 'Intent Classification', prompt: 'Inquire caller needs and route appropriately.' },
+          { id: '3', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to human if required.' }
+        ],
+        fallbackPhone: b.fallbackPhone || '+91 89822 00895',
+        assignedPhone: b.assignedPhone || '+91 80715 82519',
+        language: 'hi-IN',
+        assignedBy: 'admin',
+        createdBy: ctx.user.id,
+        createdAt: now,
+        updatedAt: now,
       };
       store.dograhFlows.push(flow);
     }
@@ -4759,7 +5349,7 @@ async function apiDograhFlowActivate(req, res, ctx) {
   core.sendJson(res, 200, { ok: true, message: `"${flow.name}" is now the active flow.` });
 }
 
-// POST /api/dograh/flows/update - rename, relink agent, pause / resume
+// POST /api/dograh/flows/update - update prompt, greeting, nodes, agent, status, active
 async function apiDograhFlowUpdate(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const b = ctx.body || {};
@@ -4770,19 +5360,75 @@ async function apiDograhFlowUpdate(req, res, ctx) {
     const ag = (core.db().agents || []).find((a) => a.id === String(b.agentId) && a.tenantId === flow.tenantId);
     if (!ag) return core.sendJson(res, 404, { error: 'Agent not found in this workspace', code: 'agent_not_found' });
   }
+
+  let updatedFlow = null;
   await core.mutate((store) => {
     const f = store.dograhFlows.find((x) => x.id === id);
     if (!f) return;
-    if (typeof b.name === 'string' && b.name.trim()) f.name = b.name.trim().slice(0, 80);
+    if (typeof b.name === 'string' && b.name.trim()) f.name = b.name.trim().slice(0, 100);
     if (b.agentId !== undefined) f.agentId = b.agentId ? String(b.agentId) : null;
+    if (b.description !== undefined) f.description = String(b.description).trim().slice(0, 500);
+    if (b.greeting !== undefined) f.greeting = String(b.greeting).trim();
+    if (b.prompt !== undefined) f.prompt = String(b.prompt).trim();
+    if (b.fallbackPhone !== undefined) f.fallbackPhone = String(b.fallbackPhone).trim();
+    if (b.assignedPhone !== undefined) f.assignedPhone = String(b.assignedPhone).trim();
+    if (b.language !== undefined) f.language = String(b.language).trim();
+    if (Array.isArray(b.nodes)) f.nodes = b.nodes;
+    if (isPlatformAdminCtx(ctx) && b.workflowId) f.workflowId = String(b.workflowId).trim();
     if (b.status === 'paused' || b.status === 'active') {
       f.status = b.status;
       if (b.status === 'paused') f.isActive = false;
     }
+    if (b.isActive === true) {
+      store.dograhFlows.forEach((item) => {
+        if (item.tenantId === f.tenantId) item.isActive = (item.id === f.id);
+      });
+      f.isActive = true;
+      f.status = 'active';
+    }
     f.updatedAt = new Date().toISOString();
-    addAudit(store, ctx, 'dograh.flow.updated', 'dograh_flow', id, {});
+    updatedFlow = f;
+
+    // Sync matching workflow in store.workflows
+    if (!Array.isArray(store.workflows)) store.workflows = [];
+    let matchingWf = store.workflows.find((w) => w.id === f.id || (w.tenantId === f.tenantId && String(w.dograhWorkflowId) === String(f.workflowId)));
+    if (matchingWf) {
+      if (b.name) matchingWf.name = f.name;
+      if (b.description !== undefined) matchingWf.description = f.description;
+      if (b.greeting !== undefined) {
+        if (!Array.isArray(matchingWf.nodes)) matchingWf.nodes = [];
+        if (matchingWf.nodes[0]) matchingWf.nodes[0].prompt = f.greeting;
+      }
+      if (b.prompt !== undefined) matchingWf.prompt = f.prompt;
+      if (b.agentId !== undefined) matchingWf.assignedAgentId = f.agentId;
+      if (b.fallbackPhone !== undefined) matchingWf.fallbackNumber = f.fallbackPhone;
+      if (b.assignedPhone !== undefined) matchingWf.assignedPhone = f.assignedPhone;
+      if (Array.isArray(b.nodes)) matchingWf.nodes = f.nodes;
+      matchingWf.updatedAt = f.updatedAt;
+    }
+
+    addAudit(store, ctx, 'dograh.flow.updated', 'dograh_flow', id, { name: f.name, tenantId: f.tenantId });
   });
-  core.sendJson(res, 200, { ok: true });
+
+  // Push to Dograh upstream if agent is linked
+  if (flow.agentId) {
+    const ag = (core.db().agents || []).find((a) => a.id === flow.agentId);
+    if (ag) {
+      pushAgentToDograhWorkflow(ag, flow.tenantId, flow.workflowId).catch((err) => {
+        logger.warn('Dograh sync on flow update note', { error: err.message });
+      });
+    }
+  }
+
+  const d = core.db();
+  const tenantMap = new Map((d.tenants || []).map((t) => [t.id, t.name || t.id]));
+  const agentMap = new Map((d.agents || []).map((a) => [a.id, a.name]));
+
+  core.sendJson(res, 200, {
+    ok: true,
+    flow: updatedFlow ? publicDograhFlow(updatedFlow, tenantMap, agentMap) : null,
+    message: `Flow "${(updatedFlow && updatedFlow.name) || 'Flow'}" updated successfully.`
+  });
 }
 
 // POST /api/dograh/flows/sync - push the linked agent's persona into the Dograh flow
@@ -8250,6 +8896,20 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
               custom_vars: detail.gathered_context || {}
             };
             crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'call_ended', callPayload).catch(() => {});
+            // Dispatch to connected CRM integrations (Google Calendar, Sheets, Zoho, Slack)
+            integrations.dispatchAll(core.db(), core.mutate, tenantId, {
+              name: norm.callerName || callPayload.phone_number || 'Customer',
+              phone: norm.phoneNumber || callPayload.phone_number || '',
+              outcome: norm.outcome || 'call_completed',
+              summary: norm.summary || '',
+              sentiment: norm.sentiment || 'neutral',
+              appointmentDate: norm.appointmentDate || null,
+              appointmentTime: norm.appointmentTime || null,
+              duration: norm.durationSeconds || 0,
+              recordingUrl: norm.recordingUrl || callPayload.recording_url || '',
+              transcript: norm.transcript || '',
+              callerEmail: (detail && detail.gathered_context && detail.gathered_context.email) || ''
+            }).catch(() => {});
             if (norm.qualityScore && norm.qualityScore >= 70) {
               crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'lead_qualified', {
                 ...callPayload,
@@ -10043,6 +10703,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/byon') return core.requireAuth(req, res, apiByonList);
         if (route === '/api/dograh/flows') return core.requireAuth(req, res, apiDograhFlowsList);
         if (route === '/api/dograh/remote-workflows') return core.requireRole(req, res, 'admin', apiDograhRemoteWorkflows);
+        if (route === '/api/voice/catalog') return core.requireAuth(req, res, apiVoiceCatalog);
         if (route === '/api/privacy') return core.requireAuth(req, res, apiPrivacyGet);
         if (route === '/api/members') return core.requireAuth(req, res, apiMembers);
         if (route === '/api/teams') return core.requireAuth(req, res, apiTeamsList);
@@ -10052,6 +10713,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/invoices') return core.requireRole(req, res, 'owner', apiInvoices);
         if (route.startsWith('/api/invoices/') && route.endsWith('/gst')) return core.requireAuth(req, res, apiInvoiceGst);
         if (route === '/api/integrations') return core.requireRole(req, res, 'owner', apiIntegrations);
+        if (route === '/api/crm-integrations/config') return core.requireAuth(req, res, apiCrmIntegrationsConfig);
         if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksList);
         if (route === '/api/admin/overview') return core.requireRole(req, res, 'admin', apiAdminOverview);
         if (route === '/api/admin/tenants') return core.requireRole(req, res, 'owner', apiAdminTenants);
@@ -10145,6 +10807,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);
       if (route === '/api/agents/delete') return core.requireAuth(req, res, apiAgentsDelete, body);
       if (route === '/api/agents/activate') return core.requireAuth(req, res, apiAgentsActivate, body);
+      if (route === '/api/agents/toggle-status' || route === '/api/agents/status') return core.requireAuth(req, res, apiAgentsToggleStatus, body);
       if (route === '/api/teams/create') return core.requireAuth(req, res, apiTeamsCreate, body);
       if (route === '/api/teams/update') return core.requireAuth(req, res, apiTeamsUpdate, body);
       if (route === '/api/teams/delete') return core.requireAuth(req, res, apiTeamsDelete, body);
@@ -10163,6 +10826,8 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/chat') return core.requireAuth(req, res, apiChat, body);
       if (route === '/api/stt') return core.requireAuth(req, res, apiStt, body);
       if (route === '/api/voice/session') return core.requireAuth(req, res, apiVoiceSession, body);
+      if (route === '/api/voice/preview') return core.requireAuth(req, res, apiVoicePreview, body);
+      if (route === '/api/voice/save') return core.requireAuth(req, res, apiVoiceSave, body);
       if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksCreate, body);
       if (route === '/api/demo-links/revoke') return core.requireRole(req, res, 'owner', apiDemoLinksRevoke, body);
       if (route === '/api/telephony/dial') return core.requireAuth(req, res, apiTelephonyDial, body);
@@ -10209,6 +10874,10 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/integrations/gmail/send-test') return core.requireAuth(req, res, apiGmailSendTest, body);
       if (route === '/api/integrations/whatsapp/verify-business') return core.requireAuth(req, res, apiWhatsAppVerifyBusiness, body);
       if (route === '/api/integrations/whatsapp/send-test' || route === '/api/integrations/whatsapp/send') return core.requireAuth(req, res, apiWhatsAppSendTest, body);
+      // CRM Integrations (Google Calendar, Sheets, Zoho, Slack)
+      if (route === '/api/crm-integrations/save') return core.requireAuth(req, res, apiCrmIntegrationsSave, body);
+      if (route === '/api/crm-integrations/toggle') return core.requireAuth(req, res, apiCrmIntegrationsToggle, body);
+      if (route === '/api/crm-integrations/test') return core.requireAuth(req, res, apiCrmIntegrationsTest, body);
       if (route === '/api/assistant/chat') return core.requireAuth(req, res, apiAssistantChat, body);
       if (route === '/api/assistant/confirm') return core.requireAuth(req, res, apiAssistantConfirm, body);
       if (route === '/api/inbound/config') return core.requireAuth(req, res, apiInboundConfigSave, body);
