@@ -960,6 +960,86 @@ function uiIcon(name, size) {
  *   style: ''
  * }
  */
+/* ==========================================================================
+   Universal Floating Popovers & Dropdowns Dismissal Manager
+   Automatically closes open calendars, dialers, and dropdowns when another
+   button, trigger, or option is clicked.
+   ========================================================================== */
+function closeAllFloatingPopovers(exceptEl) {
+  // 1. Close calendar popover
+  const cal = document.querySelector(".sv-calendar-popover");
+  if (cal && (!exceptEl || (!cal.contains(exceptEl) && cal !== exceptEl))) {
+    const anchor = cal._anchorEl;
+    if (typeof cal._cleanup === "function") {
+      try { cal._cleanup(); } catch (_) { }
+    }
+    cal.remove();
+    if (anchor) anchor.classList.remove("active");
+  }
+
+  // 2. Close Make Call dialer popover
+  const callPop = document.querySelector(".sv-quick-call-popover");
+  if (callPop && (!exceptEl || (!callPop.contains(exceptEl) && callPop !== exceptEl))) {
+    if (typeof callPop._cleanup === "function") {
+      try { callPop._cleanup(); } catch (_) { }
+    }
+    callPop.remove();
+    const callBtn = document.getElementById("sv-make-call-btn");
+    if (callBtn) callBtn.classList.remove("active");
+  }
+
+  // 3. Close open custom dropdowns (topbar period, themed dropdowns, workspace dropdowns, agent dropdowns)
+  document.querySelectorAll(".aria-custom-dropdown.open, .sv-fc-workspace-dropdown.open, .sv-call-agent-dropdown-wrap.open").forEach(dd => {
+    if (!exceptEl || (!dd.contains(exceptEl) && dd !== exceptEl)) {
+      dd.classList.remove("open");
+      const tr = dd.querySelector(".aria-dropdown-trigger, .sv-cal-dropdown-trigger, .sv-call-agent-trigger");
+      if (tr) tr.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+// Global capture-phase dismisser so any click on another button/option immediately dismisses previously open popovers
+if (typeof window !== "undefined" && !window.__sv_capture_listener_attached) {
+  window.__sv_capture_listener_attached = true;
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!target) return;
+
+    // 1. If calendar is open and click is NOT inside calendar and NOT on its anchor button
+    const cal = document.querySelector(".sv-calendar-popover");
+    if (cal && !cal.contains(target) && (!cal._anchorEl || !cal._anchorEl.contains(target))) {
+      const anchor = cal._anchorEl;
+      if (typeof cal._cleanup === "function") {
+        try { cal._cleanup(); } catch (_) { }
+      }
+      cal.remove();
+      if (anchor) anchor.classList.remove("active");
+    }
+
+    // 2. If Make Call dialer is open and click is NOT inside it and NOT on the make call button
+    const callPop = document.querySelector(".sv-quick-call-popover");
+    if (callPop && !callPop.contains(target)) {
+      const callBtn = document.getElementById("sv-make-call-btn");
+      if (!callBtn || !callBtn.contains(target)) {
+        if (typeof callPop._cleanup === "function") {
+          try { callPop._cleanup(); } catch (_) { }
+        }
+        callPop.remove();
+        if (callBtn) callBtn.classList.remove("active");
+      }
+    }
+
+    // 3. If any custom dropdown is open and click is NOT inside it
+    document.querySelectorAll(".aria-custom-dropdown.open, .sv-fc-workspace-dropdown.open").forEach(dd => {
+      if (!dd.contains(target)) {
+        dd.classList.remove("open");
+        const tr = dd.querySelector(".aria-dropdown-trigger");
+        if (tr) tr.setAttribute("aria-expanded", "false");
+      }
+    });
+  }, true);
+}
+
 function createThemedDropdown(cfg) {
   cfg = cfg || {};
   let currentVal = cfg.value != null ? String(cfg.value) : '';
@@ -1034,13 +1114,7 @@ function createThemedDropdown(cfg) {
 
   function openDropdown() {
     if (triggerBtn.disabled) return;
-    document.querySelectorAll('.aria-custom-dropdown.open').forEach(d => {
-      if (d !== wrap) {
-        d.classList.remove('open');
-        const b = d.querySelector('.aria-dropdown-trigger');
-        if (b) b.setAttribute('aria-expanded', 'false');
-      }
-    });
+    closeAllFloatingPopovers(wrap);
     wrap.classList.add('open');
     triggerBtn.setAttribute('aria-expanded', 'true');
   }
@@ -1632,11 +1706,13 @@ function closeMakeCallDropdown() {
 }
 
 async function toggleMakeCallDropdown(anchorBtn, prefillNumber, prefillName) {
+  const existing = document.querySelector('.sv-quick-call-popover');
+  if (existing) {
+    closeMakeCallDropdown();
+    return;
+  }
   // Close any calendar popover or time dropdown
-  const timeWrap = document.getElementById('sv-time-select-wrapper');
-  if (timeWrap) timeWrap.classList.remove('open');
-  const cal = document.querySelector('.sv-calendar-popover');
-  if (cal) cal.remove();
+  closeAllFloatingPopovers();
 
   // Ensure agents are loaded
   await ensureAgents().catch(() => { });
@@ -2357,6 +2433,7 @@ function triggerVoiceDashboardAnimations(dash, m) {
    Eliminates browser native unstyled calendar popups.
    ========================================================================== */
 function showSeevoraCalendarPopover(anchorEl, opts) {
+  closeAllFloatingPopovers(anchorEl);
   const existing = document.querySelector('.sv-calendar-popover');
   if (existing) {
     const isSameAnchor = existing._anchorEl === anchorEl;
@@ -2725,6 +2802,7 @@ function renderVoiceDashboard(root, opts) {
   datePickerWrap.appendChild(dateLabel);
 
   function openCalendar() {
+    closeAllFloatingPopovers(dateLabel);
     timeDropdown.classList.remove('open');
     timeDropdownBtn.setAttribute('aria-expanded', 'false');
 
@@ -2801,17 +2879,14 @@ function renderVoiceDashboard(root, opts) {
         class: 'aria-dropdown-opt' + (isSelected ? ' selected' : ''),
         onclick: (e) => {
           e.stopPropagation();
+          closeAllFloatingPopovers();
           if (p.value === 'custom_date') {
-            timeDropdown.classList.remove('open');
-            timeDropdownBtn.setAttribute('aria-expanded', 'false');
             openCalendar();
             return;
           }
 
           currentPeriod = p.value;
           timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = p.label;
-          timeDropdown.classList.remove('open');
-          timeDropdownBtn.setAttribute('aria-expanded', 'false');
 
           const activeDateText = dash.querySelector('#sv-active-date-text');
           if (activeDateText) {
@@ -2844,8 +2919,12 @@ function renderVoiceDashboard(root, opts) {
 
   timeDropdownBtn.onclick = (e) => {
     e.stopPropagation();
-    const isOpen = timeDropdown.classList.toggle('open');
-    timeDropdownBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    const wasOpen = timeDropdown.classList.contains('open');
+    closeAllFloatingPopovers(timeDropdown);
+    if (!wasOpen) {
+      timeDropdown.classList.add('open');
+      timeDropdownBtn.setAttribute('aria-expanded', 'true');
+    }
   };
 
   document.addEventListener('click', (e) => {
@@ -2870,6 +2949,7 @@ function renderVoiceDashboard(root, opts) {
 
   const refreshBtn = el('button', { class: 'aria-btn-ghost', title: 'Refresh live data', style: 'transition:transform .6s;' }, [uiIcon('refresh', 13)]);
   refreshBtn.onclick = () => {
+    closeAllFloatingPopovers();
     refreshBtn.style.transform = 'rotate(360deg)';
     setTimeout(() => { refreshBtn.style.transform = ''; }, 650);
     syncVoiceDashboardData(timeDropdown.value);
@@ -2879,7 +2959,8 @@ function renderVoiceDashboard(root, opts) {
     class: 'aria-btn-action',
     id: 'sv-make-call-btn',
     type: 'button',
-    onclick: () => {
+    onclick: (e) => {
+      closeAllFloatingPopovers(callWrap);
       if (!isAgency && !hasActiveTelephony()) {
         toast('Please connect or request an assigned VoBiz phone number in Settings to place calls.', 'err');
         return;

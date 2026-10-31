@@ -644,7 +644,7 @@
       "tenantId": "t_61cb4c3f0a845e2a",
       "email": "admin@demo.com",
       "name": "Admin Demo",
-      "passHash": "scrypt$e44b567332b3d67c7ffb0019a96c3e95$320838c3f4afd1a2864757697861ac6d87bd1bfb39ff1d083f63df6d55ad9ab96efc5fdf384f5d59a85eb4a67f40b81c3dc838927a3f87005f64f8cb8606582c",
+      "passHash": "scrypt$7f48d72ef6b503bf3a5f4ac9bb1b5923$0d38116840c16318b6a72c7dd4559c59df7826495912344f3c085d43a629f5f4116647f8214f1ecaad708aa9a8e6f8c8e4f7ab3ad20eec15b7e296c402631bfd",
       "role": "super_admin",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.164Z",
@@ -657,7 +657,7 @@
       "tenantId": "t_4feb1d5f86369faa",
       "email": "client@demo.com",
       "name": "Client Demo",
-      "passHash": "scrypt$e78220b81c673dc1aa96bd7fad1be1a0$a5139583101a861a0cdcf003224b39704a73178a52cec56bf0c2f40b4e1fdc28a7fc78da645402a78498827d601d9b9b41b43d261235c7629aa8b29a4d0c5c3c",
+      "passHash": "scrypt$c9abfe1005047bb30f6287547a83b11f$d0d15da9aed5bb96f846d463ad6aa5477b1477dc3a750f708af82d69d1339034248e99139bc3b9a73fa5059466ecb611b081c9e3348b93a9d9f56d57652ff6ba",
       "role": "client",
       "status": "active",
       "createdAt": "2026-10-12T07:59:43.230Z",
@@ -1011,7 +1011,10 @@
       "role": "owner",
       "status": "active",
       "onboardingCompleted": true,
-      "createdAt": "2026-10-31T12:43:35.406Z"
+      "createdAt": "2026-10-31T12:43:35.406Z",
+      "assignedAgentIds": [],
+      "escalationEnabled": true,
+      "department": "Management"
     },
     {
       "id": "u_418539deace56fc2",
@@ -1022,7 +1025,10 @@
       "role": "owner",
       "status": "active",
       "onboardingCompleted": true,
-      "createdAt": "2026-10-31T12:44:26.597Z"
+      "createdAt": "2026-10-31T12:44:26.597Z",
+      "assignedAgentIds": [],
+      "escalationEnabled": true,
+      "department": "Management"
     }
   ],
   "agents": [
@@ -6167,8 +6173,8 @@
         "voice": "ira",
         "speaker": "speaker_2",
         "f0_up_key": -1,
-        "tone": "happy",
-        "description": "Warm, clear Indian-English female voice with natural conversational pacing, friendly and welcoming"
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6203,11 +6209,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "riya",
-        "speaker": "speaker_1",
-        "f0_up_key": 1,
-        "tone": "happy",
-        "description": "Empathetic, patient, active listening Indian female voice ideal for resolving customer issues"
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6242,11 +6248,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "arav",
-        "speaker": "speaker_3",
-        "f0_up_key": -2,
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
         "tone": "neutral",
-        "description": "Authoritative, confident, crisp male voice for high-conversion sales and discovery"
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6281,11 +6287,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "ananya",
+        "voice": "ira",
         "speaker": "speaker_2",
-        "f0_up_key": 0,
-        "tone": "happy",
-        "description": "Polished, articulate, modern Indian female voice with executive clarity"
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6320,11 +6326,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "dev",
-        "speaker": "speaker_4",
-        "f0_up_key": -3,
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
         "tone": "neutral",
-        "description": "Calm, reassuring, deep male voice specialized in step-by-step technical problem solving"
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6362,8 +6368,8 @@
         "voice": "ira",
         "speaker": "speaker_2",
         "f0_up_key": -1,
-        "tone": "happy",
-        "description": "Warm, clear Indian-English female voice with natural conversational pacing, friendly and welcoming"
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6398,11 +6404,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "riya",
-        "speaker": "speaker_1",
-        "f0_up_key": 1,
-        "tone": "happy",
-        "description": "Empathetic, patient, active listening Indian female voice ideal for resolving customer issues"
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6437,11 +6443,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "arav",
-        "speaker": "speaker_3",
-        "f0_up_key": -2,
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
         "tone": "neutral",
-        "description": "Authoritative, confident, crisp male voice for high-conversion sales and discovery"
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6476,11 +6482,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "ananya",
+        "voice": "ira",
         "speaker": "speaker_2",
-        "f0_up_key": 0,
-        "tone": "happy",
-        "description": "Polished, articulate, modern Indian female voice with executive clarity"
+        "f0_up_key": -1,
+        "tone": "neutral",
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -6515,11 +6521,11 @@
       "tts": {
         "provider": "rumik",
         "model": "mulberry",
-        "voice": "dev",
-        "speaker": "speaker_4",
-        "f0_up_key": -3,
+        "voice": "ira",
+        "speaker": "speaker_2",
+        "f0_up_key": -1,
         "tone": "neutral",
-        "description": "Calm, reassuring, deep male voice specialized in step-by-step technical problem solving"
+        "description": "a warm, clear Indian-English female voice with a natural conversational tone, friendly and professional, equally natural in English, Hindi, and Hinglish"
       },
       "stt": {
         "provider": "deepgram",
@@ -13302,69 +13308,289 @@
       "minutes": 28,
       "llmTokens": 22000,
       "costInr": 56.52
+    },
+    {
+      "id": "usg_b08b9abbd1ca4fde",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-18",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_aafcc479a36eda04",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-19",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_44aff0042bc87390",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-20",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_af4186188a2d8796",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-21",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_a070e4047048de21",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-22",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_0698db58a53332f3",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-23",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_93ca368c471c5872",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-24",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_3fe6af1e3b3adb63",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-25",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_653993977cd96136",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-26",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_b7ba6339eb9240da",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-27",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_60cabd7d3fdbbde3",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-28",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_72fbd48774afda91",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-29",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_ffea3510399c0a12",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-30",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_b70607dff29f8ae7",
+      "tenantId": "t_c052fcc0b83c8094",
+      "day": "2026-10-31",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_3d01bbc53a80eeee",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-18",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_e994d9b01688996d",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-19",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_2a16788e96e6dcf1",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-20",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_d73b810258cc7274",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-21",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_b8ba968dc2d601e4",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-22",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_30f4760a288baaa2",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-23",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_68022dac3e9077fa",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-24",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_b5a6ac58df7807e1",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-25",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
+    },
+    {
+      "id": "usg_cdf7f6c5f25088ff",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-26",
+      "calls": 34,
+      "chars": 33500,
+      "minutes": 68,
+      "llmTokens": 42000,
+      "costInr": 136.62
+    },
+    {
+      "id": "usg_1f5425fa38ac2088",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-27",
+      "calls": 30,
+      "chars": 30000,
+      "minutes": 60,
+      "llmTokens": 38000,
+      "costInr": 120.6
+    },
+    {
+      "id": "usg_f209176f04d9d43a",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-28",
+      "calls": 26,
+      "chars": 26500,
+      "minutes": 52,
+      "llmTokens": 34000,
+      "costInr": 104.58
+    },
+    {
+      "id": "usg_6921723d3ccde170",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-29",
+      "calls": 22,
+      "chars": 23000,
+      "minutes": 44,
+      "llmTokens": 30000,
+      "costInr": 88.56
+    },
+    {
+      "id": "usg_496f98498ef37a3a",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-30",
+      "calls": 18,
+      "chars": 19500,
+      "minutes": 36,
+      "llmTokens": 26000,
+      "costInr": 72.54
+    },
+    {
+      "id": "usg_2e1f8fb73b176e7c",
+      "tenantId": "t_6dde2485b47723f3",
+      "day": "2026-10-31",
+      "calls": 14,
+      "chars": 16000,
+      "minutes": 28,
+      "llmTokens": 22000,
+      "costInr": 56.52
     }
   ],
   "sessions": [
-    {
-      "tokenHash": "cc2edf07bfd55da4e1a9055a61b2f9cc98aeec5e3379d5d25f5ac1d6b7dbc8c2",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1793877885872
-    },
-    {
-      "tokenHash": "db248cab4b388ef4053ef11c750680c4236d5ebca4324b312214cbe9f950e217",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1793950679451
-    },
-    {
-      "tokenHash": "8e9cbf3bc79439cd95fee6da976111bd944eb32651059839d210c5c09891d222",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794041699825
-    },
-    {
-      "tokenHash": "98e667c9b59bfc68c737406146486bbb80f96d29ad1285bb72a579b88d5085ae",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794041718993
-    },
-    {
-      "tokenHash": "c4f1072f1ed03452086d7f2d83de0ef82d286bb7394947643675ab939c02d1b3",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794041737088
-    },
-    {
-      "tokenHash": "37dac8081cc1e93038473ecfc6a68c50d984d96da71ff4a23f3440f5c984e84d",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794042042043
-    },
-    {
-      "tokenHash": "6bdf066261a9458b38a4dd78ff123d0a5af479e9a61172ac366bc34bae66527f",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794042056085
-    },
-    {
-      "tokenHash": "82b63e2c579cea2cb91e71a88e0492f3e2a69441e9c399ad0dc3d8108fca257e",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794042066754
-    },
-    {
-      "tokenHash": "192cc4d005d740015a1820f67095d57dbbbb016cdaf6d8d281f04698852032c6",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794044472483
-    },
-    {
-      "tokenHash": "d1ccaddcbfe6cbaff94f62c67f8cd759692454daddc0ef160336daec1ad351d6",
-      "userId": "u_c6b5f6cf84425987",
-      "tenantId": "t_4feb1d5f86369faa",
-      "exp": 1794044506850
-    },
     {
       "tokenHash": "add6351f69d0ada66945de262b8a7c8b26eacce894249b797bb78b027e8cb3ef",
       "userId": "u_9615cb3586082da5",
@@ -13420,10 +13646,10 @@
       "exp": 1794055415334
     },
     {
-      "tokenHash": "09c76b597325c642941cfe8568a74abb39648301403ff9d772acdb4154a32fab",
+      "tokenHash": "3cbf252ee3926e90beb839f0c1a23e715fa885c1fa562e0c303e6ab0e8faddd3",
       "userId": "u_9615cb3586082da5",
       "tenantId": "t_61cb4c3f0a845e2a",
-      "exp": 1794060574403
+      "exp": 1794065936918
     }
   ],
   "wallets": [
@@ -13439,9 +13665,9 @@
       "id": "wal_e6c3ee68469e43ec",
       "tenantId": "t_4feb1d5f86369faa",
       "currency": "INR",
-      "balancePaise": 194976,
+      "balancePaise": 94976,
       "createdAt": "2026-10-12T07:59:43.230Z",
-      "updatedAt": "2026-10-31T10:31:31.334Z"
+      "updatedAt": "2026-10-31T15:39:14.441Z"
     },
     {
       "id": "wal_05c94f9962307447",
@@ -13932,7 +14158,7 @@
       "id": "wal_f87afcda257ace06",
       "tenantId": "t_c052fcc0b83c8094",
       "currency": "INR",
-      "balancePaise": 0,
+      "balancePaise": 250000,
       "createdAt": "2026-10-31T12:43:35.406Z",
       "updatedAt": "2026-10-31T12:43:35.406Z"
     },
@@ -13940,7 +14166,7 @@
       "id": "wal_f6c9e15b79152620",
       "tenantId": "t_6dde2485b47723f3",
       "currency": "INR",
-      "balancePaise": 0,
+      "balancePaise": 250000,
       "createdAt": "2026-10-31T12:44:26.597Z",
       "updatedAt": "2026-10-31T12:44:26.597Z"
     }
@@ -14142,6 +14368,19 @@
         "reason": ""
       },
       "createdAt": "2026-10-31T10:31:31.334Z"
+    },
+    {
+      "id": "led_f6f112758038a488",
+      "tenantId": "t_4feb1d5f86369faa",
+      "type": "admin_adjustment",
+      "amountPaise": -100000,
+      "balanceAfterPaise": 94976,
+      "idempotencyKey": "admin:ui_1793461154430_a9tqwv5x14d",
+      "actorUserId": "u_9615cb3586082da5",
+      "metadata": {
+        "reason": ""
+      },
+      "createdAt": "2026-10-31T15:39:14.441Z"
     }
   ],
   "paymentIntents": [
@@ -14477,6 +14716,26 @@
       "category": "voice_ai",
       "createdAt": "2026-10-24T12:43:19.880Z",
       "updatedAt": "2026-10-25T12:43:19.880Z"
+    },
+    {
+      "id": "tick_tc052fcc_01",
+      "tenantId": "t_c052fcc0b83c8094",
+      "subject": "Custom Hindi Tone Calibration for Voice Receptionist",
+      "status": "resolved",
+      "priority": "normal",
+      "category": "voice_ai",
+      "createdAt": "2026-10-24T14:21:27.102Z",
+      "updatedAt": "2026-10-25T14:21:27.102Z"
+    },
+    {
+      "id": "tick_t6dde248_01",
+      "tenantId": "t_6dde2485b47723f3",
+      "subject": "Custom Hindi Tone Calibration for Voice Receptionist",
+      "status": "resolved",
+      "priority": "normal",
+      "category": "voice_ai",
+      "createdAt": "2026-10-24T14:21:27.104Z",
+      "updatedAt": "2026-10-25T14:21:27.104Z"
     }
   ],
   "supportMessages": [
@@ -16741,6 +17000,99 @@
         "name": "akjfn"
       },
       "createdAt": "2026-10-31T12:45:08.172Z"
+    },
+    {
+      "id": "aud_194aceafb53fedc8",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.created",
+      "targetType": "tenant",
+      "targetId": "t_855318c5e094075f",
+      "metadata": {
+        "ownerCreated": true,
+        "ownerEmail": "animeshj425@gmail.com"
+      },
+      "createdAt": "2026-10-31T15:38:40.697Z"
+    },
+    {
+      "id": "aud_c69ebef101d52a47",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.deleted",
+      "targetType": "tenant",
+      "targetId": "t_855318c5e094075f",
+      "metadata": {
+        "name": "asdsdasd"
+      },
+      "createdAt": "2026-10-31T15:38:44.524Z"
+    },
+    {
+      "id": "aud_8c9c4f68a0bba189",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.status",
+      "targetType": "tenant",
+      "targetId": "t_4feb1d5f86369faa",
+      "metadata": {
+        "status": "suspended"
+      },
+      "createdAt": "2026-10-31T15:38:46.885Z"
+    },
+    {
+      "id": "aud_3833463beac51fd2",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.status",
+      "targetType": "tenant",
+      "targetId": "t_4feb1d5f86369faa",
+      "metadata": {
+        "status": "active"
+      },
+      "createdAt": "2026-10-31T15:38:48.557Z"
+    },
+    {
+      "id": "aud_424529125b5e19f2",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.status",
+      "targetType": "tenant",
+      "targetId": "t_4feb1d5f86369faa",
+      "metadata": {
+        "status": "suspended"
+      },
+      "createdAt": "2026-10-31T15:38:49.951Z"
+    },
+    {
+      "id": "aud_487a782694028a71",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.tenant.status",
+      "targetType": "tenant",
+      "targetId": "t_4feb1d5f86369faa",
+      "metadata": {
+        "status": "active"
+      },
+      "createdAt": "2026-10-31T15:39:04.945Z"
+    },
+    {
+      "id": "aud_4e74c44cf0ca186f",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "actorUserId": "u_9615cb3586082da5",
+      "subjectUserId": null,
+      "action": "admin.wallet.adjusted",
+      "targetType": "tenant",
+      "targetId": "t_4feb1d5f86369faa",
+      "metadata": {
+        "amountPaise": -100000,
+        "ledgerId": "led_f6f112758038a488"
+      },
+      "createdAt": "2026-10-31T15:39:14.441Z"
     }
   ],
   "presets": [
@@ -17852,6 +18204,74 @@
       "createdAt": "2026-10-10T09:15:00.000Z",
       "updatedAt": "2026-10-10T09:15:00.000Z",
       "issuedAt": "2026-10-10T09:15:00.000Z"
+    },
+    {
+      "id": "inv_tc052fcc_01",
+      "tenantId": "t_c052fcc0b83c8094",
+      "invoiceNumber": "SV-2026-9678",
+      "clientName": "Omega Health Center",
+      "clientEmail": "billing@workspace.in",
+      "description": "Growth Plan Subscription (Quarterly AI Voice Receptionist)",
+      "amountPaise": 899700,
+      "currency": "INR",
+      "issueDate": "2026-10-01",
+      "dueDate": "2026-10-15",
+      "status": "paid",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-02T14:30:00.000Z",
+      "issuedAt": "2026-10-01T10:00:00.000Z"
+    },
+    {
+      "id": "inv_tc052fcc_02",
+      "tenantId": "t_c052fcc0b83c8094",
+      "invoiceNumber": "SV-2026-8980",
+      "clientName": "Omega Health Center",
+      "clientEmail": "billing@workspace.in",
+      "description": "Outbound Telephony Minutes Pack & Priority Support",
+      "amountPaise": 250000,
+      "currency": "INR",
+      "issueDate": "2026-10-10",
+      "dueDate": "2026-10-24",
+      "status": "issued",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-10T09:15:00.000Z",
+      "updatedAt": "2026-10-10T09:15:00.000Z",
+      "issuedAt": "2026-10-10T09:15:00.000Z"
+    },
+    {
+      "id": "inv_t6dde248_01",
+      "tenantId": "t_6dde2485b47723f3",
+      "invoiceNumber": "SV-2026-2459",
+      "clientName": "ABC",
+      "clientEmail": "billing@workspace.in",
+      "description": "Growth Plan Subscription (Quarterly AI Voice Receptionist)",
+      "amountPaise": 899700,
+      "currency": "INR",
+      "issueDate": "2026-10-01",
+      "dueDate": "2026-10-15",
+      "status": "paid",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-02T14:30:00.000Z",
+      "issuedAt": "2026-10-01T10:00:00.000Z"
+    },
+    {
+      "id": "inv_t6dde248_02",
+      "tenantId": "t_6dde2485b47723f3",
+      "invoiceNumber": "SV-2026-1162",
+      "clientName": "ABC",
+      "clientEmail": "billing@workspace.in",
+      "description": "Outbound Telephony Minutes Pack & Priority Support",
+      "amountPaise": 250000,
+      "currency": "INR",
+      "issueDate": "2026-10-10",
+      "dueDate": "2026-10-24",
+      "status": "issued",
+      "deliveryStatus": "sent",
+      "createdAt": "2026-10-10T09:15:00.000Z",
+      "updatedAt": "2026-10-10T09:15:00.000Z",
+      "issuedAt": "2026-10-10T09:15:00.000Z"
     }
   ],
   "invoiceEvents": [
@@ -17926,10 +18346,745 @@
       "summary": "Client workspace \"ABC\" created with owner animeshj425@gmail.com.",
       "actorUserId": "u_9615cb3586082da5",
       "createdAt": "2026-10-31T12:44:26.597Z"
+    },
+    {
+      "id": "act_aaa79d65c2314fa7",
+      "tenantId": "t_4feb1d5f86369faa",
+      "type": "status_changed",
+      "channel": "internal",
+      "visibility": "internal",
+      "summary": "Client status changed from suspended to suspended.",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:46.885Z"
+    },
+    {
+      "id": "act_1cbedc2763a247f0",
+      "tenantId": "t_4feb1d5f86369faa",
+      "type": "status_changed",
+      "channel": "internal",
+      "visibility": "internal",
+      "summary": "Client status changed from active to active.",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:48.557Z"
+    },
+    {
+      "id": "act_ffad873fc77f3eb9",
+      "tenantId": "t_4feb1d5f86369faa",
+      "type": "status_changed",
+      "channel": "internal",
+      "visibility": "internal",
+      "summary": "Client status changed from suspended to suspended.",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:49.951Z"
+    },
+    {
+      "id": "act_a7f1f6d15322f387",
+      "tenantId": "t_4feb1d5f86369faa",
+      "type": "status_changed",
+      "channel": "internal",
+      "visibility": "internal",
+      "summary": "Client status changed from active to active.",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:39:04.944Z"
     }
   ],
-  "tenantStatusEvents": [],
+  "tenantStatusEvents": [
+    {
+      "id": "tse_5a9f1c27106a033e",
+      "tenantId": "t_4feb1d5f86369faa",
+      "fromStatus": "suspended",
+      "toStatus": "suspended",
+      "reason": "",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:46.885Z"
+    },
+    {
+      "id": "tse_2d3626c071f8c7aa",
+      "tenantId": "t_4feb1d5f86369faa",
+      "fromStatus": "active",
+      "toStatus": "active",
+      "reason": "",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:48.557Z"
+    },
+    {
+      "id": "tse_9203d0ec07d25920",
+      "tenantId": "t_4feb1d5f86369faa",
+      "fromStatus": "suspended",
+      "toStatus": "suspended",
+      "reason": "",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:38:49.951Z"
+    },
+    {
+      "id": "tse_4f05101ae61421ef",
+      "tenantId": "t_4feb1d5f86369faa",
+      "fromStatus": "active",
+      "toStatus": "active",
+      "reason": "",
+      "actorUserId": "u_9615cb3586082da5",
+      "createdAt": "2026-10-31T15:39:04.944Z"
+    }
+  ],
   "callRecordings": [
+    {
+      "id": "rec_t6dde248_10",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80109",
+      "phoneNumber": "+919820011223",
+      "callerNumber": "+919820011223",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 80,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-27T08:21:27.103Z",
+      "summary": "Home sample collection booked for tomorrow 8:00 AM.",
+      "transcript": "Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 95,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Assign phlebotomist for 8:00 AM home collection",
+      "keyTopics": [
+        "Diagnostic Tests",
+        "Home Visit"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_09",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80108",
+      "phoneNumber": "+919811190234",
+      "callerNumber": "+919811190234",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 120,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-27T12:21:27.103Z",
+      "summary": "Appointment reschedule request. Moved slot to Friday 5:00 PM.",
+      "transcript": "Agent: Namaste Amit ji! Welcome to Seevora AI Voice. How can I assist you?\nCaller: Hi Priya, can I reschedule my appointment from Thursday to Friday 5 PM?\nAgent: Absolutely! Checking our schedule... Yes, Friday at 5:00 PM is available. I have updated your slot.\nCaller: Thank you Priya, that was very quick!\nAgent: Glad to help! You will receive the updated calendar invite shortly.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 94,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Update calendar slot to Friday 5:00 PM",
+      "keyTopics": [
+        "Appointment",
+        "Reschedule"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_08",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80107",
+      "phoneNumber": "+919987654321",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919987654321",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 98,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-28T10:21:27.103Z",
+      "summary": "Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
+      "transcript": "Agent: Hello Sneha ji! This is Priya from Seevora Voice following up on your diagnostic lab report.\nCaller: Hi Priya, has the blood panel report arrived?\nAgent: Yes Sneha ji! The doctor has reviewed the report and it has been uploaded to your secure patient portal and sent on WhatsApp as a PDF.\nCaller: Excellent, I see the WhatsApp message now. Thank you!\nAgent: You are very welcome! Take care.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 78,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Deliver lab blood panel report PDF on WhatsApp",
+      "keyTopics": [
+        "Diagnostic Tests",
+        "Lab Report"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_07",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80106",
+      "phoneNumber": "+919702234110",
+      "callerNumber": "+919702234110",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 105,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-28T13:21:27.103Z",
+      "summary": "Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.",
+      "transcript": "Agent: Hello Rahul ji! Welcome to Seevora. How may I help you?\nCaller: Hello, I wanted to inquire if medical insurance cashless facility is available at your center?\nAgent: Yes Rahul ji, we have tie-ups with all major TPA and private health insurers for seamless cashless claims. Our billing desk handles approvals directly.\nCaller: That is very helpful, thank you!\nAgent: You are welcome! Feel free to call us anytime.",
+      "recordingAvailable": true,
+      "sentiment": "neutral",
+      "sentimentLabel": "Neutral",
+      "sentimentScore": {
+        "pos": 25,
+        "neu": 65,
+        "neg": 10
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 71,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Verify TPA cashless insurance policy eligibility",
+      "keyTopics": [
+        "Insurance",
+        "TPA Cashless"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_06",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80105",
+      "phoneNumber": "+919845012399",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919845012399",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 86,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-29T09:21:27.103Z",
+      "summary": "Post-visit feedback collection. Positive patient experience recorded.",
+      "transcript": "Agent: Hello Kavita! Priya here from Seevora Voice. Calling regarding your feedback from yesterday consultation.\nCaller: Oh hi Priya! The doctor was very attentive and the front desk was super efficient.\nAgent: We are delighted to hear that Kavita! A feedback link has also been shared on your WhatsApp. We look forward to serving you again.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 79,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Collect 5-star Google review feedback",
+      "keyTopics": [
+        "Feedback",
+        "Patient Care"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_05",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80104",
+      "phoneNumber": "+919920384712",
+      "callerNumber": "+919920384712",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 142,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-29T12:21:27.103Z",
+      "summary": "Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.",
+      "transcript": "Agent: Namaste Vikramaditya ji! How can I assist you today?\nCaller: Hi Priya, I need details on corporate employee wellness plans.\nAgent: We offer tailored corporate plans covering preventive checkups, routine consultations, and digital health records for teams of all sizes. May I know your approximate team size?\nCaller: We have around 45 team members right now.\nAgent: Excellent! I will connect you with our corporate relations manager Rajesh. He will share custom quote proposals today by 2 PM.\nCaller: Perfect, thank you Priya.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "interested",
+      "outcomeLabel": "Interested Lead",
+      "qualityScore": 88,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Connect with B2B Corporate Wellness Manager",
+      "keyTopics": [
+        "Corporate Wellness",
+        "B2B"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_04",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80103",
+      "phoneNumber": "+919844567890",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919844567890",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 65,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-30T11:21:27.103Z",
+      "summary": "Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed.",
+      "transcript": "Agent: Hello Pooja ji! This is Priya from Seevora Voice with a quick reminder for your scheduled appointment tomorrow morning at 11:00 AM.\nCaller: Hello Priya! Yes, thank you for reminding me. I will be there at 11 sharp.\nAgent: Glad to hear that Pooja ji! Please let us know if you need any assistance with parking or directions. See you tomorrow!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 92,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send 24h SMS & WhatsApp reminder",
+      "keyTopics": [
+        "Appointment",
+        "Follow-up"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_03",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80102",
+      "phoneNumber": "+919833456789",
+      "callerNumber": "+919833456789",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 92,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-30T13:21:27.103Z",
+      "summary": "Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.",
+      "transcript": "Agent: Namaste! Seevora Voice me aapka swagat hai. Main aapki kya sahayata kar sakti hoon?\nCaller: Namaste, mujhe clinic ke working hours aur location ke baare me puchna tha.\nAgent: Hamara clinic Monday se Saturday subah 9 baje se raat 8 baje tak khula rehta hai. Address MG Road central branch par hai. Kya aapko Google Maps location WhatsApp par share kar doon?\nCaller: Haan please, is number par WhatsApp share kar dijiye.\nAgent: Done! Map location aur directions bhej diye gaye hain.\nCaller: Shukriya Priya ji!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 76,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Log resolution in CRM contact history",
+      "keyTopics": [
+        "Timings & Location"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_02",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80101",
+      "phoneNumber": "+919811234567",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919811234567",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 78,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-31T10:21:27.103Z",
+      "summary": "Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.",
+      "transcript": "Agent: Hello Ananya! This is Priya calling from Seevora Voice following up on your website enquiry regarding our service packages.\nCaller: Hi Priya! Yes, I was looking for the pricing details and brochure.\nAgent: Wonderful! I have just dispatched our comprehensive brochure with all pricing tiers directly to your WhatsApp. Would you like me to reserve a free consultation slot?\nCaller: Let me check the brochure first, then I will reply on WhatsApp.\nAgent: Sounds great Ananya! Feel free to reply on WhatsApp anytime. Have a wonderful day!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "interested",
+      "outcomeLabel": "Interested Lead",
+      "qualityScore": 84,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send digital pricing brochure and packages",
+      "keyTopics": [
+        "Pricing",
+        "WhatsApp Share"
+      ]
+    },
+    {
+      "id": "rec_t6dde248_01",
+      "tenantId": "t_6dde2485b47723f3",
+      "dograhRunId": "80100",
+      "phoneNumber": "+919820154321",
+      "callerNumber": "+919820154321",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 114,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-31T12:21:27.103Z",
+      "summary": "Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma.",
+      "transcript": "Agent: Namaste! Thanks for calling Seevora AI Voice. Main Priya hoon, batayein aaj main aapki kya madad kar sakti hoon?\nCaller: Haan Priya ji, mujhe appointment book karna tha consultation ke liye. Aaj koi slot available hai kya?\nAgent: Bilkul! Aaj sham 4:30 PM aur 6:00 PM par Dr. Sharma ke slots available hain. Kaunsa time aapke liye convenient rahega?\nCaller: 4:30 PM wala slot book kar dijiye, under Rohan Sharma.\nAgent: Perfect Rohan ji! Aapka appointment 4:30 PM par confirm kar diya gaya hai. Confirmation details WhatsApp par bhej di gayi hain. Aur koi jankari chahiye?\nCaller: Nahi, thank you so much Priya ji!\nAgent: You are welcome, have a great day!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 96,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send WhatsApp appointment calendar invite",
+      "keyTopics": [
+        "Appointment",
+        "Doctor Consult"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_10",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80109",
+      "phoneNumber": "+919820011223",
+      "callerNumber": "+919820011223",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 80,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-27T08:21:27.102Z",
+      "summary": "Home sample collection booked for tomorrow 8:00 AM.",
+      "transcript": "Agent: Hello Deepa! Welcome to Seevora Voice. How may I assist you today?\nCaller: Hi, do you offer home sample collection for diagnostic tests?\nAgent: Yes, we provide complimentary home sample collection between 7 AM and 11 AM daily. Would you like me to book a phlebotomist visit for tomorrow?\nCaller: Yes, please book 8 AM tomorrow at Bandra West.\nAgent: All set Deepa! Our technician will arrive at 8:00 AM tomorrow. Booking confirmation sent on WhatsApp.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 95,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Assign phlebotomist for 8:00 AM home collection",
+      "keyTopics": [
+        "Diagnostic Tests",
+        "Home Visit"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_09",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80108",
+      "phoneNumber": "+919811190234",
+      "callerNumber": "+919811190234",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 120,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-27T12:21:27.102Z",
+      "summary": "Appointment reschedule request. Moved slot to Friday 5:00 PM.",
+      "transcript": "Agent: Namaste Amit ji! Welcome to Seevora AI Voice. How can I assist you?\nCaller: Hi Priya, can I reschedule my appointment from Thursday to Friday 5 PM?\nAgent: Absolutely! Checking our schedule... Yes, Friday at 5:00 PM is available. I have updated your slot.\nCaller: Thank you Priya, that was very quick!\nAgent: Glad to help! You will receive the updated calendar invite shortly.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 94,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Update calendar slot to Friday 5:00 PM",
+      "keyTopics": [
+        "Appointment",
+        "Reschedule"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_08",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80107",
+      "phoneNumber": "+919987654321",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919987654321",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 98,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-28T10:21:27.102Z",
+      "summary": "Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
+      "transcript": "Agent: Hello Sneha ji! This is Priya from Seevora Voice following up on your diagnostic lab report.\nCaller: Hi Priya, has the blood panel report arrived?\nAgent: Yes Sneha ji! The doctor has reviewed the report and it has been uploaded to your secure patient portal and sent on WhatsApp as a PDF.\nCaller: Excellent, I see the WhatsApp message now. Thank you!\nAgent: You are very welcome! Take care.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 78,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Deliver lab blood panel report PDF on WhatsApp",
+      "keyTopics": [
+        "Diagnostic Tests",
+        "Lab Report"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_07",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80106",
+      "phoneNumber": "+919702234110",
+      "callerNumber": "+919702234110",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 105,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-28T13:21:27.102Z",
+      "summary": "Inquiry regarding cashless insurance coverage. Confirmed all major TPA tie-ups.",
+      "transcript": "Agent: Hello Rahul ji! Welcome to Seevora. How may I help you?\nCaller: Hello, I wanted to inquire if medical insurance cashless facility is available at your center?\nAgent: Yes Rahul ji, we have tie-ups with all major TPA and private health insurers for seamless cashless claims. Our billing desk handles approvals directly.\nCaller: That is very helpful, thank you!\nAgent: You are welcome! Feel free to call us anytime.",
+      "recordingAvailable": true,
+      "sentiment": "neutral",
+      "sentimentLabel": "Neutral",
+      "sentimentScore": {
+        "pos": 25,
+        "neu": 65,
+        "neg": 10
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 71,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Verify TPA cashless insurance policy eligibility",
+      "keyTopics": [
+        "Insurance",
+        "TPA Cashless"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_06",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80105",
+      "phoneNumber": "+919845012399",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919845012399",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 86,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-29T09:21:27.102Z",
+      "summary": "Post-visit feedback collection. Positive patient experience recorded.",
+      "transcript": "Agent: Hello Kavita! Priya here from Seevora Voice. Calling regarding your feedback from yesterday consultation.\nCaller: Oh hi Priya! The doctor was very attentive and the front desk was super efficient.\nAgent: We are delighted to hear that Kavita! A feedback link has also been shared on your WhatsApp. We look forward to serving you again.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 79,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Collect 5-star Google review feedback",
+      "keyTopics": [
+        "Feedback",
+        "Patient Care"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_05",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80104",
+      "phoneNumber": "+919920384712",
+      "callerNumber": "+919920384712",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 142,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-29T12:21:27.102Z",
+      "summary": "Corporate wellness plan inquiry for 45 team members. Escalated to B2B manager.",
+      "transcript": "Agent: Namaste Vikramaditya ji! How can I assist you today?\nCaller: Hi Priya, I need details on corporate employee wellness plans.\nAgent: We offer tailored corporate plans covering preventive checkups, routine consultations, and digital health records for teams of all sizes. May I know your approximate team size?\nCaller: We have around 45 team members right now.\nAgent: Excellent! I will connect you with our corporate relations manager Rajesh. He will share custom quote proposals today by 2 PM.\nCaller: Perfect, thank you Priya.",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "interested",
+      "outcomeLabel": "Interested Lead",
+      "qualityScore": 88,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Connect with B2B Corporate Wellness Manager",
+      "keyTopics": [
+        "Corporate Wellness",
+        "B2B"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_04",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80103",
+      "phoneNumber": "+919844567890",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919844567890",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 65,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-30T11:21:27.102Z",
+      "summary": "Appointment reminder call for tomorrow morning 11:00 AM. Attendance confirmed.",
+      "transcript": "Agent: Hello Pooja ji! This is Priya from Seevora Voice with a quick reminder for your scheduled appointment tomorrow morning at 11:00 AM.\nCaller: Hello Priya! Yes, thank you for reminding me. I will be there at 11 sharp.\nAgent: Glad to hear that Pooja ji! Please let us know if you need any assistance with parking or directions. See you tomorrow!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 92,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send 24h SMS & WhatsApp reminder",
+      "keyTopics": [
+        "Appointment",
+        "Follow-up"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_03",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80102",
+      "phoneNumber": "+919833456789",
+      "callerNumber": "+919833456789",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 92,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-30T13:21:27.102Z",
+      "summary": "Inquiry regarding working hours and clinic address. Location link shared on WhatsApp.",
+      "transcript": "Agent: Namaste! Seevora Voice me aapka swagat hai. Main aapki kya sahayata kar sakti hoon?\nCaller: Namaste, mujhe clinic ke working hours aur location ke baare me puchna tha.\nAgent: Hamara clinic Monday se Saturday subah 9 baje se raat 8 baje tak khula rehta hai. Address MG Road central branch par hai. Kya aapko Google Maps location WhatsApp par share kar doon?\nCaller: Haan please, is number par WhatsApp share kar dijiye.\nAgent: Done! Map location aur directions bhej diye gaye hain.\nCaller: Shukriya Priya ji!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "inquiry_handled",
+      "outcomeLabel": "Inquiry Handled",
+      "qualityScore": 76,
+      "qualityTier": "Warm Lead",
+      "nextAction": "Log resolution in CRM contact history",
+      "keyTopics": [
+        "Timings & Location"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_02",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80101",
+      "phoneNumber": "+919811234567",
+      "callerNumber": "+918071582519",
+      "calledNumber": "+919811234567",
+      "direction": "outbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 78,
+      "agentName": "Priya - Outbound Followup",
+      "startedAt": "2026-10-31T10:21:27.101Z",
+      "summary": "Outbound follow-up on website enquiry. Shared digital catalog and pricing brochure via WhatsApp.",
+      "transcript": "Agent: Hello Ananya! This is Priya calling from Seevora Voice following up on your website enquiry regarding our service packages.\nCaller: Hi Priya! Yes, I was looking for the pricing details and brochure.\nAgent: Wonderful! I have just dispatched our comprehensive brochure with all pricing tiers directly to your WhatsApp. Would you like me to reserve a free consultation slot?\nCaller: Let me check the brochure first, then I will reply on WhatsApp.\nAgent: Sounds great Ananya! Feel free to reply on WhatsApp anytime. Have a wonderful day!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "interested",
+      "outcomeLabel": "Interested Lead",
+      "qualityScore": 84,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send digital pricing brochure and packages",
+      "keyTopics": [
+        "Pricing",
+        "WhatsApp Share"
+      ]
+    },
+    {
+      "id": "rec_tc052fcc_01",
+      "tenantId": "t_c052fcc0b83c8094",
+      "dograhRunId": "80100",
+      "phoneNumber": "+919820154321",
+      "callerNumber": "+919820154321",
+      "calledNumber": "+918071582519",
+      "direction": "inbound",
+      "mode": "vobiz",
+      "status": "completed",
+      "durationSeconds": 114,
+      "agentName": "Priya - Front-Desk Receptionist",
+      "startedAt": "2026-10-31T12:21:27.101Z",
+      "summary": "Caller inquired about consultation slot and clinic timings. Confirmed appointment for 4:30 PM with Dr. Sharma.",
+      "transcript": "Agent: Namaste! Thanks for calling Seevora AI Voice. Main Priya hoon, batayein aaj main aapki kya madad kar sakti hoon?\nCaller: Haan Priya ji, mujhe appointment book karna tha consultation ke liye. Aaj koi slot available hai kya?\nAgent: Bilkul! Aaj sham 4:30 PM aur 6:00 PM par Dr. Sharma ke slots available hain. Kaunsa time aapke liye convenient rahega?\nCaller: 4:30 PM wala slot book kar dijiye, under Rohan Sharma.\nAgent: Perfect Rohan ji! Aapka appointment 4:30 PM par confirm kar diya gaya hai. Confirmation details WhatsApp par bhej di gayi hain. Aur koi jankari chahiye?\nCaller: Nahi, thank you so much Priya ji!\nAgent: You are welcome, have a great day!",
+      "recordingAvailable": true,
+      "sentiment": "positive",
+      "sentimentLabel": "Positive",
+      "sentimentScore": {
+        "pos": 88,
+        "neu": 9,
+        "neg": 3
+      },
+      "outcome": "appointment_booked",
+      "outcomeLabel": "Appointment Booked",
+      "qualityScore": 96,
+      "qualityTier": "Hot Lead",
+      "nextAction": "Send WhatsApp appointment calendar invite",
+      "keyTopics": [
+        "Appointment",
+        "Doctor Consult"
+      ]
+    },
     {
       "id": "rec_t6c65a0b_10",
       "tenantId": "t_6c65a0b774d43a75",
@@ -20732,7 +21887,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:17:57.538310Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T06:21:40.551Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -20767,7 +21922,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:24:11.124413Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T06:21:40.461Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -20802,7 +21957,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:29:37.496830Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T06:21:40.976Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -20837,7 +21992,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:30:42.957094Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:02.456Z",
       "syncedAt": "2026-10-31T06:21:40.378Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -21118,7 +22273,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-29T02:51:36.781136Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:55.019Z",
+      "syncedAt": "2026-10-31T15:39:29.974Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21153,7 +22308,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-29T02:58:04.592877Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:53.852Z",
+      "syncedAt": "2026-10-31T15:39:30.262Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21188,7 +22343,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-29T02:58:12.490356Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:52.964Z",
+      "syncedAt": "2026-10-31T15:39:29.712Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21222,7 +22377,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:17:57.538310Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T09:04:58.275Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -21258,7 +22413,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:24:11.124413Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T09:04:58.091Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -21294,7 +22449,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:29:37.496830Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
       "syncedAt": "2026-10-31T09:04:58.191Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -21330,7 +22485,7 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:30:42.957094Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
+      "endedAt": "2026-10-31T15:39:02.456Z",
       "syncedAt": "2026-10-31T09:04:57.830Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
@@ -21402,7 +22557,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-29T02:39:19.892338Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:53.737Z",
+      "syncedAt": "2026-10-31T15:39:30.458Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21429,15 +22584,15 @@
       "calledNumber": "",
       "direction": "outbound",
       "mode": "textchat",
-      "status": "completed",
-      "durationSeconds": 240,
+      "status": "in_progress",
+      "durationSeconds": 0,
       "transcript": "",
       "recordingAvailable": false,
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:30:42.957094Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
-      "syncedAt": "2026-10-31T14:19:54.083Z",
+      "endedAt": null,
+      "syncedAt": "2026-10-31T15:39:30.668Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21472,8 +22627,8 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:29:37.496830Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
-      "syncedAt": "2026-10-31T14:19:53.406Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
+      "syncedAt": "2026-10-31T15:39:29.887Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21508,8 +22663,8 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:24:11.124413Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
-      "syncedAt": "2026-10-31T14:19:54.212Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
+      "syncedAt": "2026-10-31T15:39:30.066Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21544,8 +22699,8 @@
       "summary": "",
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T17:17:57.538310Z",
-      "endedAt": "2026-10-31T14:20:02.920Z",
-      "syncedAt": "2026-10-31T14:19:54.747Z",
+      "endedAt": "2026-10-31T15:39:30.562Z",
+      "syncedAt": "2026-10-31T15:39:29.806Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21837,7 +22992,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T10:10:27.190171Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:54.330Z",
+      "syncedAt": "2026-10-31T15:39:30.362Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -21872,7 +23027,7 @@
       "agentName": "Seevora AI Voice Receptionist",
       "startedAt": "2026-10-28T10:12:31.946261Z",
       "endedAt": null,
-      "syncedAt": "2026-10-31T14:19:53.949Z",
+      "syncedAt": "2026-10-31T15:39:30.160Z",
       "sentiment": "neutral",
       "sentimentLabel": "Neutral",
       "sentimentScore": {
@@ -42809,9 +43964,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.137Z",
+      "lastContactedAt": "2026-10-31T15:39:30.792Z",
       "createdAt": "2026-10-27T09:32:17.218Z",
-      "updatedAt": "2026-10-31T14:19:55.137Z"
+      "updatedAt": "2026-10-31T15:39:30.792Z"
     },
     {
       "id": "ct_b5b064c12d10c502",
@@ -42830,9 +43985,9 @@
       ],
       "notes": "[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.137Z",
+      "lastContactedAt": "2026-10-31T15:39:30.792Z",
       "createdAt": "2026-10-27T09:32:17.018Z",
-      "updatedAt": "2026-10-31T14:19:55.137Z"
+      "updatedAt": "2026-10-31T15:39:30.792Z"
     },
     {
       "id": "ct_4a9c3edb3a53c536",
@@ -42935,9 +44090,9 @@
       ],
       "notes": "[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.137Z",
+      "lastContactedAt": "2026-10-31T15:39:30.792Z",
       "createdAt": "2026-10-26T08:26:53.589Z",
-      "updatedAt": "2026-10-31T14:19:55.137Z"
+      "updatedAt": "2026-10-31T15:39:30.792Z"
     },
     {
       "id": "ct_39d209b84a7b2374",
@@ -43017,9 +44172,9 @@
       ],
       "notes": "AI Voice call completed\n\n[Voice Call 2026-10-23] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.138Z",
+      "lastContactedAt": "2026-10-31T15:39:30.794Z",
       "createdAt": "2026-10-23T08:15:19.406Z",
-      "updatedAt": "2026-10-31T14:19:55.138Z"
+      "updatedAt": "2026-10-31T15:39:30.794Z"
     },
     {
       "id": "ct_dc3eec8677011091",
@@ -43038,9 +44193,9 @@
       ],
       "notes": "Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nAI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.138Z",
+      "lastContactedAt": "2026-10-31T15:39:30.794Z",
       "createdAt": "2026-10-23T08:15:19.406Z",
-      "updatedAt": "2026-10-31T14:19:55.138Z"
+      "updatedAt": "2026-10-31T15:39:30.794Z"
     },
     {
       "id": "ct_330101d6c738477f",
@@ -43059,9 +44214,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.139Z",
+      "lastContactedAt": "2026-10-31T15:39:30.796Z",
       "createdAt": "2026-10-23T08:15:18.149Z",
-      "updatedAt": "2026-10-31T14:19:55.139Z"
+      "updatedAt": "2026-10-31T15:39:30.796Z"
     },
     {
       "id": "ct_d832111d8b120878",
@@ -43080,9 +44235,9 @@
       ],
       "notes": "[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.139Z",
+      "lastContactedAt": "2026-10-31T15:39:30.796Z",
       "createdAt": "2026-10-23T08:15:18.102Z",
-      "updatedAt": "2026-10-31T14:19:55.139Z"
+      "updatedAt": "2026-10-31T15:39:30.796Z"
     },
     {
       "id": "ct_9c1ebe3bdb9081e3",
@@ -43203,9 +44358,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup)",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.142Z",
+      "lastContactedAt": "2026-10-31T15:39:30.799Z",
       "createdAt": "2026-10-15T13:24:44.009Z",
-      "updatedAt": "2026-10-31T14:19:55.142Z"
+      "updatedAt": "2026-10-31T15:39:30.799Z"
     },
     {
       "id": "ct_2afecf19dcc1136f",
@@ -43224,9 +44379,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Company: custom AI solutions",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.142Z",
+      "lastContactedAt": "2026-10-31T15:39:30.799Z",
       "createdAt": "2026-10-15T13:23:29.893Z",
-      "updatedAt": "2026-10-31T14:19:55.142Z"
+      "updatedAt": "2026-10-31T15:39:30.799Z"
     },
     {
       "id": "ct_fabcd3b25d4b5354",
@@ -43243,9 +44398,9 @@
       ],
       "notes": "Inquiry: Diagnostic report delivery follow-up. PDF sent via WhatsApp.",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.144Z",
+      "lastContactedAt": "2026-10-31T15:39:30.801Z",
       "createdAt": "2026-10-15T13:18:15.732Z",
-      "updatedAt": "2026-10-31T14:19:55.144Z"
+      "updatedAt": "2026-10-31T15:39:30.801Z"
     },
     {
       "id": "ct_5523f59c6342985a",
@@ -43263,9 +44418,9 @@
       ],
       "notes": "Inquiry: Appointment reschedule request. Moved slot to Friday 5:00 PM. • Appointment / Booking: Friday 5:00 PM",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:15.732Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_3d8a67b402c6cc11",
@@ -43283,9 +44438,9 @@
       ],
       "notes": "Inquiry: Home sample collection booked for tomorrow 8:00 AM. • Appointment / Booking: for tomorrow",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:15.731Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_3cad41e7dafb03b0",
@@ -43305,9 +44460,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup) • Appointment / Booking: Appointment Requested",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:15.706Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_4de8b3e9fafdc1f9",
@@ -43326,9 +44481,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:14.547Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_94faf035e9d040d8",
@@ -43348,9 +44503,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: दोना पत्तल बनाने की machine के लिए inquiry • Summary: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:14.062Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_6019b1442360b7d6",
@@ -43369,9 +44524,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:13.019Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_073b11db43729681",
@@ -43392,9 +44547,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-23] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\n[Voice Call 2026-10-23] AI Voice call completed\n\nInquiry: Visited nodes: Start / Greeting (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify -> Capture Outcome (user_hangup)\n\nInquiry: Visited nodes: Start / Greeting -> Discover Intent -> Answer or Qualify (user_hangup)\n\n[Voice Call 2026-10-24] AI Voice call completed\n\n[Voice Call 2026-10-26] AI Voice call completed\n\n[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.143Z",
+      "lastContactedAt": "2026-10-31T15:39:30.800Z",
       "createdAt": "2026-10-15T13:18:10.061Z",
-      "updatedAt": "2026-10-31T14:19:55.143Z"
+      "updatedAt": "2026-10-31T15:39:30.800Z"
     },
     {
       "id": "ct_e6a6f3232d6b2202",
@@ -43418,9 +44573,9 @@
       ],
       "notes": "[Voice Call 2026-10-15] AI Voice call completed\n\n[Voice Call 2026-10-15] Inquiry: Visited nodes: Start / Greeting (user_hangup) • Appointment / Booking: Appointment Requested\n\n[Voice Call 2026-10-27] AI Voice call completed\n\n[Voice Call 2026-10-28] AI Voice call completed\n\n[Voice Call 2026-10-28] Inquiry: Visited nodes: Start / Greeting -> Discover Intent (user_hangup)\n\nInquiry: Outbound call initiated\n\nInquiry: Live outbound AI call with Animesh • [Call ended live from Dashboard by Admin Demo]\n\n[Voice Call 2026-10-29] AI Voice call completed\n\n[Voice Call 2026-10-30] AI Voice call completed\n\n[Voice Call 2026-10-31] AI Voice call completed",
       "customFields": {},
-      "lastContactedAt": "2026-10-31T14:19:55.144Z",
+      "lastContactedAt": "2026-10-31T15:39:30.801Z",
       "createdAt": "2026-10-15T13:18:09.276Z",
-      "updatedAt": "2026-10-31T14:19:55.144Z"
+      "updatedAt": "2026-10-31T15:39:30.801Z"
     },
     {
       "id": "ct_8526d195e91ac1f2",
@@ -47547,6 +48702,230 @@
       ],
       "createdAt": "2026-10-24T12:43:19.880Z",
       "updatedAt": "2026-10-31T06:43:19.880Z"
+    },
+    {
+      "id": "con_tc052fcc_1",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Rohan Sharma",
+      "phone": "+919820154321",
+      "stage": "Closed Won",
+      "dealValue": 18500,
+      "notes": "Full comprehensive consultation completed. Highly satisfied.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-30T14:21:27.102Z",
+      "updatedAt": "2026-10-31T14:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_2",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Ananya Roy",
+      "phone": "+919811234567",
+      "stage": "Proposal Sent",
+      "dealValue": 35000,
+      "notes": "Sent digital service catalog & quotation on WhatsApp.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-29T14:21:27.102Z",
+      "updatedAt": "2026-10-31T13:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_3",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Dr. Sameer Verma",
+      "phone": "+919833456789",
+      "stage": "Call Completed",
+      "dealValue": 12000,
+      "notes": "Inquired about branch address and appointment slots.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-28T14:21:27.102Z",
+      "updatedAt": "2026-10-31T12:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_4",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Vikramaditya Roy",
+      "phone": "+919920384712",
+      "stage": "Qualified",
+      "dealValue": 65000,
+      "notes": "Corporate wellness program for 45 members.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-27T14:21:27.102Z",
+      "updatedAt": "2026-10-31T11:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_5",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Pooja Agarwal",
+      "phone": "+919844567890",
+      "stage": "Closed Won",
+      "dealValue": 22000,
+      "notes": "Scheduled follow-up session. Reminder sent.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-26T14:21:27.102Z",
+      "updatedAt": "2026-10-31T10:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_6",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Rahul Mehra",
+      "phone": "+919702234110",
+      "stage": "New Lead",
+      "dealValue": 8000,
+      "notes": "Insurance cashless coverage inquiry from web widget.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-25T14:21:27.102Z",
+      "updatedAt": "2026-10-31T09:21:27.102Z"
+    },
+    {
+      "id": "con_tc052fcc_7",
+      "tenantId": "t_c052fcc0b83c8094",
+      "name": "Kavita Menon",
+      "phone": "+919845012399",
+      "stage": "Call Completed",
+      "dealValue": 15000,
+      "notes": "Positive feedback recorded for yesterday session.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-24T14:21:27.102Z",
+      "updatedAt": "2026-10-31T08:21:27.102Z"
+    },
+    {
+      "id": "con_t6dde248_1",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Rohan Sharma",
+      "phone": "+919820154321",
+      "stage": "Closed Won",
+      "dealValue": 18500,
+      "notes": "Full comprehensive consultation completed. Highly satisfied.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-30T14:21:27.103Z",
+      "updatedAt": "2026-10-31T14:21:27.103Z"
+    },
+    {
+      "id": "con_t6dde248_2",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Ananya Roy",
+      "phone": "+919811234567",
+      "stage": "Proposal Sent",
+      "dealValue": 35000,
+      "notes": "Sent digital service catalog & quotation on WhatsApp.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-29T14:21:27.103Z",
+      "updatedAt": "2026-10-31T13:21:27.103Z"
+    },
+    {
+      "id": "con_t6dde248_3",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Dr. Sameer Verma",
+      "phone": "+919833456789",
+      "stage": "Call Completed",
+      "dealValue": 12000,
+      "notes": "Inquired about branch address and appointment slots.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-28T14:21:27.104Z",
+      "updatedAt": "2026-10-31T12:21:27.104Z"
+    },
+    {
+      "id": "con_t6dde248_4",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Vikramaditya Roy",
+      "phone": "+919920384712",
+      "stage": "Qualified",
+      "dealValue": 65000,
+      "notes": "Corporate wellness program for 45 members.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-27T14:21:27.104Z",
+      "updatedAt": "2026-10-31T11:21:27.104Z"
+    },
+    {
+      "id": "con_t6dde248_5",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Pooja Agarwal",
+      "phone": "+919844567890",
+      "stage": "Closed Won",
+      "dealValue": 22000,
+      "notes": "Scheduled follow-up session. Reminder sent.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-26T14:21:27.104Z",
+      "updatedAt": "2026-10-31T10:21:27.104Z"
+    },
+    {
+      "id": "con_t6dde248_6",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Rahul Mehra",
+      "phone": "+919702234110",
+      "stage": "New Lead",
+      "dealValue": 8000,
+      "notes": "Insurance cashless coverage inquiry from web widget.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-25T14:21:27.104Z",
+      "updatedAt": "2026-10-31T09:21:27.104Z"
+    },
+    {
+      "id": "con_t6dde248_7",
+      "tenantId": "t_6dde2485b47723f3",
+      "name": "Kavita Menon",
+      "phone": "+919845012399",
+      "stage": "Call Completed",
+      "dealValue": 15000,
+      "notes": "Positive feedback recorded for yesterday session.",
+      "source": "voice_ai",
+      "tags": [
+        "voice_ai",
+        "lead"
+      ],
+      "createdAt": "2026-10-24T14:21:27.104Z",
+      "updatedAt": "2026-10-31T08:21:27.104Z"
     }
   ],
   "crmPipelines": [],
@@ -48196,7 +49575,7 @@
       "unreadCount": 0,
       "status": "open",
       "lastMessageText": "Call Completed (0s): AI Voice call completed.",
-      "lastMessageAt": "2026-10-31T14:19:55.019Z",
+      "lastMessageAt": "2026-10-31T15:39:30.460Z",
       "createdAt": "2026-10-15T13:18:09.277Z"
     },
     {
@@ -184576,6 +185955,384 @@
         }
       },
       "createdAt": "2026-10-31T14:19:55.019Z"
+    },
+    {
+      "id": "msg_e2116b88a4ef86b0",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756809",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:16.592Z"
+    },
+    {
+      "id": "msg_b3f4f058609832ad",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756146",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:17.068Z"
+    },
+    {
+      "id": "msg_457db00852748898",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756798",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:17.170Z"
+    },
+    {
+      "id": "msg_7fb540426baec975",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756807",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:17.732Z"
+    },
+    {
+      "id": "msg_71a1af9951ec8a65",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756142",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:18.487Z"
+    },
+    {
+      "id": "msg_ae48737532b34f1b",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756808",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:37:18.598Z"
+    },
+    {
+      "id": "msg_e234faaf0873883e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756809",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:01.661Z"
+    },
+    {
+      "id": "msg_bc0562462aa984cd",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756808",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:01.849Z"
+    },
+    {
+      "id": "msg_647412854742c700",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756146",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:02.062Z"
+    },
+    {
+      "id": "msg_7f5f8b1ad1b3a28a",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756798",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:02.165Z"
+    },
+    {
+      "id": "msg_5dd3ab05c11e45c0",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756807",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:02.365Z"
+    },
+    {
+      "id": "msg_3865ef46288e0c3a",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756142",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:02.566Z"
+    },
+    {
+      "id": "msg_462dfd81fc0a8dc2",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756809",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:29.712Z"
+    },
+    {
+      "id": "msg_8407e8aa2833007e",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756807",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:29.975Z"
+    },
+    {
+      "id": "msg_f1781a79e02e0d76",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756146",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:30.161Z"
+    },
+    {
+      "id": "msg_ae5591c46a8df557",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756808",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:30.263Z"
+    },
+    {
+      "id": "msg_ee23cef69cdf0a39",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756142",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:30.362Z"
+    },
+    {
+      "id": "msg_05e082e52bdad758",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "conversationId": "conv_121544ec4d723990",
+      "contactId": "ct_e6a6f3232d6b2202",
+      "phone": "+917974315518",
+      "direction": "system",
+      "type": "call_summary",
+      "text": "Call Completed (0s): AI Voice call completed.",
+      "status": "delivered",
+      "metadata": {
+        "callId": "756798",
+        "disposition": "error",
+        "extracted": {
+          "dealValue": 0,
+          "requirement": "",
+          "appointment": ""
+        }
+      },
+      "createdAt": "2026-10-31T15:39:30.460Z"
     }
   ],
   "waTemplates": [],
@@ -188680,11 +190437,363 @@
       "createdBy": "u_9615cb3586082da5",
       "createdAt": "2026-10-26T08:25:56.249Z",
       "updatedAt": "2026-10-26T08:25:56.249Z",
-      "lastFiredAt": "2026-10-31T14:20:00.952Z",
+      "lastFiredAt": "2026-10-31T15:39:40.047Z",
       "lastStatus": 200
     }
   ],
   "crmWebhookLogs": [
+    {
+      "id": "whlog_1390768a175e",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_f6f60b7b31bcf616",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=e6f12e3dc738f4d7f81bada6c1cc6e752d1ce60fcc73f981f3c9a67fd9ab3219\",\n    \"X-Seevora-Timestamp\": \"1793461178721\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_f6f60b7b31bcf616\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:40.047Z"
+    },
+    {
+      "id": "whlog_d5211ab56b4b",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_b9752fb63898cd39",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=7d76b78d396c7c520630cef6cbe999c93f8d1b48004a12bc8533a051415deab5\",\n    \"X-Seevora-Timestamp\": \"1793461178723\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_b9752fb63898cd39\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:39.965Z"
+    },
+    {
+      "id": "whlog_6e9149d8c294",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_13ab960d13d939ed",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=2004c29bbeae3ffd37cf8da1c8a3e1a035fcd0bb874f7e33abb0da7b82e1040c\",\n    \"X-Seevora-Timestamp\": \"1793461178628\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_13ab960d13d939ed\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:38.970Z"
+    },
+    {
+      "id": "whlog_25616bf2b5b4",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_3af6363b89f7478e",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=e9894d2bf00cd1adc38b88a8f9c23e582ed55c9ecc1b68660591c1d7b1791818\",\n    \"X-Seevora-Timestamp\": \"1793461173014\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_3af6363b89f7478e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:33.620Z"
+    },
+    {
+      "id": "whlog_0297a0debbbe",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_dc563e8f2f698801",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=659ae37fc50004dbafeb193d7cc9a4b66508cf37c3948236106ff2ed56944607\",\n    \"X-Seevora-Timestamp\": \"1793461173012\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_dc563e8f2f698801\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:33.537Z"
+    },
+    {
+      "id": "whlog_f472e0faf548",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_1df294845d3bb668",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=b95ecf8978cc98937aaf423ed0938fbb4bb7010a00b6d87e550cfdb8a7e6c808\",\n    \"X-Seevora-Timestamp\": \"1793461173013\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_1df294845d3bb668\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:33.447Z"
+    },
+    {
+      "id": "whlog_1a8ded28fc8f",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_941e7b46411a045e",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=2dc0f2e77c3add5bdfef7dc25e366109d5374369046077b7400ea46f1e289edb\",\n    \"X-Seevora-Timestamp\": \"1793461170359\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_941e7b46411a045e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:31.894Z"
+    },
+    {
+      "id": "whlog_289993d14c8f",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_6294c513d27c76a4",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=95dbc6af39966d4b1956917447e100a4d90d3f5b3c489b1d48e7539d75d5e299\",\n    \"X-Seevora-Timestamp\": \"1793461170157\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_6294c513d27c76a4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:31.810Z"
+    },
+    {
+      "id": "whlog_74ce6d1d2bbb",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_6a7e077e29ee6d8e",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=12e78c94465cebc28945a486ad492a34abb2c959b8e3b87ea1344543ba784638\",\n    \"X-Seevora-Timestamp\": \"1793461170063\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_6a7e077e29ee6d8e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:31.711Z"
+    },
+    {
+      "id": "whlog_49754b6d1a01",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_f072135d3d117e58",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=eafb421dd75dcf9872e51f7aa10384a07ee47dcc2dbd5c693e925669d5dd9d4a\",\n    \"X-Seevora-Timestamp\": \"1793461170259\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_f072135d3d117e58\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:31.600Z"
+    },
+    {
+      "id": "whlog_9e3352d07afa",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_391828fee8f3c1c6",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=1b17854a0fb2fc30dbd69786c08c1c5c5cb0362096cbd83d89a257de83a4b772\",\n    \"X-Seevora-Timestamp\": \"1793461145949\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_391828fee8f3c1c6\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:06.431Z"
+    },
+    {
+      "id": "whlog_13350cf29e6f",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_33ccaf3599beb20c",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=8b37d9b8a5002dce8d931b8db8ba1358e4e8f581c299a592090b4cc5a23156fa\",\n    \"X-Seevora-Timestamp\": \"1793461145950\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_33ccaf3599beb20c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:06.338Z"
+    },
+    {
+      "id": "whlog_ddec92bb8ea5",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_337463b006c65d73",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=cb9410e171f1494233a4b59fb6b9e60ef9d08998f81e2b7729ce77c43ed20191\",\n    \"X-Seevora-Timestamp\": \"1793461141933\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_337463b006c65d73\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.833Z"
+    },
+    {
+      "id": "whlog_a3ce2e395023",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_63bfd4c1acc325c4",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=14ac4f1362a499d1ac50cf9ebdb52a05f8fee49d04b83699cb26a22621065724\",\n    \"X-Seevora-Timestamp\": \"1793461142453\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_63bfd4c1acc325c4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.721Z"
+    },
+    {
+      "id": "whlog_265a4fceee02",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_ead724151be949bb",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f0283f5d90fc50efdc423ccb6d46a100565858ccb3428da8628fb13ca283b520\",\n    \"X-Seevora-Timestamp\": \"1793461142360\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_ead724151be949bb\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.596Z"
+    },
+    {
+      "id": "whlog_be94bb9e13b1",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_89589fbe2189819b",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=853c7cf8240d3a6a6ab96a96fba1454a73b425d68d005969fac8571625f44fdd\",\n    \"X-Seevora-Timestamp\": \"1793461142651\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_89589fbe2189819b\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.491Z"
+    },
+    {
+      "id": "whlog_3a17871a4180",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_4974db5c34da29f8",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=3a75cab8f2182540a5f477d18271ac004e968545139e6a253aa3162aa436e58d\",\n    \"X-Seevora-Timestamp\": \"1793461142265\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_4974db5c34da29f8\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.401Z"
+    },
+    {
+      "id": "whlog_f8be8f4a919c",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_1ac1dfe24d8e3fc4",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=66643afa9be0e0d40489f6cde22d499057f01f92e6f15fb7a3ab2451c0dfd419\",\n    \"X-Seevora-Timestamp\": \"1793461142163\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_1ac1dfe24d8e3fc4\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.317Z"
+    },
+    {
+      "id": "whlog_61222832545d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_79bffeafb67932c1",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f1a0dce5852358a8f8ad99e4958bd9417e358352c25ae3ff1e882c53f528241d\",\n    \"X-Seevora-Timestamp\": \"1793461141846\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_79bffeafb67932c1\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.202Z"
+    },
+    {
+      "id": "whlog_ceb24047ca5f",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_6ed316076087e67c",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=040e0def853a921c2169965e07dcca074d66d960b05b94ca008d4a0815d26033\",\n    \"X-Seevora-Timestamp\": \"1793461142756\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_6ed316076087e67c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:39:04.024Z"
+    },
+    {
+      "id": "whlog_adc46ecad77d",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_9d06783da82d462c",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=a0ba4792d9a37882f97af788739d241985792a0257f6f7ef4fee77c4aa435191\",\n    \"X-Seevora-Timestamp\": \"1793461045808\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_9d06783da82d462c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:26.944Z"
+    },
+    {
+      "id": "whlog_f24a74c4f472",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_633928dc2ae046dd",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=3ab701dd702eb01ad3e1c107ee40ba107cabc16dd7c77d84b2411070bdeaca48\",\n    \"X-Seevora-Timestamp\": \"1793461045808\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_633928dc2ae046dd\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:26.146Z"
+    },
+    {
+      "id": "whlog_d52cae6a1e74",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_9e8e76b415346275",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=2bf1b9915bd6ab29032635f5e45f512edf601e1ccb03dd8c2cd0d4577622c520\",\n    \"X-Seevora-Timestamp\": \"1793461040290\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_9e8e76b415346275\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:20.709Z"
+    },
+    {
+      "id": "whlog_cf633c8a9e9a",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_8d7ce1ec5658a13d",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=df92a228fc3467cef5d18739b8a2ea9294fc0654b1cf88e8cb4d1655d826799e\",\n    \"X-Seevora-Timestamp\": \"1793461040196\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_8d7ce1ec5658a13d\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:20.534Z"
+    },
+    {
+      "id": "whlog_95f1cd615f7a",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_f19f0a9e5b9aa182",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=67fe7035f4d0b011aad288de407faa6de53fc76714470ed4fb8c675dda087a9f\",\n    \"X-Seevora-Timestamp\": \"1793461037844\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_f19f0a9e5b9aa182\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:19.310Z"
+    },
+    {
+      "id": "whlog_5747ff3ce46c",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_a5929881917a7d74",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=33c92caa1c67c08f713be9304e017fd73541d61b46ceaed72654b4917f7616d9\",\n    \"X-Seevora-Timestamp\": \"1793461037277\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_a5929881917a7d74\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:19.188Z"
+    },
+    {
+      "id": "whlog_0e53a0b15adb",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_9f3ee1031876e639",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f91e2cda8fd8d2117ae50f6c498ecb4e033c3d1edda8ddc216d690dec38bd91c\",\n    \"X-Seevora-Timestamp\": \"1793461037167\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_9f3ee1031876e639\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:19.087Z"
+    },
+    {
+      "id": "whlog_f67ad39db9b7",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_d8080fa405274bf8",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=e4d1a958e5002ade19c6b9e821dc217fa8c466d983f4cb49e972c7ed2a6f4383\",\n    \"X-Seevora-Timestamp\": \"1793461037064\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_d8080fa405274bf8\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:18.989Z"
+    },
+    {
+      "id": "whlog_462941558dc7",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_55f4286480bcf97e",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=ee49bc6d28bca7077299fcc8a225903fab72dac314a0b1dba527b019f96cb8bf\",\n    \"X-Seevora-Timestamp\": \"1793461036702\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_55f4286480bcf97e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:18.321Z"
+    },
+    {
+      "id": "whlog_d098b084f65e",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_c1dd4d762140ea03",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=88c5b7811e7f977201b0020ee099a7b1f4fee153235f7ec1bd43c7b30e8b97ec\",\n    \"X-Seevora-Timestamp\": \"1793461036943\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_c1dd4d762140ea03\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T15:37:18.205Z"
+    },
+    {
+      "id": "whlog_e15590cae1f5",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_e08adb3cc641248e",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=ce2d922aa15f828f0aec4868b21cbc3e761509de4cb915f7a20ae29e5555d030\",\n    \"X-Seevora-Timestamp\": \"1793456406244\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_e08adb3cc641248e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T14:20:07.188Z"
+    },
+    {
+      "id": "whlog_026e35eba2e1",
+      "webhookId": "cwh_59cedef49d7114a4",
+      "tenantId": "t_61cb4c3f0a845e2a",
+      "eventId": "evt_c611be9088cf9ca1",
+      "eventType": "call_ended",
+      "status": 200,
+      "ok": true,
+      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=442ff3ae65524f9d00b325ff4641bc825b37e75a9247e23b00718bce397a7dc5\",\n    \"X-Seevora-Timestamp\": \"1793456406242\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_c611be9088cf9ca1\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
+      "firedAt": "2026-10-31T14:20:06.585Z"
+    },
     {
       "id": "whlog_67c0f8a1449e",
       "webhookId": "cwh_59cedef49d7114a4",
@@ -189432,358 +191541,6 @@
       "ok": true,
       "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=b141074d5c32deff10ac9eb67d6b28c8dc1323d5f7e7de20f829dd7c609d5dd7\",\n    \"X-Seevora-Timestamp\": \"1793451662013\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_ff6526648d805881\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
       "firedAt": "2026-10-31T13:01:03.698Z"
-    },
-    {
-      "id": "whlog_18fc875e5623",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_508e212219745d72",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=e5cc53162193b1fce1d60632f26f5abd29bb8ea7bee24bea37869f7fc61be88f\",\n    \"X-Seevora-Timestamp\": \"1793451606351\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_508e212219745d72\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T13:00:07.409Z"
-    },
-    {
-      "id": "whlog_d0b33ac409e2",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_6878c9f795486ad3",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=cf4d9814d54a0f8943ea6442acb75d856043eae67769542816ad69538b88f066\",\n    \"X-Seevora-Timestamp\": \"1793451606320\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_6878c9f795486ad3\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T13:00:06.658Z"
-    },
-    {
-      "id": "whlog_a80c9eea9b6c",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_cb4b0571ed5b0c7d",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=0620902c96e3272e7086c361b911684d139e0c6ba640ac0186d2cf27f6764db0\",\n    \"X-Seevora-Timestamp\": \"1793451601012\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_cb4b0571ed5b0c7d\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T13:00:01.356Z"
-    },
-    {
-      "id": "whlog_8485d3bb07dd",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_9e1ef3a38a525ea9",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=00105220a9ca6a6623ff3ff981d2ec0882a6a1e4a6ca0bced4e662581055c621\",\n    \"X-Seevora-Timestamp\": \"1793451600887\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_9e1ef3a38a525ea9\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T13:00:01.229Z"
-    },
-    {
-      "id": "whlog_713b2c649a1b",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_472804373320ccdb",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=ef6e5abc381c1e7c5c9175cd6cd5342d7b5e70b8f67c517fe08df21125ff6207\",\n    \"X-Seevora-Timestamp\": \"1793451600669\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_472804373320ccdb\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T13:00:01.018Z"
-    },
-    {
-      "id": "whlog_14c3b77fbcd1",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_357dfd6a88cf3d59",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=d2da8a1b53853848da10923dcf776a1f425cbbdce6be7ed297688e51a8d0f7ce\",\n    \"X-Seevora-Timestamp\": \"1793451598607\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_357dfd6a88cf3d59\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:59:59.786Z"
-    },
-    {
-      "id": "whlog_e7540a0581c7",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_12ddaf7385f0b58d",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=2df3835f13ff46138a33e41e85a1a985ee5c06bd0f197de9dfbd50d989bca059\",\n    \"X-Seevora-Timestamp\": \"1793451597872\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_12ddaf7385f0b58d\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:59:59.569Z"
-    },
-    {
-      "id": "whlog_d29ace6a26af",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_621a22e7541d84ac",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=007c8dd6b0b0d4ad87095b81933385945bea70ba11cd5c48b9c87acb625b82b5\",\n    \"X-Seevora-Timestamp\": \"1793451598240\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_621a22e7541d84ac\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:59:59.470Z"
-    },
-    {
-      "id": "whlog_06425e06d4d4",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_6cd4f76eda89c7db",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=9f1ff3ba073035b4e3aaeac164d04b570ec85a593291ba8cdf47ef05056e2531\",\n    \"X-Seevora-Timestamp\": \"1793451598053\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_6cd4f76eda89c7db\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:59:59.374Z"
-    },
-    {
-      "id": "whlog_6fb2b447cf6c",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_a871b5818fcea8ca",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=a86e588409c07f4f16e7ce91c107ff30ad662231d6c3fccf24293f96c0f31fd1\",\n    \"X-Seevora-Timestamp\": \"1793451597956\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_a871b5818fcea8ca\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:59:59.283Z"
-    },
-    {
-      "id": "whlog_ba05721aa814",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_79aac97f75ac6950",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=d7f03b497545925e53907f037568ac35368d2816f5a20f7b1f6a00a7bb3a1e4c\",\n    \"X-Seevora-Timestamp\": \"1793451278092\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_79aac97f75ac6950\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:39.188Z"
-    },
-    {
-      "id": "whlog_55fd9db98426",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_ffe2caebfafb9fb5",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=044ca18f8ae5d72c0fd678b6029310b3216ccc5f33f7e48474c37d2bbafdd7b1\",\n    \"X-Seevora-Timestamp\": \"1793451278091\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_ffe2caebfafb9fb5\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:38.435Z"
-    },
-    {
-      "id": "whlog_2155554cb72b",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_afc80022cabd45ae",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f18205cb18a2861f6d60b8a5ccf361f507bade1c676449101c1b7e21a9afe3c8\",\n    \"X-Seevora-Timestamp\": \"1793451272869\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_afc80022cabd45ae\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:33.213Z"
-    },
-    {
-      "id": "whlog_927adb8a5536",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_9e21ec0cbb42b053",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=9f585fadbbe605747ac40732104e64d37fcbb52e77bc8e1e1b18a85470c9a7bc\",\n    \"X-Seevora-Timestamp\": \"1793451272611\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_9e21ec0cbb42b053\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:33.024Z"
-    },
-    {
-      "id": "whlog_d218b7b5f3cd",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_2cf92f598fc7a61a",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f6a4d02c183cc7e8328bbe3bce417e8488a1e85f2b3895a2da7709f863e4b555\",\n    \"X-Seevora-Timestamp\": \"1793451272608\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_2cf92f598fc7a61a\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:32.946Z"
-    },
-    {
-      "id": "whlog_a09bae3df736",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_ab5b7828ba95f71a",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=1dd4418671ef23d3a958fdb8416442957fba706402232b80995a137461534e64\",\n    \"X-Seevora-Timestamp\": \"1793451271419\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_ab5b7828ba95f71a\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:31.750Z"
-    },
-    {
-      "id": "whlog_fb950ad64f50",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_f12f9c76d6bea79a",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=4f97219147840aa1dc094b2703105c076e5264081128633ee099b1946e9831ef\",\n    \"X-Seevora-Timestamp\": \"1793451270118\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_f12f9c76d6bea79a\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:31.547Z"
-    },
-    {
-      "id": "whlog_463760a21787",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_84bea2fa5700bf51",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=730f6318b0cdb46b0c8f1513b25e9a365321caa4bc2f5823d900a5fa66a32058\",\n    \"X-Seevora-Timestamp\": \"1793451269818\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_84bea2fa5700bf51\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:31.318Z"
-    },
-    {
-      "id": "whlog_ef2aa6403f98",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_f1888249799ba9c9",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=1e368f3b4ec12291b63224c8c2ea706d1cd9fcdd661e734f18b0893c9e09e810\",\n    \"X-Seevora-Timestamp\": \"1793451269705\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_f1888249799ba9c9\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:31.252Z"
-    },
-    {
-      "id": "whlog_fab39f11ed98",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_324e7b6b364a37f6",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=fc9759a32248672c10ddb7956354619ef404464a4107e9fd93939777632ea350\",\n    \"X-Seevora-Timestamp\": \"1793451270025\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_324e7b6b364a37f6\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:54:31.196Z"
-    },
-    {
-      "id": "whlog_53d0093f088d",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_62e0bf8895f8009b",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=5cd3135575a16661e6841ff9b87ecb89bea901f3d1a741ab0b0c98dabb4ea2c2\",\n    \"X-Seevora-Timestamp\": \"1793450658293\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_62e0bf8895f8009b\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:19.731Z"
-    },
-    {
-      "id": "whlog_bd96d7a37bda",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_83e5b244c4fe32e5",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=aaf7bc17396f6c577f439c816626eab4a37cbf7e2f74d9e4d1aba82dedd3508c\",\n    \"X-Seevora-Timestamp\": \"1793450658290\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_83e5b244c4fe32e5\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:19.537Z"
-    },
-    {
-      "id": "whlog_a72809e822f2",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_0ef450175a5e2e6c",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=71cb8170899231265ec8c340b558534fee655ba3bb23d53ce460f104052c08d7\",\n    \"X-Seevora-Timestamp\": \"1793450658289\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_0ef450175a5e2e6c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:18.620Z"
-    },
-    {
-      "id": "whlog_dedf9d09af9c",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_b9f768e2af7879a7",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=983023141462555ad111ea1315c345a883460bfb42348ef778427eabc4309d6b\",\n    \"X-Seevora-Timestamp\": \"1793450652688\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_b9f768e2af7879a7\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:13.181Z"
-    },
-    {
-      "id": "whlog_c0c95eea9079",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_5d9dc2091732e9d7",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=c393b928d30ceea39516439afa78cf2ceb0f603b651f737826344b38555a5fc6\",\n    \"X-Seevora-Timestamp\": \"1793450652689\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_5d9dc2091732e9d7\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:13.058Z"
-    },
-    {
-      "id": "whlog_6edb60394511",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_cf0fb1b3715beba0",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"699\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=f2d0fe143b93ec1d964c98aa62f166f36ffbd735b7e2ae199a507173aa9ce203\",\n    \"X-Seevora-Timestamp\": \"1793450652580\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_cf0fb1b3715beba0\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:12.935Z"
-    },
-    {
-      "id": "whlog_43e6f806f147",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_b21805fef927ab3a",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=68ca3177a04ada171947666f7169f6978898efb1a75406ee7fe92df18185b367\",\n    \"X-Seevora-Timestamp\": \"1793450649878\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_b21805fef927ab3a\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:11.573Z"
-    },
-    {
-      "id": "whlog_548cc5165041",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_ee81eb85f8fed03e",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=df1f49989c7a8c1c29f201836bde9f180c5a2948222a03c183dbf45442788c3b\",\n    \"X-Seevora-Timestamp\": \"1793450649987\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_ee81eb85f8fed03e\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:11.457Z"
-    },
-    {
-      "id": "whlog_cfa09f41423b",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_268ea609002d6f8f",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=a4d9ff26ada6dce86738aaa7754fe2a7e18f36cb62c1c7334057cf6f1a2cb304\",\n    \"X-Seevora-Timestamp\": \"1793450649584\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_268ea609002d6f8f\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:11.339Z"
-    },
-    {
-      "id": "whlog_0322970040c4",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_0fc237c44fb1c54c",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=264a6dd24cd5fe5717356a0116afbc6afbaaedc0e50e6c405c48376fc0d3ba26\",\n    \"X-Seevora-Timestamp\": \"1793450650102\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_0fc237c44fb1c54c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:44:11.222Z"
-    },
-    {
-      "id": "whlog_be5f164db9f8",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_466d9583681e3112",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"419\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=1ebb739fc553c4a1da6bfd198929eb995a8513ef2df1eafb3eea4bdfcada1641\",\n    \"X-Seevora-Timestamp\": \"1793450321319\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_466d9583681e3112\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:38:42.555Z"
-    },
-    {
-      "id": "whlog_4dac0aefb79d",
-      "webhookId": "cwh_59cedef49d7114a4",
-      "tenantId": "t_61cb4c3f0a845e2a",
-      "eventId": "evt_d0d7b1bb3bffa11c",
-      "eventType": "call_ended",
-      "status": 200,
-      "ok": true,
-      "body": "{\n  \"args\": {},\n  \"headers\": {\n    \"Content-Length\": \"651\",\n    \"Content-Type\": \"application/json\",\n    \"Host\": \"httpbin.org\",\n    \"User-Agent\": \"Seevora-CRM-Webhook/1.0\",\n    \"X-Seevora-Signature\": \"sha256=32049a3c75491aca4460967685fcd17281b7afce3be2c4dcf914bd85820869e7\",\n    \"X-Seevora-Timestamp\": \"1793450321321\"\n  },\n  \"method\": \"POST\",\n  \"origin\": \"106.214.3.4\",\n  \"url\": \"https://httpbin.org/post\",\n  \"data\": \"{\\\"id\\\":\\\"evt_d0d7b1bb3bffa11c\\\",\\\"event\\\":\\\"call_ended\\\",\\\"tenantId\\\":\\\"t_61cb4c3f",
-      "firedAt": "2026-10-31T12:38:42.439Z"
     }
   ],
   "dograhOrgs": [],
