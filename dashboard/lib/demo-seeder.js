@@ -698,8 +698,10 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
     });
   }
 
-  // 6. Invoices
-  const tenantInvoices = d.invoices.filter((inv) => inv.tenantId === tid);
+  // 6. Invoices (Only seed for client workspaces, never for platform admin host)
+  const isHostTenant = tid === 't_61cb4c3f0a845e2a' || tid === 't_admin' || (tenantName && tenantName.toLowerCase().includes('admin'));
+  if (!isHostTenant) {
+    const tenantInvoices = d.invoices.filter((inv) => inv.tenantId === tid);
   if (tenantInvoices.length < 2) {
     const inv1Id = 'inv_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_01';
     const inv2Id = 'inv_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_02';
@@ -741,6 +743,7 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
         issuedAt: '2026-10-10T09:15:00.000Z'
       });
     }
+  }
   }
 
   // 7. Support Tickets
@@ -789,6 +792,9 @@ function seedAllTenants(d) {
       });
     }
   });
+
+  // Purge any stale invoices from platform admin host
+  d.invoices = (d.invoices || []).filter((inv) => inv.tenantId !== 't_61cb4c3f0a845e2a' && inv.tenantId !== 't_admin');
 
   d.tenants.forEach((t) => {
     if (t.id.startsWith('t_test_rzp_')) return;

@@ -226,7 +226,7 @@ function migrateLegacyAgent(legacy, tenantId) {
 
 async function boot() {
   // Pre-fetch Clerk JWKS in the background so OAuth tokens verify with 0ms cold-start latency
-  clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => {});
+  clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => { });
 
   // Force a load so a missing/corrupt db.json resolves to a clean default.
   const existing = core.db();
@@ -459,6 +459,15 @@ function publicUser(u) {
     onboardingCompleted: isCompleted
   };
 }
+
+function isPlatformAdminTenant(t, d) {
+  if (!t) return false;
+  if (t.isPlatformAdmin === true) return true;
+  if (t.slug === 'admin-demo' || t.id === 't_61cb4c3f0a845e2a' || t.id === 't_admin' || t.id === 't_rapid' || t.id === 't_demo') return true;
+  const store = d || core.db();
+  return (store.users || []).some((u) => u.tenantId === t.id && (u.role === 'super_admin' || (u.role === 'admin' && (u.email || '').startsWith('admin@'))));
+}
+
 function publicTenant(t) {
   const d = core.db();
   const hasAgents = d.agents && d.agents.some((a) => a.tenantId === t.id);
@@ -468,6 +477,7 @@ function publicTenant(t) {
   const tenantConnections = (d.byonConnections || []).filter(x => x.tenantId === t.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
   const hasAssignedNumber = tenantConnections.length > 0;
   const assignedNumber = hasAssignedNumber ? tenantConnections[0].address : (t.telephony && t.telephony.did ? t.telephony.did : null);
+  const isHost = isPlatformAdminTenant(t, d);
   return {
     id: t.id, name: t.name, slug: t.slug, createdAt: t.createdAt,
     branding: t.branding, providers: t.providers, plan: t.plan || 'starter',
@@ -476,6 +486,8 @@ function publicTenant(t) {
     planStatus: t.planStatus || 'active',
     status: t.status, privacyMode: t.privacyMode,
     onboardingCompleted: isCompleted,
+    isPlatformAdmin: isHost,
+    isPlatformHost: isHost,
     dograhOrgId: dograhOrg,
     dograh_org_id: dograhOrg,
     campaignFrozen: !!t.campaignFrozen,
@@ -763,7 +775,7 @@ function calRequest(method, pathname, version, payload) {
     if (data) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = String(data.length); }
     const upstream = require('https').request({ host: 'api.cal.com', path: pathname, method, headers }, (resp) => {
       const parts = []; resp.on('data', (part) => parts.push(part)); resp.on('end', () => {
-        let body = {}; try { body = JSON.parse(Buffer.concat(parts).toString('utf8') || '{}'); } catch (_) {}
+        let body = {}; try { body = JSON.parse(Buffer.concat(parts).toString('utf8') || '{}'); } catch (_) { }
         if (resp.statusCode < 200 || resp.statusCode >= 300) return reject(new providers.ProviderError(body.message || body.error || 'Cal.com request failed', resp.statusCode || 502, 'calendar_upstream'));
         resolve(body);
       });
@@ -887,7 +899,7 @@ async function apiAgentsCreate(req, res, ctx) {
   if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
     core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
       publicMetadata: { onboardingCompleted: true }
-    }).catch(() => {});
+    }).catch(() => { });
   }
   core.sendJson(res, 200, { agent: publicAgent(agent) });
 }
@@ -902,7 +914,7 @@ async function apiTenantOnboardingComplete(req, res, ctx) {
   if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
     core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
       publicMetadata: { onboardingCompleted: true }
-    }).catch(() => {});
+    }).catch(() => { });
   }
   core.sendJson(res, 200, { ok: true, onboardingCompleted: true });
 }
@@ -1444,7 +1456,7 @@ async function apiTts(req, res, ctx) {
       }
     }
     // Count usage only on a real synthesis.
-    bumpUsage(ctx.tenant.id, 'chars', out.chars).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'chars', out.chars).catch(() => { });
     core.send(res, 200, out.buffer, {
       'Content-Type': 'audio/wav',
       'Content-Length': out.buffer.length,
@@ -1518,7 +1530,7 @@ function extractContactFromMessages(messages) {
 
   // Name extraction (Hindi/Hinglish/English)
   const hindiNameMatch = combined.match(/(?:mera|mira|my)\s+(?:naam|name)\s+(?:hai\s+)?([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\.|\,|$)/i) ||
-                         combined.match(/(?:main|mai|this\s+is|i\s+am|myself|it's|its)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\s+speaking|\s+here|\.|\,|$)/i);
+    combined.match(/(?:main|mai|this\s+is|i\s+am|myself|it's|its)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\s+speaking|\s+here|\.|\,|$)/i);
   if (hindiNameMatch && hindiNameMatch[1]) {
     const rawName = hindiNameMatch[1].trim();
     const disallowed = ['mera', 'mira', 'naam', 'name', 'sir', 'madam', 'here', 'calling', 'speaking', 'yes', 'no', 'hi', 'hello', 'hey'];
@@ -1926,19 +1938,19 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
 
     const reply = userLang === 'English'
       ? `I am ready to train a high-converting AI Voice Receptionist for your **${industryToUse}** business.\n\n` +
-        `To tailor the agent to your exact business needs, please provide these key details (you can reply in a single message):\n\n` +
-        `1. **Business Name:** (e.g. *${profile.exampleBiz}*)\n` +
-        `2. **Key Services / Objective:** (e.g. *${profile.exampleServices}*)\n` +
-        `3. **Operating Hours & Location:** (e.g. *${profile.exampleHours}*)\n` +
-        `4. **Preferred Voice & Tone:** (e.g. *${profile.exampleTone}*)\n\n` +
-        `*(You can reply directly or click one of the quick suggestions below)*`
+      `To tailor the agent to your exact business needs, please provide these key details (you can reply in a single message):\n\n` +
+      `1. **Business Name:** (e.g. *${profile.exampleBiz}*)\n` +
+      `2. **Key Services / Objective:** (e.g. *${profile.exampleServices}*)\n` +
+      `3. **Operating Hours & Location:** (e.g. *${profile.exampleHours}*)\n` +
+      `4. **Preferred Voice & Tone:** (e.g. *${profile.exampleTone}*)\n\n` +
+      `*(You can reply directly or click one of the quick suggestions below)*`
       : `Main aapke **${industryToUse}** business ke liye ek high-converting AI Voice Receptionist train karne ke liye ready hoon.\n\n` +
-        `Agent ko fully personalized train karne ke liye, kripya ye details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
-        `1. **Business Name:** (jaise: *${profile.exampleBiz}*)\n` +
-        `2. **Key Services / Objective:** (jaise: *${profile.exampleServices}*)\n` +
-        `3. **Operating Hours & Location:** (jaise: *${profile.exampleHours}*)\n` +
-        `4. **Preferred Voice & Tone:** (jaise: *${profile.exampleTone}*)\n\n` +
-        `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein)*`;
+      `Agent ko fully personalized train karne ke liye, kripya ye details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
+      `1. **Business Name:** (jaise: *${profile.exampleBiz}*)\n` +
+      `2. **Key Services / Objective:** (jaise: *${profile.exampleServices}*)\n` +
+      `3. **Operating Hours & Location:** (jaise: *${profile.exampleHours}*)\n` +
+      `4. **Preferred Voice & Tone:** (jaise: *${profile.exampleTone}*)\n\n` +
+      `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein)*`;
 
     return {
       reply,
@@ -1979,7 +1991,7 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
     const raw2 = await llmQuick(agentSystem, agentPrompt, 1800);
     const agentData = safeExtractJson(raw2);
     ag = agentData ? (agentData.agent || agentData) : null;
-  } catch (_) {}
+  } catch (_) { }
 
   if (!ag || !ag.name) {
     const bp = buildFallbackAgentBlueprint({
@@ -2463,7 +2475,7 @@ async function handleScheduleCalendar(text, ctx, db) {
         title: eventTitle,
         start: scheduledTime
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const calRecord = {
@@ -2583,7 +2595,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         req.end();
       });
       if (upstreamDelivered) gatewayProvider = `Meta Cloud WABA (${senderNumber})`;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Try VoBiz Messaging / WhatsApp Gateway API using VOBIZ_AUTH_ID & VOBIZ_AUTH_TOKEN
@@ -2620,7 +2632,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         }));
         req.end();
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 3. Try Custom Webhook Gateway if configured
@@ -2641,7 +2653,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         })
       });
       upstreamDelivered = true;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const waMeUrl = `https://wa.me/${recipientIntl}?text=${encodeURIComponent(formattedMessage)}`;
@@ -2730,19 +2742,19 @@ async function handleSendWhatsApp(text, ctx, db) {
   const isEnglishWaSuccess = detectUserLanguage(text) === 'English';
   const reply = isEnglishWaSuccess
     ? `**WhatsApp Message Dispatched**\n\n` +
-      `• Company Name: **${waRecord.companyName}**\n` +
-      `• Sender Line: \`${waRecord.from}\`\n` +
-      `• Recipient WhatsApp: **${waRecord.to}**\n` +
-      `• Message Content: "*${waRecord.message}*"\n` +
-      `• Message-ID: \`${waRecord.messageId}\`\n\n` +
-      `The message has been dispatched under your **${waRecord.companyName}** brand header and logged in WhatsApp CRM timeline.`
+    `• Company Name: **${waRecord.companyName}**\n` +
+    `• Sender Line: \`${waRecord.from}\`\n` +
+    `• Recipient WhatsApp: **${waRecord.to}**\n` +
+    `• Message Content: "*${waRecord.message}*"\n` +
+    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
+    `The message has been dispatched under your **${waRecord.companyName}** brand header and logged in WhatsApp CRM timeline.`
     : `**WhatsApp Message Dispatched with VoBiz Line & Company Name**\n\n` +
-      `• Company Name: **${waRecord.companyName}**\n` +
-      `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
-      `• Recipient WhatsApp: **${waRecord.to}**\n` +
-      `• Message Content: "*${waRecord.message}*"\n` +
-      `• Message-ID: \`${waRecord.messageId}\`\n\n` +
-      `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
+    `• Company Name: **${waRecord.companyName}**\n` +
+    `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
+    `• Recipient WhatsApp: **${waRecord.to}**\n` +
+    `• Message Content: "*${waRecord.message}*"\n` +
+    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
+    `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
 
   return {
     reply,
@@ -2797,7 +2809,7 @@ async function handleCrmCreateLead(text, ctx, db) {
         email,
         callSummary: text
       });
-    } catch (_) {}
+    } catch (_) { }
   }
   if (crmIntegrations.hubspot && crmIntegrations.hubspot.enabled) {
     try {
@@ -2807,7 +2819,7 @@ async function handleCrmCreateLead(text, ctx, db) {
         email,
         callSummary: text
       });
-    } catch (_) {}
+    } catch (_) { }
   }
   if (crmIntegrations.googleSheets && crmIntegrations.googleSheets.enabled) {
     try {
@@ -2817,7 +2829,7 @@ async function handleCrmCreateLead(text, ctx, db) {
         email,
         callSummary: text
       });
-    } catch (_) {}
+    } catch (_) { }
   }
   if (crmIntegrations.slack && crmIntegrations.slack.enabled) {
     try {
@@ -2827,7 +2839,7 @@ async function handleCrmCreateLead(text, ctx, db) {
         email,
         callSummary: text
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   await core.mutate((d) => {
@@ -2879,7 +2891,7 @@ async function handleBuildAgent(text, ctx) {
   try {
     const raw2 = await llmQuick(agentSystem, agentPrompt, 1800);
     agentData = safeExtractJson(raw2);
-  } catch (_) {}
+  } catch (_) { }
 
   let ag = agentData ? (agentData.agent || agentData) : null;
   if (!ag || !ag.name) {
@@ -2921,15 +2933,15 @@ async function handleBuildAgent(text, ctx) {
   const targetName = (targetTenant && targetTenant.name) ? targetTenant.name : 'Client Workspace';
   const doneReply = isEnglishDone
     ? `Done! I have created **${newAgent.name}** and saved it to the **${targetName}** panel!\n\n` +
-      `• Greeting: "${newAgent.greeting}"\n` +
-      `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
-      `• Client Panel: **${targetName}**\n\n` +
-      `This agent is now live and saved in your backend database and Agent Studio. Would you like to test it or assign a phone number?`
+    `• Greeting: "${newAgent.greeting}"\n` +
+    `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+    `• Client Panel: **${targetName}**\n\n` +
+    `This agent is now live and saved in your backend database and Agent Studio. Would you like to test it or assign a phone number?`
     : `Done! Maine **${newAgent.name}** create karke **${targetName}** client panel mein save kar diya hai!\n\n` +
-      `• Greeting: "${newAgent.greeting}"\n` +
-      `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
-      `• Client Panel: **${targetName}**\n\n` +
-      `Yeh agent ab aapke backend database aur client panel ke Agent Studio mein live save ho chuka hai. Kya aap iska persona, voice change karna chahte hain ya phone number assign karein?`;
+    `• Greeting: "${newAgent.greeting}"\n` +
+    `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+    `• Client Panel: **${targetName}**\n\n` +
+    `Yeh agent ab aapke backend database aur client panel ke Agent Studio mein live save ho chuka hai. Kya aap iska persona, voice change karna chahte hain ya phone number assign karein?`;
 
   return {
     reply: doneReply,
@@ -2952,7 +2964,7 @@ async function handleEditAgent(text, agentId, ctx, db) {
   try {
     const raw = await llmQuick(editSystem, editPrompt, 600);
     editPlan = safeExtractJson(raw);
-  } catch (_) {}
+  } catch (_) { }
 
   if (!editPlan || !editPlan.field || !editPlan.after) {
     const t = text.trim();
@@ -2993,7 +3005,7 @@ async function handleAddKnowledge(text, agentId, ctx, db) {
   let knowledgeText = text;
   try {
     knowledgeText = await llmQuick(extractSystem, text, 600);
-  } catch (_) {}
+  } catch (_) { }
 
   // Safety guard: If knowledgeText is empty or an LLM refusal, do not save to knowledge base
   if (!knowledgeText || knowledgeText.trim().length < 5 || /i don't have access|cannot access|please provide|not provided|as an ai/i.test(knowledgeText)) {
@@ -3094,20 +3106,20 @@ async function handleAdminClientQuery(text, ctx, db) {
       const calls = allRecordings.filter(r => r.tenantId === tn.id);
       const userEmails = users.map(u => u.email).slice(0, 2).join(', ') || 'No users';
       return `${idx + 1}. **${tn.name}** (\`${tn.id}\`)\n` +
-             `   • Plan: **${tn.plan || 'Starter'}** | Status: **${tn.status || 'Active'}**\n` +
-             `   • Users: ${userEmails}\n` +
-             `   • Active Agents: **${agents.length}** | Total Calls: **${calls.length}**`;
+        `   • Plan: **${tn.plan || 'Starter'}** | Status: **${tn.status || 'Active'}**\n` +
+        `   • Users: ${userEmails}\n` +
+        `   • Active Agents: **${agents.length}** | Total Calls: **${calls.length}**`;
     });
 
     const reply = isEng
       ? `👑 **Administrative Client Workspace Overview**\n\n` +
-        `Total Registered Workspaces: **${displayList.length}**\n\n` +
-        tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
-        `*To inspect any specific client in detail, ask: "What did client [Name] do?" or "Show activity of client [Email]".*`
+      `Total Registered Workspaces: **${displayList.length}**\n\n` +
+      tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+      `*To inspect any specific client in detail, ask: "What did client [Name] do?" or "Show activity of client [Email]".*`
       : `👑 **Admin Client Workspace Overview**\n\n` +
-        `Total Registered Client Workspaces: **${displayList.length}**\n\n` +
-        tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
-        `*Kisi bhi specific client ki detailed history dekhne ke liye puchiye: "What did client [Name] do?" ya "Client [Email] ki activity dikhao".*`;
+      `Total Registered Client Workspaces: **${displayList.length}**\n\n` +
+      tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+      `*Kisi bhi specific client ki detailed history dekhne ke liye puchiye: "What did client [Name] do?" ya "Client [Email] ki activity dikhao".*`;
 
     return {
       reply,
@@ -3210,31 +3222,31 @@ async function handleAdminClientQuery(text, ctx, db) {
 
   const reply = isEng
     ? `👑 **Administrative Client Dossier & Activity Audit**\n\n` +
-      `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
-      `• **Subscription Plan:** **${targetTenant.plan || 'Starter'}** (Status: **${targetTenant.status || 'Active'}**)\n` +
-      `• **Associated Users:** ${usersDisplay}\n` +
-      `• **Wallet Balance:** ₹${balanceInr}\n\n` +
-      `📊 **Operational Assets & Telephony:**\n` +
-      `• Active AI Agents: ${agentsDisplay}\n` +
-      `• Total Call Recordings: **${tenantRecordings.length}** calls\n` +
-      `• CRM Pipeline Contacts: **${tenantContacts.length}** leads\n` +
-      `• Total Assistant Actions: **${tenantActions.length}** operations\n\n` +
-      `📜 **Recent Client Activities & History:**\n` +
-      (recentActivities.length ? recentActivities.join('\n') : `*No recent operations logged for this client yet.*`) + `\n\n` +
-      `You can manage this client's agents, review their call recordings, or dispatch campaigns on their behalf.`
+    `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+    `• **Subscription Plan:** **${targetTenant.plan || 'Starter'}** (Status: **${targetTenant.status || 'Active'}**)\n` +
+    `• **Associated Users:** ${usersDisplay}\n` +
+    `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+    `📊 **Operational Assets & Telephony:**\n` +
+    `• Active AI Agents: ${agentsDisplay}\n` +
+    `• Total Call Recordings: **${tenantRecordings.length}** calls\n` +
+    `• CRM Pipeline Contacts: **${tenantContacts.length}** leads\n` +
+    `• Total Assistant Actions: **${tenantActions.length}** operations\n\n` +
+    `📜 **Recent Client Activities & History:**\n` +
+    (recentActivities.length ? recentActivities.join('\n') : `*No recent operations logged for this client yet.*`) + `\n\n` +
+    `You can manage this client's agents, review their call recordings, or dispatch campaigns on their behalf.`
     : `👑 **Admin Client Audit & Activity Report**\n\n` +
-      `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
-      `• **Plan Status:** **${targetTenant.plan || 'Starter'}** (${targetTenant.status || 'Active'})\n` +
-      `• **Registered Users:** ${usersDisplay}\n` +
-      `• **Wallet Balance:** ₹${balanceInr}\n\n` +
-      `📊 **Operational Assets & Telephony:**\n` +
-      `• Active AI Agents: ${agentsDisplay}\n` +
-      `• Total Calls Handled: **${tenantRecordings.length}** calls\n` +
-      `• CRM Leads: **${tenantContacts.length}** leads\n` +
-      `• Total AI Operations: **${tenantActions.length}** actions\n\n` +
-      `📜 **Iss Client Ki Recent Activities & History:**\n` +
-      (recentActivities.length ? recentActivities.join('\n') : `*Abhi tak is client ne koi activity perform nahi ki hai.*`) + `\n\n` +
-      `Aap Admin authority ke sath is client ke agents modify kar sakte hain ya inka call record check kar sakte hain.`;
+    `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+    `• **Plan Status:** **${targetTenant.plan || 'Starter'}** (${targetTenant.status || 'Active'})\n` +
+    `• **Registered Users:** ${usersDisplay}\n` +
+    `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+    `📊 **Operational Assets & Telephony:**\n` +
+    `• Active AI Agents: ${agentsDisplay}\n` +
+    `• Total Calls Handled: **${tenantRecordings.length}** calls\n` +
+    `• CRM Leads: **${tenantContacts.length}** leads\n` +
+    `• Total AI Operations: **${tenantActions.length}** actions\n\n` +
+    `📜 **Iss Client Ki Recent Activities & History:**\n` +
+    (recentActivities.length ? recentActivities.join('\n') : `*Abhi tak is client ne koi activity perform nahi ki hai.*`) + `\n\n` +
+    `Aap Admin authority ke sath is client ke agents modify kar sakte hain ya inka call record check kar sakte hain.`;
 
   return {
     reply,
@@ -3373,14 +3385,14 @@ IMPORTANT INSTRUCTIONS ON OUTPUT LENGTH & FORMAT:
       reply = userLang === 'Hindi'
         ? 'दस्तावेज़ का विश्लेषण करने में कुछ समस्या आई। कृपया पुनः प्रयास करें।'
         : (userLang === 'English'
-            ? 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.'
-            : 'Document analyze karne mein provider timeout aaya. Kripya dobara try karein.');
+          ? 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.'
+          : 'Document analyze karne mein provider timeout aaya. Kripya dobara try karein.');
     } else {
       reply = userLang === 'Hindi'
         ? 'मैं आपकी सहायता के लिए यहाँ हूँ! आप मुझसे नया वॉइस एजेंट बनाने, कॉल एनालिटिक्स देखने या नॉलेज बेस अपडेट करने के लिए कह सकते हैं।'
         : (userLang === 'English'
-            ? 'I am here to help! You can ask me to train a voice agent, review call analytics, dispatch WhatsApp/emails, or generate files.'
-            : 'Main aapki poori madad karne ke liye taiyaar hoon! Aap mujhse naya voice agent train karwa sakte hain, call analytics check kar sakte hain, ya WhatsApp/Email bhej sakte hain.');
+          ? 'I am here to help! You can ask me to train a voice agent, review call analytics, dispatch WhatsApp/emails, or generate files.'
+          : 'Main aapki poori madad karne ke liye taiyaar hoon! Aap mujhse naya voice agent train karwa sakte hain, call analytics check kar sakte hain, ya WhatsApp/Email bhej sakte hain.');
     }
   }
 
@@ -3473,7 +3485,7 @@ async function verifyWhatsAppBusinessNumber(rawPhone, metaConfig = {}) {
           message: `Verified via Meta Cloud API! OTP dispatched directly to WhatsApp on ${formatted}.`
         };
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Official verified business / VoBiz line
@@ -3964,7 +3976,7 @@ async function handleMakeCall(text, ctx, db) {
 
   const fromNumber = '+918071582519';
   const tenantAgents = (db.agents || []).filter(a => a.tenantId === ctx.tenant.id);
-  
+
   // Find agent if user mentioned one (e.g. Ria, Maya, Priya)
   let selectedAgent = null;
   const lowerText = text.toLowerCase();
@@ -4011,17 +4023,17 @@ async function handleMakeCall(text, ctx, db) {
   const isEnglishCall = detectUserLanguage(text) === 'English';
   const reply = isEnglishCall
     ? '📞 **Outbound Telephony Call Placed**\n\n' +
-      `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
-      `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
-      `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
-      '• Status: **Ringing / Dialing**\n\n' +
-      'The call has been initiated. You can track, transfer, or listen live in the Live Locator!'
+    `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+    `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+    `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+    '• Status: **Ringing / Dialing**\n\n' +
+    'The call has been initiated. You can track, transfer, or listen live in the Live Locator!'
     : '📞 **Outbound Telephony Call Placed**\n\n' +
-      `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
-      `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
-      `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
-      '• Status: **Ringing / Dialing**\n\n' +
-      'Call initiate ho chuki hai! Aap Dashboard Live Locator aur Call Recordings panel mein live status dekh sakte hain.';
+    `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+    `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+    `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+    '• Status: **Ringing / Dialing**\n\n' +
+    'Call initiate ho chuki hai! Aap Dashboard Live Locator aur Call Recordings panel mein live status dekh sakte hain.';
 
   return {
     reply,
@@ -4473,7 +4485,7 @@ async function handleCreateFile(text, ctx, db, sessionMessages = [], activeDocCt
     if (raw && raw.trim().length > 15) {
       fileContent = raw.replace(/^\s*```[a-z0-9]*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Fallback procedural generators if LLM is unavailable
   if (!fileContent || fileContent.length < 15) {
@@ -4608,17 +4620,17 @@ async function handleCreateFile(text, ctx, db, sessionMessages = [], activeDocCt
   const isEnglishFile = detectUserLanguage(text) === 'English';
   const reply = isEnglishFile
     ? '**File Created Successfully**\n\n' +
-      `• File Name: **\`${fileName}\`**\n` +
-      `• Format: **${formatDisplay}**\n` +
-      `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
-      `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
-      `Click the **"Download File"** button below to download your **${formatDisplay}** file directly to your computer!`
+    `• File Name: **\`${fileName}\`**\n` +
+    `• Format: **${formatDisplay}**\n` +
+    `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+    `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+    `Click the **"Download File"** button below to download your **${formatDisplay}** file directly to your computer!`
     : '**File Created Successfully**\n\n' +
-      `• File Name: **\`${fileName}\`**\n` +
-      `• Format: **${formatDisplay}**\n` +
-      `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
-      `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
-      `Aap niche diye gaye **"Download File"** button par click karke apni **${formatDisplay}** file turant download kar sakte hain!`;
+    `• File Name: **\`${fileName}\`**\n` +
+    `• Format: **${formatDisplay}**\n` +
+    `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+    `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+    `Aap niche diye gaye **"Download File"** button par click karke apni **${formatDisplay}** file turant download kar sakte hain!`;
 
   return {
     reply,
@@ -4700,17 +4712,17 @@ async function apiAssistantChat(req, res, ctx) {
       const isEng = detectUserLanguage(text) === 'English';
       const warningReply = isEng
         ? `⚠️ **Security Warning: Administrative & Multi-Tenant Access Denied**\n\n` +
-          `You do not have administrative privileges to view platform-level configurations, system settings, or other clients' information.\n\n` +
-          `• **Your Role:** \`Client Workspace Member\`\n` +
-          `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
-          `• **Privacy & Security Policy:** Multi-tenant cryptographic isolation is strictly enforced. You can only view, build, and manage voice agents, call analytics, and campaigns within your own workspace.\n\n` +
-          `If you need assistance with your workspace agents or integrations, please let me know!`
+        `You do not have administrative privileges to view platform-level configurations, system settings, or other clients' information.\n\n` +
+        `• **Your Role:** \`Client Workspace Member\`\n` +
+        `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+        `• **Privacy & Security Policy:** Multi-tenant cryptographic isolation is strictly enforced. You can only view, build, and manage voice agents, call analytics, and campaigns within your own workspace.\n\n` +
+        `If you need assistance with your workspace agents or integrations, please let me know!`
         : `⚠️ **Security Warning: Access Denied**\n\n` +
-          `Aapke paas administrative configurations, platform logs, ya dusre clients ke data ko access karne ki permission nahi hai.\n\n` +
-          `• **Aapka Role:** \`Client Workspace Member\`\n` +
-          `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
-          `• **Privacy Policy:** Seevora multi-tenant data privacy protection active hai. Aap sirf apne workspace ke agents, calls aur files ko hi manage kar sakte hain.\n\n` +
-          `Aap apne workspace ke agents train karne, call analytics dekhne ya files export karne ke liye command de sakte hain.`;
+        `Aapke paas administrative configurations, platform logs, ya dusre clients ke data ko access karne ki permission nahi hai.\n\n` +
+        `• **Aapka Role:** \`Client Workspace Member\`\n` +
+        `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+        `• **Privacy Policy:** Seevora multi-tenant data privacy protection active hai. Aap sirf apne workspace ke agents, calls aur files ko hi manage kar sakte hain.\n\n` +
+        `Aap apne workspace ke agents train karne, call analytics dekhne ya files export karne ke liye command de sakte hain.`;
 
       await core.mutate((d) => {
         assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
@@ -5334,12 +5346,15 @@ async function apiAssistantHistory(req, res, ctx) {
 
 // ---- Credit deduction helper (AS-10) ------------------------------------
 async function deductAssistantCredit(tenantId, userId) {
-  await core.mutate((d) => {
-    const wallet = d.wallets.find((w) => w.tenantId === tenantId);
+  const d = core.db();
+  const t = d.tenants.find((x) => x.id === tenantId);
+  if (isPlatformAdminTenant(t, d)) return; // Platform Admin has master quota, no credit deduction
+  await core.mutate((store) => {
+    const wallet = store.wallets.find((w) => w.tenantId === tenantId);
     if (!wallet || wallet.balancePaise < assistant.CREDIT_COST_PAISE) return;
     wallet.balancePaise -= assistant.CREDIT_COST_PAISE;
     wallet.updatedAt = new Date().toISOString();
-    d.ledger.push({
+    store.ledger.push({
       id: core.genId('led_'),
       tenantId,
       type: 'assistant_credit_debit',
@@ -5397,7 +5412,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
         if (ragContext) {
           system += '\n\n' + ragContext;
         }
-      } catch (_) {}
+      } catch (_) { }
 
       // Native Slot Booking Injection: Inject live open slots when caller inquires
       if (/book|appointment|slot|schedule|timing|milna|available|reservation|time/i.test(lastUserText)) {
@@ -5406,7 +5421,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
           if (avail) {
             system += `\n\n[LIVE CALENDAR AVAILABILITY FOR CALLER: ${avail}]`;
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -5418,12 +5433,12 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
       if (providers.llmGemini && (!selected || selected.provider !== 'gemini')) {
         try {
           out = await providers.llmGemini.chat({ messages: b.messages, system, model: providers.llmGemini.defaultModel });
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!out && providers.llmGroq && (!selected || selected.provider !== 'groq')) {
         try {
           out = await providers.llmGroq.chat({ messages: b.messages, system, model: providers.llmGroq.defaultModel });
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!out) {
         // Conversational fallback so caller is NEVER left stranded
@@ -5457,7 +5472,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
     }
     // Rough token accounting for the usage view (4 chars ~= 1 token).
     const approxTokens = Math.ceil(((out && out.text) || '').length / 4);
-    bumpUsage(ctx.tenant.id, 'llmTokens', approxTokens).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'llmTokens', approxTokens).catch(() => { });
 
     // Dynamic CRM contact auto-synchronization for ANY caller
     let crmContact = null;
@@ -5517,17 +5532,19 @@ async function mintDograhVoiceSession(req, context) {
   const requestOrigin = String(req.headers.origin || `https://${req.headers.host || ''}`);
   const upstream = await fetch(base + '/api/v1/public/embed/init', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Origin: requestOrigin },
-    body: JSON.stringify({ token, context_variables: {
-      source: String(context.source || 'rumik_studio'),
-      tenant_id: String(context.tenantId || ''),
-      agent_id: String(context.agentId || ''),
-      demo_link_id: String(context.demoLinkId || ''),
-      max_session_seconds: String(context.maxSessionSeconds || ''),
-    } }),
+    body: JSON.stringify({
+      token, context_variables: {
+        source: String(context.source || 'rumik_studio'),
+        tenant_id: String(context.tenantId || ''),
+        agent_id: String(context.agentId || ''),
+        demo_link_id: String(context.demoLinkId || ''),
+        max_session_seconds: String(context.maxSessionSeconds || ''),
+      }
+    }),
     signal: AbortSignal.timeout(12000),
   });
   const text = await upstream.text(); let data = {};
-  try { data = JSON.parse(text); } catch (_) {}
+  try { data = JSON.parse(text); } catch (_) { }
   if (!upstream.ok) {
     const error = new Error(String(data.detail || 'Dograh could not start the realtime voice session'));
     error.status = upstream.status; error.code = 'voice_session_failed'; throw error;
@@ -5550,7 +5567,7 @@ async function mintDograhVoiceSession(req, context) {
           };
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return {
     sessionToken: data.session_token, workflowRunId: data.workflow_run_id,
@@ -5663,7 +5680,7 @@ async function apiPublicDemoSession(req, res, token) {
     if (reserved) await core.mutate((database) => {
       const target = database.demoLinks.find((item) => item.id === context.link.id);
       if (target) target.starts = Math.max(0, Number(target.starts || 0) - 1);
-    }).catch(() => {});
+    }).catch(() => { });
     core.sendJson(res, error.status || 502, { error: error.message || 'realtime demo failed', code: error.code || 'voice_session_failed' });
   }
 }
@@ -5863,7 +5880,7 @@ async function apiTelephonyDial(req, res, ctx) {
     }
 
     // Count the dial attempt against today's usage.
-    bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => { });
     const runId = (r.data && (r.data.request_uuid || r.data.run_id || r.data.id || r.data.call_id)) || ('dial_' + Date.now());
     const providedName = String(b.callerName || b.recipientName || b.name || '').trim().slice(0, 80);
     // Auto-sync into WACRM leads, conversation timeline, and tenant-scoped callRecordings
@@ -5905,7 +5922,7 @@ async function apiTelephonyDial(req, res, ctx) {
         text: `Outbound phone call initiated to ${resolvedInfo.name ? resolvedInfo.name + ' (' + b.number + ')' : b.number}`,
         status: 'sent'
       });
-    }).catch(() => {});
+    }).catch(() => { });
 
     core.sendJson(res, r.status || 200, { ok: true, message: 'call queued', runId, ...r.data });
   } catch (e) {
@@ -6169,7 +6186,7 @@ ESCALATION RULES:
   }
 
   const knowledgeSection = agent.knowledge ? `\n\n# BUSINESS KNOWLEDGE BASE\n${agent.knowledge}` : '';
-  
+
   // Rumik Tone Tagging for Natural Indian Speech Delivery
   const toneTag = agent.rumikTone === 'excited' ? '[excited]' : (agent.rumikTone === 'neutral' ? '[neutral]' : (agent.rumikTone === 'empathetic' ? '[happy]' : '[happy]'));
   const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MUGA VOICE: ${String(agent.rumikVoice || 'ira').toUpperCase()})
@@ -6246,7 +6263,7 @@ async function apiVoiceCatalog(req, res, ctx) {
   const primaryAgent = agents.find((a) => a.isPrimary) || agents[0] || null;
   const tenant = (d.tenants || []).find((t) => t.id === tenantId) || ctx.tenant;
   const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === tenantId && f.isActive) ||
-                     (d.dograhFlows || []).find((f) => f.tenantId === tenantId) || null;
+    (d.dograhFlows || []).find((f) => f.tenantId === tenantId) || null;
 
   const activeVoice = {
     voiceId: (primaryAgent && primaryAgent.rumikVoice) || tenant.defaultVoiceId || 'ira',
@@ -6310,7 +6327,7 @@ async function apiVoiceSave(req, res, ctx) {
   let targetAgentId = String(b.agentId || '').trim();
   if (!targetAgentId) {
     const primary = (d.agents || []).find((a) => a.tenantId === ctx.tenant.id && a.isPrimary) ||
-                    (d.agents || []).find((a) => a.tenantId === ctx.tenant.id);
+      (d.agents || []).find((a) => a.tenantId === ctx.tenant.id);
     if (primary) targetAgentId = primary.id;
   }
 
@@ -6343,20 +6360,20 @@ async function apiVoiceSave(req, res, ctx) {
   try {
     const pipeRes = await rumikVoice.syncDograhPipelineVoice(voiceId, model);
     dograhSynced = !!(pipeRes && pipeRes.ok);
-  } catch (_) {}
+  } catch (_) { }
 
   // 2. If agent updated, push to active Dograh Workflow
   let workflowSynced = false;
   if (updatedAgent) {
     try {
       const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id && f.isActive) ||
-                         (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id);
+        (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id);
       const targetWfId = (activeFlow && activeFlow.workflowId) || dograhDefaultWorkflowId();
       if (targetWfId) {
         const wfRes = await pushAgentToDograhWorkflow(updatedAgent, ctx.tenant.id, targetWfId);
         workflowSynced = !!(wfRes && wfRes.ok);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   core.sendJson(res, 200, {
@@ -7655,7 +7672,7 @@ async function apiTeamsCreate(req, res, ctx) {
   // Sync primary agent on shared number if assigned to this employee
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validAgentIds.includes(a.id)));
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 201, { ok: true, member: publicUser(newMember) });
@@ -7699,7 +7716,7 @@ async function apiTeamsUpdate(req, res, ctx) {
 
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && a.isPrimary) || core.db().agents.find((a) => a.tenantId === ctx.tenant.id);
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 200, { ok: true, member: publicUser(updated) });
@@ -7745,7 +7762,7 @@ async function apiTeamsAssignAgent(req, res, ctx) {
 
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validIds.includes(a.id)));
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 200, { ok: true, member: publicUser(updated) });
@@ -7776,7 +7793,7 @@ async function apiTeamsEscalate(req, res, ctx) {
   // If placeLiveCall is requested and employee has a valid 10-digit Indian mobile number, place real transfer call via VoBiz/Dograh
   if (b.placeLiveCall && empDigits.length === 10) {
     try {
-      await pushAgentToDograhWorkflow(agent, ctx.tenant.id).catch(() => {});
+      await pushAgentToDograhWorkflow(agent, ctx.tenant.id).catch(() => { });
       const tenantConnections = (d.byonConnections || []).filter((x) => x.tenantId === ctx.tenant.id && (x.status === 'active' || x.status === 'connected'));
       const activeConn = tenantConnections[0];
       const authId = (activeConn && activeConn.authId) || process.env.VOBIZ_AUTH_ID;
@@ -7915,7 +7932,7 @@ function hangupViaVobiz(callUuid, authId, authToken) {
       }
     };
     const req = https.request(options, (res) => {
-      res.on('data', () => {});
+      res.on('data', () => { });
       res.on('end', () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode }));
     });
     req.on('error', () => resolve({ ok: false }));
@@ -7938,7 +7955,7 @@ async function syncLiveDograhRuns(tenantId) {
       try {
         const _r = await providers.telephony.fetchRecordings({ limit: 8, workflowId: _wid });
         (_r.runs || []).forEach((x) => { x._wid = _wid; runs.push(x); });
-      } catch (_) {}
+      } catch (_) { }
     }
     if (!Array.isArray(runs) || !runs.length) return;
     for (const run of runs) {
@@ -7959,7 +7976,7 @@ async function syncLiveDograhRuns(tenantId) {
         try {
           const fetched = await providers.telephony.fetchRunDetail(runId, run._wid);
           if (fetched) detail = fetched;
-        } catch (_) {}
+        } catch (_) { }
         const norm = normalizeRun(detail, (existing && existing.tenantId) || tenantId || 't_seed_client');
         await core.mutate((dd) => {
           if (!Array.isArray(dd.callRecordings)) dd.callRecordings = [];
@@ -7986,10 +8003,10 @@ async function syncLiveDograhRuns(tenantId) {
               endedAt: null,
             });
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // GET /api/calls/live -> Real-time Live Call Locator for Dashboard
@@ -8029,7 +8046,7 @@ async function apiLiveCallsList(req, res, ctx) {
           }
         }
       });
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   const freshDb = core.db();
@@ -8283,7 +8300,7 @@ async function apiLiveCallAction(req, res, ctx) {
     const authToken = (activeConn && activeConn.authToken) || process.env.VOBIZ_AUTH_TOKEN;
 
     if (targetCall.dograhRunId && !String(targetCall.dograhRunId).startsWith('live_') && authId && authToken) {
-      await hangupViaVobiz(targetCall.dograhRunId, authId, authToken).catch(() => {});
+      await hangupViaVobiz(targetCall.dograhRunId, authId, authToken).catch(() => { });
     }
 
     const startMs = new Date(targetCall.startedAt || Date.now()).getTime();
@@ -8347,7 +8364,7 @@ async function apiLiveCallAction(req, res, ctx) {
           liveCallPlaced = true;
           callRunId = r && r.data && (r.data.request_uuid || r.data.run_id || r.data.id);
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     const logEntry = {
@@ -8479,7 +8496,7 @@ function requestOriginAllowed(req) {
     try {
       const refUrl = new URL(referer);
       if (refUrl.origin === origin.origin) return true;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   return false;
@@ -8964,18 +8981,22 @@ async function apiMemberRole(req, res, ctx) {
 
 function apiAdminOverview(req, res) {
   const d = core.db();
-  const issued = d.invoices.filter((row) => row.status === 'issued' || row.status === 'paid');
-  core.sendJson(res, 200, { totals: {
-    tenants: d.tenants.length,
-    activeTenants: d.tenants.filter((t) => (t.status || 'active') === 'active').length,
-    closedTenants: d.tenants.filter((t) => t.status === 'closed').length,
-    users: d.users.length,
-    openTickets: d.supportTickets.filter((t) => t.status !== 'closed').length,
-    walletPaise: d.wallets.reduce((n, w) => n + w.balancePaise, 0),
-    calls: d.usage.reduce((n, u) => n + (u.calls || 0), 0),
-    invoicedPaise: issued.reduce((n, row) => n + row.amountPaise, 0),
-    outstandingPaise: d.invoices.filter((row) => row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
-  } });
+  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d));
+  const clientTenantIds = new Set(clientTenants.map((t) => t.id));
+  const issued = d.invoices.filter((row) => clientTenantIds.has(row.tenantId) && (row.status === 'issued' || row.status === 'paid'));
+  core.sendJson(res, 200, {
+    totals: {
+      tenants: clientTenants.length,
+      activeTenants: clientTenants.filter((t) => (t.status || 'active') === 'active').length,
+      closedTenants: clientTenants.filter((t) => t.status === 'closed').length,
+      users: d.users.filter((u) => clientTenantIds.has(u.tenantId)).length,
+      openTickets: d.supportTickets.filter((t) => clientTenantIds.has(t.tenantId) && t.status !== 'closed').length,
+      walletPaise: d.wallets.filter((w) => clientTenantIds.has(w.tenantId)).reduce((n, w) => n + w.balancePaise, 0),
+      calls: d.usage.filter((u) => clientTenantIds.has(u.tenantId)).reduce((n, u) => n + (u.calls || 0), 0),
+      invoicedPaise: issued.reduce((n, row) => n + row.amountPaise, 0),
+      outstandingPaise: d.invoices.filter((row) => clientTenantIds.has(row.tenantId) && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
+    }
+  });
 }
 
 
@@ -9433,51 +9454,143 @@ async function apiWorkflowDuplicate(req, res, ctx) {
 
 function apiAdminTenants(req, res) {
   const d = core.db();
-  core.sendJson(res, 200, { tenants: d.tenants.map((t) => ({
-    ...publicTenant(t),
-    users: d.users.filter((u) => u.tenantId === t.id).length,
-    agents: d.agents.filter((a) => a.tenantId === t.id).length,
-    calls: d.usage.filter((u) => u.tenantId === t.id).reduce((n, row) => n + Number(row.calls || 0), 0),
-    lastApproachedAt: t.lastApproachedAt || null,
-    outstandingPaise: d.invoices.filter((row) => row.tenantId === t.id && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
-    wallet: publicWallet(d.wallets.find((w) => w.tenantId === t.id) || { id: null, tenantId: t.id, currency: 'INR', balancePaise: 0 }),
-  })) });
+  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d));
+  core.sendJson(res, 200, {
+    tenants: clientTenants.map((t) => ({
+      ...publicTenant(t),
+      users: d.users.filter((u) => u.tenantId === t.id).length,
+      agents: d.agents.filter((a) => a.tenantId === t.id).length,
+      calls: d.usage.filter((u) => u.tenantId === t.id).reduce((n, row) => n + Number(row.calls || 0), 0),
+      lastApproachedAt: t.lastApproachedAt || null,
+      outstandingPaise: d.invoices.filter((row) => row.tenantId === t.id && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
+      wallet: publicWallet(d.wallets.find((w) => w.tenantId === t.id) || { id: null, tenantId: t.id, currency: 'INR', balancePaise: 0 }),
+    }))
+  });
 }
 
 async function apiAdminTenantCreate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
   const name = String(b.name || '').trim().slice(0, 80);
-  const ownerEmail = String(b.ownerEmail || '').trim().toLowerCase().slice(0, 160);
-  const password = String(b.password || '');
-  if (!name) return core.sendJson(res, 422, { error: 'client workspace name required', code: 'bad_tenant' });
-  if (ownerEmail && (!EMAIL_RE.test(ownerEmail) || password.length < 12)) return core.sendJson(res, 422, { error: 'a valid owner email and 12 character temporary password are required together', code: 'bad_owner' });
-  if (!ownerEmail && password) return core.sendJson(res, 422, { error: 'owner email is required when a password is supplied', code: 'bad_owner' });
-  if (ownerEmail && core.db().users.some((user) => user.email === ownerEmail)) return core.sendJson(res, 409, { error: 'owner email is already registered', code: 'email_taken' });
-  let tenant; let user = null;
+  let ownerEmail = String(b.ownerEmail || '').trim().toLowerCase().slice(0, 160);
+  let password = String(b.password || '').trim();
+
+  if (!name) {
+    return core.sendJson(res, 422, { error: 'Client workspace name is required.', code: 'bad_tenant' });
+  }
+
+  // Validate owner email format if provided
+  if (ownerEmail && !EMAIL_RE.test(ownerEmail)) {
+    return core.sendJson(res, 422, { error: 'Please enter a valid owner email address format (e.g. name@domain.com).', code: 'bad_email' });
+  }
+
+  // Allow multi-tenant workspace ownership with same email, or find existing user hash
+  const existingUser = ownerEmail ? core.db().users.find((u) => (u.email || '').toLowerCase() === ownerEmail) : null;
+
+  // Validate password length if provided (allow min 6 chars)
+  if (password && password.length < 6) {
+    return core.sendJson(res, 422, { error: 'Temporary password must be at least 6 characters.', code: 'weak_password' });
+  }
+
+  // Generate temporary password if not provided
+  const generatedPassword = password || (existingUser ? 'AccountExistingPassword' : ('Seevora@' + crypto.randomInt(1000, 9999)));
+
+  let tenant;
+  let user = null;
+
   await core.mutate((store) => {
     const now = new Date().toISOString();
     const tenantId = core.genId('t_');
+    const existingSlugs = new Set((store.tenants || []).map((t) => t.slug));
+    const safeSlug = makeSlug(name, existingSlugs);
     const dograhOrg = 'org_' + tenantId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    // Auto-generate functional owner email if not provided, ensuring uniqueness
+    let finalOwnerEmail = ownerEmail || ('client.' + safeSlug + '@seevora.in');
+    if (!ownerEmail) {
+      let counter = 1;
+      while ((store.users || []).some((u) => (u.email || '').toLowerCase() === finalOwnerEmail.toLowerCase())) {
+        finalOwnerEmail = 'client.' + safeSlug + '-' + counter + '@seevora.in';
+        counter++;
+      }
+    }
+    const finalOwnerName = String(b.ownerName || '').trim().slice(0, 80) || (name + ' Owner');
+
     tenant = {
-      id: tenantId, name, slug: makeSlug(name, new Set(store.tenants.map((t) => t.slug))),
-      createdAt: now, branding: { color: '#B88A2D' }, providers: { ...DEFAULT_PROVIDERS },
-      plan: 'studio', status: ownerEmail ? 'active' : 'onboarding', privacyMode: 'standard',
+      id: tenantId,
+      name,
+      slug: safeSlug,
+      createdAt: now,
+      branding: { color: '#0d5d41' },
+      providers: { ...DEFAULT_PROVIDERS },
+      plan: 'studio',
+      status: 'active',
+      privacyMode: 'standard',
+      onboardingCompleted: true,
       dograhOrgId: dograhOrg,
       dograh_org_id: dograhOrg,
       dograh_api_key: 'dk_' + crypto.randomBytes(16).toString('hex'),
       dograhApiKey: 'dk_' + crypto.randomBytes(16).toString('hex'),
+      features: {
+        assistant: true,
+        workflows: true,
+        inbound: true,
+        campaigns: true,
+        recordings: true,
+        crmPipeline: true,
+        agents: true,
+        teams: true,
+        talk: true
+      }
     };
     store.tenants.push(tenant);
-    store.wallets.push({ id: core.genId('wal_'), tenantId: tenant.id, currency: 'INR', balancePaise: 0, createdAt: now, updatedAt: now });
-    if (ownerEmail) {
-      user = { id: core.genId('u_'), tenantId: tenant.id, email: ownerEmail, name: String(b.ownerName || 'Client Owner').trim().slice(0, 80), passHash: core.hashPassword(password), role: 'owner', status: 'active', createdAt: now };
-      store.users.push(user);
-    }
-    store.clientActivities.push({ id: core.genId('act_'), tenantId: tenant.id, type: 'workspace_created', channel: 'internal', visibility: 'internal', summary: 'Client workspace created in Agency OS.', actorUserId: ctx.user.id, createdAt: now });
-    addAudit(store, ctx, 'admin.tenant.created', 'tenant', tenant.id, { ownerCreated: !!user });
+
+    store.wallets.push({
+      id: core.genId('wal_'),
+      tenantId: tenant.id,
+      currency: 'INR',
+      balancePaise: 0,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    user = {
+      id: core.genId('u_'),
+      tenantId: tenant.id,
+      email: finalOwnerEmail,
+      name: finalOwnerName,
+      passHash: (existingUser && !password && existingUser.passHash) ? existingUser.passHash : core.hashPassword(generatedPassword),
+      role: 'owner',
+      status: 'active',
+      onboardingCompleted: true,
+      createdAt: now
+    };
+    store.users.push(user);
+
+    store.clientActivities.push({
+      id: core.genId('act_'),
+      tenantId: tenant.id,
+      type: 'workspace_created',
+      channel: 'internal',
+      visibility: 'internal',
+      summary: `Client workspace "${name}" created with owner ${finalOwnerEmail}.`,
+      actorUserId: ctx.user.id,
+      createdAt: now
+    });
+
+    addAudit(store, ctx, 'admin.tenant.created', 'tenant', tenant.id, {
+      ownerCreated: true,
+      ownerEmail: finalOwnerEmail
+    });
   });
-  core.sendJson(res, 201, { tenant: publicTenant(tenant), owner: user ? publicUser(user) : null, note: 'No email was sent.' });
+
+  core.sendJson(res, 201, {
+    ok: true,
+    tenant: publicTenant(tenant),
+    owner: user ? publicUser(user) : null,
+    tempPassword: generatedPassword,
+    note: `Client workspace "${name}" provisioned.`
+  });
 }
 
 function apiAdminUsers(req, res) { core.sendJson(res, 200, { users: core.db().users.map(publicUser) }); }
@@ -9541,15 +9654,15 @@ async function apiImpersonationExit(req, res, ctx) {
   const impCookieTok = (core.parseCookieToken && typeof core.parseCookieToken === 'function')
     ? core.parseCookieToken(req)
     : (() => {
-        const raw = (req && req.headers && req.headers.cookie) || '';
-        for (const part of raw.split(';')) {
-          const idx = part.indexOf('=');
-          if (idx !== -1 && part.slice(0, idx).trim() === (core.COOKIE_NAME || 'rxv_sess')) {
-            return part.slice(idx + 1).trim();
-          }
+      const raw = (req && req.headers && req.headers.cookie) || '';
+      for (const part of raw.split(';')) {
+        const idx = part.indexOf('=');
+        if (idx !== -1 && part.slice(0, idx).trim() === (core.COOKIE_NAME || 'rxv_sess')) {
+          return part.slice(idx + 1).trim();
         }
-        return '';
-      })();
+      }
+      return '';
+    })();
   let impHash = '';
   if (impCookieTok) {
     impHash = crypto.createHash('sha256').update(impCookieTok).digest('hex');
@@ -9572,7 +9685,7 @@ async function apiImpersonationExit(req, res, ctx) {
     }
     dd.sessions = dd.sessions.filter((s) => !s.impersonatorUserId || s.exp > Date.now());
     if (ctx.user) {
-      try { addAudit(dd, ctx, 'admin.impersonation.ended', 'user', ctx.user.id); } catch (_) {}
+      try { addAudit(dd, ctx, 'admin.impersonation.ended', 'user', ctx.user.id); } catch (_) { }
     }
   });
 
@@ -9601,6 +9714,9 @@ async function apiAdminTenantStatus(req, res, ctx) {
   if (!['onboarding', 'active', 'suspended', 'closed'].includes(status)) return core.sendJson(res, 422, { error: 'invalid status', code: 'bad_status' });
   const tenant = core.db().tenants.find((t) => t.id === String(b.tenantId || ''));
   if (!tenant) return core.sendJson(res, 404, { error: 'tenant not found', code: 'not_found' });
+  if (isPlatformAdminTenant(tenant, core.db())) {
+    return core.sendJson(res, 403, { error: 'Platform Admin workspace is protected and cannot be suspended or closed', code: 'protected_tenant' });
+  }
   await core.mutate((d) => {
     const now = new Date().toISOString();
     d.tenants.find((t) => t.id === tenant.id).status = status;
@@ -9624,7 +9740,7 @@ async function apiAdminTenantDelete(req, res, ctx) {
   if (!tenant) return core.sendJson(res, 404, { error: 'tenant not found', code: 'not_found' });
 
   const adminTenantIds = ['t_rapid', 't_admin', 't_demo'];
-  if (adminTenantIds.includes(tenantId) || (ctx.tenant && ctx.tenant.id === tenantId)) {
+  if (adminTenantIds.includes(tenantId) || isPlatformAdminTenant(tenant, d) || (ctx.tenant && ctx.tenant.id === tenantId)) {
     return core.sendJson(res, 403, { error: 'Cannot delete primary admin workspace', code: 'protected_tenant' });
   }
 
@@ -9704,12 +9820,28 @@ async function apiAdminWalletAdjust(req, res, ctx) {
   const b = ctx.body || {};
   const amountPaise = Number(b.amountPaise);
   const tenantId = String(b.tenantId || '');
-  if (!core.db().tenants.some((t) => t.id === tenantId) || !Number.isInteger(amountPaise) || amountPaise === 0 || Math.abs(amountPaise) > 100000000) return core.sendJson(res, 422, { error: 'valid tenantId and amountPaise required', code: 'bad_adjustment' });
+  const d = core.db();
+  const targetTenant = d.tenants.find((t) => t.id === tenantId);
+  if (!targetTenant || !Number.isInteger(amountPaise) || amountPaise === 0 || Math.abs(amountPaise) > 100000000) {
+    return core.sendJson(res, 422, { error: 'valid tenantId and amountPaise required', code: 'bad_adjustment' });
+  }
+  if (isPlatformAdminTenant(targetTenant, d)) {
+    return core.sendJson(res, 403, {
+      error: 'Platform Admin workspace is the master host account with unlimited quota and does not accept client wallet credits.',
+      code: 'platform_admin_exempt'
+    });
+  }
   const idempotencyKey = String(b.idempotencyKey || '').trim().slice(0, 120);
   if (!idempotencyKey) return core.sendJson(res, 422, { error: 'idempotencyKey required', code: 'idempotency_required' });
   let entry;
-  try { await core.mutate((d) => { entry = addLedgerEntry(d, tenantId, amountPaise, 'admin_adjustment', `admin:${idempotencyKey}`, ctx.user.id, { reason: String(b.reason || '').slice(0, 200) }); if (entry) addAudit(d, ctx, 'admin.wallet.adjusted', 'tenant', tenantId, { amountPaise, ledgerId: entry.id }); }); }
-  catch (e) { return core.sendJson(res, 409, { error: e.message, code: 'wallet_rejected' }); }
+  try {
+    await core.mutate((store) => {
+      entry = addLedgerEntry(store, tenantId, amountPaise, 'admin_adjustment', `admin:${idempotencyKey}`, ctx.user.id, { reason: String(b.reason || '').slice(0, 200) });
+      if (entry) addAudit(store, ctx, 'admin.wallet.adjusted', 'tenant', tenantId, { amountPaise, ledgerId: entry.id });
+    });
+  } catch (e) {
+    return core.sendJson(res, 409, { error: e.message, code: 'wallet_rejected' });
+  }
   if (!entry) return core.sendJson(res, 200, { duplicate: true });
   core.sendJson(res, 201, { ledgerEntry: entry });
 }
@@ -9797,7 +9929,7 @@ function isPurchasedNumber(num) {
         if (a && a.telephony && a.telephony.did) purchasedList.push(a.telephony.did);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   for (const p of purchasedList) {
     const pDigits = String(p).replace(/\D/g, '');
@@ -10125,7 +10257,7 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
       try {
         const _r = await providers.telephony.fetchRecordings({ limit, workflowId: _wid });
         (_r.runs || []).forEach((x) => { x._wid = _wid; runs.push(x); });
-      } catch (_) {}
+      } catch (_) { }
     }
     if (!Array.isArray(runs) || runs.length === 0) return [];
 
@@ -10206,7 +10338,7 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
               recording_url: norm.recordingUrl || `/api/calls/${norm.id || norm.dograhRunId}/audio`,
               custom_vars: detail.gathered_context || {}
             };
-            crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'call_ended', callPayload).catch(() => {});
+            crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'call_ended', callPayload).catch(() => { });
             // Dispatch to connected CRM integrations (Google Calendar, Sheets, Zoho, Slack)
             integrations.dispatchAll(core.db(), core.mutate, tenantId, {
               name: norm.callerName || callPayload.phone_number || 'Customer',
@@ -10220,13 +10352,13 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
               recordingUrl: norm.recordingUrl || callPayload.recording_url || '',
               transcript: norm.transcript || '',
               callerEmail: (detail && detail.gathered_context && detail.gathered_context.email) || ''
-            }).catch(() => {});
+            }).catch(() => { });
             if (norm.qualityScore && norm.qualityScore >= 70) {
               crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'lead_qualified', {
                 ...callPayload,
                 quality_score: norm.qualityScore,
                 quality_tier: norm.qualityTier
-              }).catch(() => {});
+              }).catch(() => { });
             }
             if (norm.recordingUrl) {
               crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'recording_ready', {
@@ -10234,10 +10366,10 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
                 recording_url: norm.recordingUrl,
                 transcript: norm.transcript,
                 duration_sec: norm.durationSeconds
-              }).catch(() => {});
+              }).catch(() => { });
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }));
     }
 
@@ -10263,7 +10395,7 @@ function triggerBackgroundDograhSync(tenantId) {
   setImmediate(async () => {
     try {
       await syncDograhRecordingsForTenant(tenantId, { limit: 50 });
-    } catch (_) {}
+    } catch (_) { }
   });
 }
 
@@ -10387,7 +10519,7 @@ async function apiRecordingTranscribe(req, res, ctx) {
       });
       return core.sendJson(res, 200, { ok: true, transcript: updated.transcript, source: 'dograh_events' });
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // 2. Transcribe via Deepgram STT
   try {
@@ -10723,7 +10855,7 @@ async function apiTelephonyWebhook(req, res, body) {
     } else if (body && typeof body === 'object') {
       payload = body;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const run = payload.run || payload.call || payload.data || payload;
   const tenants = core.db().tenants || [];
@@ -10774,7 +10906,7 @@ function withinTraiWindow(campaign) {
   if (updatedMs && (Date.now() - updatedMs < 4 * 3600000)) return true;
   const h = istHour();
   const startH = Number(campaign.scheduleStartHour ?? TRAI_START_HOUR);
-  const endH   = Number(campaign.scheduleEndHour   ?? TRAI_END_HOUR);
+  const endH = Number(campaign.scheduleEndHour ?? TRAI_END_HOUR);
   if (h < startH || h >= endH) return false;
   return true;
 }
@@ -10796,46 +10928,46 @@ async function apiCampaignsCreate(req, res, ctx) {
 
   const agents = (core.db().agents || []).filter((a) => a.tenantId === ctx.tenant.id);
   const agentId = String(b.agentId || (agents[0] && agents[0].id) || 'default');
-  const agent   = agents.find((a) => a.id === agentId);
+  const agent = agents.find((a) => a.id === agentId);
   const agentName = agent ? agent.name : 'Seevora AI Voice Receptionist';
 
   // Normalize leads array from wizard step 2
   const rawLeads = Array.isArray(b.leads) ? b.leads : [];
   const leads = rawLeads.map((l) => ({
-    id:        l.id        || core.genId('ld_'),
-    name:      String(l.name  || '').trim() || 'Lead',
-    phone:     String(l.phone || '').trim(),
+    id: l.id || core.genId('ld_'),
+    name: String(l.name || '').trim() || 'Lead',
+    phone: String(l.phone || '').trim(),
     rawNumber: String(l.rawNumber || l.phone || '').replace(/\D/g, ''),
-    status:    'pending',
-    retries:   0,
-    error:     null,
+    status: 'pending',
+    retries: 0,
+    error: null,
     timestamp: null,
   }));
 
   const campaign = {
-    id:                core.genId('cmp_'),
-    tenantId:          ctx.tenant.id,
+    id: core.genId('cmp_'),
+    tenantId: ctx.tenant.id,
     name,
     agentId,
     agentName,
-    status:            'draft',
+    status: 'draft',
     leads,
     // Schedule settings (Step 3)
-    dailyCap:          Number(b.dailyCap)          || 100,
-    intervalSeconds:   Number(b.intervalSeconds)   || 45,
-    retryLimit:        Number(b.retryLimit)         || 2,
+    dailyCap: Number(b.dailyCap) || 100,
+    intervalSeconds: Number(b.intervalSeconds) || 45,
+    retryLimit: Number(b.retryLimit) || 2,
     retryBusyAfterMin: Number(b.retryBusyAfterMin) || 30,
-    retryNoAnsAfterMin:Number(b.retryNoAnsAfterMin)|| 120,
-    activeDays:        Array.isArray(b.activeDays) ? b.activeDays : [1,2,3,4,5], // Mon-Fri
+    retryNoAnsAfterMin: Number(b.retryNoAnsAfterMin) || 120,
+    activeDays: Array.isArray(b.activeDays) ? b.activeDays : [1, 2, 3, 4, 5], // Mon-Fri
     scheduleStartHour: Number(b.scheduleStartHour) || TRAI_START_HOUR,
-    scheduleEndHour:   Number(b.scheduleEndHour)   || TRAI_END_HOUR,
+    scheduleEndHour: Number(b.scheduleEndHour) || TRAI_END_HOUR,
     // Stats
-    dialed:     0,
-    connected:  0,
-    failed:     0,
-    todayDialed:0,
-    createdAt:  new Date().toISOString(),
-    updatedAt:  new Date().toISOString(),
+    dialed: 0,
+    connected: 0,
+    failed: 0,
+    todayDialed: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   await core.mutate((d) => {
@@ -10851,15 +10983,15 @@ async function apiCampaignsCreate(req, res, ctx) {
 async function apiCampaignsAction(req, res, ctx) {
   const b = ctx.body || {};
   const campaignId = String(b.campaignId || '');
-  const action     = String(b.action     || ''); // 'start' | 'pause' | 'stop'
+  const action = String(b.action || ''); // 'start' | 'pause' | 'stop'
   const d = core.db();
   const camp = (d.campaigns || []).find((c) => c.id === campaignId && c.tenantId === ctx.tenant.id);
   if (!camp) return core.sendJson(res, 404, { error: 'campaign not found', code: 'not_found' });
 
   let newStatus = camp.status;
-  if (action === 'start' && ['draft','paused'].includes(camp.status)) newStatus = 'running';
+  if (action === 'start' && ['draft', 'paused'].includes(camp.status)) newStatus = 'running';
   else if (action === 'pause' && camp.status === 'running') newStatus = 'paused';
-  else if (action === 'stop')  newStatus = 'stopped';
+  else if (action === 'stop') newStatus = 'stopped';
   else return core.sendJson(res, 422, { error: 'invalid action for current status', code: 'bad_action' });
 
   await core.mutate((d) => {
@@ -10943,14 +11075,14 @@ async function campaignWorkerTick() {
 
       // Place call via Dograh / VoBiz
       let callSuccess = false;
-      let callError   = '';
-      let runId       = null;
+      let callError = '';
+      let runId = null;
       const dBeforeDial = core.db();
       const campAgent = (dBeforeDial.agents || []).find((a) => a.id === fresh.agentId && a.tenantId === fresh.tenantId) ||
         (dBeforeDial.agents || []).find((a) => a.tenantId === fresh.tenantId && a.isPrimary) ||
         (dBeforeDial.agents || []).find((a) => a.tenantId === fresh.tenantId) || null;
       if (campAgent) {
-        await pushAgentToDograhWorkflow(campAgent, fresh.tenantId).catch(() => {});
+        await pushAgentToDograhWorkflow(campAgent, fresh.tenantId).catch(() => { });
       }
       const tenantConns = (dBeforeDial.byonConnections || []).filter((x) => x.tenantId === fresh.tenantId && (x.status === 'active' || x.status === 'connected'));
       const activeConn = tenantConns[0];
@@ -10971,7 +11103,7 @@ async function campaignWorkerTick() {
         }
         callSuccess = r && (r.status === 200 || r.status === 201 || r.ok);
         runId = (r && r.data && (r.data.request_uuid || r.data.run_id || r.data.id || r.data.call_id)) || ('camp_' + Date.now());
-        bumpUsage(fresh.tenantId, 'calls', 1).catch(() => {});
+        bumpUsage(fresh.tenantId, 'calls', 1).catch(() => { });
       } catch (e) {
         callError = String(e.message || e);
       }
@@ -10985,10 +11117,10 @@ async function campaignWorkerTick() {
         const retries = (l.retries || 0) + 1;
         const nowIso = new Date().toISOString();
         if (callSuccess) {
-          l.status    = 'initiated';
+          l.status = 'initiated';
           l.timestamp = nowIso;
-          l.runId     = runId || null;
-          c.dialed    = (c.dialed || 0) + 1;
+          l.runId = runId || null;
+          c.dialed = (c.dialed || 0) + 1;
           c.connected = (c.connected || 0) + 1;
           c.todayDialed = (c.todayDialed || 0) + 1;
           // Remove any retry job for this lead
@@ -11027,9 +11159,9 @@ async function campaignWorkerTick() {
           const retryAfterMin = isBusy ? (fresh.retryBusyAfterMin || 30) : (fresh.retryNoAnsAfterMin || 120);
           const maxRetries = fresh.retryLimit || 2;
           if (retries <= maxRetries) {
-            l.status  = 'pending'; // reset to pending for retry
+            l.status = 'pending'; // reset to pending for retry
             l.retries = retries;
-            l.error   = callError;
+            l.error = callError;
             const retryAfter = new Date(Date.now() + retryAfterMin * 60000).toISOString();
             if (!Array.isArray(d.campaignJobs)) d.campaignJobs = [];
             // Upsert retry job
@@ -11042,11 +11174,11 @@ async function campaignWorkerTick() {
               d.campaignJobs.push({ id: core.genId('cjob_'), campaignId: c.id, leadId: l.id, status: 'retry_pending', retryAfter, retries, error: callError, createdAt: new Date().toISOString() });
             }
           } else {
-            l.status    = 'failed';
-            l.error     = callError;
+            l.status = 'failed';
+            l.error = callError;
             l.timestamp = new Date().toISOString();
-            c.failed    = (c.failed || 0) + 1;
-            c.dialed    = (c.dialed || 0) + 1;
+            c.failed = (c.failed || 0) + 1;
+            c.dialed = (c.dialed || 0) + 1;
             c.todayDialed = (c.todayDialed || 0) + 1;
             d.campaignJobs = (d.campaignJobs || []).filter((j) => !(j.campaignId === c.id && j.leadId === l.id));
           }
@@ -11079,7 +11211,7 @@ function startCampaignScheduler() {
       _lastResetDay = istDay;
       core.mutate((d) => {
         (d.campaigns || []).forEach((c) => { c.todayDialed = 0; });
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, 60000);
 }
@@ -11097,7 +11229,7 @@ function startRetentionScheduler() {
       });
       const purged = before - (d.recordings || []).length;
       if (purged > 0) logger.info(`DPDP 90-day retention cleaner auto-purged ${purged} expired call recording(s)`);
-    }).catch(() => {});
+    }).catch(() => { });
   };
   setTimeout(runPurge, 10000).unref();
   setInterval(runPurge, 24 * 3600 * 1000);
@@ -11116,7 +11248,7 @@ function startRetentionScheduler() {
 
 async function apiAutoCallWebhookCreate(req, res, ctx) {
   const b = ctx.body || {};
-  const label   = String(b.label || 'Auto-Call Webhook').slice(0, 80);
+  const label = String(b.label || 'Auto-Call Webhook').slice(0, 80);
   const agentId = String(b.agentId || '').trim() || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
@@ -11169,7 +11301,7 @@ async function apiAutoCallWebhookIngest(req, res, passedRawBody) {
   }
 
   const receivedSig = String(req.headers[autocall.SIGNATURE_HEADER] || req.headers['x-signature'] || '');
-  const receivedTs  = String(req.headers[autocall.TIMESTAMP_HEADER] || req.headers['x-timestamp'] || String(Date.now()));
+  const receivedTs = String(req.headers[autocall.TIMESTAMP_HEADER] || req.headers['x-timestamp'] || String(Date.now()));
 
   const result = await autocall.ingestLead({
     db, db_mutate: core.mutate, rawBody, receivedSig, receivedTs, webhookRow,
@@ -11184,9 +11316,9 @@ async function apiAutoCallWebhookIngest(req, res, passedRawBody) {
 }
 
 function apiAutoCallLeadsList(req, res, ctx) {
-  const q    = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const page = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps   = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
   const status = q.get('status') || null;
   const result = autocall.listLeads(core.db(), ctx.tenant.id, { page, pageSize: ps, status });
   core.sendJson(res, 200, result);
@@ -11213,8 +11345,8 @@ async function apiKbIngest(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const b      = ctx.body || {};
-  const text   = String(b.text || '').trim();
+  const b = ctx.body || {};
+  const text = String(b.text || '').trim();
   const source = String(b.source || 'manual').slice(0, 200);
   if (!text) return core.sendJson(res, 422, { error: 'text is required', code: 'missing_text' });
   if (text.length > knowledgebase.MAX_INGEST_BYTES)
@@ -11262,8 +11394,8 @@ async function apiKbCrawl(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const b        = ctx.body || {};
-  const url      = String(b.url || '').trim();
+  const b = ctx.body || {};
+  const url = String(b.url || '').trim();
   const maxPages = Math.min(parseInt(b.maxPages || '3', 10), knowledgebase.MAX_CRAWL_PAGES);
   if (!url) return core.sendJson(res, 422, { error: 'url is required', code: 'missing_url' });
   try { new URL(url); } catch (_) { return core.sendJson(res, 422, { error: 'url must be a valid URL', code: 'bad_url' }); }
@@ -11281,9 +11413,9 @@ function apiKbSearch(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const q    = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const query = String(q.get('q') || q.get('query') || '').trim().slice(0, 500);
-  const topK  = Math.min(20, parseInt(q.get('topK') || '5', 10));
+  const topK = Math.min(20, parseInt(q.get('topK') || '5', 10));
   if (!query) return core.sendJson(res, 422, { error: 'query parameter "q" is required', code: 'missing_query' });
 
   const result = knowledgebase.search(core.db(), agentId, ctx.tenant.id, query, topK);
@@ -11296,9 +11428,9 @@ function apiKbList(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const q      = new URL(req.url, 'http://local').searchParams;
-  const page   = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps     = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const q = new URL(req.url, 'http://local').searchParams;
+  const page = Math.max(1, parseInt(q.get('page') || '1', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
   const result = knowledgebase.listChunks(core.db(), agentId, ctx.tenant.id, { page, pageSize: ps });
   core.sendJson(res, 200, { ok: true, agentId, ...result });
 }
@@ -11326,7 +11458,7 @@ async function apiKbClear(req, res, ctx) {
    ========================================================================== */
 
 function apiBookingScheduleGet(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
@@ -11338,14 +11470,14 @@ function apiBookingScheduleGet(req, res, ctx) {
 }
 
 async function apiBookingScheduleUpsert(req, res, ctx) {
-  const b       = ctx.body || {};
+  const b = ctx.body || {};
   const agentId = b.agentId || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
   }
 
-  const VALID_DAYS = new Set(['sun','mon','tue','wed','thu','fri','sat']);
+  const VALID_DAYS = new Set(['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']);
   if (b.availableDays !== undefined) {
     if (!Array.isArray(b.availableDays) || !b.availableDays.every((d) => VALID_DAYS.has(d)))
       return core.sendJson(res, 422, { error: 'availableDays must be array of: sun,mon,tue,wed,thu,fri,sat', code: 'bad_days' });
@@ -11359,15 +11491,15 @@ async function apiBookingScheduleUpsert(req, res, ctx) {
 }
 
 function apiBookingSlots(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
   }
-  const days      = Math.min(60, Math.max(1, parseInt(q.get('days') || '7', 10)));
+  const days = Math.min(60, Math.max(1, parseInt(q.get('days') || '7', 10)));
   const startDate = q.get('startDate') || null;
-  const result    = booking.getAvailableSlots(core.db(), ctx.tenant.id, agentId, { days, startDate });
+  const result = booking.getAvailableSlots(core.db(), ctx.tenant.id, agentId, { days, startDate });
   if (result.error) return core.sendJson(res, 200, { slots: [], error: result.error });
   core.sendJson(res, 200, { ok: true, agentId, ...result });
 }
@@ -11382,15 +11514,15 @@ async function apiBookingReserve(req, res, ctx) {
 
   const result = await booking.reserveSlot(
     core.mutate, core.db(), ctx.tenant.id, agentId, {
-      startTime:   String(b.startTime || b.slotStart || '').trim(),
-      callerName:  String(b.callerName  || b.name  || '').trim(),
-      callerPhone: String(b.callerPhone || b.phone || '').trim(),
-      callerEmail: String(b.callerEmail || b.email || '').trim(),
-      notes:   String(b.notes   || '').trim().slice(0, 2000),
-      source:  String(b.source  || b.bookingType || 'api').slice(0, 80),
-      metadata: typeof b.metadata === 'object' ? b.metadata : {},
-      createdBy: ctx.user.id,
-    }
+    startTime: String(b.startTime || b.slotStart || '').trim(),
+    callerName: String(b.callerName || b.name || '').trim(),
+    callerPhone: String(b.callerPhone || b.phone || '').trim(),
+    callerEmail: String(b.callerEmail || b.email || '').trim(),
+    notes: String(b.notes || '').trim().slice(0, 2000),
+    source: String(b.source || b.bookingType || 'api').slice(0, 80),
+    metadata: typeof b.metadata === 'object' ? b.metadata : {},
+    createdBy: ctx.user.id,
+  }
   );
 
   if (!result.ok) {
@@ -11403,22 +11535,22 @@ async function apiBookingReserve(req, res, ctx) {
 }
 
 function apiBookingList(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
-  const page    = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps      = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
-  const status  = q.get('status') || null;
-  const from    = q.get('from') || null;
-  const to      = q.get('to')   || null;
-  const result  = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
+  const page = Math.max(1, parseInt(q.get('page') || '1', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const status = q.get('status') || null;
+  const from = q.get('from') || null;
+  const to = q.get('to') || null;
+  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
   core.sendJson(res, 200, { ok: true, ...result });
 }
 
 async function apiBookingStatusUpdate(req, res, ctx) {
-  const b         = ctx.body || {};
+  const b = ctx.body || {};
   const bookingId = String(b.bookingId || '').trim();
-  const status    = String(b.status    || '').trim();
-  const notes     = String(b.notes     || '').trim().slice(0, 500);
+  const status = String(b.status || '').trim();
+  const notes = String(b.notes || '').trim().slice(0, 500);
   if (!bookingId) return core.sendJson(res, 422, { error: 'bookingId is required', code: 'bad_params' });
   const result = await booking.updateBookingStatus(core.mutate, ctx.tenant.id, bookingId, status, notes);
   if (!result.ok) return core.sendJson(res, result.code === 'not_found' ? 404 : 422, { ok: false, error: result.error, code: result.code });
@@ -11427,8 +11559,8 @@ async function apiBookingStatusUpdate(req, res, ctx) {
 }
 
 async function apiBookingReschedule(req, res, ctx) {
-  const b            = ctx.body || {};
-  const bookingId    = String(b.bookingId    || '').trim();
+  const b = ctx.body || {};
+  const bookingId = String(b.bookingId || '').trim();
   const newStartTime = String(b.newStartTime || '').trim();
   if (!bookingId || !newStartTime) return core.sendJson(res, 422, { error: 'bookingId and newStartTime are required', code: 'bad_params' });
 
@@ -11595,10 +11727,11 @@ async function apiAutoCallV1(req, res, passedBody) {
     return core.sendJson(res, 422, { error: 'phone must be in valid E.164 format (+91...)', code: 'invalid_phone' });
   }
 
-  // Validate tenant wallet balance (require minimum ₹10 balance = 1000 paise)
+  // Validate tenant wallet balance (Platform Admin has master quota)
+  const isHost = isPlatformAdminTenant(tenant, db);
   const wallet = (db.wallets || []).find((w) => w.tenantId === tenant.id);
   const balancePaise = wallet ? (wallet.balancePaise || 0) : 0;
-  if (balancePaise < 1000) {
+  if (!isHost && balancePaise < 1000) {
     return core.sendJson(res, 402, {
       error: 'Insufficient wallet balance. Minimum ₹10 (1000 paise) required for auto-dial.',
       balanceInr: (balancePaise / 100).toFixed(2),
@@ -11660,7 +11793,7 @@ async function apiAutoCallV1(req, res, passedBody) {
       }
     }, { dograhOrgId: tenant.dograhOrgId, dograhApiKey: tenant.dograhApiKey });
     runId = dialResult && dialResult.data && (dialResult.data.run_id || dialResult.data.id || dialResult.data.call_id);
-    bumpUsage(tenant.id, 'calls', 1).catch(() => {});
+    bumpUsage(tenant.id, 'calls', 1).catch(() => { });
   } catch (dialErr) {
     logger.warn('Auto-call dial failed: ' + dialErr.message);
   }
@@ -12302,7 +12435,7 @@ sttWss.on('connection', (client, req) => {
     if (qLang === 'en') requestedLang = 'en';
     else if (qLang === 'hi') requestedLang = 'hi';
     else requestedLang = 'multi';
-  } catch (_) {}
+  } catch (_) { }
 
   // Nova-3 provides full multilingual (multi) automatic English <-> Hindi recognition without dropping words
   const model = 'nova-3';
@@ -12411,11 +12544,11 @@ boot().then(() => {
     if (PORT !== 3000) {
       try {
         const aux = http.createServer(server.listeners('request')[0]);
-        aux.on('error', () => {});
+        aux.on('error', () => { });
         aux.listen(3000, () => {
           logger.info('Auxiliary HTTP listener active on port 3000: http://localhost:3000/');
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     const banner = [
@@ -12440,7 +12573,7 @@ boot().then(() => {
     if (process.platform === 'win32' && process.env.NODE_ENV !== 'test' && process.env.AUTO_OPEN !== 'false') {
       try {
         require('child_process').exec(`start http://localhost:${PORT}/app.html`);
-      } catch (_) {}
+      } catch (_) { }
     }
   });
 }).catch((e) => {

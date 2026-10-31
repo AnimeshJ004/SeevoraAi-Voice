@@ -907,12 +907,12 @@ select option:checked {
 
 .modal .field-label,
 .modal label {
-  font-size: 0.76rem !important;
+  font-size: 0.74rem !important;
   font-weight: 750 !important;
-  color: #475569 !important;
+  color: #0d5d41 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.04em !important;
-  margin-bottom: 5px !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 4px !important;
   display: block !important;
 }
 
@@ -941,27 +941,42 @@ select option:checked {
   cursor: pointer !important;
 }
 
+.modal .field {
+  margin-bottom: 22px !important;
+}
+
 .modal .input,
 .modal .select,
 .modal textarea {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1.5px solid rgba(47, 138, 99, 0.35) !important;
-  border-radius: 12px !important;
-  padding: 9px 13px !important;
-  font-size: 0.88rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  padding: 8px 0 10px 0 !important;
+  font-size: 0.94rem !important;
+  font-weight: 550 !important;
   color: #0F172A !important;
   outline: none !important;
-  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  transition: all 0.18s ease !important;
   box-sizing: border-box !important;
   width: 100% !important;
+}
+
+.modal .input::placeholder,
+.modal textarea::placeholder {
+  color: #8da297 !important;
+  font-weight: 400 !important;
 }
 
 .modal .input:focus,
 .modal .select:focus,
 .modal textarea:focus {
-  border-color: #0d5d41 !important;
-  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.15) !important;
-  background: #FFFFFF !important;
+  border: none !important;
+  border-bottom: 2px solid #0d5d41 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
 }
 
 .modal-actions {
@@ -9471,17 +9486,18 @@ button:disabled {
    Sage canvas, borderless layout, top options tab navigation, and clean modal
    ========================================================================== */
 
-/* Top Tab Bar in Manage Clients */
+/* Top Tab Bar in Manage Clients (Clean Theme-Aligned, Zero Boxes) */
 .admin-tab-nav {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
-  padding: 4px 0 16px 0 !important;
-  margin-bottom: 22px !important;
-  border-bottom: 1.5px solid rgba(13, 93, 65, 0.10) !important;
+  gap: 4px !important;
+  padding: 0 !important;
+  margin-bottom: 24px !important;
+  border-bottom: 2px solid rgba(13, 93, 65, 0.12) !important;
   overflow-x: auto !important;
   white-space: nowrap !important;
   scrollbar-width: none !important;
+  position: relative !important;
 }
 
 .admin-tab-nav::-webkit-scrollbar {
@@ -9490,47 +9506,55 @@ button:disabled {
 
 .admin-tab-btn {
   background: transparent !important;
-  color: #375344 !important;
-  border: 1px solid rgba(13, 93, 65, 0.14) !important;
-  border-radius: 999px !important;
-  padding: 8px 18px !important;
-  font-size: 13px !important;
-  font-weight: 650 !important;
+  color: #5d7468 !important;
+  border: none !important;
+  border-bottom: 2.5px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 10px 18px 12px 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 7px !important;
+  gap: 8px !important;
   cursor: pointer !important;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.16s ease !important;
   user-select: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  margin-bottom: -2px !important;
 }
 
 .admin-tab-btn:hover {
-  background: rgba(13, 93, 65, 0.06) !important;
+  background: transparent !important;
   color: #0d5d41 !important;
-  border-color: rgba(13, 93, 65, 0.28) !important;
+  border-bottom-color: rgba(13, 93, 65, 0.35) !important;
 }
 
 .admin-tab-btn.active {
-  background: #0d5d41 !important;
-  color: #ffffff !important;
-  border-color: #0d5d41 !important;
+  background: transparent !important;
+  color: #0d5d41 !important;
+  border: none !important;
+  border-bottom: 2.5px solid #0d5d41 !important;
+  border-radius: 0 !important;
   font-weight: 750 !important;
-  box-shadow: 0 3px 12px rgba(13, 93, 65, 0.24) !important;
+  box-shadow: none !important;
 }
 
 .admin-tab-badge {
-  background: rgba(13, 93, 65, 0.12) !important;
+  background: rgba(13, 93, 65, 0.08) !important;
   color: #0d5d41 !important;
-  padding: 2px 7px !important;
+  padding: 2px 8px !important;
   border-radius: 999px !important;
   font-size: 11px !important;
-  font-weight: 750 !important;
+  font-weight: 700 !important;
   margin-left: 2px !important;
+  transition: all 0.16s ease !important;
 }
 
 .admin-tab-btn.active .admin-tab-badge {
-  background: rgba(255, 255, 255, 0.24) !important;
-  color: #ffffff !important;
+  background: rgba(13, 93, 65, 0.16) !important;
+  color: #0d5d41 !important;
+  font-weight: 800 !important;
 }
 
 /* Search & Actions Bar for Workspaces */

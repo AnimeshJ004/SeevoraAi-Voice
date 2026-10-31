@@ -3629,20 +3629,17 @@ function renderCallRowAdmin(number, clientName, duration, outcome) {
 function openAddClientModal() {
   const nameI = el('input', {
     class: 'input',
-    placeholder: 'e.g. Metro Real Estate & Health',
-    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+    placeholder: 'e.g. Metro Real Estate & Health'
   });
   const emailI = el('input', {
     class: 'input',
     type: 'email',
-    placeholder: 'owner@clientdomain.com',
-    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+    placeholder: 'owner@clientdomain.com'
   });
   const passI = el('input', {
     class: 'input',
     placeholder: '12+ character temporary password',
-    value: 'RapidXDemo1234!',
-    style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;'
+    value: 'RapidXDemo1234!'
   });
 
   const body = el('div', { class: 'sv-modal-client-body' }, [
@@ -11437,27 +11434,30 @@ async function viewAdmin(root) {
     const totals = o.totals || {};
     [['Active clients', totals.activeTenants != null ? totals.activeTenants : 'Restricted', 'Live workspaces'], ['Revenue recorded', superAdmin ? '₹' + fmtInr((totals.invoicedPaise || 0) / 100) : 'Restricted', 'Issued invoices'], ['Outstanding', superAdmin ? '₹' + fmtInr((totals.outstandingPaise || 0) / 100) : 'Restricted', 'Receivables'], ['Open tickets', totals.openTickets != null ? totals.openTickets : (tickets.tickets || []).filter((t) => t.status !== 'closed').length, 'Needs attention'], ['Calls', superAdmin ? totals.calls : 'Restricted', 'Tracked usage']].forEach((x) => stats.appendChild(el('article', { class: 'agency-metric' }, [el('div', { class: 'agency-metric-label' }, x[0]), el('div', { class: 'agency-metric-value' }, String(x[1] || 0)), el('div', { class: 'agency-metric-note' }, x[2])])));
 
+    // Filter out root platform host so only client tenants appear in Client Portfolio
+    const clientTenants = (ts.tenants || []).filter((t) => !t.isPlatformAdmin && !t.isPlatformHost && t.slug !== 'admin-demo');
+
     // Update Tab Badges
     const bWorkspaces = document.getElementById('tab-badge-workspaces');
-    if (bWorkspaces) bWorkspaces.textContent = String((ts.tenants || []).length);
+    if (bWorkspaces) bWorkspaces.textContent = String(clientTenants.length);
 
     tenantHost.innerHTML = '';
     tenantHost.appendChild(el('div', { class: 'admin-client-head' }, [
       el('div', {}, [
         el('span', { class: 'section-kicker' }, 'Client Portfolio'),
-        el('h3', {}, 'Provisioned Workspaces (' + ((ts.tenants || []).length) + ')')
+        el('h3', {}, 'Provisioned Workspaces (' + clientTenants.length + ')')
       ])
     ]));
 
     if (superAdmin) {
-      if ((ts.tenants || []).length === 0) {
+      if (clientTenants.length === 0) {
         tenantHost.appendChild(el('div', { class: 'ws-empty-state' }, [
           el('div', { class: 'ws-empty-icon' }, [uiIcon('building', 28)]),
           el('div', { class: 'ws-empty-title' }, 'No client workspaces found'),
           el('div', { class: 'ws-empty-sub' }, 'Click "+ Add Client" above to onboard your first business client workspace.')
         ]));
       } else {
-        (ts.tenants || []).forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
+        clientTenants.forEach((t) => tenantHost.appendChild(adminTenantRow(t, (users.users || []).filter((u) => u.tenantId === t.id))));
       }
     } else {
       tenantHost.appendChild(el('div', { class: 'muted' }, 'Tenant controls require super admin access.'));
@@ -11622,6 +11622,7 @@ async function loadAdminTelecomAndCompliance(carrierHost, watchdogHost) {
 }
 
 function adminTenantRow(t, users) {
+  const isHost = !!(t.isPlatformAdmin || t.isPlatformHost || t.slug === 'admin-demo');
   const wallet = t.wallet || {};
   const toggle = el('button', { class: 'btn btn-ghost btn-sm', style: 'font-size:12px;padding:6px 10px;' }, t.status === 'suspended' ? 'Reactivate' : 'Suspend');
   toggle.onclick = async () => {
@@ -11671,6 +11672,11 @@ function adminTenantRow(t, users) {
     onclick: () => inspectTenant(t, users || [])
   }, [el('span', { html: uiIcon('eye', 13) }), el('span', {}, 'Open Workspace')]);
   const dograhSlug = t.dograhOrgId || t.dograh_org_id || ('org_' + t.id.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+
+  const actionsList = isHost
+    ? [openWorkspaceBtn, el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-weight:750;font-size:0.75rem;padding:4px 10px;' }, 'Platform Master')]
+    : [openWorkspaceBtn, directAccess, credit, toggle, deleteBtn];
+
   return el('div', { class: 'admin-client-row' }, [
     el('div', { class: 'admin-client-identity' }, [
       el('span', { class: 'client-avatar' }, initials(t.name)),
@@ -11678,36 +11684,157 @@ function adminTenantRow(t, users) {
         el('b', { class: 'ws-truncate', title: t.name }, t.name),
         el('small', { class: 'muted' }, (t.users || 0) + ' users · ' + (t.agents || 0) + ' agents'),
         el('span', { class: 'pill ws-slug-badge', title: dograhSlug }, dograhSlug),
+        isHost ? el('span', { class: 'pill', style: 'background:#e0e7ff;color:#3730a3;font-size:0.7rem;margin-left:4px;font-weight:700;' }, 'Platform Host') : null,
         t.campaignFrozen ? el('span', { class: 'pill badge-err', style: 'font-size:0.7rem;margin-left:4px;' }, 'Frozen') : null
       ])
     ]),
     el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Activity'), el('strong', {}, fmtInr((t.calls || 0)) + ' calls')]),
-    el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Outstanding'), el('strong', {}, '₹' + fmtInr((t.outstandingPaise || 0) / 100))]),
-    el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Wallet'), el('strong', {}, '₹' + fmtInr((wallet.balancePaise || 0) / 100))]),
-    el('span', { class: 'status-badge status-' + (t.status || 'active') }, invoiceStatusLabel(t.status || 'active')),
-    el('div', { class: 'admin-client-actions' }, [openWorkspaceBtn, directAccess, credit, toggle, deleteBtn])
+    el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Outstanding'), el('strong', {}, isHost ? '₹0.00 (Exempt)' : '₹' + fmtInr((t.outstandingPaise || 0) / 100))]),
+    el('div', { class: 'admin-client-signal' }, [el('span', {}, 'Wallet'), el('strong', {}, isHost ? 'Master Quota' : '₹' + fmtInr((wallet.balancePaise || 0) / 100))]),
+    el('span', { class: 'status-badge status-' + (isHost ? 'active' : (t.status || 'active')) }, isHost ? 'Root Master' : invoiceStatusLabel(t.status || 'active')),
+    el('div', { class: 'admin-client-actions' }, actionsList)
   ]);
 }
 
+function showValidationPopup(title, message, fieldToFocus) {
+  const existing = document.getElementById('sv-validation-popup');
+  if (existing) existing.remove();
+
+  const overlay = el('div', {
+    id: 'sv-validation-popup',
+    style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;'
+  });
+
+  const card = el('div', {
+    style: 'background:#ffffff;border-radius:20px;max-width:440px;width:100%;box-shadow:0 24px 48px rgba(0,0,0,0.3);border:1.5px solid rgba(13,93,65,0.2);padding:28px 24px 22px;text-align:center;box-sizing:border-box;'
+  }, [
+    el('div', {
+      style: 'width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.12);color:#dc2626;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;'
+    }, [
+      el('span', { html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' })
+    ]),
+    el('h3', { style: 'font-family:Manrope,sans-serif;font-size:1.2rem;font-weight:800;color:#14221c;margin:0 0 10px 0;' }, title || 'Validation Notice'),
+    el('p', { style: 'font-size:0.90rem;color:#4b5563;line-height:1.55;margin:0 0 22px 0;' }, message || 'Please check the required inputs and try again.'),
+    el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#ffffff;border:none;border-radius:999px;padding:11px 32px;font-weight:750;font-size:0.92rem;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(13,93,65,0.25);',
+      onclick: () => {
+        overlay.remove();
+        if (fieldToFocus && typeof fieldToFocus.focus === 'function') {
+          fieldToFocus.focus();
+          if (fieldToFocus.select) fieldToFocus.select();
+        }
+      }
+    }, 'OK, Got It')
+  ]);
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+}
+
 function openClientComposer() {
-  const name = el('input', { class: 'input', placeholder: 'Client or company name', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
-  const ownerName = el('input', { class: 'input', placeholder: 'Primary owner name (e.g. Rahul Sharma)', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
-  const ownerEmail = el('input', { class: 'input', type: 'email', placeholder: 'owner@clientdomain.com', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
-  const password = el('input', { class: 'input', type: 'password', placeholder: '12+ character temporary password', style: 'width:100%;height:44px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(47,138,99,0.40);border-radius:12px;padding:10px 14px;font-size:0.90rem;font-weight:600;color:#0F172A;outline:none;' });
+  const lineInputStyle = 'background:transparent!important;border:none!important;border-bottom:1.5px solid rgba(13,93,65,0.22)!important;border-radius:0!important;padding:8px 4px!important;font-size:0.92rem!important;color:#14221c!important;outline:none!important;width:100%!important;box-sizing:border-box!important;transition:border-color 0.2s ease!important;';
+
+  const name = el('input', { class: 'input sv-line-input', placeholder: 'Client or company name (e.g. Apex Health)', style: lineInputStyle });
+  const ownerName = el('input', { class: 'input sv-line-input', placeholder: 'Primary owner name (e.g. Rahul Sharma)', style: lineInputStyle });
+  const ownerEmail = el('input', { class: 'input sv-line-input', type: 'email', placeholder: 'owner@clientdomain.com (or leave empty to auto-generate)', style: lineInputStyle });
+  const password = el('input', { class: 'input sv-line-input', type: 'text', placeholder: 'Min 6 characters (or leave empty to auto-generate)', style: lineInputStyle });
+
+  [name, ownerName, ownerEmail, password].forEach((inp) => {
+    inp.addEventListener('focus', () => { inp.style.borderBottomColor = '#0d5d41'; });
+    inp.addEventListener('blur', () => { inp.style.borderBottomColor = 'rgba(13,93,65,0.22)'; });
+    inp.addEventListener('input', () => { inp.style.borderBottomColor = '#0d5d41'; });
+  });
+
+  function makeField(labelStr, inputEl) {
+    return el('div', { style: 'display:flex;flex-direction:column;gap:5px;margin-bottom:6px;' }, [
+      el('label', { style: 'font-size:0.72rem;font-weight:750;color:#0d5d41;letter-spacing:0.05em;text-transform:uppercase;' }, labelStr),
+      inputEl
+    ]);
+  }
+
+  const formWrap = el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:14px;padding:4px 0;' }, [
+    makeField('WORKSPACE NAME', name),
+    makeField('OWNER NAME', ownerName),
+    makeField('OWNER EMAIL', ownerEmail),
+    makeField('TEMPORARY PASSWORD', password),
+    el('p', { class: 'soft', style: 'font-size:0.80rem;margin-top:6px;line-height:1.45;color:#5d7468;' },
+      'Provision an isolated client workspace. Leave owner fields empty to automatically generate client login credentials.')
+  ]);
+
   modal({
     title: 'Add Client Workspace',
-    body: el('div', { class: 'invoice-form' }, [
-      field('Workspace name', name),
-      field('Owner name', ownerName),
-      field('Owner email', ownerEmail),
-      field('Temporary password', password),
-      el('p', { class: 'soft', style: 'font-size:0.80rem;margin-top:10px;color:#5d7468;' }, 'Provision an isolated client workspace. Leave owner fields empty to create a self-onboarding workspace.')
-    ]),
+    body: formWrap,
     confirmText: '+ Create Workspace',
     confirmKind: 'primary',
     onConfirm: async () => {
-      const out = await api('/api/admin/tenants', { method: 'POST', body: { name: name.value.trim(), ownerName: ownerName.value.trim(), ownerEmail: ownerEmail.value.trim(), password: password.value } });
-      toast((out.tenant || {}).name + ' created. ' + out.note, 'ok'); onRoute();
+      const wsName = name.value.trim();
+      if (!wsName) {
+        name.style.borderBottomColor = '#dc2626';
+        showValidationPopup(
+          'Workspace Name Required',
+          'Please enter a name for the client workspace (e.g. Apex Health Clinic) before creating the workspace.',
+          name
+        );
+        return false;
+      }
+      const email = ownerEmail.value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        ownerEmail.style.borderBottomColor = '#dc2626';
+        showValidationPopup(
+          'Invalid Email Format',
+          'The owner email address you entered is not valid. Please provide a valid email (e.g. owner@domain.com) or leave the field blank to automatically generate one.',
+          ownerEmail
+        );
+        return false;
+      }
+      const pass = password.value.trim();
+      if (pass && pass.length < 6) {
+        password.style.borderBottomColor = '#dc2626';
+        showValidationPopup(
+          'Password Too Short',
+          'The temporary password must be at least 6 characters long, or leave it blank to automatically generate a secure password.',
+          password
+        );
+        return false;
+      }
+
+      try {
+        const out = await api('/api/admin/tenants', {
+          method: 'POST',
+          body: {
+            name: wsName,
+            ownerName: ownerName.value.trim(),
+            ownerEmail: email,
+            password: pass
+          }
+        });
+
+        // Clear cached admin data so the new workspace immediately appears in the list!
+        _adminDataCache = null;
+
+        const createdName = (out.tenant && out.tenant.name) || wsName;
+        const ownerEmailText = (out.owner && out.owner.email) ? ` | Login: ${out.owner.email}` : '';
+
+        toast(`Workspace "${createdName}" created successfully!${ownerEmailText}`, 'ok');
+        if (out.tempPassword) {
+          setTimeout(() => {
+            toast(`Temporary Password: ${out.tempPassword}`, 'info');
+          }, 350);
+        }
+
+        onRoute();
+        return true;
+      } catch (err) {
+        const errMsg = (err && (err.message || (err.data && err.data.error))) || 'Failed to create workspace.';
+        showValidationPopup(
+          'Unable to Create Workspace',
+          errMsg,
+          null
+        );
+        return false;
+      }
     }
   });
 }
