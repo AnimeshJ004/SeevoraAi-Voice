@@ -1706,12 +1706,17 @@ function closeMakeCallDropdown() {
 }
 
 async function toggleMakeCallDropdown(anchorBtn, prefillNumber, prefillName) {
+  anchorBtn = anchorBtn || document.getElementById('sv-make-call-btn');
+
+  // Toggle behavior
   const existing = document.querySelector('.sv-quick-call-popover');
   if (existing) {
+    const isSame = existing._anchorBtn === anchorBtn && !prefillNumber;
     closeMakeCallDropdown();
-    return;
+    if (isSame) return;
   }
-  // Close any calendar popover or time dropdown
+
+  // Close any calendar popover or other floating popovers
   closeAllFloatingPopovers();
 
   // Ensure agents are loaded
@@ -1730,16 +1735,6 @@ async function toggleMakeCallDropdown(anchorBtn, prefillNumber, prefillName) {
     agents = [
       { id: 'default-receptionist', name: 'Seevora AI Voice Receptionist', tts: { tone: 'friendly' } }
     ];
-  }
-
-  anchorBtn = anchorBtn || document.getElementById('sv-make-call-btn');
-
-  // Toggle behavior
-  const existing = document.querySelector('.sv-quick-call-popover');
-  if (existing) {
-    const isSame = existing._anchorBtn === anchorBtn && !prefillNumber;
-    closeMakeCallDropdown();
-    if (isSame) return;
   }
 
   // Find or create wrapper around anchorBtn
