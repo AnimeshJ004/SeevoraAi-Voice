@@ -9032,7 +9032,8 @@ function checkFeatureOrReject(res, ctx, featureKey) {
 
 function apiAdminFeaturesGet(req, res) {
   const d = core.db();
-  const tenants = (d.tenants || []).map((t) => {
+  const clientTenants = (d.tenants || []).filter((t) => !isPlatformAdminTenant(t, d));
+  const tenants = clientTenants.map((t) => {
     const pub = publicTenant(t);
     return {
       id: t.id,
@@ -9161,7 +9162,8 @@ async function apiWorkflowsList(req, res, ctx) {
     flows = flows.filter((w) => w.tenantId === targetTenantId);
   }
 
-  const tenants = (d.tenants || []).map((t) => ({
+  const clientTenants = (d.tenants || []).filter((t) => !isPlatformAdminTenant(t, d));
+  const tenants = clientTenants.map((t) => ({
     id: t.id,
     name: t.name,
     slug: t.slug,

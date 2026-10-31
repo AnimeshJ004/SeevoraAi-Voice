@@ -10586,6 +10586,36 @@ button:disabled {
   transform: translateY(-0.5px) !important;
 }
 
+/* Feature Controls Preset Pills */
+.fc-preset-btn {
+  border-radius: 999px !important;
+  padding: 5px 14px !important;
+  background: transparent !important;
+  color: #14221c !important;
+  border: 1px solid rgba(13, 93, 65, 0.18) !important;
+  font-weight: 650 !important;
+  font-size: 0.78rem !important;
+  cursor: pointer !important;
+  transition: all 0.16s ease !important;
+  line-height: 1.3 !important;
+  outline: none !important;
+  white-space: nowrap !important;
+}
+
+.fc-preset-btn:hover {
+  background: rgba(13, 93, 65, 0.05) !important;
+  color: #0d5d41 !important;
+  border-color: rgba(13, 93, 65, 0.3) !important;
+}
+
+.fc-preset-btn.active {
+  background: rgba(13, 93, 65, 0.09) !important;
+  color: #0d5d41 !important;
+  border: 1px solid rgba(13, 93, 65, 0.28) !important;
+  font-weight: 750 !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.06) !important;
+}
+
 .sv-toggle-expand-btn {
   padding: 6px 14px !important;
   font-size: 12px !important;
@@ -16434,4 +16464,101 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .sv-fc-workspace-dropdown .aria-dropdown-opt:not(.selected):hover .aria-opt-label,
 .aria-custom-dropdown .aria-dropdown-opt:not(.selected):hover .aria-opt-label {
   color: #0d5d41 !important;
+}
+
+/* Responsive & Full-Width Custom Themed Dropdowns */
+.sv-fc-workspace-dropdown.w-full,
+.aria-custom-dropdown.w-full {
+  display: block !important;
+  width: 100% !important;
+}
+
+.sv-fc-workspace-dropdown.w-full .aria-dropdown-trigger,
+.aria-custom-dropdown.w-full .aria-dropdown-trigger {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
+.sv-fc-workspace-dropdown.w-full .aria-dropdown-menu,
+.aria-custom-dropdown.w-full .aria-dropdown-menu {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure popover never pushes document body when attached to root */
+body > .sv-quick-call-popover {
+  position: fixed !important;
+  top: 72px !important;
+  right: 24px !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 100001 !important;
+}
+
+.sv-call-dropdown-wrap .sv-quick-call-popover {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  bottom: auto !important;
+}
+
+/* Elevate Inbound Strip & Quick Call Popover above all toolbars and tables */
+.sv-inbound-banner,
+.aria-inbound-strip {
+  position: relative !important;
+  z-index: 60 !important;
+}
+
+.sv-inbound-banner.has-popover-open,
+.aria-inbound-strip.has-popover-open,
+.sv-inbound-banner:has(.sv-call-dropdown-wrap.open),
+.aria-inbound-strip:has(.sv-call-dropdown-wrap.open),
+.sv-inbound-banner:has(.sv-quick-call-popover),
+.aria-inbound-strip:has(.sv-quick-call-popover) {
+  z-index: 999999 !important;
+}
+
+.sv-call-dropdown-wrap {
+  position: relative !important;
+  display: inline-block !important;
+  z-index: 70 !important;
+}
+
+.sv-call-dropdown-wrap.open,
+.sv-call-dropdown-wrap:has(.sv-quick-call-popover) {
+  z-index: 999999 !important;
+}
+
+.sv-quick-call-popover {
+  z-index: 999999 !important;
+}
+
+/* Ensure filter toolbar has lower stacking context than open banner popovers */
+.rec-toolbar,
+.sv-wf-filter-bar,
+.aria-inbound-view .rec-toolbar,
+.aria-inbound-view .sv-wf-filter-bar {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.rec-toolbar .aria-custom-dropdown:not(.open),
+.sv-wf-filter-bar .aria-custom-dropdown:not(.open) {
+  z-index: 11 !important;
+}
+
+
+/* Ensure align-right dropdown menus anchor perfectly to the right border */
+.aria-dropdown-menu.align-right {
+  right: 0 !important;
+  left: auto !important;
+}
+
+.aria-dropdown-menu {
+  max-width: min(480px, calc(100vw - 20px)) !important;
 }
