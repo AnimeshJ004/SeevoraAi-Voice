@@ -14335,3 +14335,73 @@ button:disabled {
 
 
 
+
+/* ==========================================================================
+   Feature Controls - Workspace Selector Custom Dropdown (Scandinavian Sage)
+   ========================================================================== */
+.sv-fc-workspace-dropdown {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-trigger {
+  min-width: 290px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+  padding: 7px 18px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  box-shadow: 0 1px 4px rgba(13, 93, 65, 0.05) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-trigger:hover,
+.sv-fc-workspace-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12), 0 3px 10px rgba(13, 93, 65, 0.08) !important;
+  background: #ffffff !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-menu {
+  min-width: 330px !important;
+  max-width: 440px !important;
+  max-height: 320px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.16), 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 9999 !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  font-weight: 700 !important;
+}
+
+.sv-fc-workspace-dropdown .aria-dropdown-opt.selected {
+  background: rgba(13, 93, 65, 0.12) !important;
+  color: #0d5d41 !important;
+  font-weight: 750 !important;
+}

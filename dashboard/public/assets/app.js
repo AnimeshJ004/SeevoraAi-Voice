@@ -964,7 +964,7 @@ function createThemedDropdown(cfg) {
   cfg = cfg || {};
   let currentVal = cfg.value != null ? String(cfg.value) : '';
   const options = Array.isArray(cfg.options)
-    ? cfg.options.map(o => typeof o === 'object' && o !== null ? { value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? '') } : { value: String(o), label: String(o) })
+    ? cfg.options.map(o => typeof o === 'object' && o !== null ? { value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? ''), badge: o.badge ? String(o.badge) : '' } : { value: String(o), label: String(o), badge: '' })
     : [];
 
   const alignClass = cfg.align === 'right' ? 'align-right' : 'align-left';
@@ -976,9 +976,9 @@ function createThemedDropdown(cfg) {
 
   function getSelectedLabel() {
     const found = getSelectedOption();
-    if (found) return found.label;
+    if (found) return found.badge ? (found.label + ' (' + found.badge + ')') : found.label;
     if (cfg.placeholder) return cfg.placeholder;
-    return options[0] ? options[0].label : 'Select...';
+    return options[0] ? (options[0].badge ? (options[0].label + ' (' + options[0].badge + ')') : options[0].label) : 'Select...';
   }
 
   const labelSpan = el('span', { class: 'aria-dropdown-current-label' }, getSelectedLabel());
@@ -1000,25 +1000,34 @@ function createThemedDropdown(cfg) {
     menu.innerHTML = '';
     options.forEach(opt => {
       const isSelected = String(opt.value) === String(currentVal);
+      const optContents = [
+        el('span', { class: 'aria-opt-label' }, opt.label)
+      ];
+      if (opt.badge) {
+        optContents.push(el('span', {
+          class: 'pill',
+          style: 'font-size:0.68rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;margin-left:auto;margin-right:8px;'
+        }, opt.badge));
+      }
+      if (isSelected) {
+        optContents.push(el('span', {
+          class: 'aria-opt-check',
+          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        }));
+      }
       const optEl = el('div', {
         class: 'aria-dropdown-opt' + (isSelected ? ' selected' : ''),
         onclick: (e) => {
           e.stopPropagation();
           currentVal = String(opt.value);
-          labelSpan.textContent = opt.label;
+          labelSpan.textContent = opt.badge ? (opt.label + ' (' + opt.badge + ')') : opt.label;
           closeDropdown();
           renderOptions();
           if (typeof cfg.onChange === 'function') cfg.onChange(currentVal, opt);
           if (typeof wrap.onchange === 'function') wrap.onchange({ target: wrap, currentTarget: wrap, value: currentVal });
           wrap.dispatchEvent(new CustomEvent('change', { detail: { value: currentVal, option: opt }, bubbles: true }));
         }
-      }, [
-        el('span', { class: 'aria-opt-label' }, opt.label),
-        isSelected ? el('span', {
-          class: 'aria-opt-check',
-          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-        }) : null
-      ].filter(Boolean));
+      }, optContents);
       menu.appendChild(optEl);
     });
   }
@@ -10088,22 +10097,31 @@ async function viewFeatureControls(root) {
       style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;margin-bottom:18px;border-bottom:1px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
     });
 
-    // Workspace Selector Dropdown
-    const selectorWrap = el('div', { style: 'display:flex;align-items:center;gap:10px;min-width:280px;' }, [
-      el('span', { style: 'font-weight:700;font-size:0.84rem;color:#14221c;white-space:nowrap;letter-spacing:-0.01em;' }, 'TARGET WORKSPACE:'),
-      (() => {
-        const sel = el('select', {
-          class: 'select',
-          style: 'padding:7px 14px;font-size:0.86rem;font-weight:650;border:1px solid rgba(13,93,65,0.22);border-radius:999px;background:transparent;color:#14221c;'
-        }, tenants.map((t) => el('option', { value: t.id }, `${t.name} (${(t.plan || 'starter').toUpperCase()})`)));
-        sel.value = selectedTenantId;
-        sel.onchange = (e) => {
-          selectedTenantId = e.target.value;
-          updateMetrics();
-          renderFeatureList();
-        };
-        return sel;
-      })()
+    // Workspace Selector Dropdown (Scandinavian Sage Theme)
+    const wsDropdown = createThemedDropdown({
+      options: tenants.map((t) => ({
+        value: t.id,
+        label: t.name,
+        badge: (t.plan || 'starter').toUpperCase()
+      })),
+      value: selectedTenantId,
+      align: 'left',
+      style: 'min-width:320px;',
+      className: 'sv-fc-workspace-dropdown',
+      onChange: (val) => {
+        selectedTenantId = val;
+        updateMetrics();
+        renderFeatureList();
+      }
+    });
+
+    const selectorWrap = el('div', {
+      style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;'
+    }, [
+      el('span', {
+        style: 'font-weight:750;font-size:0.75rem;letter-spacing:0.05em;text-transform:uppercase;color:#0d5d41;white-space:nowrap;'
+      }, 'WORKSPACE:'),
+      wsDropdown
     ]);
     toolbar.appendChild(selectorWrap);
 
