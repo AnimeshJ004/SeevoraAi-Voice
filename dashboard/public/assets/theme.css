@@ -3293,6 +3293,90 @@ input.chat-text-input {
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
+/* ---- ChatGPT-Style Typing Indicator & Typewriter Stream Animation ---- */
+.chat-bubble-assistant {
+  white-space: pre-wrap !important;
+}
+
+.chat-bubble-assistant.sv-typing-bubble {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 13px 20px !important;
+  min-height: 42px !important;
+  width: fit-content !important;
+  border-radius: 20px 20px 20px 6px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(47, 138, 99, 0.35) !important;
+  border-top: 1.5px solid rgba(47, 138, 99, 0.50) !important;
+  box-shadow: 0 4px 14px rgba(45, 62, 86, 0.04) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.sv-typing-dots {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 14px !important;
+}
+
+.sv-typing-dots .sv-dot {
+  width: 7.5px !important;
+  height: 7.5px !important;
+  border-radius: 50% !important;
+  background-color: #0d5d41 !important;
+  display: inline-block !important;
+  animation: svTypingBounce 1.4s infinite ease-in-out both !important;
+}
+
+.sv-typing-dots .sv-dot:nth-child(1) {
+  animation-delay: -0.32s !important;
+}
+.sv-typing-dots .sv-dot:nth-child(2) {
+  animation-delay: -0.16s !important;
+}
+.sv-typing-dots .sv-dot:nth-child(3) {
+  animation-delay: 0s !important;
+}
+
+@keyframes svTypingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.62);
+    opacity: 0.35;
+  }
+  40% {
+    transform: scale(1.18);
+    opacity: 1;
+    background-color: #1a7f5a !important;
+  }
+}
+
+/* ChatGPT-Style Streaming Blinking Cursor */
+.sv-streaming-cursor {
+  display: inline-block !important;
+  width: 2.5px !important;
+  height: 1.1em !important;
+  background-color: #0d5d41 !important;
+  vertical-align: -0.16em !important;
+  margin-left: 3px !important;
+  border-radius: 1px !important;
+  animation: svCursorBlink 0.75s infinite !important;
+}
+
+@keyframes svCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.chat-row.assistant.sv-typing-active .chat-bot-avatar {
+  animation: svAvatarGlow 2s infinite ease-in-out;
+}
+
+@keyframes svAvatarGlow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(13,93,65,0)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 2px 8px rgba(13,93,65,0.25)); }
+}
+
 .assistant-typing {
   background: rgba(255, 255, 255, 0.35) !important;
   border: 1px solid rgba(47, 138, 99, 0.35) !important;
@@ -14532,4 +14616,1552 @@ button:disabled {
 .admin-kpi-grid:has(> :nth-child(1):last-child),
 .aria-kpi-grid:has(> :nth-child(1):last-child) {
   grid-template-columns: 1fr !important;
+}
+
+
+/* ==========================================================================
+   SEEVORA BRAND THEMED DATE PICKER POPOVER & CALENDAR SYSTEM
+   Matches Scandinavian Sage, Emerald Green accents, and soft glass cards
+   ========================================================================== */
+
+.aria-date-btn.active,
+.aria-date-btn:focus-visible {
+  background: #ffffff !important;
+  border-color: #0d5d41 !important;
+  color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.14), 0 2px 8px rgba(13, 93, 65, 0.08) !important;
+}
+
+.sv-date-picker-wrap {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.sv-calendar-popover {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  left: 0 !important;
+  width: 304px !important;
+  max-width: calc(100vw - 32px) !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 48px -8px rgba(13, 93, 65, 0.22), 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  padding: 16px !important;
+  z-index: 10005 !important;
+  font-family: var(--font, 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif) !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  animation: svCalendarSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes svCalendarSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sv-cal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 12px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.08) !important;
+}
+
+.sv-cal-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.sv-cal-select {
+  font-family: var(--font-heading, 'Manrope', 'DM Sans', sans-serif) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #17191d !important;
+  background: rgba(227, 241, 233, 0.45) !important;
+  border: 1px solid rgba(13, 93, 65, 0.16) !important;
+  border-radius: 8px !important;
+  padding: 4px 8px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.sv-cal-select:hover,
+.sv-cal-select:focus {
+  background: #ffffff !important;
+  color: #0d5d41 !important;
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 2px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-cal-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.sv-cal-nav-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  background: rgba(227, 241, 233, 0.5) !important;
+  color: #0d5d41 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+
+.sv-cal-nav-btn:hover {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border-color: #0d5d41 !important;
+  transform: scale(1.05) !important;
+}
+
+.sv-cal-nav-btn:active {
+  transform: scale(0.95) !important;
+}
+
+.sv-cal-weekdays {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 2px !important;
+  margin-bottom: 6px !important;
+}
+
+.sv-cal-weekday {
+  text-align: center !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #6c737d !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  padding: 4px 0 !important;
+}
+
+.sv-cal-days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 4px !important;
+}
+
+.sv-cal-day {
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #17191d !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.14s ease !important;
+  border: 1.5px solid transparent !important;
+  box-sizing: border-box !important;
+}
+
+.sv-cal-day:hover:not(.disabled):not(.muted) {
+  background: #e3f1e9 !important;
+  color: #0d5d41 !important;
+  font-weight: 700 !important;
+  border-color: rgba(13, 93, 65, 0.2) !important;
+}
+
+.sv-cal-day.muted {
+  color: #cbd5e1 !important;
+  cursor: default !important;
+  font-weight: 400 !important;
+}
+
+.sv-cal-day.today:not(.selected) {
+  border-color: #2f8a63 !important;
+  color: #0d5d41 !important;
+  font-weight: 700 !important;
+  background: rgba(47, 138, 99, 0.08) !important;
+}
+
+.sv-cal-day.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-color: #0d5d41 !important;
+  box-shadow: 0 3px 10px rgba(13, 93, 65, 0.35) !important;
+}
+
+.sv-cal-day.disabled {
+  color: #cbd5e1 !important;
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+.sv-cal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 12px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid rgba(13, 93, 65, 0.08) !important;
+}
+
+.sv-cal-clear-btn {
+  background: transparent !important;
+  border: 1px solid rgba(13, 93, 65, 0.16) !important;
+  color: #3b5045 !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  padding: 5px 14px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.sv-cal-clear-btn:hover {
+  background: rgba(13, 93, 65, 0.06) !important;
+  border-color: #0d5d41 !important;
+  color: #0d5d41 !important;
+}
+
+.sv-cal-today-btn {
+  background: #e3f1e9 !important;
+  border: 1px solid rgba(13, 93, 65, 0.22) !important;
+  color: #0d5d41 !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 5px 16px !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.sv-cal-today-btn:hover {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border-color: #0d5d41 !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.22) !important;
+}
+
+/* Also style native input[type="date"] across the app */
+input[type="date"] {
+  accent-color: #0d5d41 !important;
+  color-scheme: light !important;
+  font-family: inherit !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer !important;
+  filter: invert(28%) sepia(85%) saturate(450%) hue-rotate(115deg) brightness(95%) contrast(92%) !important;
+  border-radius: 4px !important;
+  padding: 2px !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background: rgba(13, 93, 65, 0.1) !important;
+}
+
+
+/* ==========================================================================
+   MAKE CALL MODAL & CARDLESS FORM LAYOUT (SEEVORA SAGE THEME)
+   Structured as a cohesive form (not a single page scroll) with zero inner cards
+   ========================================================================== */
+.modal.modal-call,
+.modal:has(.make-call-form) {
+  max-width: 530px !important;
+  padding: 24px 28px 22px 28px !important;
+}
+
+.make-call-form-grid,
+.make-call-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 540px) {
+  .make-call-form-grid,
+  .make-call-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Ensure zero inner cards inside modal forms */
+.modal .sv-modal-notice,
+.sv-modal-notice {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 4px 0 0 0 !important;
+  margin-top: 8px !important;
+  font-size: 0.82rem !important;
+  color: #475569 !important;
+}
+
+.sv-form-hint {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 0.80rem !important;
+  color: #475569 !important;
+  margin-top: 6px !important;
+  line-height: 1.4 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+
+/* ==========================================================================
+   CUSTOM THEMED CALENDAR MONTH & YEAR DROPDOWNS (SEEVORA SAGE THEME)
+   Replaces native browser selects with styled emerald popups
+   ========================================================================== */
+.sv-cal-custom-dropdown {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.sv-cal-dropdown-trigger {
+  font-family: var(--font-heading, 'Manrope', 'DM Sans', sans-serif) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  background: rgba(227, 241, 233, 0.45) !important;
+  border: 1px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 9px !important;
+  padding: 5px 10px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.16s ease !important;
+}
+
+.sv-cal-dropdown-trigger:hover,
+.sv-cal-custom-dropdown.open .sv-cal-dropdown-trigger {
+  background: #ffffff !important;
+  color: #0d5d41 !important;
+  border-color: #0d5d41 !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-cal-dropdown-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0d5d41 !important;
+  transition: transform 0.18s ease !important;
+}
+
+.sv-cal-custom-dropdown.open .sv-cal-dropdown-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.sv-cal-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 5px) !important;
+  left: 0 !important;
+  min-width: 130px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.18), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  padding: 5px !important;
+  z-index: 10020 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-4px) scale(0.97) !important;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
+  pointer-events: none !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(13, 93, 65, 0.25) transparent !important;
+}
+
+.sv-cal-custom-dropdown.open .sv-cal-dropdown-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+.sv-cal-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 7px 11px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #2c3e35 !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+.sv-cal-dropdown-opt:hover {
+  background: #e3f1e9 !important;
+  color: #0d5d41 !important;
+  font-weight: 700 !important;
+}
+
+.sv-cal-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.sv-cal-dropdown-menu::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.sv-cal-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(13, 93, 65, 0.25) !important;
+  border-radius: 999px !important;
+}
+
+/* Gauge sub text baseline centering and spacing */
+.aria-gauge-sub {
+  dominant-baseline: central !important;
+}
+
+
+/* ==========================================================================
+   SEEVORA AI SOFTPHONE DIALER (CARDLESS UNIQUE TELEPHONY EXPERIENCE)
+   Replaces boring form dialogs with an authentic, luxury phone dialer device
+   ========================================================================== */
+
+.sv-softphone-dialer {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 24px 60px -10px rgba(13, 93, 65, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.9) inset !important;
+  width: 100% !important;
+  max-width: 336px !important;
+  padding: 20px 20px 22px 20px !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 10 !important;
+  margin: auto !important;
+  animation: sv-dialer-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  user-select: none !important;
+  font-family: var(--font, 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif) !important;
+}
+
+@keyframes sv-dialer-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.sv-dialer-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 12px !important;
+}
+
+.sv-dialer-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  background: rgba(227, 241, 233, 0.6) !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+}
+
+.sv-dialer-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3) !important;
+}
+
+.sv-dialer-close-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(13, 93, 65, 0.12) !important;
+  background: rgba(247, 248, 250, 0.8) !important;
+  color: #475569 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+
+.sv-dialer-close-btn:hover {
+  background: #ffffff !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Agent Pill Selector */
+.sv-dialer-agent-wrap {
+  position: relative !important;
+  display: flex !important;
+  justify-content: center !important;
+  margin-bottom: 12px !important;
+}
+
+.sv-dialer-agent-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 4px rgba(13, 93, 65, 0.06) !important;
+}
+
+.sv-dialer-agent-btn:hover {
+  border-color: #0d5d41 !important;
+  background: #e3f1e9 !important;
+}
+
+.sv-dialer-agent-menu {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 240px !important;
+  max-height: 180px !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.2) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.18) !important;
+  padding: 4px !important;
+  z-index: 20 !important;
+  display: none !important;
+}
+
+.sv-dialer-agent-wrap.open .sv-dialer-agent-menu {
+  display: block !important;
+  animation: svCalendarSlideDown 0.14s ease !important;
+}
+
+.sv-dialer-agent-opt {
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.12s ease !important;
+}
+
+.sv-dialer-agent-opt:hover {
+  background: #e3f1e9 !important;
+  color: #0d5d41 !important;
+}
+
+.sv-dialer-agent-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+}
+
+/* Number & Name Display Screen */
+.sv-dialer-screen {
+  background: rgba(227, 241, 233, 0.3) !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 18px !important;
+  padding: 12px 14px 10px 14px !important;
+  margin-bottom: 16px !important;
+  text-align: center !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.sv-dialer-screen:focus-within {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-dialer-num-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+
+.sv-dialer-prefix {
+  font-family: var(--font-heading, 'Manrope', sans-serif) !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #0d5d41 !important;
+  user-select: none !important;
+}
+
+.sv-dialer-num-input {
+  font-family: var(--font-heading, 'Manrope', monospace) !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: 1.5px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  width: 175px !important;
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.sv-dialer-num-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px !important;
+}
+
+.sv-dialer-name-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+  padding-top: 6px !important;
+  border-top: 1px dashed rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-dialer-name-input {
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  text-align: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.sv-dialer-name-input::placeholder {
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+/* Keypad Grid */
+.sv-dialer-keypad {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px 12px !important;
+  justify-items: center !important;
+  margin-bottom: 18px !important;
+}
+
+.sv-dialer-key {
+  width: 66px !important;
+  height: 48px !important;
+  border-radius: 14px !important;
+  background: rgba(247, 248, 250, 0.95) !important;
+  border: 1px solid rgba(13, 93, 65, 0.09) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.14s ease !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+
+.sv-dialer-key:hover {
+  background: #e3f1e9 !important;
+  border-color: rgba(13, 93, 65, 0.22) !important;
+  transform: translateY(-1px) !important;
+}
+
+.sv-dialer-key:active,
+.sv-dialer-key.pressed {
+  background: #0d5d41 !important;
+  border-color: #0d5d41 !important;
+  transform: scale(0.94) !important;
+}
+
+.sv-dialer-key:active .sv-dialer-key-digit,
+.sv-dialer-key:active .sv-dialer-key-letters,
+.sv-dialer-key.pressed .sv-dialer-key-digit,
+.sv-dialer-key.pressed .sv-dialer-key-letters {
+  color: #ffffff !important;
+}
+
+.sv-dialer-key-digit {
+  font-family: var(--font-heading, 'Manrope', sans-serif) !important;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1 !important;
+}
+
+.sv-dialer-key-letters {
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  letter-spacing: 1.2px !important;
+  margin-top: 1px !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+}
+
+/* Bottom Action Bar */
+.sv-dialer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  gap: 12px !important;
+  padding-top: 4px !important;
+}
+
+.sv-dialer-side-btn {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: rgba(247, 248, 250, 0.8) !important;
+  border: 1px solid rgba(13, 93, 65, 0.12) !important;
+  color: #475569 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+
+.sv-dialer-side-btn:hover {
+  background: #ffffff !important;
+  color: #0d5d41 !important;
+  border-color: #0d5d41 !important;
+  transform: scale(1.06) !important;
+}
+
+.sv-dialer-call-btn {
+  flex: 1 !important;
+  max-width: 150px !important;
+  height: 48px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #0d5d41 0%, #177353 100%) !important;
+  color: #ffffff !important;
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 22px rgba(13, 93, 65, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.sv-dialer-call-btn:hover {
+  background: linear-gradient(135deg, #0a4833 0%, #125e43 100%) !important;
+  box-shadow: 0 12px 28px rgba(13, 93, 65, 0.45) !important;
+  transform: translateY(-2px) !important;
+}
+
+.sv-dialer-call-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.sv-dialer-call-btn:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.sv-dialer-shake {
+  animation: sv-shake 0.35s ease-in-out !important;
+}
+
+@keyframes sv-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+
+/* ==========================================================================
+   QUICK CALL DROPDOWN POPOVER (CARDLESS SCANDINAVIAN SAGE STYLE)
+   Strictly NO BOXES / NO CARDS on fields, pure flat hairline underlines
+   Matching Image 2 / Search Bar styling
+   ========================================================================== */
+
+.sv-call-dropdown-wrap {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.sv-quick-call-popover {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  width: 315px !important;
+  max-width: calc(100vw - 24px) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 14px 38px -6px rgba(13, 93, 65, 0.16), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  padding: 16px 18px 18px 18px !important;
+  z-index: 10010 !important;
+  box-sizing: border-box !important;
+  font-family: var(--font, 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif) !important;
+  animation: svQuickCallSlide 0.16s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  user-select: none !important;
+}
+
+@keyframes svQuickCallSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sv-call-pop-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.10) !important;
+}
+
+.sv-call-pop-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif) !important;
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.sv-call-pop-line {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  background: rgba(227, 241, 233, 0.50) !important;
+  padding: 2.5px 7.5px !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Cardless Fields: NO BOXES, Pure flat underline style matching Search Bar in Image 2 */
+.sv-call-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  margin-bottom: 15px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.sv-call-field-label {
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: #5d7468 !important;
+  margin-bottom: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Select element: Strictly NO BOX, pure underline */
+.sv-call-agent-select,
+.sv-quick-call-popover select.sv-call-agent-select {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 6px 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  outline: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s ease !important;
+}
+
+.sv-call-agent-select:focus,
+.sv-call-agent-select:hover,
+.sv-quick-call-popover select.sv-call-agent-select:focus {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid #0d5d41 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Phone Dial Row: Strictly NO BOX, pure underline */
+.sv-call-dial-row {
+  display: flex !important;
+  align-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s ease !important;
+  width: 100% !important;
+}
+
+.sv-call-dial-row:focus-within {
+  border-bottom-color: #0d5d41 !important;
+  border-bottom-width: 2px !important;
+  box-shadow: none !important;
+}
+
+.sv-call-dial-prefix {
+  padding: 6px 8px 6px 0 !important;
+  background: transparent !important;
+  font-weight: 750 !important;
+  font-size: 13.5px !important;
+  color: #0d5d41 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  user-select: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.sv-call-num-input,
+.sv-quick-call-popover input.sv-call-num-input,
+.sv-quick-call-popover input[type="tel"].sv-call-num-input {
+  flex: 1 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 6px 0 !important;
+  font-family: var(--font-heading, 'Manrope', monospace) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  color: #14221c !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.sv-call-num-input:focus,
+.sv-call-num-input:active,
+.sv-quick-call-popover input.sv-call-num-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.sv-call-num-input::placeholder,
+.sv-call-name-input::placeholder {
+  color: #83978c !important;
+  font-weight: 500 !important;
+  font-size: 12.5px !important;
+  letter-spacing: normal !important;
+  opacity: 1 !important;
+}
+
+/* Recipient Name Input: Strictly NO BOX, pure underline */
+.sv-call-name-input,
+.sv-quick-call-popover input.sv-call-name-input,
+.sv-quick-call-popover input[type="text"].sv-call-name-input {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 6px 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  outline: none !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s ease !important;
+}
+
+.sv-call-name-input:focus,
+.sv-quick-call-popover input.sv-call-name-input:focus {
+  border: none !important;
+  border-bottom: 2px solid #0d5d41 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Ensure no global input rule creates a box inside the popover */
+.sv-quick-call-popover input,
+.sv-quick-call-popover select {
+  box-shadow: none !important;
+}
+
+.sv-quick-call-popover input:focus,
+.sv-quick-call-popover select:focus {
+  box-shadow: none !important;
+}
+
+/* Action Button: Emerald Pill */
+.sv-call-submit-btn {
+  width: 100% !important;
+  height: 40px !important;
+  border-radius: 999px !important;
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.28) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+  margin-top: 6px !important;
+}
+
+.sv-call-submit-btn:hover {
+  background: #094731 !important;
+  box-shadow: 0 6px 20px rgba(13, 93, 65, 0.36) !important;
+  transform: translateY(-1px) !important;
+}
+
+.sv-call-submit-btn:active {
+  transform: scale(0.98) !important;
+}
+
+.sv-call-submit-btn:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+
+
+/* ==========================================================================
+   CUSTOM THEMED AGENT DROPDOWN (SEEVORA SCANDINAVIAN SAGE)
+   Replaces native browser <select> with custom styled menu matching calendar theme
+   ========================================================================== */
+
+.sv-call-agent-dropdown-wrap {
+  position: relative !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.sv-call-agent-trigger {
+  width: 100% !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  padding: 6px 0 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s ease !important;
+}
+
+.sv-call-agent-trigger:hover,
+.sv-call-agent-dropdown-wrap.open .sv-call-agent-trigger {
+  border-bottom: 2px solid #0d5d41 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.sv-call-agent-current-label {
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: left !important;
+  flex: 1 !important;
+}
+
+.sv-call-agent-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0d5d41 !important;
+  margin-left: 8px !important;
+  transition: transform 0.18s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.sv-call-agent-dropdown-wrap.open .sv-call-agent-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.sv-call-agent-menu {
+  position: absolute !important;
+  top: calc(100% + 5px) !important;
+  left: 0 !important;
+  width: 100% !important;
+  min-width: 285px !important;
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.18), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 10030 !important;
+  box-sizing: border-box !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-4px) scale(0.97) !important;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
+  pointer-events: none !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(13, 93, 65, 0.25) transparent !important;
+}
+
+.sv-call-agent-dropdown-wrap.open .sv-call-agent-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+.sv-call-agent-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #2c3e35 !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  box-sizing: border-box !important;
+}
+
+.sv-call-agent-opt:hover {
+  background: #e3f1e9 !important;
+  color: #0d5d41 !important;
+  font-weight: 700 !important;
+}
+
+.sv-call-agent-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.sv-call-agent-opt-name {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 !important;
+}
+
+.sv-call-agent-opt-check {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+}
+
+.sv-call-agent-menu::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.sv-call-agent-menu::-webkit-scrollbar-thumb {
+  background: rgba(13, 93, 65, 0.25) !important;
+  border-radius: 4px !important;
+}
+
+
+
+/* ==========================================================================
+   CHAT HISTORY SEARCH BAR (CARDLESS SCANDINAVIAN SAGE UNDERLINE STYLE)
+   No boxes, no cards, clean hairline underline matching Seevora Sage theme
+   ========================================================================== */
+
+.chat-right-header {
+  padding: 12px 14px 10px 14px !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.10) !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.chat-history-header-title {
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: #0d5d41 !important;
+}
+
+.chat-history-search-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  padding: 4px 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s ease !important;
+}
+
+.chat-history-search-wrap:focus-within {
+  border-bottom: 2px solid #0d5d41 !important;
+  box-shadow: none !important;
+}
+
+.chat-history-search-icon {
+  color: #5d7468 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: color 0.18s ease !important;
+}
+
+.chat-history-search-wrap:focus-within .chat-history-search-icon {
+  color: #0d5d41 !important;
+}
+
+.chat-history-search-input {
+  flex: 1 !important;
+  width: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-family: var(--font, 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #14221c !important;
+  padding: 2px 0 !important;
+  box-sizing: border-box !important;
+}
+
+.chat-history-search-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.chat-history-search-input::placeholder {
+  color: #83978c !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  opacity: 1 !important;
+}
+
+.chat-history-search-clear {
+  background: transparent !important;
+  border: none !important;
+  color: #83978c !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  padding: 0 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.15s ease !important;
+  outline: none !important;
+}
+
+.chat-history-search-clear:hover {
+  color: #0d5d41 !important;
+}
+
+
+
+/* Chat Right History Panel Collapse & Responsive Drawer State */
+.chat-right-panel.collapsed,
+.chat-right-panel.hide {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* Responsive Drawer for Screens <= 1024px */
+@media (max-width: 1024px) {
+  .chat-right-panel {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 320px !important;
+    max-width: 88vw !important;
+    background: #ffffff !important;
+    box-shadow: -8px 0 32px rgba(13, 93, 65, 0.16) !important;
+    z-index: 99999 !important;
+    border-left: 1px solid rgba(13, 93, 65, 0.12) !important;
+    flex-direction: column !important;
+  }
+  .chat-right-panel.mobile-drawer-open {
+    display: flex !important;
+    animation: svDrawerSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  }
+}
+
+@keyframes svDrawerSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.chat-right-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 99998;
+}
+
+.chat-history-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #5d7468;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.chat-history-close-btn:hover {
+  background: rgba(13, 93, 65, 0.08);
+  color: #0d5d41;
+}
+
+.chat-rail-btn.active {
+  background: rgba(13, 93, 65, 0.12) !important;
+  color: #0d5d41 !important;
+}
+
+
+
+/* ==========================================================================
+   SUPERCHARGED AI CHATBOT FEATURES (Cardless Scandinavian Sage Theme)
+   Interactive File Downloads, Live Outbound Call Cards, Quick Suggestion Chips
+   ========================================================================== */
+
+.sv-chat-file-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  background: rgba(227, 241, 233, 0.45) !important;
+  border: 1px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  margin-top: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.sv-chat-file-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.sv-chat-file-icon {
+  color: #0d5d41 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.sv-chat-file-name {
+  font-family: var(--font-heading, 'Manrope', sans-serif) !important;
+  font-size: 12.5px !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.sv-chat-file-meta {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  color: #5d7468 !important;
+}
+
+.sv-chat-file-dl-btn {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all 0.16s ease !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.25) !important;
+}
+
+.sv-chat-file-dl-btn:hover {
+  background: #094731 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(13, 93, 65, 0.35) !important;
+}
+
+.sv-chat-call-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  background: rgba(227, 241, 233, 0.45) !important;
+  border: 1px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  margin-top: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.sv-chat-call-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  color: #0d5d41 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.sv-chat-call-details {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  font-size: 12.5px !important;
+}
+
+.sv-chat-chips-wrap {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+}
+
+.sv-chat-chip {
+  background: rgba(227, 241, 233, 0.6) !important;
+  border: 1px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 999px !important;
+  padding: 4px 11px !important;
+  font-family: var(--font, 'DM Sans', sans-serif) !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  color: #0d5d41 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  outline: none !important;
+}
+
+.sv-chat-chip:hover {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border-color: #0d5d41 !important;
+  transform: translateY(-1px) !important;
 }

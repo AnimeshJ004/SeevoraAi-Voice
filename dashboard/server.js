@@ -18,6 +18,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { WebSocketServer, WebSocket } = require('ws');
 
 const core = require('./lib/core');
@@ -1602,95 +1603,308 @@ async function llmQuick(systemPrompt, userText, maxTokens) {
   return String((out && out.text) || '').trim();
 }
 
-// Industry chips and suggestions helper for conversational agent training
-function getIndustryQuickChips(industry) {
-  const ind = String(industry || '').toLowerCase();
-  if (ind.includes('dent')) {
-    return [
-      'Smile Care Dental Clinic, Bookings & Emergency, 10am-8pm, Warm Tone',
-      'Apex Dental Studio, Implants & Cleaning, 9am-7pm',
-      'City Dental Care, Routine Checkups & Timings'
-    ];
+// Dynamic Industry Profile & Intelligent Extraction Helper
+function getIndustryProfile(text, currentIndustry) {
+  const t = String(text || '').toLowerCase();
+  let industry = currentIndustry || null;
+
+  // 1. Explicit regex detection
+  if (/sports?|cricket|football|tennis|badminton|athletics?|sports\s*academy|stadium|coach/i.test(t)) {
+    industry = 'Sports & Athletics';
+  } else if (/dental|dentist|teeth|tooth|orthodontic|root\s*canal/i.test(t)) {
+    industry = 'Dental Care & Clinic';
+  } else if (/clinic|doctor|hospital|medical|healthcare|physician|health|opd|patient/i.test(t)) {
+    industry = 'Healthcare & Medical Clinic';
+  } else if (/real\s*estate|property|realty|housing|broker|builder|flat|apartment|plots/i.test(t)) {
+    industry = 'Real Estate & Property';
+  } else if (/hvac|plumb|ac\s*repair|electrician|home\s*service|appliance|repair|cleaning/i.test(t)) {
+    industry = 'Home Services & Maintenance';
+  } else if (/salon|spa|beauty|hair|parlor|parlour|makeup|skincare/i.test(t)) {
+    industry = 'Salon & Beauty Wellness';
+  } else if (/education|school|college|coaching|tuition|tutor|institute|academy|learning|course|classes/i.test(t)) {
+    industry = 'Education & Coaching Academy';
+  } else if (/finance|fintech|banking|loan|insurance|tax|chartered|accounting|ca\s*firm/i.test(t)) {
+    industry = 'Financial & Accounting Services';
+  } else if (/legal|lawyer|advocate|attorney|law\s*firm/i.test(t)) {
+    industry = 'Legal & Law Practice';
+  } else if (/gym|fitness|trainer|workout|yoga|crossfit/i.test(t)) {
+    industry = 'Fitness & Gym Center';
+  } else if (/restaurant|cafe|hotel|dining|food|bakery|catering|dhaba/i.test(t)) {
+    industry = 'Restaurant & Hospitality';
+  } else if (/car|auto|vehicle|rental|garage|dealership|cab|taxi/i.test(t)) {
+    industry = 'Automobile & Transport';
+  } else if (/ecommerce|e-commerce|store|shop|retail|boutique|clothing|fashion/i.test(t)) {
+    industry = 'E-Commerce & Retail Store';
+  } else if (/logistics|courier|freight|delivery|fleet|warehouse/i.test(t)) {
+    industry = 'Logistics & Transportation';
+  } else if (/software|saas|it\s*services|web\s*development|digital\s*marketing|agency|tech/i.test(t)) {
+    industry = 'Technology & Digital Agency';
+  } else {
+    // Check if user said "for XYZ" (e.g. "Create Voice agent for Sports")
+    const matchFor = t.match(/\b(?:for|in|ke\s*liye)\s+([a-z0-9\s&-]{2,30}?)(?=\s+(?:business|company|agency|firm|shop|store|brand|service|$))/i);
+    if (matchFor && matchFor[1]) {
+      const cleanWord = matchFor[1].trim();
+      industry = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1);
+    }
   }
-  if (ind.includes('estate') || ind.includes('property')) {
-    return [
-      'Skyline Realty, Site Visit Booking & Budget Inquiries, 9am-6pm',
-      'Prime Properties, Luxury Flats & Commercial Plots, 10am-7pm'
-    ];
+
+  if (!industry || industry === 'General Business') {
+    industry = 'Business Services';
   }
-  if (ind.includes('salon') || ind.includes('spa') || ind.includes('beauty')) {
-    return [
-      'Glow Beauty Lounge, Hair & Skin Appointments, 10am-8pm',
-      'Serenity Spa & Salon, Massages & Hair Spa, 11am-9pm'
-    ];
+
+  const indLower = industry.toLowerCase();
+
+  if (indLower.includes('sport') || indLower.includes('athletic')) {
+    return {
+      industry,
+      exampleBiz: 'Zenith Sports Arena (or ProActive Athletics)',
+      exampleServices: 'Court bookings, Coaching inquiries, Tournament details, Membership plans',
+      exampleHours: 'Mon-Sat 7:00 AM - 9:00 PM, Mumbai',
+      exampleTone: 'Energetic, confident and professional English / Hinglish',
+      suggestions: [
+        'Sports Academy Receptionist (Court Bookings & Coaching)',
+        'Athlete Club & Membership Coordinator',
+        'Tournament & Events Desk',
+        'Facility Availability & Inbound Inquiries'
+      ]
+    };
   }
-  if (ind.includes('hvac') || ind.includes('repair') || ind.includes('plumb') || ind.includes('home')) {
-    return [
-      'QuickFix Home Services, AC Repair & Plumbing Triage, 24/7 Service',
-      'Apex Cool Care, HVAC Servicing & Emergency Callouts'
-    ];
+
+  if (indLower.includes('dent') || indLower.includes('teeth')) {
+    return {
+      industry,
+      exampleBiz: 'Smile Dental Care (or City Dental)',
+      exampleServices: 'Appointment booking, Consultation triage, Patient queries',
+      exampleHours: 'Mon-Sat 10:00 AM - 8:00 PM, Mumbai',
+      exampleTone: 'Warm, empathetic and reassuring English / Hinglish',
+      suggestions: [
+        'Dental Clinic Receptionist (Appointments & Triage)',
+        'Patient Consultation & Booking Specialist',
+        'Clinic Hours & Treatment FAQ Desk',
+        'Emergency Dental Inquiries'
+      ]
+    };
   }
-  if (ind.includes('clinic') || ind.includes('health') || ind.includes('doctor') || ind.includes('medic')) {
-    return [
-      'Lifeline Medical Clinic, Doctor Consultation Booking, 8am-8pm',
-      'Wellness Health Center, General Medicine & Diagnostics'
-    ];
+
+  if (indLower.includes('clinic') || indLower.includes('health') || indLower.includes('medic') || indLower.includes('doctor')) {
+    return {
+      industry,
+      exampleBiz: 'City Health Clinic (or Apex Medicare)',
+      exampleServices: 'Doctor appointment booking, Triage, Consultation inquiries',
+      exampleHours: 'Mon-Sat 9:00 AM - 8:00 PM, Delhi',
+      exampleTone: 'Empathetic, calm and professional English / Hinglish',
+      suggestions: [
+        'Healthcare Clinic Receptionist (Doctor Appointments)',
+        'Patient Inquiry & OPD Slot Booking',
+        'Diagnostic & Consultation Scheduling',
+        'Emergency Clinic Front Desk'
+      ]
+    };
   }
-  return [
-    'Apex Enterprise Voice AI, Inbound Inquiries & Scheduling, 9am-7pm',
-    'CareFirst Support, Customer Assistance & Call Triage'
-  ];
+
+  if (indLower.includes('estate') || indLower.includes('property')) {
+    return {
+      industry,
+      exampleBiz: 'Skyline Realty (or Prime Properties)',
+      exampleServices: 'Property inquiries, Site visit booking, Budget qualification',
+      exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Bangalore',
+      exampleTone: 'Polite, persuasive and professional English / Hinglish',
+      suggestions: [
+        'Real Estate Lead Qualifier (Budget & Site Visits)',
+        'Property Inquiries & Scheduling Specialist',
+        'Commercial & Residential Leasing Agent',
+        'Site Visit & Callback Coordinator'
+      ]
+    };
+  }
+
+  if (indLower.includes('hvac') || indLower.includes('repair') || indLower.includes('plumb') || indLower.includes('home')) {
+    return {
+      industry,
+      exampleBiz: 'QuickFix Home Services (or Apex Cool Care)',
+      exampleServices: 'Emergency dispatch, Service booking, Technician scheduling, Pricing quotes',
+      exampleHours: '24/7 Dispatch (or Mon-Sat 8:00 AM - 8:00 PM)',
+      exampleTone: 'Prompt, helpful and responsive English / Hinglish',
+      suggestions: [
+        '24/7 HVAC Emergency Dispatch',
+        'Home Services & Repair Booking Desk',
+        'Appliance Servicing & Estimate Agent',
+        'Technician Scheduling Coordinator'
+      ]
+    };
+  }
+
+  if (indLower.includes('educat') || indLower.includes('coach') || indLower.includes('school') || indLower.includes('academy')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Learning Academy (or Horizon Institute)',
+      exampleServices: 'Course admissions, Batch timings, Demo class booking, Fee details',
+      exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Pune',
+      exampleTone: 'Encouraging, knowledgeable and polite English / Hinglish',
+      suggestions: [
+        'Admissions & Course Inquiries Desk',
+        'Demo Class Scheduling & Batch Info',
+        'Student Support & Fee Guidance',
+        'Coaching Center Front Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('financ') || indLower.includes('bank') || indLower.includes('account') || indLower.includes('tax')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Financial Advisors (or Capital Tax Partners)',
+      exampleServices: 'Loan inquiries, Tax consultation booking, Investment queries, KYC support',
+      exampleHours: 'Mon-Fri 9:30 AM - 6:30 PM, Mumbai',
+      exampleTone: 'Trustworthy, formal and precise English / Hinglish',
+      suggestions: [
+        'Financial Consultation & Lead Qualifier',
+        'Tax & Accounting Client Intake',
+        'Loan Inquiries & Eligibility Screening',
+        'Client Services & Advisory Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('legal') || indLower.includes('law')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Legal Associates (or Horizon Law Firm)',
+      exampleServices: 'Client case intake, Legal consultation booking, Case status inquiries',
+      exampleHours: 'Mon-Fri 9:00 AM - 6:00 PM, Delhi',
+      exampleTone: 'Discrete, professional and articulate English / Hinglish',
+      suggestions: [
+        'Legal Consultation & Intake Specialist',
+        'Case Inquiry & Attorney Scheduling',
+        'Corporate Legal Front Desk',
+        'Client Scheduling & Callback Agent'
+      ]
+    };
+  }
+
+  if (indLower.includes('tech') || indLower.includes('soft') || indLower.includes('saas') || indLower.includes('agency')) {
+    return {
+      industry,
+      exampleBiz: 'Nova Technologies (or Apex Digital Studio)',
+      exampleServices: 'Product demo booking, Sales inquiries, Tech support triage, Scope discussion',
+      exampleHours: 'Mon-Fri 10:00 AM - 7:00 PM, Bangalore',
+      exampleTone: 'Sharp, modern and professional English / Hinglish',
+      suggestions: [
+        'Product Demo Booking & Sales Qualifier',
+        'Agency Inquiries & Project Intake',
+        'Customer Support & Helpdesk Triage',
+        'Consultation & Discovery Call Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('restaurant') || indLower.includes('cafe') || indLower.includes('food') || indLower.includes('hospitality')) {
+    return {
+      industry,
+      exampleBiz: 'The Grand Table Cafe (or Royale Banquet)',
+      exampleServices: 'Table reservations, Party bookings, Menu & dietary questions, Timings',
+      exampleHours: 'All Days 11:00 AM - 11:30 PM, Mumbai',
+      exampleTone: 'Warm, hospitable and enthusiastic English / Hinglish',
+      suggestions: [
+        'Table Reservation & Dining Host',
+        'Private Event & Party Booking Coordinator',
+        'Menu Inquiries & Timing Desk',
+        'Customer Hospitality Assistant'
+      ]
+    };
+  }
+
+  if (indLower.includes('gym') || indLower.includes('fitness')) {
+    return {
+      industry,
+      exampleBiz: 'IronCore Fitness Club (or Zenith Gym)',
+      exampleServices: 'Membership pricing, Personal trainer booking, Trial workout scheduling',
+      exampleHours: 'Mon-Sat 6:00 AM - 10:00 PM, Pune',
+      exampleTone: 'Motivating, energetic and friendly English / Hinglish',
+      suggestions: [
+        'Gym Membership & Trial Booking Desk',
+        'Personal Trainer & Schedule Coordinator',
+        'Fitness Facility Inquiries & Pricing',
+        'Front Desk Wellness Host'
+      ]
+    };
+  }
+
+  // Universal Default for any Business / Company
+  return {
+    industry,
+    exampleBiz: 'Acme Enterprises (or Apex Solutions)',
+    exampleServices: 'Customer inquiries, Consultation booking, Product information, Support triage',
+    exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Mumbai',
+    exampleTone: 'Warm, confident and professional English / Hinglish',
+    suggestions: [
+      'Customer Support & FAQ Specialist',
+      'Lead Qualification & Callback Scheduler',
+      'Appointment & Consultation Booking Agent',
+      '24/7 Front Desk Virtual Receptionist'
+    ]
+  };
 }
 
 function extractBusinessName(text, industry) {
-  const m1 = text.match(/(?:business|clinic|company|store|agency|hospital)\s+(?:name\s+)?(?:is\s+|called\s+|:\s*)?([A-Z][a-zA-Z0-9\s&]{2,30})/i);
+  const m1 = text.match(/(?:business|clinic|company|store|agency|hospital|academy|center|centre|studio)\s+(?:name\s+)?(?:is\s+|called\s+|:\s*)?([A-Z][a-zA-Z0-9\s&]{2,30})/i);
   if (m1 && m1[1]) return m1[1].trim();
-  const m2 = text.match(/(?:for|at)\s+([A-Z][a-zA-Z0-9\s&]{2,25}\s+(?:Dental|Clinic|Hospital|Realty|Properties|Studio|Services|Care|Salon|Spa))/i);
+  const m2 = text.match(/(?:for|at)\s+([A-Z][a-zA-Z0-9\s&]{2,25}\s+(?:Dental|Clinic|Hospital|Realty|Properties|Studio|Services|Care|Salon|Spa|Sports|Academy|Club|Store|Firm))/i);
   if (m2 && m2[1]) return m2[1].trim();
 
   const ind = String(industry || '').toLowerCase();
+  if (ind.includes('sport')) return 'Zenith Sports';
   if (ind.includes('dent')) return 'Smile Dental Clinic';
   if (ind.includes('estate') || ind.includes('property')) return 'Skyline Realty';
   if (ind.includes('salon') || ind.includes('spa')) return 'Glow Beauty Lounge';
   if (ind.includes('hvac') || ind.includes('home')) return 'QuickFix Home Services';
   if (ind.includes('clinic') || ind.includes('health') || ind.includes('doctor')) return 'City Care Clinic';
-  return `${industry || 'Client'} Services`;
+  if (ind.includes('educat') || ind.includes('coach')) return 'Apex Learning Academy';
+  return `${industry || 'Enterprise'} Services`;
 }
 
 // ---- handle: train_agent (Conversational AI Voice Agent Training) ------------
-async function handleTrainAgent(text, ctx, db, sessionId) {
-  const activeSession = sessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, sessionId) : null;
-  const t = text.toLowerCase();
 
-  // Detect industry if mentioned
-  let detectedIndustry = null;
-  if (/dental|dentist|teeth|tooth|orthodontic|root\s*canal/i.test(t)) {
-    detectedIndustry = 'Dental Care & Clinic';
-  } else if (/real\s*estate|property|realty|housing|broker|builder|flat|apartment/i.test(t)) {
-    detectedIndustry = 'Real Estate & Property';
-  } else if (/hvac|plumb|ac\s*repair|electrician|home\s*service|appliance/i.test(t)) {
-    detectedIndustry = 'Home Services & HVAC';
-  } else if (/salon|spa|beauty|hair|parlor|parlour|makeup/i.test(t)) {
-    detectedIndustry = 'Salon & Beauty Wellness';
-  } else if (/clinic|doctor|hospital|medical|healthcare|physician|health/i.test(t)) {
-    detectedIndustry = 'Healthcare & Medical Clinic';
-  } else if (/legal|lawyer|advocate|attorney|law\s*firm/i.test(t)) {
-    detectedIndustry = 'Legal & Law Practice';
-  } else if (/gym|fitness|trainer|workout|yoga/i.test(t)) {
-    detectedIndustry = 'Fitness & Gym Center';
-  } else if (/restaurant|cafe|hotel|dining|food/i.test(t)) {
-    detectedIndustry = 'Restaurant & Hospitality';
-  } else if (/car|auto|vehicle|rental|garage/i.test(t)) {
-    detectedIndustry = 'Automobile & Car Rental';
+function detectUserLanguage(text) {
+  if (!text || typeof text !== 'string') return 'English';
+  // Check for Devanagari script (Hindi)
+  if (/[\u0900-\u097F]/.test(text)) return 'Hindi';
+
+  const lower = text.toLowerCase();
+  const hindiTokens = [
+    'mera', 'meri', 'mere', 'naam', 'kya', 'hai', 'hain', 'ho', 'kaise', 'batao', 'bolo',
+    'karti', 'karta', 'karein', 'karo', 'kardo', 'kar do', 'karvana', 'karwao', 'bana', 'banao',
+    'banana', 'aap', 'aapka', 'aapko', 'hum', 'humein', 'haan', 'haanji', 'nahi', 'chahiye',
+    'baare', 'mein', 'me', 'kitna', 'kon', 'kaun', 'acha', 'accha', 'theek', 'namaste', 'shukriya',
+    'kripya', 'ki', 'ke', 'ko', 'se', 'bhi', 'kuch', 'yeh', 'ye', 'woh', 'wo', 'pe', 'par', 'pai',
+    'bhej', 'bhejo', 'bhejdo', 'bhej do', 'lagao', 'lagado', 'laga do', 'daalo', 'sikhao', 'karna'
+  ];
+
+  const words = lower.split(/[^a-z0-9]+/);
+  let hindiScore = 0;
+  for (const w of words) {
+    if (hindiTokens.includes(w)) hindiScore++;
   }
 
+  // If at least 2 hindi tokens, or 1 token in short message (<= 6 words), classify as Hinglish
+  if (hindiScore >= 2 || (hindiScore >= 1 && words.length <= 6)) {
+    return 'Hinglish';
+  }
+
+  return 'English';
+}
+
+async function handleTrainAgent(text, ctx, db, sessionId) {
+  const activeSession = sessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, sessionId) : null;
   const isAnsweringQuestions = activeSession && activeSession.trainingState && activeSession.trainingState.active;
-  const industryToUse = detectedIndustry || (isAnsweringQuestions ? activeSession.trainingState.industry : 'General Business');
+  const currentIndustry = isAnsweringQuestions ? activeSession.trainingState.industry : null;
+  const profile = getIndustryProfile(text, currentIndustry);
+  const industryToUse = profile.industry;
 
   // Check if user's prompt is a high-level command without business name or specific operational details
   const isBriefRequest = !isAnsweringQuestions && (
     text.length < 85 &&
-    !/\b(name\s+is|called|clinic\s+name|business\s+name|hours|timings|timing|10am|9am|pm|dr\.|mumbai|delhi|bangalore)\b/i.test(text)
+    !/\b(name\s+is|called|business\s+name|hours|timings|timing|10am|9am|pm|mumbai|delhi|bangalore)\b/i.test(text)
   );
 
   // 1. If it's a brief initial request, start interactive training interview
@@ -1707,15 +1921,24 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
       }
     });
 
-    const suggestions = getIndustryQuickChips(industryToUse);
+    const userLang = detectUserLanguage(text);
+    const suggestions = profile.suggestions;
 
-    const reply = `Awesome! Main aapke **${industryToUse}** ke liye ek high-converting AI Voice Receptionist train karne ke liye ready hoon! 🎙️✨\n\n` +
-      `Agent ko fully personalized train karne ke liye, kripya ye 3-4 details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
-      `1. **Clinic / Business Name:** (jaise: *Smile Dental Care* ya *City Orthodontics*)\n` +
-      `2. **Key Services / Tasks:** (jaise: *Appointment booking, Teeth cleaning, Root canal inquiries, Emergency pain triage*)\n` +
-      `3. **Working Hours & Location:** (jaise: *Mon-Sat 10:00 AM - 8:00 PM, Mumbai*)\n` +
-      `4. **Preferred Voice Tone:** (jaise: *Warm, empathetic & professional Indian English / Hinglish receptionist*)\n\n` +
-      `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein!)*`;
+    const reply = userLang === 'English'
+      ? `I am ready to train a high-converting AI Voice Receptionist for your **${industryToUse}** business.\n\n` +
+        `To tailor the agent to your exact business needs, please provide these key details (you can reply in a single message):\n\n` +
+        `1. **Business Name:** (e.g. *${profile.exampleBiz}*)\n` +
+        `2. **Key Services / Objective:** (e.g. *${profile.exampleServices}*)\n` +
+        `3. **Operating Hours & Location:** (e.g. *${profile.exampleHours}*)\n` +
+        `4. **Preferred Voice & Tone:** (e.g. *${profile.exampleTone}*)\n\n` +
+        `*(You can reply directly or click one of the quick suggestions below)*`
+      : `Main aapke **${industryToUse}** business ke liye ek high-converting AI Voice Receptionist train karne ke liye ready hoon.\n\n` +
+        `Agent ko fully personalized train karne ke liye, kripya ye details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
+        `1. **Business Name:** (jaise: *${profile.exampleBiz}*)\n` +
+        `2. **Key Services / Objective:** (jaise: *${profile.exampleServices}*)\n` +
+        `3. **Operating Hours & Location:** (jaise: *${profile.exampleHours}*)\n` +
+        `4. **Preferred Voice & Tone:** (jaise: *${profile.exampleTone}*)\n\n` +
+        `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein)*`;
 
     return {
       reply,
@@ -1817,7 +2040,7 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
       agentId: newAgent.id,
       agentName: newAgent.name,
       industry: newAgent.industry,
-      agent: newAgent
+      agent: publicAgent(newAgent)
     }
   };
 }
@@ -1826,9 +2049,12 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
 async function handleSendEmail(text, ctx, db) {
   const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   if (!emailMatch) {
+    const isEnglishEmail = detectUserLanguage(text) === 'English';
     return {
-      reply: `Kripya valid email address provide karein jahan mail send karna hai.\n\n*Example:* \`mail kardo animeshj425@gmail.com pai for voice agent\``,
-      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Open Gmail Dispatch Settings ✉' }
+      reply: isEnglishEmail
+        ? 'Please provide a valid email address to send the email.\n\n*Example:* `send email to animeshj425@gmail.com about the voice agent update`'
+        : `Kripya valid email address provide karein jahan mail send karna hai.\n\n*Example:* \`mail kardo animeshj425@gmail.com pai for voice agent\``,
+      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: isEnglishEmail ? 'Open Gmail Settings ✉' : 'Open Gmail Dispatch Settings ✉' }
     };
   }
 
@@ -2461,9 +2687,12 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
 async function handleSendWhatsApp(text, ctx, db) {
   const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\b\d{10}\b/);
   if (!phoneMatch) {
+    const isEnglishWa = detectUserLanguage(text) === 'English';
     return {
-      reply: `Kripya valid 10-digit mobile number provide karein jahan WhatsApp message bhejna hai.\n\n*Example:* \`whatsapp kardo +91 98765 43210 pe ki appointment confirm ho gaya hai\``,
-      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Configure in Settings →' }
+      reply: isEnglishWa
+        ? 'Please provide a valid 10-digit mobile number to send the WhatsApp message.\n\n*Example:* `send WhatsApp to +91 98765 43210 saying your appointment is confirmed`'
+        : `Kripya valid 10-digit mobile number provide karein jahan WhatsApp message bhejna hai.\n\n*Example:* \`whatsapp kardo +91 98765 43210 pe ki appointment confirm ho gaya hai\``,
+      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: isEnglishWa ? 'Configure in Settings →' : 'Settings mein Configure karein →' }
     };
   }
 
@@ -2498,13 +2727,22 @@ async function handleSendWhatsApp(text, ctx, db) {
     message
   });
 
-  const reply = `**WhatsApp Message Dispatched with VoBiz Line & Company Name**\n\n` +
-    `• Company Name: **${waRecord.companyName}**\n` +
-    `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
-    `• Recipient WhatsApp: **${waRecord.to}**\n` +
-    `• Message Content: "*${waRecord.message}*"\n` +
-    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
-    `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
+  const isEnglishWaSuccess = detectUserLanguage(text) === 'English';
+  const reply = isEnglishWaSuccess
+    ? `**WhatsApp Message Dispatched**\n\n` +
+      `• Company Name: **${waRecord.companyName}**\n` +
+      `• Sender Line: \`${waRecord.from}\`\n` +
+      `• Recipient WhatsApp: **${waRecord.to}**\n` +
+      `• Message Content: "*${waRecord.message}*"\n` +
+      `• Message-ID: \`${waRecord.messageId}\`\n\n` +
+      `The message has been dispatched under your **${waRecord.companyName}** brand header and logged in WhatsApp CRM timeline.`
+    : `**WhatsApp Message Dispatched with VoBiz Line & Company Name**\n\n` +
+      `• Company Name: **${waRecord.companyName}**\n` +
+      `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
+      `• Recipient WhatsApp: **${waRecord.to}**\n` +
+      `• Message Content: "*${waRecord.message}*"\n` +
+      `• Message-ID: \`${waRecord.messageId}\`\n\n` +
+      `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
 
   return {
     reply,
@@ -2678,9 +2916,24 @@ async function handleBuildAgent(text, ctx) {
 
   await core.mutate((d) => { d.agents.push(newAgent); });
 
+  const isEnglishDone = detectUserLanguage(text) === 'English';
+  const targetTenant = (ctx && ctx.tenant) || null;
+  const targetName = (targetTenant && targetTenant.name) ? targetTenant.name : 'Client Workspace';
+  const doneReply = isEnglishDone
+    ? `Done! I have created **${newAgent.name}** and saved it to the **${targetName}** panel!\n\n` +
+      `• Greeting: "${newAgent.greeting}"\n` +
+      `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+      `• Client Panel: **${targetName}**\n\n` +
+      `This agent is now live and saved in your backend database and Agent Studio. Would you like to test it or assign a phone number?`
+    : `Done! Maine **${newAgent.name}** create karke **${targetName}** client panel mein save kar diya hai!\n\n` +
+      `• Greeting: "${newAgent.greeting}"\n` +
+      `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+      `• Client Panel: **${targetName}**\n\n` +
+      `Yeh agent ab aapke backend database aur client panel ke Agent Studio mein live save ho chuka hai. Kya aap iska persona, voice change karna chahte hain ya phone number assign karein?`;
+
   return {
-    reply: `Done! I've created **${newAgent.name}** for you.\n\nGreeting: "${newAgent.greeting}"\n\nYou can find it in the Agents section. Want me to adjust the persona, voice, or anything else?`,
-    action: { type: 'agent_created', agentId: newAgent.id, agentName: newAgent.name },
+    reply: doneReply,
+    action: { type: 'agent_created', agentId: newAgent.id, agentName: newAgent.name, tenantId: targetTenant ? targetTenant.id : undefined, tenantName: targetName, agent: publicAgent(newAgent) },
   };
 }
 
@@ -2736,11 +2989,19 @@ async function handleAddKnowledge(text, agentId, ctx, db) {
   }
 
   // Extract the knowledge content from the message (remove meta-instruction noise)
-  const extractSystem = `Extract only the factual knowledge or FAQ content from the user message that should be stored for an AI agent. Remove phrases like "add this", "teach the agent", "the agent should know". Return ONLY the clean knowledge text.`;
+  const extractSystem = `Extract only the factual knowledge or FAQ content from the user message that should be stored for an AI agent. Remove phrases like "add this", "teach the agent", "the agent should know". Return ONLY the clean knowledge text. If no specific facts or FAQs are provided, return EMPTY.`;
   let knowledgeText = text;
   try {
     knowledgeText = await llmQuick(extractSystem, text, 600);
   } catch (_) {}
+
+  // Safety guard: If knowledgeText is empty or an LLM refusal, do not save to knowledge base
+  if (!knowledgeText || knowledgeText.trim().length < 5 || /i don't have access|cannot access|please provide|not provided|as an ai/i.test(knowledgeText)) {
+    return {
+      reply: 'Please provide the specific text, FAQ, or factual details you would like to add to the agent\'s knowledge base.',
+      action: null
+    };
+  }
 
   const existing = String(target.knowledge || target.businessKnowledge || '').trim();
   const newKnowledge = existing ? `${existing}\n\n${knowledgeText}` : knowledgeText;
@@ -2758,13 +3019,19 @@ async function handleAddKnowledge(text, agentId, ctx, db) {
 // ---- handle: ask_report ---------------------------------------------------
 async function handleAskReport(text, ctx, db) {
   const reportCtx = assistant.buildReportContext(db, ctx.tenant.id);
-  const reportSystem = `You are a business analytics assistant. You have the following metrics for the tenant. Answer the user's question naturally in 2-4 sentences. Use plain text, no markdown tables, no bullet points.\n\nMetrics:\n- Today's calls: ${reportCtx.today.calls}\n- Last 7 days calls: ${reportCtx.last7Days.calls}\n- Last 30 days calls: ${reportCtx.last30Days.calls}\n- Wallet balance: Rs ${reportCtx.walletBalanceInr}\n- Active agents: ${reportCtx.agentCount}\n- CRM contacts: ${reportCtx.contactCount}\n- Total recordings: ${reportCtx.recordingCount}\n- Recordings this week: ${reportCtx.recentRecordingCount}`;
+  const userLang = detectUserLanguage(text);
+  const langRule = userLang === 'English'
+    ? 'Reply strictly in natural, professional English.'
+    : (userLang === 'Hindi' ? 'Reply in natural Hindi.' : 'Reply in natural conversational Hinglish.');
+  const reportSystem = `You are a business analytics assistant. You have the following metrics for the tenant. Answer the user's question naturally in 2-4 sentences. Use plain text, no markdown tables, no bullet points. Never use emojis. ${langRule}\n\nMetrics:\n- Today's calls: ${reportCtx.today.calls}\n- Last 7 days calls: ${reportCtx.last7Days.calls}\n- Last 30 days calls: ${reportCtx.last30Days.calls}\n- Wallet balance: Rs ${reportCtx.walletBalanceInr}\n- Active agents: ${reportCtx.agentCount}\n- CRM contacts: ${reportCtx.contactCount}\n- Total recordings: ${reportCtx.recordingCount}\n- Recordings this week: ${reportCtx.recentRecordingCount}`;
 
   let answer = '';
   try {
     answer = await llmQuick(reportSystem, text, 400);
   } catch (_) {
-    answer = `Here is a quick summary: ${reportCtx.last7Days.calls} calls in the last 7 days, ${reportCtx.last30Days.calls} in the last 30 days. Wallet balance: Rs ${reportCtx.walletBalanceInr}. You have ${reportCtx.agentCount} agent(s) and ${reportCtx.contactCount} CRM contact(s).`;
+    answer = userLang === 'English'
+      ? `Here is a quick summary: ${reportCtx.last7Days.calls} calls in the last 7 days, ${reportCtx.last30Days.calls} in the last 30 days. Wallet balance: Rs ${reportCtx.walletBalanceInr}. You have ${reportCtx.agentCount} agent(s) and ${reportCtx.contactCount} CRM contact(s).`
+      : `Quick summary: Pichle 7 dino mein ${reportCtx.last7Days.calls} calls aur 30 dino mein ${reportCtx.last30Days.calls} calls hui hain. Wallet balance: Rs ${reportCtx.walletBalanceInr}. Aapke paas ${reportCtx.agentCount} active agent(s) aur ${reportCtx.contactCount} CRM contact(s) hain.`;
   }
 
   return { reply: answer, action: null };
@@ -2804,60 +3071,316 @@ async function handleTestChat(text, agentId, ctx, db) {
   };
 }
 
+// ---- handle: admin_client_query (Super Admin Multi-Client Audit & Overview) ----
+async function handleAdminClientQuery(text, ctx, db) {
+  const isEng = detectUserLanguage(text) === 'English';
+  const t = text.toLowerCase();
+  const allTenants = Array.isArray(db.tenants) ? db.tenants : [];
+  const allUsers = Array.isArray(db.users) ? db.users : [];
+  const allAgents = Array.isArray(db.agents) ? db.agents : [];
+  const allActions = Array.isArray(db.assistantActions) ? db.assistantActions : [];
+  const allRecordings = Array.isArray(db.callRecordings) ? db.callRecordings : [];
+  const allContacts = Array.isArray(db.crmContacts) ? db.crmContacts : [];
+
+  // 1. Is the admin asking to list all clients / tenants?
+  const isListAll = /\b(all\s+clients?|all\s+tenants?|list\s+(?:all\s+)?clients?|list\s+(?:all\s+)?tenants?|saare\s+clients?|total\s+clients?|how\s+many\s+clients?)\b/i.test(t);
+  if (isListAll) {
+    const clientTenants = allTenants.filter(tn => tn.slug !== 'admin-demo' && tn.id !== 't_admin');
+    const displayList = clientTenants.length ? clientTenants : allTenants;
+
+    const tenantSummaries = displayList.map((tn, idx) => {
+      const users = allUsers.filter(u => u.tenantId === tn.id);
+      const agents = allAgents.filter(a => a.tenantId === tn.id);
+      const calls = allRecordings.filter(r => r.tenantId === tn.id);
+      const userEmails = users.map(u => u.email).slice(0, 2).join(', ') || 'No users';
+      return `${idx + 1}. **${tn.name}** (\`${tn.id}\`)\n` +
+             `   • Plan: **${tn.plan || 'Starter'}** | Status: **${tn.status || 'Active'}**\n` +
+             `   • Users: ${userEmails}\n` +
+             `   • Active Agents: **${agents.length}** | Total Calls: **${calls.length}**`;
+    });
+
+    const reply = isEng
+      ? `👑 **Administrative Client Workspace Overview**\n\n` +
+        `Total Registered Workspaces: **${displayList.length}**\n\n` +
+        tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+        `*To inspect any specific client in detail, ask: "What did client [Name] do?" or "Show activity of client [Email]".*`
+      : `👑 **Admin Client Workspace Overview**\n\n` +
+        `Total Registered Client Workspaces: **${displayList.length}**\n\n` +
+        tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+        `*Kisi bhi specific client ki detailed history dekhne ke liye puchiye: "What did client [Name] do?" ya "Client [Email] ki activity dikhao".*`;
+
+    return {
+      reply,
+      action: { type: 'admin_client_list', total: displayList.length }
+    };
+  }
+
+  // 2. Identify target client/tenant mentioned by the admin
+  let targetTenant = null;
+  let targetUser = null;
+
+  // Search by email
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (emailMatch) {
+    targetUser = allUsers.find(u => u.email && u.email.toLowerCase() === emailMatch[0].toLowerCase());
+    if (targetUser) {
+      targetTenant = allTenants.find(tn => tn.id === targetUser.tenantId);
+    }
+  }
+
+  // Search by tenant ID
+  if (!targetTenant) {
+    const tidMatch = text.match(/\b(t_[a-zA-Z0-9]{4,32})\b/);
+    if (tidMatch) {
+      targetTenant = allTenants.find(tn => tn.id === tidMatch[1]);
+    }
+  }
+
+  // Search by tenant name in database
+  if (!targetTenant) {
+    for (const tn of allTenants) {
+      const tnLower = (tn.name || '').toLowerCase();
+      if (tnLower.length >= 3 && t.includes(tnLower)) {
+        targetTenant = tn;
+        break;
+      }
+    }
+  }
+
+  // Search by user name in database
+  if (!targetTenant) {
+    for (const u of allUsers) {
+      const uName = (u.name || '').toLowerCase();
+      if (uName.length >= 3 && t.includes(uName)) {
+        targetUser = u;
+        targetTenant = allTenants.find(tn => tn.id === u.tenantId);
+        break;
+      }
+    }
+  }
+
+  // Search by keyword after "client" (e.g. "client sports" or "client rajesh" or "client apex")
+  if (!targetTenant) {
+    const afterClient = t.match(/\bclient\s+([a-z0-9\s&-]{2,25})/i);
+    if (afterClient && afterClient[1]) {
+      const keyword = afterClient[1].trim();
+      targetTenant = allTenants.find(tn => (tn.name || '').toLowerCase().includes(keyword) || (tn.slug || '').toLowerCase().includes(keyword));
+    }
+  }
+
+  // Fallback: If admin says "iss client" / "this client" or no specific client specified, pick first non-admin client
+  if (!targetTenant) {
+    const clientTenants = allTenants.filter(tn => tn.slug !== 'admin-demo' && tn.id !== ctx.tenant.id);
+    if (clientTenants.length > 0) {
+      targetTenant = clientTenants[0];
+    } else {
+      targetTenant = allTenants.find(tn => tn.id !== ctx.tenant.id) || allTenants[0];
+    }
+  }
+
+  if (!targetTenant) {
+    const reply = isEng
+      ? `Please specify which client workspace you would like to audit. Example: \`What did client Apex Health do?\` or \`Show activities for client animeshj425@gmail.com\`.`
+      : `Kripya batayein ki aap kis client ka audit check karna chahte hain. Example: \`Client Rajesh ne kya kya kiya?\` ya \`Show activities of client Apex\`.`;
+    return { reply, action: null };
+  }
+
+  // 3. Compile full administrative audit for this client
+  const tenantUsers = allUsers.filter(u => u.tenantId === targetTenant.id);
+  const tenantAgents = allAgents.filter(a => a.tenantId === targetTenant.id);
+  const tenantActions = allActions.filter(a => a.tenantId === targetTenant.id);
+  const tenantRecordings = allRecordings.filter(r => r.tenantId === targetTenant.id);
+  const tenantContacts = allContacts.filter(c => c.tenantId === targetTenant.id);
+  const tenantWallet = (db.wallets || []).find(w => w.tenantId === targetTenant.id);
+  const balancePaise = (tenantWallet && tenantWallet.balancePaise) || 0;
+  const balanceInr = (balancePaise / 100).toFixed(2);
+
+  const recentActivities = [];
+  tenantActions.slice(-6).reverse().forEach(act => {
+    const actDate = (act.ts && !isNaN(new Date(act.ts))) ? new Date(act.ts).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'short' }) : 'Recent Action';
+    recentActivities.push(`• **${actDate}** - ${act.summary || act.intent}`);
+  });
+  tenantRecordings.slice(-3).reverse().forEach(rec => {
+    const callDate = ((rec.createdAt || rec.timestamp) && !isNaN(new Date(rec.createdAt || rec.timestamp))) ? new Date(rec.createdAt || rec.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'short' }) : 'Recorded Call';
+    recentActivities.push(`• **${callDate}** - Call with **${rec.callerName || 'Caller'}** (${rec.phoneNumber || ''}, ${rec.durationSeconds || 0}s, Status: ${rec.status || 'completed'})`);
+  });
+
+  const usersDisplay = tenantUsers.map(u => `${u.name || 'User'} (\`${u.email}\` - ${u.role})`).join(', ') || 'No users registered';
+  const agentsDisplay = tenantAgents.map(a => `**${a.name}**`).join(', ') || 'None created yet';
+
+  const reply = isEng
+    ? `👑 **Administrative Client Dossier & Activity Audit**\n\n` +
+      `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+      `• **Subscription Plan:** **${targetTenant.plan || 'Starter'}** (Status: **${targetTenant.status || 'Active'}**)\n` +
+      `• **Associated Users:** ${usersDisplay}\n` +
+      `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+      `📊 **Operational Assets & Telephony:**\n` +
+      `• Active AI Agents: ${agentsDisplay}\n` +
+      `• Total Call Recordings: **${tenantRecordings.length}** calls\n` +
+      `• CRM Pipeline Contacts: **${tenantContacts.length}** leads\n` +
+      `• Total Assistant Actions: **${tenantActions.length}** operations\n\n` +
+      `📜 **Recent Client Activities & History:**\n` +
+      (recentActivities.length ? recentActivities.join('\n') : `*No recent operations logged for this client yet.*`) + `\n\n` +
+      `You can manage this client's agents, review their call recordings, or dispatch campaigns on their behalf.`
+    : `👑 **Admin Client Audit & Activity Report**\n\n` +
+      `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+      `• **Plan Status:** **${targetTenant.plan || 'Starter'}** (${targetTenant.status || 'Active'})\n` +
+      `• **Registered Users:** ${usersDisplay}\n` +
+      `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+      `📊 **Operational Assets & Telephony:**\n` +
+      `• Active AI Agents: ${agentsDisplay}\n` +
+      `• Total Calls Handled: **${tenantRecordings.length}** calls\n` +
+      `• CRM Leads: **${tenantContacts.length}** leads\n` +
+      `• Total AI Operations: **${tenantActions.length}** actions\n\n` +
+      `📜 **Iss Client Ki Recent Activities & History:**\n` +
+      (recentActivities.length ? recentActivities.join('\n') : `*Abhi tak is client ne koi activity perform nahi ki hai.*`) + `\n\n` +
+      `Aap Admin authority ke sath is client ke agents modify kar sakte hain ya inka call record check kar sakte hain.`;
+
+  return {
+    reply,
+    action: {
+      type: 'admin_client_audit',
+      tenantId: targetTenant.id,
+      tenantName: targetTenant.name,
+      agentCount: tenantAgents.length,
+      callCount: tenantRecordings.length,
+      leadCount: tenantContacts.length
+    }
+  };
+}
+
 // ---- handle: general_chat -------------------------------------------------
-async function handleGeneralChat(text, ctx, thread) {
-  const hasDocument =
+async function handleGeneralChat(text, ctx, sessionOrThread, sessionDocContext = '') {
+  const hasInlineDoc =
     text.includes('[Attached Document File:') ||
     text.includes('--- Document Text Content Start ---') ||
     text.includes('[Attached File:') ||
     text.includes('[Attached Image File:');
 
-  const systemPrompt = hasDocument
-    ? `You are Seevora AI Assistant, an expert AI document and business intelligence analyst built into the Seevora AI Voice Receptionist platform.
-The user has attached a file or document to this chat. Its full extracted contents and structured text are provided directly inside the prompt under "[Attached Document File:]".
-Your task:
-1. Thoroughly analyze the attached document's contents.
-2. Provide a clear, well-structured, professional breakdown:
-   - Executive Summary / Overview
-   - Key Tasks, Topics, or Sections
-   - Status & Metrics (if present in the file)
-   - Important Dates, Deadlines, People, or Figures
-   - Actionable Next Steps / Recommendations
-3. Answer any specific questions or instructions the user requested about the document.
-4. Speak naturally in helpful English or Hinglish (matching the user's tone).
+  const activeDoc = hasInlineDoc ? text : (sessionDocContext || '');
+  const hasDocument = Boolean(activeDoc && activeDoc.length > 20);
+
+  const isLongRequested = /\b(\d+\s*(?:lines?|points?|sentences?|words?)|full\s*(?:knowledge|explanation|details|guide|essay|bio|biography|history)|detailed|comprehensive|in[\s-]depth|complete|everything\s*about|step[\s-]by[\s-]step|essay|bada|lamba|poora|vistaar)\b/i.test(text);
+
+  let systemPrompt = hasDocument
+    ? `You are Seevora AI, an advanced, highly intelligent multi-purpose conversational AI assistant (like ChatGPT and Claude) embedded in the Seevora enterprise platform.
+The user is actively discussing and analyzing an uploaded document in this chat session:
+--- ACTIVE DOCUMENT CONTENT START ---
+${activeDoc.slice(0, 36000)}
+--- ACTIVE DOCUMENT CONTENT END ---
+
+Your core instructions:
+1. DEEP DOCUMENT COMPREHENSION: Carefully read the entire document text above. When the user asks for "full explanation", "features", "how it works", "summary", or ANY specific question about the document, you MUST extract and provide comprehensive, in-depth, structured answers covering the exact modules, features, pricing, architecture, and specifications written in the document. Do NOT give shallow or generic 1-line answers!
+2. Maintain complete conversational memory: remember all previous questions, topics, entities, and context discussed in this conversation session.
+3. ADAPTIVE LENGTH & INTELLIGENCE: This is a digital interactive chat conversation. NEVER claim you are in a spoken voice response or that content is too long. If the user asks for a brief, summary, 50 lines, full knowledge, or in-depth explanation, you MUST provide the complete, detailed, rich response requested without refusing or truncating.
+4. Speak naturally in helpful English or Hinglish (strictly matching the user's language).
 5. Absolutely NEVER use any emojis anywhere in your response.
-CRITICAL: Never claim you cannot read, open, access, or analyze files, because the document contents have already been parsed and provided to you directly in the prompt.`
-    : `You are Seevora AI Assistant, a smart, friendly product assistant built into the Seevora AI Voice Receptionist platform. You help users manage their AI voice agents, review call analytics, and navigate the platform. Keep responses concise (2-4 sentences). You can speak English and Hinglish naturally. Never use emojis.`;
+6. CRITICAL: Never claim you cannot read, open, or access files, because the document contents are provided to you directly above.`
+    : `You are Seevora AI, an advanced, highly intelligent multi-purpose conversational AI assistant (like ChatGPT and Claude) embedded in the Seevora enterprise platform.
+You have comprehensive general knowledge about the world, people, sports, science, history, business, coding, and technology, as well as full autonomy over Seevora platform operations (creating agents, files, campaigns, CRM leads, and communications).
+
+IMPORTANT INSTRUCTIONS ON OUTPUT LENGTH & FORMAT:
+1. This is an interactive digital chat interface (NOT a telephone call, NOT a spoken voice audio response).
+2. NEVER claim you are in a spoken voice call or that an answer is "too long or unnatural for a spoken voice response".
+3. ADAPTIVE DEPTH & INTELLIGENCE: If the user asks for a specific length (e.g. "50 lines", "20 points", "detailed essay", "full knowledge", "comprehensive explanation"), you MUST fulfill the request completely and generate the full, detailed content requested. Do NOT refuse, do NOT shorten, and do NOT tell the user to visit an external website instead!
+4. For general brief questions, answer cleanly, smartly, and accurately.
+5. Maintain complete conversational memory: remember previous conversation turns, entities, and subjects discussed so discussions remain continuous and smart.
+6. Absolutely NEVER use any emojis anywhere in your response.
+7. FILE GENERATION CAPABILITY: You have FULL capabilities to generate and export files (PDF, Word DOCX, Excel XLSX, CSV, JSON, HTML, TXT) via Seevora platform operations. NEVER claim you cannot create, generate, or send files in this chat interface!`;
+
+  // Specific line/length requirements
+  let lengthInstruction = '';
+  const lineMatch = text.match(/(\d+)\s*lines?/i);
+  if (lineMatch) {
+    const count = parseInt(lineMatch[1], 10);
+    lengthInstruction = `\n\n[MANDATORY REQUIREMENT: The user explicitly requested a ${count}-line response. You MUST generate ${count} substantive, informative, numbered lines covering the topic thoroughly. Do NOT refuse, do NOT summarize, and do NOT refer to external links!]`;
+  } else if (isLongRequested) {
+    lengthInstruction = `\n\n[MANDATORY REQUIREMENT: The user requested full, detailed, comprehensive knowledge. Provide a rich, exhaustive, well-structured explanation covering all important facts thoroughly without refusing!]`;
+  }
+  systemPrompt += lengthInstruction;
+
+  // Strict Dynamic Language Detection for 100% accurate language mirroring
+  const userLang = detectUserLanguage(text);
+  let langInstruction = '';
+  if (userLang === 'English') {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in ENGLISH ("${text.slice(0, 100)}"). You MUST reply 100% in natural, fluent, professional ENGLISH! Absolutely do NOT use any Hindi, Hinglish, or Devanagari words anywhere in your response!]`;
+  } else if (userLang === 'Hindi') {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in HINDI (Devanagari script). Reply in natural, fluent HINDI.]`;
+  } else {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in HINGLISH (Roman Hindi). Reply in natural, conversational HINGLISH matching the user's natural language and tone.]`;
+  }
+  systemPrompt += langInstruction;
+
+  // Role-based Multi-tenant Security & Privilege context
+  const isPlatformAdmin = ctx && ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+  if (!isPlatformAdmin && ctx && ctx.tenant) {
+    systemPrompt += `\n\n[STRICT SECURITY & MULTI-TENANT ISOLATION]:\nThe user chatting with you is a CLIENT belonging strictly to workspace "${ctx.tenant.name}" (${ctx.tenant.id}).\nYou MUST strictly enforce tenant isolation and privacy:\n1. NEVER reveal any data, calls, recordings, leads, agents, or activities belonging to other clients or companies.\n2. NEVER reveal administrative settings, platform internals, system passwords, or super-admin details.\n3. If the user asks about other clients, other users, or system admin information, immediately refuse with an Access Denied security warning.\n4. The client can only discuss, build, and manage assets within their own workspace "${ctx.tenant.name}".`;
+  } else if (isPlatformAdmin && ctx && ctx.user) {
+    systemPrompt += `\n\n[ADMINISTRATIVE SUPER-PRIVILEGES]:\nThe user chatting with you is a PLATFORM SUPER-ADMIN (${ctx.user.email}, Role: ${ctx.user.role}).\nThey have full administrative authority over all client workspaces, tenant audits, system operations, and platform logs. You may answer administrative and multi-client operational queries for them.`;
+  }
 
   let historyMessages = [];
-  if (thread && Array.isArray(thread.messages)) {
-    // If analyzing a document, do not inherit old canned refusal messages
-    const filtered = thread.messages
-      .slice(-8)
-      .filter((m) => !String(m.text || '').toLowerCase().includes('cannot access or analyze files directly'));
-    historyMessages = filtered.map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      text: m.text,
-    }));
+  const rawList = Array.isArray(sessionOrThread)
+    ? sessionOrThread
+    : (sessionOrThread && Array.isArray(sessionOrThread.messages) ? sessionOrThread.messages : []);
+
+  if (rawList.length) {
+    // Take recent messages for chat memory (last 16 messages)
+    const filtered = rawList
+      .slice(-16)
+      .filter((m) => {
+        const str = String(m.text || '').toLowerCase();
+        return !str.includes('cannot access or analyze files directly') && !str.includes('action cancelled');
+      });
+    historyMessages = filtered.map((m) => {
+      let msgText = String(m.text || '');
+      // If the message had a huge document embedded in turn 1, keep the user instruction part so we don't blow up token limits while preserving conversation context
+      if (msgText.includes('\n\n[User Instruction / Request]: ')) {
+        msgText = msgText.split('\n\n[User Instruction / Request]: ').pop();
+      }
+      return {
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        text: msgText.slice(0, 3000),
+      };
+    });
   }
-  historyMessages.push({ role: 'user', text });
+
+  // Ensure current user prompt is present at the end
+  const cleanPrompt = text.includes('\n\n[User Instruction / Request]: ')
+    ? text.split('\n\n[User Instruction / Request]: ').pop()
+    : text;
+
+  if (!historyMessages.length || historyMessages[historyMessages.length - 1].text !== cleanPrompt) {
+    historyMessages.push({ role: 'user', text: cleanPrompt });
+  }
 
   let reply = '';
   try {
     const selected = providers.resolveSelection('llm', {});
+    const targetMaxTokens = isLongRequested ? 3500 : (hasDocument ? 2500 : 1500);
     const out = await selected.adapter.chat({
       system: systemPrompt,
       messages: historyMessages,
-      maxTokens: hasDocument ? 1200 : 400,
+      maxTokens: targetMaxTokens,
       temperature: hasDocument ? 0.3 : 0.7,
       model: selected.model,
+      skipVoiceRule: true,
     });
     reply = String((out && out.text) || '').trim();
-  } catch (_) {
+  } catch (err) {
+    logger.warn('LLM chat error in handleGeneralChat', { error: err.message });
     if (hasDocument) {
-      reply = 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.';
+      reply = userLang === 'Hindi'
+        ? 'दस्तावेज़ का विश्लेषण करने में कुछ समस्या आई। कृपया पुनः प्रयास करें।'
+        : (userLang === 'English'
+            ? 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.'
+            : 'Document analyze karne mein provider timeout aaya. Kripya dobara try karein.');
     } else {
-      reply = 'I am here to help! You can ask me to create or edit an agent, check your call analytics, or add knowledge to an agent.';
+      reply = userLang === 'Hindi'
+        ? 'मैं आपकी सहायता के लिए यहाँ हूँ! आप मुझसे नया वॉइस एजेंट बनाने, कॉल एनालिटिक्स देखने या नॉलेज बेस अपडेट करने के लिए कह सकते हैं।'
+        : (userLang === 'English'
+            ? 'I am here to help! You can ask me to train a voice agent, review call analytics, dispatch WhatsApp/emails, or generate files.'
+            : 'Main aapki poori madad karne ke liye taiyaar hoon! Aap mujhse naya voice agent train karwa sakte hain, call analytics check kar sakte hain, ya WhatsApp/Email bhej sakte hain.');
     }
   }
 
@@ -3421,6 +3944,694 @@ async function handleBroadcastMessage(text, agentId, ctx, db) {
   };
 }
 
+
+// ---- handle: make_call (Autonomous Outbound Telephony Call via Chat) --------
+async function handleMakeCall(text, ctx, db) {
+  const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\b\d{10}\b/);
+  if (!phoneMatch) {
+    return {
+      reply: 'Kripya valid 10-digit phone number provide karein jahan call lagana hai.\n\n*Example:* `9876543210 ko call lagao` ya `call karo Rajesh ko 9876543210 pe`',
+      action: null
+    };
+  }
+
+  const cleanNum = phoneMatch[0].replace(/\D/g, '').slice(-10);
+  let callerName = '';
+  const nameMatch = text.match(/(?:to|ko|caller|recipient|name)\s+([A-Za-z\s]{2,25}?)(?=\s+(?:on|at|pe|par|via|\+?91|\d{10}|$))/i);
+  if (nameMatch && nameMatch[1]) {
+    callerName = nameMatch[1].trim();
+  }
+
+  const fromNumber = '+918071582519';
+  const tenantAgents = (db.agents || []).filter(a => a.tenantId === ctx.tenant.id);
+  
+  // Find agent if user mentioned one (e.g. Ria, Maya, Priya)
+  let selectedAgent = null;
+  const lowerText = text.toLowerCase();
+  for (const ag of tenantAgents) {
+    const firstName = (ag.name || '').split(/\s+/)[0].toLowerCase();
+    if (firstName.length >= 3 && lowerText.includes(firstName)) {
+      selectedAgent = ag;
+      break;
+    }
+  }
+  if (!selectedAgent) {
+    selectedAgent = tenantAgents.find(a => a.isPrimary) || tenantAgents[0] || { name: 'Ria - AI Voice Receptionist' };
+  }
+
+  const authId = process.env.VOBIZ_AUTH_ID || 'vobiz_live_auth';
+  const authToken = process.env.VOBIZ_AUTH_TOKEN || 'vobiz_live_token';
+
+  let dialRes = null;
+  try {
+    if (typeof dialViaVobiz === 'function') {
+      dialRes = await dialViaVobiz(cleanNum, fromNumber, authId, authToken);
+    }
+  } catch (err) {
+    logger.warn('Chat telephony dial fallback warning', { err: err.message });
+  }
+
+  const nowIso = new Date().toISOString();
+  await core.mutate(d => {
+    if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+    d.callRecordings.unshift({
+      id: core.genId('call_'),
+      tenantId: ctx.tenant.id,
+      phoneNumber: '+91 ' + cleanNum,
+      callerName: callerName || 'Direct Outbound Caller',
+      status: 'ringing',
+      direction: 'outbound',
+      durationSeconds: 0,
+      agentId: selectedAgent ? selectedAgent.id : undefined,
+      agentName: selectedAgent ? selectedAgent.name : 'Ria',
+      createdAt: nowIso
+    });
+  });
+
+  const isEnglishCall = detectUserLanguage(text) === 'English';
+  const reply = isEnglishCall
+    ? '📞 **Outbound Telephony Call Placed**\n\n' +
+      `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+      `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+      `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+      '• Status: **Ringing / Dialing**\n\n' +
+      'The call has been initiated. You can track, transfer, or listen live in the Live Locator!'
+    : '📞 **Outbound Telephony Call Placed**\n\n' +
+      `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+      `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+      `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+      '• Status: **Ringing / Dialing**\n\n' +
+      'Call initiate ho chuki hai! Aap Dashboard Live Locator aur Call Recordings panel mein live status dekh sakte hain.';
+
+  return {
+    reply,
+    action: {
+      type: 'call_placed',
+      number: cleanNum,
+      callerName,
+      agentName: selectedAgent ? selectedAgent.name : 'Ria',
+      line: '+91 80715 82519'
+    }
+  };
+}
+
+// ---- handle: create_file (Universal File Generator: PDF, XLSX, CSV, DOCX, JSON, HTML, TXT) -
+
+function buildStandardPdf(title, textBlocks, meta = {}) {
+  const dateStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+  const tenantName = meta.tenantName || 'Seevora AI Enterprise';
+
+  const stream = [];
+  // Title in Emerald Green (#0d5d41 -> 0.05 0.36 0.25 rg)
+  stream.push('0.05 0.36 0.25 rg');
+  stream.push('BT /F1 18 Tf 50 780 Td (' + String(title || 'Document Report').replace(/[()\\\r\n]/g, ' ').slice(0, 50) + ') Tj ET');
+
+  // Subtitle / Date
+  stream.push('0.36 0.45 0.41 rg');
+  stream.push('BT /F2 10 Tf 50 762 Td (Workspace: ' + String(tenantName).replace(/[()\\\r\n]/g, ' ').slice(0, 40) + '  |  Generated: ' + dateStr + ') Tj ET');
+
+  // Decorative Rule
+  stream.push('0.05 0.36 0.25 RG 1.5 w 50 750 m 545 750 l S');
+
+  let y = 720;
+  stream.push('0.08 0.13 0.11 rg');
+
+  const blocks = Array.isArray(textBlocks) ? textBlocks : String(textBlocks || '').split('\n');
+  for (const block of blocks) {
+    if (y < 60) break;
+    const clean = block.trim();
+    if (!clean) {
+      y -= 10;
+      continue;
+    }
+
+    if (clean.startsWith('###') || clean.startsWith('##') || clean.startsWith('#')) {
+      y -= 14;
+      const heading = clean.replace(/^#+\s*/, '').replace(/[()\\\r\n]/g, ' ');
+      stream.push('0.05 0.36 0.25 rg');
+      stream.push('BT /F1 12 Tf 50 ' + y + ' Td (' + heading.slice(0, 65) + ') Tj ET');
+      stream.push('0.08 0.13 0.11 rg');
+      y -= 14;
+    } else if (clean.startsWith('|')) {
+      const cells = clean.split('|').map((c) => c.trim()).filter(Boolean);
+      if (clean.includes('---')) continue;
+      let x = 50;
+      const colWidth = Math.floor(490 / Math.max(cells.length, 1));
+      for (const cell of cells) {
+        const cellText = cell.slice(0, Math.floor(colWidth / 6)).replace(/[()\\\r\n]/g, ' ');
+        stream.push('BT /F2 9 Tf ' + x + ' ' + y + ' Td (' + cellText + ') Tj ET');
+        x += colWidth;
+      }
+      stream.push('0.85 0.88 0.86 RG 0.5 w 50 ' + (y - 3) + ' m 545 ' + (y - 3) + ' l S');
+      y -= 16;
+    } else {
+      const lineText = clean.replace(/[()\\\r\n]/g, ' ').slice(0, 85);
+      stream.push('BT /F2 10 Tf 50 ' + y + ' Td (' + lineText + ') Tj ET');
+      y -= 15;
+    }
+  }
+
+  // Footer
+  stream.push('0.5 0.5 0.5 rg');
+  stream.push('BT /F2 9 Tf 50 35 Td (Seevora AI Voice & Operations Platform - Generated for ' + String(tenantName).replace(/[()\\\r\n]/g, ' ').slice(0, 30) + ') Tj ET');
+
+  const contentStream = stream.join('\n');
+  const streamLen = Buffer.byteLength(contentStream, 'latin1');
+
+  const obj1 = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+  const obj2 = '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+  const obj3 = '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>\nendobj\n';
+  const obj4 = '4 0 obj\n<< /Length ' + streamLen + ' >>\nstream\n' + contentStream + '\nendstream\nendobj\n';
+  const obj5 = '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n';
+  const obj6 = '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n';
+
+  const header = '%PDF-1.4\n';
+  const offsets = [0];
+  let curOffset = Buffer.byteLength(header, 'latin1');
+
+  const objs = [obj1, obj2, obj3, obj4, obj5, obj6];
+  for (let i = 0; i < objs.length; i++) {
+    offsets.push(curOffset);
+    curOffset += Buffer.byteLength(objs[i], 'latin1');
+  }
+
+  const xrefStart = curOffset;
+  let xref = 'xref\n0 7\n0000000000 65535 f \n';
+  for (let i = 1; i <= 6; i++) {
+    xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  }
+
+  const trailer = 'trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n' + xrefStart + '\n%%EOF\n';
+  return Buffer.from(header + objs.join('') + xref + trailer, 'latin1');
+}
+
+function buildXlsxBuffer(rows) {
+  const strings = [];
+  const strMap = new Map();
+
+  function getStrIdx(s) {
+    if (strMap.has(s)) return strMap.get(s);
+    const idx = strings.length;
+    strings.push(s);
+    strMap.set(s, idx);
+    return idx;
+  }
+
+  let sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+
+  for (let r = 0; r < rows.length; r++) {
+    const rowNum = r + 1;
+    sheetXml += '<row r="' + rowNum + '">';
+    for (let c = 0; c < rows[r].length; c++) {
+      const colLetter = String.fromCharCode(65 + (c % 26));
+      const cellRef = colLetter + rowNum;
+      const val = String(rows[r][c] || '');
+      const strIdx = getStrIdx(val);
+      sheetXml += '<c r="' + cellRef + '" t="s"><v>' + strIdx + '</v></c>';
+    }
+    sheetXml += '</row>';
+  }
+  sheetXml += '</sheetData></worksheet>';
+
+  let ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' + strings.length + '" uniqueCount="' + strings.length + '">';
+  for (const s of strings) {
+    const clean = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    ssXml += '<si><t>' + clean + '</t></si>';
+  }
+  ssXml += '</sst>';
+
+  const contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' +
+    '</Types>';
+
+  const relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>';
+
+  const wbRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' +
+    '</Relationships>';
+
+  const wbXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>';
+
+  const files = [
+    { name: '[Content_Types].xml', content: Buffer.from(contentTypesXml) },
+    { name: '_rels/.rels', content: Buffer.from(relsXml) },
+    { name: 'xl/_rels/workbook.xml.rels', content: Buffer.from(wbRelsXml) },
+    { name: 'xl/workbook.xml', content: Buffer.from(wbXml) },
+    { name: 'xl/worksheets/sheet1.xml', content: Buffer.from(sheetXml) },
+    { name: 'xl/sharedStrings.xml', content: Buffer.from(ssXml) }
+  ];
+
+  const localEntries = [];
+  const cdEntries = [];
+  let curOffset = 0;
+
+  for (const file of files) {
+    const fnBuf = Buffer.from(file.name);
+    const deflated = zlib.deflateRawSync(file.content);
+
+    const lfh = Buffer.alloc(30 + fnBuf.length);
+    lfh.writeUInt32LE(0x04034b50, 0);
+    lfh.writeUInt16LE(20, 4);
+    lfh.writeUInt16LE(0, 6);
+    lfh.writeUInt16LE(8, 8);
+    lfh.writeUInt32LE(deflated.length, 18);
+    lfh.writeUInt32LE(file.content.length, 22);
+    lfh.writeUInt16LE(fnBuf.length, 26);
+    lfh.writeUInt16LE(0, 28);
+    fnBuf.copy(lfh, 30);
+    localEntries.push(lfh, deflated);
+
+    const cd = Buffer.alloc(46 + fnBuf.length);
+    cd.writeUInt32LE(0x02014b50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(0, 8);
+    cd.writeUInt16LE(8, 10);
+    cd.writeUInt32LE(deflated.length, 20);
+    cd.writeUInt32LE(file.content.length, 24);
+    cd.writeUInt16LE(fnBuf.length, 28);
+    cd.writeUInt16LE(0, 30);
+    cd.writeUInt16LE(0, 32);
+    cd.writeUInt16LE(0, 34);
+    cd.writeUInt16LE(0, 36);
+    cd.writeUInt32LE(0, 38);
+    cd.writeUInt32LE(curOffset, 42);
+    fnBuf.copy(cd, 46);
+    cdEntries.push(cd);
+    curOffset += lfh.length + deflated.length;
+  }
+
+  const localBuf = Buffer.concat(localEntries);
+  const cdBuf = Buffer.concat(cdEntries);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12);
+  eocd.writeUInt32LE(localBuf.length, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([localBuf, cdBuf, eocd]);
+}
+
+function buildDocxBuffer(title, paragraphs) {
+  let docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+    '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>' + String(title || 'Document').replace(/[<>&]/g, '') + '</w:t></w:r></w:p>';
+
+  const list = Array.isArray(paragraphs) ? paragraphs : String(paragraphs || '').split('\n');
+  for (const p of list) {
+    const clean = p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (clean.startsWith('###') || clean.startsWith('##') || clean.startsWith('#')) {
+      docXml += '<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>' + clean.replace(/^#+\s*/, '') + '</w:t></w:r></w:p>';
+    } else if (clean.startsWith('- ') || clean.startsWith('* ')) {
+      docXml += '<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/></w:numPr></w:pPr><w:r><w:t>' + clean.slice(2) + '</w:t></w:r></w:p>';
+    } else if (clean.trim()) {
+      docXml += '<w:p><w:r><w:t>' + clean + '</w:t></w:r></w:p>';
+    }
+  }
+  docXml += '</w:body></w:document>';
+
+  const contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '</Types>';
+
+  const relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>';
+
+  const files = [
+    { name: '[Content_Types].xml', content: Buffer.from(contentTypesXml) },
+    { name: '_rels/.rels', content: Buffer.from(relsXml) },
+    { name: 'word/document.xml', content: Buffer.from(docXml) }
+  ];
+
+  const localEntries = [];
+  const cdEntries = [];
+  let curOffset = 0;
+
+  for (const file of files) {
+    const fnBuf = Buffer.from(file.name);
+    const deflated = zlib.deflateRawSync(file.content);
+
+    const lfh = Buffer.alloc(30 + fnBuf.length);
+    lfh.writeUInt32LE(0x04034b50, 0);
+    lfh.writeUInt16LE(20, 4);
+    lfh.writeUInt16LE(0, 6);
+    lfh.writeUInt16LE(8, 8);
+    lfh.writeUInt32LE(deflated.length, 18);
+    lfh.writeUInt32LE(file.content.length, 22);
+    lfh.writeUInt16LE(fnBuf.length, 26);
+    lfh.writeUInt16LE(0, 28);
+    fnBuf.copy(lfh, 30);
+    localEntries.push(lfh, deflated);
+
+    const cd = Buffer.alloc(46 + fnBuf.length);
+    cd.writeUInt32LE(0x02014b50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(0, 8);
+    cd.writeUInt16LE(8, 10);
+    cd.writeUInt32LE(deflated.length, 20);
+    cd.writeUInt32LE(file.content.length, 24);
+    cd.writeUInt16LE(fnBuf.length, 28);
+    cd.writeUInt16LE(0, 30);
+    cd.writeUInt16LE(0, 32);
+    cd.writeUInt16LE(0, 34);
+    cd.writeUInt16LE(0, 36);
+    cd.writeUInt32LE(0, 38);
+    cd.writeUInt32LE(curOffset, 42);
+    fnBuf.copy(cd, 46);
+    cdEntries.push(cd);
+    curOffset += lfh.length + deflated.length;
+  }
+
+  const localBuf = Buffer.concat(localEntries);
+  const cdBuf = Buffer.concat(cdEntries);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12);
+  eocd.writeUInt32LE(localBuf.length, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([localBuf, cdBuf, eocd]);
+}
+
+async function handleCreateFile(text, ctx, db, sessionMessages = [], activeDocCtx = '') {
+  const t = text.toLowerCase();
+  let fileType = 'csv';
+  let ext = 'csv';
+  let mime = 'text/csv;charset=utf-8';
+
+  // 1. Intelligent Format Detection based on Client's Perspective & Request
+  if (/\b(pdf)\b/i.test(t)) {
+    fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+  } else if (/\b(excel|xlsx|xls|spreadsheet|sheet)\b/i.test(t)) {
+    fileType = 'xlsx'; ext = 'xlsx'; mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  } else if (/\b(csv|comma separated)\b/i.test(t)) {
+    fileType = 'csv'; ext = 'csv'; mime = 'text/csv;charset=utf-8';
+  } else if (/\b(json)\b/i.test(t)) {
+    fileType = 'json'; ext = 'json'; mime = 'application/json';
+  } else if (/\b(word|docx?|doc)\b/i.test(t)) {
+    fileType = 'docx'; ext = 'docx'; mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  } else if (/\b(html|webpage|web\s*page)\b/i.test(t)) {
+    fileType = 'html'; ext = 'html'; mime = 'text/html;charset=utf-8';
+  } else if (/\b(md|markdown)\b/i.test(t)) {
+    fileType = 'md'; ext = 'md'; mime = 'text/markdown;charset=utf-8';
+  } else if (/\b(txt|text|notepad|notes)\b/i.test(t)) {
+    fileType = 'txt'; ext = 'txt'; mime = 'text/plain;charset=utf-8';
+  } else {
+    // Client perspective inference if no explicit extension mentioned
+    if (/\b(leads?|contacts?|numbers?|calls?|records?|table|rows?|clients?|customers?)\b/i.test(t)) {
+      fileType = 'csv'; ext = 'csv'; mime = 'text/csv;charset=utf-8';
+    } else if (/\b(report|summary|features?|overview|invoice|proposal|quotation|brief)\b/i.test(t)) {
+      fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+    } else if (/\b(api|payload|data|schema|config)\b/i.test(t)) {
+      fileType = 'json'; ext = 'json'; mime = 'application/json';
+    } else {
+      fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+    }
+  }
+
+  // 2. Extract conversation & uploaded document context (with previous file tracking)
+  let contextSnippet = '';
+  let fullPreviousAssistantContent = '';
+  let lastGeneratedTopic = '';
+  let lastGeneratedFileName = '';
+  const isConversionRequest = /\b(?:now\s+in|same\s+in|convert|ab|ise|isko|change|format|do)\b/i.test(t) || t.length < 35;
+
+  if (Array.isArray(sessionMessages) && sessionMessages.length) {
+    // Look backwards for previously generated file preview or substantial assistant response
+    for (let i = sessionMessages.length - 1; i >= 0; i--) {
+      const msg = sessionMessages[i];
+      const msgText = String(msg.text || '');
+      if (msg.role === 'assistant') {
+        if (!fullPreviousAssistantContent && (msgText.includes('File Created Successfully') || msgText.length > 200)) {
+          fullPreviousAssistantContent = msgText;
+          const fnMatch = msgText.match(/File Name:\s*\*\*`?([^`*\n]+)`?\*\*/i) ||
+            ((msg.action && msg.action.fileName) ? [null, msg.action.fileName] : null);
+          if (fnMatch) lastGeneratedFileName = fnMatch[1];
+        }
+      } else if (msg.role === 'user') {
+        const uText = String(msg.text || '');
+        if (!lastGeneratedTopic && !/\b(now\s+in|in\s+doc|same\s+in|convert|pdf|docx?|excel|csv)\b/i.test(uText) && uText.length > 4) {
+          lastGeneratedTopic = uText;
+        }
+      }
+    }
+  }
+
+  if (activeDocCtx && activeDocCtx.length > 20) {
+    contextSnippet = `\n\n--- RELEVANT UPLOADED DOCUMENT CONTENT ---\n${activeDocCtx.slice(0, 18000)}\n--- END DOCUMENT CONTENT ---`;
+  } else if (isConversionRequest && fullPreviousAssistantContent) {
+    contextSnippet = `\n\n--- PREVIOUS CONTENT THAT MUST BE CONVERTED INTO ${fileType.toUpperCase()} ---\n` +
+      `Topic/Subject: ${lastGeneratedTopic || 'Document Data'}\n` +
+      `Content to re-format into ${fileType.toUpperCase()}:\n${fullPreviousAssistantContent.slice(0, 10000)}\n--- END PREVIOUS CONTENT ---`;
+  } else if (Array.isArray(sessionMessages) && sessionMessages.length) {
+    const recent = sessionMessages.slice(-8).map((m) => `${m.role === 'assistant' ? 'AI' : 'User'}: ${String(m.text || '').slice(0, 600)}`).join('\n');
+    contextSnippet = `\n\n--- RECENT CONVERSATION TOPIC & CONTEXT ---\n${recent}\n--- END CONTEXT ---`;
+  }
+
+  // 3. Prompt LLM to extract/generate structured content according to format
+  let fileContent = '';
+  try {
+    let sysPrompt = '';
+    const conversionGuidance = (isConversionRequest && fullPreviousAssistantContent)
+      ? `\n[MANDATORY CONVERSION]: The user previously generated a file/content and now requested: "${text}". You MUST convert that EXACT same content into ${fileType.toUpperCase()} format without losing any key facts, names, or points!`
+      : '';
+
+    if (fileType === 'pdf') {
+      sysPrompt = `You are an elite business report generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and create structured content for a professional PDF business document based on the user's request and provided context:\n${contextSnippet}\n` +
+        `Rules:\n` +
+        `- Line 1 must be the Document Title (e.g. Docivo Clinic Platform Report)\n` +
+        `- Use ### for section headings (e.g. ### Key Modules & Capabilities)\n` +
+        `- Use bullet points starting with - for key details, features, specifications\n` +
+        `- Use markdown table syntax | Col 1 | Col 2 | for tabular data\n` +
+        `CRITICAL: Output ONLY the structured text directly without any markdown code blocks, backticks, or chit-chat.`;
+    } else if (fileType === 'xlsx' || fileType === 'csv') {
+      sysPrompt = `You are an elite tabular data generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate clean comma-separated values (CSV) based on user's request and provided context:\n${contextSnippet}\n` +
+        `Rules:\n` +
+        `- Line 1 must be the column header row (e.g. ID,Name,Phone,Service,Status,Notes)\n` +
+        `- Following lines must be data rows\n` +
+        `- If fields contain commas, wrap them in double quotes\n` +
+        `CRITICAL: Output ONLY the raw CSV text directly without code blocks or backticks.`;
+    } else if (fileType === 'json') {
+      sysPrompt = `You are an elite JSON API data generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate a valid JSON array or object based on user's request and provided context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY valid raw JSON text directly without code blocks or backticks.`;
+    } else if (fileType === 'docx') {
+      sysPrompt = `You are an elite Word document generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate a structured Word report based on user's request and context:\n${contextSnippet}\n` +
+        `- Line 1: Document Title\n` +
+        `- Use ### for section headings, - for bullet points, and clean paragraphs.\n` +
+        `CRITICAL: Output ONLY raw text directly without code blocks or backticks.`;
+    } else if (fileType === 'html') {
+      sysPrompt = `You are an elite web document designer for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Generate a self-contained responsive HTML document with Scandinavian Sage green accents (#0d5d41), clean header, styled table, and summary based on context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY valid raw HTML directly without backticks.`;
+    } else {
+      sysPrompt = `You are a business document generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Generate a clean, structured plain text report based on user's request and context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY raw plain text directly without backticks.`;
+    }
+
+    const raw = await llmQuick(sysPrompt, text, 1800);
+    if (raw && raw.trim().length > 15) {
+      fileContent = raw.replace(/^\s*```[a-z0-9]*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    }
+  } catch (_) {}
+
+  // Fallback procedural generators if LLM is unavailable
+  if (!fileContent || fileContent.length < 15) {
+    if (fileType === 'csv' || fileType === 'xlsx') {
+      fileContent = 'ID,Name,Phone,Email,Status,City,Notes\n' +
+        '101,Rajesh Verma,+91 98765 43210,rajesh.verma@example.com,Qualified,Mumbai,Interested in 3BHK flat\n' +
+        '102,Priya Sharma,+91 98123 45678,priya.sharma@example.com,Appointment Booked,Delhi,Dental cleaning consultation\n' +
+        '103,Amit Patel,+91 97012 34567,amit.patel@example.com,In Progress,Bangalore,HVAC repair emergency\n' +
+        '104,Sunita Rao,+91 96543 21098,sunita.rao@example.com,New Lead,Pune,Inquired via WhatsApp\n' +
+        '105,Vikram Singh,+91 95432 10987,vikram.singh@example.com,Follow-up,Jaipur,Commercial leasing inquiry';
+    } else if (fileType === 'json') {
+      fileContent = JSON.stringify({
+        project: 'Seevora AI Voice',
+        exportedAt: new Date().toISOString(),
+        tenant: ctx.tenant.name,
+        records: [
+          { id: 'REC-101', name: 'Rajesh Verma', phone: '+91 98765 43210', status: 'Qualified', city: 'Mumbai' },
+          { id: 'REC-102', name: 'Priya Sharma', phone: '+91 98123 45678', status: 'Booked', city: 'Delhi' },
+          { id: 'REC-103', name: 'Amit Patel', phone: '+91 97012 34567', status: 'In Progress', city: 'Bangalore' }
+        ]
+      }, null, 2);
+    } else if (fileType === 'html') {
+      fileContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Seevora AI Report</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 32px; color: #14221c; background: #fcfdfc; }
+  .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d5d41; padding-bottom: 14px; margin-bottom: 24px; }
+  h1 { color: #0d5d41; margin: 0; font-size: 22px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(13,93,65,0.12); }
+  th { background: #e3f1e9; color: #0d5d41; font-size: 13px; text-transform: uppercase; font-weight: 700; }
+  .total { font-weight: 700; color: #0d5d41; text-align: right; margin-top: 20px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Seevora Business Report</h1>
+    <p style="margin:4px 0;color:#5d7468;font-size:13px;">Generated for ${ctx.tenant.name}</p>
+  </div>
+  <div style="text-align:right;color:#5d7468;font-size:12px;">
+    Date: ${new Date().toLocaleDateString()}<br>Line: +91 80715 82519
+  </div>
+</div>
+<table>
+  <thead><tr><th>ID</th><th>Client / Contact</th><th>Service Description</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>#101</td><td>Rajesh Verma</td><td>Voice Receptionist Setup & Appointment Triage</td><td>Active</td></tr>
+    <tr><td>#102</td><td>Dr. Sharma Clinic</td><td>Dental Inquiries & Doctor Schedule Link</td><td>Active</td></tr>
+    <tr><td>#103</td><td>Apex Care</td><td>Inbound Support & WhatsApp Confirmation</td><td>Active</td></tr>
+  </tbody>
+</table>
+<div class="total">Total Records: 3 Active Client Workflows</div>
+</body>
+</html>`;
+    } else {
+      fileContent = `SEEVORA AI BUSINESS REPORT\nGenerated At: ${new Date().toISOString()}\nWorkspace: ${ctx.tenant.name}\n\n` +
+        `### Operational Overview\n` +
+        `- 24/7 AI Voice Receptionist Active\n` +
+        `- Patient WhatsApp Notification & Scheduling Live\n` +
+        `- Calendar Sync Operational\n`;
+    }
+  }
+
+  // 4. Binary file compilation based on exact fileType
+  let fileBuffer = null;
+  let previewText = '';
+
+  if (fileType === 'pdf') {
+    const rawLines = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = rawLines.length && !rawLines[0].startsWith('#') ? rawLines[0] : (ctx.tenant.name + ' Business Report');
+    const bodyLines = rawLines.length && !rawLines[0].startsWith('#') ? rawLines.slice(1) : rawLines;
+    fileBuffer = buildStandardPdf(title, bodyLines, { tenantName: ctx.tenant.name });
+    previewText = rawLines.slice(0, 10).join('\n');
+  } else if (fileType === 'xlsx') {
+    // Parse CSV lines into 2D row array
+    const rows = fileContent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const match = line.match(/(?:[^\",]+|\"[^\"]*\")+/g);
+        return match ? match.map((s) => s.replace(/^\"|\"$/g, '').trim()) : [line];
+      });
+    fileBuffer = buildXlsxBuffer(rows.length ? rows : [['Header 1', 'Header 2'], ['Value 1', 'Value 2']]);
+    previewText = fileContent.split('\n').slice(0, 8).join('\n');
+  } else if (fileType === 'docx') {
+    const rawLines = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = rawLines.length && !rawLines[0].startsWith('#') ? rawLines[0] : (ctx.tenant.name + ' Report');
+    const bodyLines = rawLines.length && !rawLines[0].startsWith('#') ? rawLines.slice(1) : rawLines;
+    fileBuffer = buildDocxBuffer(title, bodyLines);
+    previewText = rawLines.slice(0, 10).join('\n');
+  } else {
+    // Text formats: CSV, JSON, HTML, TXT, MD
+    fileBuffer = Buffer.from(fileContent, 'utf8');
+    previewText = fileContent.slice(0, 360);
+  }
+
+  const b64 = fileBuffer.toString('base64');
+  const dataUrl = `data:${mime};base64,${b64}`;
+  const sizeBytes = fileBuffer.length;
+
+  // Extract clean subject for file naming
+  let subject = 'export';
+  if (lastGeneratedFileName) {
+    const fnClean = lastGeneratedFileName.replace(/\.[a-zA-Z0-9]+$/, '');
+    const parts = fnClean.split('_');
+    if (parts.length >= 3) {
+      subject = parts.slice(1, -1).join('_');
+    }
+  }
+
+  const combinedText = `${t} ${String(lastGeneratedTopic || '').toLowerCase()}`;
+  if (/virat|kohli/i.test(combinedText)) subject = 'virat_kohli';
+  else if (/lead/i.test(combinedText)) subject = 'leads';
+  else if (/patient|clinic|docivo/i.test(combinedText)) subject = 'clinic_data';
+  else if (/invoice|bill/i.test(combinedText)) subject = 'invoice';
+  else if (/feature/i.test(combinedText)) subject = 'features';
+  else if (/report|summary/i.test(combinedText)) subject = 'report';
+  else if (!subject || subject === 'export') {
+    if (lastGeneratedTopic) {
+      subject = lastGeneratedTopic.replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 16).toLowerCase().replace(/^_|_$/g, '') || 'export';
+    }
+  }
+
+  const fileName = `seevora_${subject}_${Date.now().toString().slice(-4)}.${ext}`;
+  const formatDisplay = (fileType === 'docx') ? 'DOC / DOCX (Word Document)' : (fileType === 'xlsx' ? 'XLSX (Excel Spreadsheet)' : fileType.toUpperCase());
+
+  const isEnglishFile = detectUserLanguage(text) === 'English';
+  const reply = isEnglishFile
+    ? '**File Created Successfully**\n\n' +
+      `• File Name: **\`${fileName}\`**\n` +
+      `• Format: **${formatDisplay}**\n` +
+      `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+      `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+      `Click the **"Download File"** button below to download your **${formatDisplay}** file directly to your computer!`
+    : '**File Created Successfully**\n\n' +
+      `• File Name: **\`${fileName}\`**\n` +
+      `• Format: **${formatDisplay}**\n` +
+      `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+      `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+      `Aap niche diye gaye **"Download File"** button par click karke apni **${formatDisplay}** file turant download kar sakte hain!`;
+
+  return {
+    reply,
+    action: {
+      type: 'file_created',
+      fileName,
+      fileType: formatDisplay,
+      dataUrl,
+      sizeBytes
+    }
+  };
+}
+
 // ---- POST /api/assistant/chat (AS-01 to AS-10, CH-01 to CH-06) -----------
 async function apiAssistantChat(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'assistant')) return;
@@ -3442,8 +4653,8 @@ async function apiAssistantChat(req, res, ctx) {
   }
 
   let enrichedText = text;
+  const docChunks = [];
   if (attachments.length) {
-    const docChunks = [];
     for (const att of attachments) {
       if (att.isImage) {
         docChunks.push(`[Attached Image File: ${att.name || 'image'} (${Math.round((att.size || 0) / 1024)} KB)]`);
@@ -3475,10 +4686,80 @@ async function apiAssistantChat(req, res, ctx) {
     // Classify intent
     let intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
 
-    // If attachments are present and user is asking to analyze/summarize/inspect, override intent to GENERAL (document analysis)
-    if (attachments.length > 0) {
-      const isKnowledgeAddition = /\b(add|upload|save)\b.{0,30}\b(knowledge base|faq|to agent)\b/i.test(text);
-      if (!isKnowledgeAddition && (intent === assistant.INTENTS.ASK_REPORT || intent === assistant.INTENTS.ADD_KNOWLEDGE)) {
+    const isPlatformAdmin = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+
+    // 1. Role-Based Privacy Guardrail: Block non-admin clients from querying administrative or cross-tenant data
+    const isProbingAdminOrOtherClients = !isPlatformAdmin && (
+      /\b(admin\s*(?:dashboard|panel|settings|creds|credentials|password|keys|env|system|config|database|db|secrets?)|super\s*admin|platform\s*(?:admin|settings|logs|revenue|profit|metrics)|server\s*(?:logs|env|keys|internals?)|system\s*prompt)\b/i.test(text) ||
+      /\b(other\s+(?:clients?|tenants?|users?|companies|accounts?|customers?)|all\s+(?:clients?|tenants?|users?|companies|accounts?)|another\s+(?:client|tenant|user)|list\s+(?:all\s+)?(?:clients?|tenants?|users?)|what\s+did\s+(?:other\s+clients?|client\s+[a-z0-9]+|another\s+client))\b/i.test(text) ||
+      /\b(dusre\s*(?:clients?|users?|logon|tenants?)|sab\s*(?:clients?|tenants?|users?)|kisi\s+aur\s+ka\s+(?:data|agent|call|account)|admin\s*ka\s*(?:data|password|system|cheeze|dashboard|info))\b/i.test(text) ||
+      /\b(?:who\s+are\s+the\s+other\s+clients?|show\s+(?:me\s+)?other\s+clients?|what\s+other\s+people\s+are\s+doing|audit\s+other\s+tenants?|iss\s+client\s+n\s+kya\s+kia|is\s+client\s+ne\s+kya\s+kiya)\b/i.test(text)
+    );
+
+    if (isProbingAdminOrOtherClients) {
+      const isEng = detectUserLanguage(text) === 'English';
+      const warningReply = isEng
+        ? `⚠️ **Security Warning: Administrative & Multi-Tenant Access Denied**\n\n` +
+          `You do not have administrative privileges to view platform-level configurations, system settings, or other clients' information.\n\n` +
+          `• **Your Role:** \`Client Workspace Member\`\n` +
+          `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+          `• **Privacy & Security Policy:** Multi-tenant cryptographic isolation is strictly enforced. You can only view, build, and manage voice agents, call analytics, and campaigns within your own workspace.\n\n` +
+          `If you need assistance with your workspace agents or integrations, please let me know!`
+        : `⚠️ **Security Warning: Access Denied**\n\n` +
+          `Aapke paas administrative configurations, platform logs, ya dusre clients ke data ko access karne ki permission nahi hai.\n\n` +
+          `• **Aapka Role:** \`Client Workspace Member\`\n` +
+          `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+          `• **Privacy Policy:** Seevora multi-tenant data privacy protection active hai. Aap sirf apne workspace ke agents, calls aur files ko hi manage kar sakte hain.\n\n` +
+          `Aap apne workspace ke agents train karne, call analytics dekhne ya files export karne ke liye command de sakte hain.`;
+
+      await core.mutate((d) => {
+        assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
+        assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'assistant', warningReply, { intent: 'security_access_denied' });
+        assistant.logAction(d, ctx.tenant.id, ctx.user.id, 'security_alert', 'Blocked unauthorized admin/cross-tenant query attempt', false, { role: ctx.user.role });
+      });
+
+      return core.sendJson(res, 200, {
+        reply: warningReply,
+        intent: 'security_access_denied',
+        action: {
+          type: 'security_warning',
+          reason: 'unauthorized_admin_access_attempt',
+          userRole: ctx.user.role,
+          tenantName: ctx.tenant.name
+        },
+        needsConfirm: false,
+        confirmToken: null,
+        sessionId: currentSessionId,
+        thread: []
+      });
+    }
+
+    // 2. Admin Authority: Multi-Client Management & Activity Auditing from AI Chatbot
+    const isAdminClientQuery = isPlatformAdmin && (
+      /\b(all\s+clients?|all\s+tenants?|list\s+(?:all\s+)?clients?|list\s+(?:all\s+)?tenants?|saare\s+clients?|total\s+clients?)\b/i.test(text) ||
+      /\b(what\s+did\s+(?:client|this\s+client)|iss\s+client\s+n\s+kya|is\s+client\s+ne\s+kya|audit\s+client|show\s+activity\s+of\s+client|client\s+[a-z0-9._%+-]+\s+(?:ne\s+kya|did|activity|actions?)|tell\s+me\s+about\s+client)\b/i.test(text) ||
+      /\b(client\s+overview|tenant\s+overview|client\s+audit)\b/i.test(text)
+    );
+
+    // Safety guard: If user is asking for a file or format conversion (e.g. "now in doc format", "ab doc mai chahiye"), guarantee CREATE_FILE intent
+    if (
+      intent !== assistant.INTENTS.CREATE_FILE && (
+        /\b(?:now\s+in|in|same\s+in|convert|give\s+in|ab|ise|make\s+it\s+a)\s+(?:a\s+)?(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\b/i.test(text) ||
+        /\b(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\s*(?:format|file)\b/i.test(text) ||
+        /\b(csv|json|excel|xlsx|pdf|doc|docx|word)\s*(format\s*(?:me|mein|mai|chaahiye|chahiye|do|please)?|file)\b/i.test(text)
+      )
+    ) {
+      intent = assistant.INTENTS.CREATE_FILE;
+    }
+
+    // Check if session has active document context from current or previous turns
+    let activeSession = currentSessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
+    const hasActiveSessionDoc = !!(docChunks.length > 0 || (activeSession && activeSession.activeDocContext));
+
+    // If attachments or active session document are present, ensure document queries stay in GENERAL chat
+    if (hasActiveSessionDoc) {
+      const isExplicitKnowledgeAdd = /\b(add|upload|save)\b.{0,30}\b(to\s+(?:the\s+)?knowledge\s*base|to\s+(?:the\s+)?agent)\b/i.test(text);
+      if (!isExplicitKnowledgeAdd && (intent === assistant.INTENTS.ASK_REPORT || intent === assistant.INTENTS.ADD_KNOWLEDGE)) {
         intent = assistant.INTENTS.GENERAL;
       }
     }
@@ -3512,6 +4793,8 @@ async function apiAssistantChat(req, res, ctx) {
       assistant.INTENTS.SCHEDULE_CALENDAR,
       assistant.INTENTS.SEND_WHATSAPP,
       assistant.INTENTS.CRM_CREATE_LEAD,
+      assistant.INTENTS.MAKE_CALL,
+      assistant.INTENTS.CREATE_FILE,
     ]);
     if (freeIntents.has(intent)) {
       const todayCount = assistant.countTodayMessages(db, ctx.user.id);
@@ -3531,11 +4814,23 @@ async function apiAssistantChat(req, res, ctx) {
       await core.mutate((d) => {
         const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text, { attachments });
         currentSessionId = appended.session.id;
+        // Save document context into the session if attachments were uploaded
+        if (docChunks.length > 0) {
+          const s = assistant.getSession(d, ctx.tenant.id, ctx.user.id, currentSessionId);
+          if (s) {
+            s.activeDocContext = docChunks.join('\n\n');
+            s.activeDocName = attachments.map((a) => a.name).filter(Boolean).join(', ');
+          }
+        }
       });
     }
 
-    // Load current thread for context (after adding user msg)
-    const thread = assistant.getThread(core.db(), ctx.tenant.id, ctx.user.id);
+    // Load active session messages for full multi-turn conversational context
+    const freshDb = core.db();
+    const curSession = currentSessionId ? assistant.getSession(freshDb, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
+    const thread = assistant.getThread(freshDb, ctx.tenant.id, ctx.user.id);
+    const sessionMessages = (curSession && curSession.messages) || (thread && thread.messages) || [];
+    const activeDocCtx = (curSession && curSession.activeDocContext) || (docChunks.join('\n\n')) || '';
 
     let result = { reply: '', action: null, needsConfirm: false, confirmToken: null, preview: null };
 
@@ -3558,6 +4853,16 @@ async function apiAssistantChat(req, res, ctx) {
         result.action = { type: 'agent_updated', agentId: editId, field };
       } else {
         result.reply = 'Action completed.';
+      }
+    } else if (intent === assistant.INTENTS.MAKE_CALL) {
+      result = await handleMakeCall(text, ctx, core.db());
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Placed outbound call to ${result.action.number}`, false, result.action); });
+      }
+    } else if (intent === assistant.INTENTS.CREATE_FILE) {
+      result = await handleCreateFile(text, ctx, core.db(), sessionMessages, activeDocCtx);
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Generated ${result.action.fileType} file: ${result.action.fileName}`, false, result.action); });
       }
     } else if (intent === assistant.INTENTS.BUILD_AGENT) {
       result = await handleBuildAgent(text, ctx);
@@ -3641,9 +4946,15 @@ async function apiAssistantChat(req, res, ctx) {
       if (result.action) {
         await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Added CRM lead: ${result.action.contact && result.action.contact.name}`, false, result.action); });
       }
+    } else if (isAdminClientQuery) {
+      result = await handleAdminClientQuery(text, ctx, core.db());
+      intent = 'admin_client_audit';
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Admin audit: ${result.action.tenantName || 'clients'}`, false, result.action); });
+      }
     } else {
-      // general_chat (passes enriched text with document context if attachments were uploaded)
-      result = await handleGeneralChat(enrichedText || text, ctx, thread);
+      // general_chat (passes enriched text, ctx, session messages, and active document context)
+      result = await handleGeneralChat(enrichedText || text, ctx, sessionMessages, activeDocCtx);
     }
 
     // Persist assistant reply to session and thread
@@ -11104,6 +12415,31 @@ boot().then(() => {
         aux.listen(3000, () => {
           logger.info('Auxiliary HTTP listener active on port 3000: http://localhost:3000/');
         });
+      } catch (_) {}
+    }
+
+    const banner = [
+      '',
+      '\x1b[32m========================================================================\x1b[0m',
+      '\x1b[1m\x1b[32m   SEEVORA AI VOICE RECEPTIONIST IS LIVE & READY\x1b[0m',
+      '\x1b[32m========================================================================\x1b[0m',
+      `   \x1b[1m\x1b[36mDashboard (Voice & Chat):\x1b[0m  http://localhost:${PORT}/app.html`,
+      `   \x1b[1mLanding Page:\x1b[0m              http://localhost:${PORT}/`,
+      `   \x1b[1mAuxiliary Listener:\x1b[0m        http://localhost:3000/`,
+      `   \x1b[1mHealth Endpoint:\x1b[0m           http://localhost:${PORT}/api/health`,
+      '\x1b[32m------------------------------------------------------------------------\x1b[0m',
+      '   \x1b[33mSTATUS:\x1b[0m Server is actively running and listening for requests.',
+      '   \x1b[33mNOTE:\x1b[0m   This terminal process stays active while the server runs.',
+      '           Keep this terminal window open. Press \x1b[1m[Ctrl + C]\x1b[0m to stop.',
+      '\x1b[32m========================================================================\x1b[0m',
+      ''
+    ].join('\n');
+    console.log(banner);
+
+    // Automatically open the browser on Windows if not disabled
+    if (process.platform === 'win32' && process.env.NODE_ENV !== 'test' && process.env.AUTO_OPEN !== 'false') {
+      try {
+        require('child_process').exec(`start http://localhost:${PORT}/app.html`);
       } catch (_) {}
     }
   });

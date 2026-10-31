@@ -198,7 +198,7 @@ function modal(opts, maybeBody) {
   actions.appendChild(confirmBtn);
 
   const isWide = opts.wide || (opts.body && opts.body.classList && (opts.body.classList.contains('rec-drawer-wrap') || (opts.body.querySelector && opts.body.querySelector('.rec-drawer-wrap'))));
-  const card = el('div', { class: 'modal' + (isWide ? ' modal-wide' : ''), role: 'dialog', 'aria-modal': 'true' }, [
+  const card = el('div', { class: 'modal' + (isWide ? ' modal-wide' : '') + (opts.className ? ' ' + opts.className : '') + (opts.class ? ' ' + opts.class : ''), role: 'dialog', 'aria-modal': 'true' }, [
     el('h3', {}, opts.title || ''),
     opts.body || null,
     actions
@@ -1608,8 +1608,28 @@ function viewHead(title, sub) {
 
 
 /* ---- Global Make Call Modal ---- */
-async function openMakeCallModal(prefillNumber) {
-  // 1. Ensure agents are fully loaded
+/* ==========================================================================
+   QUICK CALL DROPDOWN POPOVER (Replaces all modal forms)
+   Appears directly attached under the "Make Call" button like a dropdown menu
+   ========================================================================== */
+function closeMakeCallDropdown() {
+  const existing = document.querySelector('.sv-quick-call-popover');
+  if (existing) {
+    if (existing._cleanup) existing._cleanup();
+    existing.remove();
+  }
+  const btn = document.getElementById('sv-make-call-btn');
+  if (btn) btn.classList.remove('active');
+}
+
+async function toggleMakeCallDropdown(anchorBtn, prefillNumber, prefillName) {
+  // Close any calendar popover or time dropdown
+  const timeWrap = document.getElementById('sv-time-select-wrapper');
+  if (timeWrap) timeWrap.classList.remove('open');
+  const cal = document.querySelector('.sv-calendar-popover');
+  if (cal) cal.remove();
+
+  // Ensure agents are loaded
   await ensureAgents().catch(() => { });
   let agents = (State.agents && State.agents.length) ? State.agents : [];
   if (!agents.length) {
@@ -1627,98 +1647,246 @@ async function openMakeCallModal(prefillNumber) {
     ];
   }
 
-  // 2. Build clean, styled agent select
-  const agentSelect = el('select', {
-    class: 'input modal-select',
-    id: 'modal_agent_select',
-    style: 'width:100%;height:44px;padding:8px 14px;background:rgba(255,255,255,0.9);border:1px solid rgba(203,213,225,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;cursor:pointer;display:block;'
-  }, agents.map((a) =>
-    el('option', { value: a.id, selected: a.id === State.activeAgentId }, a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')')
-  ));
+  anchorBtn = anchorBtn || document.getElementById('sv-make-call-btn');
 
-  // 3. Clean dial row with +91 prefix + Optional Recipient Name
-  const callerNameI = el('input', {
-    type: 'text',
-    id: 'modal_dial_name',
-    placeholder: 'e.g. Rajesh Verma (auto-detected if in CRM)',
-    style: 'width:100%;height:42px;padding:9px 14px;background:rgba(255,255,255,0.9);border:1px solid rgba(203,213,225,0.85);border-radius:12px;font-size:.92rem;font-weight:600;color:#0F172A;outline:none;'
-  });
+  // Toggle behavior
+  const existing = document.querySelector('.sv-quick-call-popover');
+  if (existing) {
+    const isSame = existing._anchorBtn === anchorBtn && !prefillNumber;
+    closeMakeCallDropdown();
+    if (isSame) return;
+  }
 
-  const numI = el('input', {
+  // Find or create wrapper around anchorBtn
+  let wrap = anchorBtn ? anchorBtn.closest('.sv-call-dropdown-wrap') : null;
+  if (!wrap && anchorBtn && anchorBtn.parentNode) {
+    wrap = el('div', { class: 'sv-call-dropdown-wrap' });
+    anchorBtn.parentNode.insertBefore(wrap, anchorBtn);
+    wrap.appendChild(anchorBtn);
+  }
+
+  const popover = el('div', { class: 'sv-quick-call-popover' });
+  popover._anchorBtn = anchorBtn;
+  if (anchorBtn) anchorBtn.classList.add('active');
+
+  // Header
+  const header = el('div', { class: 'sv-call-pop-header' }, [
+    el('div', { class: 'sv-call-pop-title' }, [
+      el('span', { html: uiIcon('phone', 14), style: 'color:#0d5d41;display:inline-flex;' }),
+      el('span', {}, 'Make Outbound Call')
+    ]),
+    el('span', { class: 'sv-call-pop-line' }, '+91 80715 82519')
+  ]);
+
+  // Custom Themed Voice Agent Dropdown (Matches Scandinavian Sage theme)
+  let selectedAgentId = State.activeAgentId || (agents[0] && agents[0].id) || '';
+  let currentAgent = agents.find(a => a.id === selectedAgentId) || agents[0] || { name: 'Seevora AI Voice', tts: { tone: 'friendly' } };
+
+  const agentDropdownWrap = el('div', { class: 'sv-call-agent-dropdown-wrap', id: 'sv-agent-dropdown' });
+  const agentTrigger = el('button', {
+    type: 'button',
+    class: 'sv-call-agent-trigger',
+    title: 'Select AI Voice Agent'
+  }, [
+    el('span', { class: 'sv-call-agent-current-label' }, currentAgent.name + ' (' + (((currentAgent.tts && currentAgent.tts.tone) || 'friendly')) + ')'),
+    el('span', {
+      class: 'sv-call-agent-arrow',
+      html: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+    })
+  ]);
+
+  const agentMenu = el('div', { class: 'sv-call-agent-menu' });
+
+  function renderAgentMenu() {
+    agentMenu.innerHTML = '';
+    agents.forEach(a => {
+      const isSelected = a.id === selectedAgentId;
+      const opt = el('div', {
+        class: 'sv-call-agent-opt' + (isSelected ? ' selected' : ''),
+        onclick: (e) => {
+          e.stopPropagation();
+          selectedAgentId = a.id;
+          currentAgent = a;
+          const labelEl = agentTrigger.querySelector('.sv-call-agent-current-label');
+          if (labelEl) labelEl.textContent = a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')';
+          agentDropdownWrap.classList.remove('open');
+          renderAgentMenu();
+        }
+      }, [
+        el('span', { class: 'sv-call-agent-opt-name' }, a.name + ' (' + (((a.tts && a.tts.tone) || 'friendly')) + ')'),
+        isSelected ? el('span', {
+          class: 'sv-call-agent-opt-check',
+          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+        }) : null
+      ]);
+      agentMenu.appendChild(opt);
+    });
+  }
+
+  renderAgentMenu();
+
+  agentTrigger.onclick = (e) => {
+    e.stopPropagation();
+    agentDropdownWrap.classList.toggle('open');
+  };
+
+  agentDropdownWrap.appendChild(agentTrigger);
+  agentDropdownWrap.appendChild(agentMenu);
+
+  const agentField = el('div', { class: 'sv-call-field' }, [
+    el('label', { class: 'sv-call-field-label' }, 'SELECT AI VOICE AGENT'),
+    agentDropdownWrap
+  ]);
+
+  // Phone Number row with +91 prefix
+  const numInput = el('input', {
     type: 'tel',
-    id: 'modal_dial_num',
+    class: 'sv-call-num-input',
     inputmode: 'numeric',
     maxlength: 10,
-    placeholder: 'Enter 10-digit number (e.g. 9876543210)',
-    value: prefillNumber || '',
-    style: 'flex:1;border:none;outline:none;padding:11px 14px;font-size:1.05rem;font-weight:600;letter-spacing:1px;color:#0F172A;background:transparent;width:100%;'
+    placeholder: 'Enter 10-digit number',
+    value: String(prefillNumber || '').replace(/\D/g, '').slice(-10)
   });
-  numI.addEventListener('input', () => { numI.value = numI.value.replace(/\D/g, '').slice(0, 10); });
+  numInput.oninput = () => {
+    numInput.value = numInput.value.replace(/\D/g, '').slice(0, 10);
+  };
 
-  const dialRow = el('div', {
-    style: 'display:flex;align-items:center;border:1px solid rgba(203,213,225,0.85);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.9);transition:border-color .2s;'
+  const dialRow = el('div', { class: 'sv-call-dial-row' }, [
+    el('span', { class: 'sv-call-dial-prefix' }, '+91'),
+    numInput
+  ]);
+  const numField = el('div', { class: 'sv-call-field' }, [
+    el('label', { class: 'sv-call-field-label' }, 'Recipient Mobile Number'),
+    dialRow
+  ]);
+
+  // Optional Name Input
+  const nameInput = el('input', {
+    type: 'text',
+    class: 'sv-call-name-input',
+    placeholder: 'e.g. Rajesh Verma',
+    value: prefillName || ''
+  });
+  const nameField = el('div', { class: 'sv-call-field' }, [
+    el('label', { class: 'sv-call-field-label' }, 'RECIPIENT NAME (OPTIONAL)'),
+    nameInput
+  ]);
+
+  // Call Now Submit Button
+  const submitBtn = el('button', {
+    type: 'button',
+    class: 'sv-call-submit-btn',
+    onclick: (e) => {
+      e.stopPropagation();
+      executeCall();
+    }
   }, [
-    el('span', { style: 'padding:11px 16px;background:rgba(255,255,255,0.4);font-weight:700;color:#0d5d41;border-right:1px solid rgba(255,255,255,0.7);font-size:.95rem;user-select:none;' }, '+91'),
-    numI
+    el('span', { html: uiIcon('phone', 14) }),
+    el('span', {}, 'Call Now')
   ]);
 
-  const body = el('div', { class: 'make-call-modal' }, [
-    el('p', { class: 'soft', style: 'margin-bottom:16px;font-size:.88rem;line-height:1.45;' },
-      'Place a live outbound phone call from your dedicated business line (+91 80715 82519). The call will appear immediately in your Dashboard Live Call Locator.'
-    ),
-    el('div', { style: 'margin-bottom:14px;' }, [
-      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Select AI Voice Agent'),
-      agentSelect
-    ]),
-    el('div', { style: 'margin-bottom:14px;' }, [
-      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Recipient Mobile Number (+91)'),
-      dialRow
-    ]),
-    el('div', { style: 'margin-bottom:16px;' }, [
-      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--ink);' }, 'Recipient / Caller Name (Shown on Live Locator)'),
-      callerNameI
-    ]),
-    el('div', { class: 'sv-modal-notice' }, [
-      el('span', { html: uiIcon('phone', 16), style: 'color:#0d5d41;flex-shrink:0;margin-top:2px;' }),
-      el('div', {}, [
-        el('strong', { style: 'color:#0f172a;display:block;margin-bottom:2px;' }, 'Live Telephony Call'),
-        el('span', { style: 'color:#475569;' }, 'This connects an instant outbound call from +91 80715 82519. Track, transfer, or end the call anytime from the Dashboard Live Locator.')
-      ])
-    ])
-  ]);
+  async function executeCall() {
+    const num = numInput.value.replace(/\D/g, '');
+    const callerName = nameInput.value.trim();
 
-  modal({
-    title: 'Make Outbound AI Call',
-    body,
-    confirmText: 'Yes, Place Call',
-    confirmKind: 'primary',
-    onConfirm: async () => {
-      const num = (numI.value || '').replace(/\D/g, '');
-      const callerName = (callerNameI.value || '').trim();
-      if (num.length !== 10) {
-        toast('Enter a valid 10-digit Indian mobile number.', 'err');
-        numI.focus();
-        throw new Error('Invalid mobile number');
-      }
-      try {
-        await api('/api/telephony/dial', { method: 'POST', body: { number: num, callerName, confirm: true, agentId: agentSelect.value } });
-        toast('Outbound call placed to ' + (callerName ? callerName + ' (+91 ' + num + ')' : '+91 ' + num) + '!', 'ok');
-        State.loaded.telephony = false;
-        if (typeof refreshDashboardLiveLocator === 'function') refreshDashboardLiveLocator();
-      } catch (ex) {
-        if (ex.status === 400 && ex.data && ex.data.code === 'needs_confirm') {
-          toast('Confirmation required. Retrying call...', 'warn');
-        } else {
-          const detail = (ex.data && (ex.data.detail || ex.data.message)) || '';
-          const msg = detail && !ex.message.includes(detail) ? `${ex.message}: ${detail}` : (ex.message || 'Call failed.');
-          toast(msg, 'err');
-        }
-        throw ex;
+    if (num.length !== 10) {
+      toast('Enter a valid 10-digit Indian mobile number.', 'err');
+      numInput.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spin" style="width:13px;height:13px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;display:inline-block;margin-right:6px;"></span> Placing call...';
+
+    try {
+      await api('/api/telephony/dial', {
+        method: 'POST',
+        body: { number: num, callerName, confirm: true, agentId: selectedAgentId }
+      });
+      toast('Outbound call placed to ' + (callerName ? callerName + ' (+91 ' + num + ')' : '+91 ' + num) + '!', 'ok');
+      State.loaded.telephony = false;
+      if (typeof refreshDashboardLiveLocator === 'function') refreshDashboardLiveLocator();
+      closeMakeCallDropdown();
+    } catch (ex) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = uiIcon('phone', 14) + '<span>Call Now</span>';
+      if (ex.status === 400 && ex.data && ex.data.code === 'needs_confirm') {
+        toast('Confirmation required. Retrying call...', 'warn');
+      } else {
+        const detail = (ex.data && (ex.data.detail || ex.data.message)) || '';
+        const msg = detail && !ex.message.includes(detail) ? `${ex.message}: ${detail}` : (ex.message || 'Call failed.');
+        toast(msg, 'err');
       }
     }
-  });
-  setTimeout(() => numI.focus(), 150);
+  }
+
+  // Enter key submits immediately
+  const handleKeydown = (e) => {
+    if (e.key === 'Escape') {
+      if (agentDropdownWrap && agentDropdownWrap.classList.contains('open')) {
+        agentDropdownWrap.classList.remove('open');
+        return;
+      }
+      closeMakeCallDropdown();
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeCall();
+    }
+  };
+
+  numInput.addEventListener('keydown', handleKeydown);
+  nameInput.addEventListener('keydown', handleKeydown);
+
+  popover.appendChild(header);
+  popover.appendChild(agentField);
+  popover.appendChild(numField);
+  popover.appendChild(nameField);
+  popover.appendChild(submitBtn);
+
+  const onDocClick = (e) => {
+    if (agentDropdownWrap && !agentDropdownWrap.contains(e.target)) {
+      agentDropdownWrap.classList.remove('open');
+    }
+    if (!popover.contains(e.target) && (!anchorBtn || !anchorBtn.contains(e.target))) {
+      closeMakeCallDropdown();
+    }
+  };
+
+  popover._cleanup = () => {
+    document.removeEventListener('click', onDocClick);
+    document.removeEventListener('keydown', handleKeydown);
+  };
+
+  if (wrap) {
+    wrap.appendChild(popover);
+  } else if (anchorBtn) {
+    const rect = anchorBtn.getBoundingClientRect();
+    popover.style.position = 'fixed';
+    popover.style.top = (rect.bottom + 8) + 'px';
+    popover.style.right = Math.max(12, window.innerWidth - rect.right) + 'px';
+    document.body.appendChild(popover);
+  } else {
+    popover.style.position = 'fixed';
+    popover.style.top = '72px';
+    popover.style.right = '24px';
+    document.body.appendChild(popover);
+  }
+
+  setTimeout(() => {
+    document.addEventListener('click', onDocClick);
+    document.addEventListener('keydown', handleKeydown);
+    numInput.focus();
+  }, 40);
 }
+
+// Global openMakeCallModal points directly to the lightweight dropdown
+function openMakeCallModal(prefillNumber, prefillName) {
+  const btn = document.getElementById('sv-make-call-btn');
+  toggleMakeCallDropdown(btn, prefillNumber, prefillName);
+}
+
 
 /* ---- Global WhatsApp Message Modal ---- */
 function openWhatsAppModal(dealOrContact) {
@@ -2174,6 +2342,348 @@ function triggerVoiceDashboardAnimations(dash, m) {
   dash.querySelectorAll('.aria-ask-pct').forEach(p => { p.textContent = p.getAttribute('data-target-pct') || '0%'; });
 }
 
+
+/* ==========================================================================
+   Seevora Theme Date Picker Popover (Scandinavian Sage Brand Theming)
+   Eliminates browser native unstyled calendar popups.
+   ========================================================================== */
+function showSeevoraCalendarPopover(anchorEl, opts) {
+  const existing = document.querySelector('.sv-calendar-popover');
+  if (existing) {
+    const isSameAnchor = existing._anchorEl === anchorEl;
+    existing.remove();
+    if (existing._cleanup) existing._cleanup();
+    if (isSameAnchor) return null;
+  }
+
+  const {
+    currentDate = new Date(),
+    maxDate = new Date(),
+    onSelect = () => { },
+    onClear = () => { }
+  } = opts || {};
+
+  let selectedDate = null;
+  if (typeof currentDate === 'string') {
+    const p = currentDate.replace(/^date:/, '').split('-');
+    if (p.length === 3) selectedDate = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  } else if (currentDate instanceof Date) {
+    selectedDate = new Date(currentDate);
+  }
+  if (!selectedDate || isNaN(selectedDate.getTime())) selectedDate = new Date();
+
+  let viewYear = selectedDate.getFullYear();
+  let viewMonth = selectedDate.getMonth();
+
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const maxIso = maxDate ? (maxDate instanceof Date ? maxDate.toISOString().slice(0, 10) : String(maxDate)) : todayIso;
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  const popover = el('div', { class: 'sv-calendar-popover' });
+  popover._anchorEl = anchorEl;
+
+  function renderMonth() {
+    popover.innerHTML = '';
+
+    // Header
+    const header = el('div', { class: 'sv-cal-header' });
+    const titleWrap = el('div', { class: 'sv-cal-title-wrap' });
+
+    // Custom Themed Month Dropdown
+    const monthDropdown = el('div', { class: 'sv-cal-custom-dropdown', id: 'sv-month-dropdown' });
+    const monthBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-dropdown-trigger',
+      title: 'Select month'
+    }, [
+      el('span', { class: 'sv-cal-dropdown-label' }, monthNames[viewMonth]),
+      el('span', {
+        class: 'sv-cal-dropdown-arrow',
+        html: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+      })
+    ]);
+
+    const monthMenu = el('div', { class: 'sv-cal-dropdown-menu sv-month-menu' });
+    monthNames.forEach((name, idx) => {
+      const isSelected = idx === viewMonth;
+      const opt = el('div', {
+        class: 'sv-cal-dropdown-opt' + (isSelected ? ' selected' : ''),
+        onclick: (e) => {
+          e.stopPropagation();
+          viewMonth = idx;
+          monthDropdown.classList.remove('open');
+          renderMonth();
+        }
+      }, [
+        el('span', {}, name),
+        isSelected ? el('span', {
+          html: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        }) : null
+      ].filter(Boolean));
+      monthMenu.appendChild(opt);
+    });
+
+    monthBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = monthDropdown.classList.toggle('open');
+      if (isOpen && yearDropdown) yearDropdown.classList.remove('open');
+    };
+
+    monthDropdown.appendChild(monthBtn);
+    monthDropdown.appendChild(monthMenu);
+
+    // Custom Themed Year Dropdown
+    const yearDropdown = el('div', { class: 'sv-cal-custom-dropdown', id: 'sv-year-dropdown' });
+    const yearBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-dropdown-trigger',
+      title: 'Select year'
+    }, [
+      el('span', { class: 'sv-cal-dropdown-label' }, String(viewYear)),
+      el('span', {
+        class: 'sv-cal-dropdown-arrow',
+        html: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+      })
+    ]);
+
+    const yearMenu = el('div', { class: 'sv-cal-dropdown-menu sv-year-menu' });
+    // Dynamic sliding window based on the real calendar year (automatically increases every year)
+    const curY = today.getFullYear();
+    const minYear = Math.min(curY - 6, viewYear - 2);
+    const maxYear = Math.max(curY + 6, viewYear + 2);
+    for (let y = minYear; y <= maxYear; y++) {
+      const isSelected = y === viewYear;
+      const opt = el('div', {
+        class: 'sv-cal-dropdown-opt' + (isSelected ? ' selected' : ''),
+        onclick: (e) => {
+          e.stopPropagation();
+          viewYear = y;
+          yearDropdown.classList.remove('open');
+          renderMonth();
+        }
+      }, [
+        el('span', {}, String(y)),
+        isSelected ? el('span', {
+          html: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        }) : null
+      ].filter(Boolean));
+      yearMenu.appendChild(opt);
+    }
+
+    yearBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = yearDropdown.classList.toggle('open');
+      if (isOpen && monthDropdown) monthDropdown.classList.remove('open');
+      if (isOpen) {
+        setTimeout(() => {
+          const sel = yearMenu.querySelector('.sv-cal-dropdown-opt.selected');
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+        }, 10);
+      }
+    };
+
+    yearDropdown.appendChild(yearBtn);
+    yearDropdown.appendChild(yearMenu);
+
+    titleWrap.appendChild(monthDropdown);
+    titleWrap.appendChild(yearDropdown);
+
+    popover.onclick = (e) => {
+      if (monthDropdown && !monthDropdown.contains(e.target)) monthDropdown.classList.remove('open');
+      if (yearDropdown && !yearDropdown.contains(e.target)) yearDropdown.classList.remove('open');
+    };
+
+    // Prev / Next chevrons
+    const nav = el('div', { class: 'sv-cal-nav' });
+    const prevBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-nav-btn',
+      title: 'Previous Month',
+      onclick: (e) => {
+        e.stopPropagation();
+        viewMonth--;
+        if (viewMonth < 0) {
+          viewMonth = 11;
+          viewYear--;
+        }
+        renderMonth();
+      }
+    }, [
+      el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' })
+    ]);
+
+    const nextBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-nav-btn',
+      title: 'Next Month',
+      onclick: (e) => {
+        e.stopPropagation();
+        viewMonth++;
+        if (viewMonth > 11) {
+          viewMonth = 0;
+          viewYear++;
+        }
+        renderMonth();
+      }
+    }, [
+      el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' })
+    ]);
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(nextBtn);
+
+    header.appendChild(titleWrap);
+    header.appendChild(nav);
+    popover.appendChild(header);
+
+    // Weekday Header
+    const weekdaysRow = el('div', { class: 'sv-cal-weekdays' });
+    dayNames.forEach(d => {
+      weekdaysRow.appendChild(el('div', { class: 'sv-cal-weekday' }, d));
+    });
+    popover.appendChild(weekdaysRow);
+
+    // Days Grid
+    const daysGrid = el('div', { class: 'sv-cal-days' });
+
+    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInCurrentMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+    // Previous month trailing days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const prevCell = el('div', { class: 'sv-cal-day muted' }, String(dayNum));
+      daysGrid.appendChild(prevCell);
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInCurrentMonth; d++) {
+      const yyyy = String(viewYear);
+      const mm = String(viewMonth + 1).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
+      const iso = `${yyyy}-${mm}-${dd}`;
+
+      const isToday = iso === todayIso;
+      const isSelected = selectedDate && (
+        selectedDate.getFullYear() === viewYear &&
+        selectedDate.getMonth() === viewMonth &&
+        selectedDate.getDate() === d
+      );
+      const isDisabled = maxIso && iso > maxIso;
+
+      let cls = 'sv-cal-day';
+      if (isToday) cls += ' today';
+      if (isSelected) cls += ' selected';
+      if (isDisabled) cls += ' disabled';
+
+      const cell = el('div', { class: cls }, String(d));
+      if (!isDisabled) {
+        cell.onclick = (e) => {
+          e.stopPropagation();
+          onSelect(iso, new Date(viewYear, viewMonth, d));
+          close();
+        };
+      }
+      daysGrid.appendChild(cell);
+    }
+
+    // Next month leading days (fill 42 cells total for fixed 6 rows)
+    const totalDaysSoFar = firstDayIndex + daysInCurrentMonth;
+    const remainingCells = 42 - totalDaysSoFar;
+    for (let d = 1; d <= remainingCells; d++) {
+      const nextCell = el('div', { class: 'sv-cal-day muted' }, String(d));
+      daysGrid.appendChild(nextCell);
+    }
+
+    popover.appendChild(daysGrid);
+
+    // Footer with Clear & Today
+    const footer = el('div', { class: 'sv-cal-footer' });
+    const clearBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-clear-btn',
+      title: 'Reset date filter',
+      onclick: (e) => {
+        e.stopPropagation();
+        onClear();
+        close();
+      }
+    }, 'Clear');
+
+    const todayBtn = el('button', {
+      type: 'button',
+      class: 'sv-cal-today-btn',
+      title: 'Select today',
+      onclick: (e) => {
+        e.stopPropagation();
+        onSelect(todayIso, new Date());
+        close();
+      }
+    }, 'Today');
+
+    footer.appendChild(clearBtn);
+    footer.appendChild(todayBtn);
+    popover.appendChild(footer);
+  }
+
+  function close() {
+    popover.remove();
+    document.removeEventListener('click', onDocClick);
+    document.removeEventListener('keydown', onKeydown);
+    if (anchorEl) anchorEl.classList.remove('active');
+  }
+
+  function onDocClick(e) {
+    if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {
+      close();
+    }
+  }
+
+  function onKeydown(e) {
+    if (e.key === 'Escape') close();
+  }
+
+  popover._cleanup = () => {
+    document.removeEventListener('click', onDocClick);
+    document.removeEventListener('keydown', onKeydown);
+    if (anchorEl) anchorEl.classList.remove('active');
+  };
+
+  renderMonth();
+
+  const parentWrap = anchorEl.closest('.sv-date-picker-wrap');
+  if (parentWrap) {
+    parentWrap.appendChild(popover);
+    const rect = parentWrap.getBoundingClientRect();
+    if (rect.left + 300 > window.innerWidth) {
+      popover.style.left = 'auto';
+      popover.style.right = '0';
+    }
+  } else {
+    const rect = anchorEl.getBoundingClientRect();
+    popover.style.position = 'fixed';
+    popover.style.top = (rect.bottom + 6) + 'px';
+    popover.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - 320)) + 'px';
+    document.body.appendChild(popover);
+  }
+
+  anchorEl.classList.add('active');
+
+  setTimeout(() => {
+    document.addEventListener('click', onDocClick);
+    document.addEventListener('keydown', onKeydown);
+  }, 10);
+
+  return popover;
+}
+
 function renderVoiceDashboard(root, opts) {
   root.innerHTML = '';
   const isAgency = !!opts.isAgency;
@@ -2186,16 +2696,9 @@ function renderVoiceDashboard(root, opts) {
   const todayIso = now.toISOString().slice(0, 10);
   let currentPeriod = opts.period || 'today';
 
-  // Native Date Picker Input (accessible via button & dropdown)
-  const datePickerInput = el('input', {
-    type: 'date',
-    id: 'sv-date-picker-input',
-    max: todayIso,
-    value: todayIso,
-    style: 'position:absolute;opacity:0;pointer-events:none;width:0;height:0;z-index:-1;'
-  });
+  // Interactive Themed Date Button & Popover in Topbar
+  const datePickerWrap = el('div', { class: 'sv-date-picker-wrap', id: 'sv-date-picker-wrapper' });
 
-  // Interactive Date Button in Topbar
   const dateLabel = el('button', {
     class: 'aria-date-btn',
     type: 'button',
@@ -2203,17 +2706,58 @@ function renderVoiceDashboard(root, opts) {
     title: 'Click to select custom date',
     onclick: (e) => {
       e.stopPropagation();
-      try {
-        if (typeof datePickerInput.showPicker === 'function') datePickerInput.showPicker();
-        else datePickerInput.click();
-      } catch (_) {
-        datePickerInput.click();
-      }
+      openCalendar();
     }
   }, [
     el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' }),
     el('span', { id: 'sv-active-date-text' }, 'Today, ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))
   ]);
+
+  datePickerWrap.appendChild(dateLabel);
+
+  function openCalendar() {
+    timeDropdown.classList.remove('open');
+    timeDropdownBtn.setAttribute('aria-expanded', 'false');
+
+    let activeVal = currentPeriod.startsWith('date:') ? currentPeriod.slice(5) : todayIso;
+    showSeevoraCalendarPopover(dateLabel, {
+      currentDate: activeVal,
+      maxDate: todayIso,
+      onSelect: (val, pickedDate) => {
+        handleDateSelection(val, pickedDate);
+      },
+      onClear: () => {
+        handleDateCleared();
+      }
+    });
+  }
+
+  function handleDateSelection(val, pickedDate) {
+    if (!val) return;
+    const isToday = val === todayIso;
+    const formatted = pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    currentPeriod = isToday ? 'today' : ('date:' + val);
+    const dateText = isToday ? ('Today, ' + pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : formatted;
+
+    const activeDateText = dash.querySelector('#sv-active-date-text');
+    if (activeDateText) activeDateText.textContent = dateText;
+
+    timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = isToday ? 'Today' : formatted;
+    renderDropdownOptions();
+    syncVoiceDashboardData(currentPeriod);
+  }
+
+  function handleDateCleared() {
+    currentPeriod = 'today';
+    const activeDateText = dash.querySelector('#sv-active-date-text');
+    if (activeDateText) {
+      activeDateText.textContent = 'Today, ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+    timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = 'Today';
+    renderDropdownOptions();
+    syncVoiceDashboardData('today');
+  }
 
   // Custom Sage-Themed Period Dropdown
   const periods = [
@@ -2251,12 +2795,7 @@ function renderVoiceDashboard(root, opts) {
           if (p.value === 'custom_date') {
             timeDropdown.classList.remove('open');
             timeDropdownBtn.setAttribute('aria-expanded', 'false');
-            try {
-              if (typeof datePickerInput.showPicker === 'function') datePickerInput.showPicker();
-              else datePickerInput.click();
-            } catch (_) {
-              datePickerInput.click();
-            }
+            openCalendar();
             return;
           }
 
@@ -2292,26 +2831,6 @@ function renderVoiceDashboard(root, opts) {
     });
   }
 
-  // Handle Date Picker selection
-  datePickerInput.onchange = () => {
-    const val = datePickerInput.value;
-    if (!val) return;
-    const isToday = val === todayIso;
-    const parts = val.split('-');
-    const pickedDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    const formatted = pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    currentPeriod = isToday ? 'today' : ('date:' + val);
-    const dateText = isToday ? ('Today, ' + pickedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : formatted;
-
-    const activeDateText = dash.querySelector('#sv-active-date-text');
-    if (activeDateText) activeDateText.textContent = dateText;
-
-    timeDropdownBtn.querySelector('.aria-dropdown-current-label').textContent = isToday ? 'Today' : formatted;
-    renderDropdownOptions();
-    syncVoiceDashboardData(currentPeriod);
-  };
-
   renderDropdownOptions();
 
   timeDropdownBtn.onclick = (e) => {
@@ -2346,21 +2865,25 @@ function renderVoiceDashboard(root, opts) {
     setTimeout(() => { refreshBtn.style.transform = ''; }, 650);
     syncVoiceDashboardData(timeDropdown.value);
   };
+  const callWrap = el('div', { class: 'sv-call-dropdown-wrap', id: 'sv-call-btn-wrapper' });
   const callBtn = el('button', {
     class: 'aria-btn-action',
+    id: 'sv-make-call-btn',
     type: 'button',
     onclick: () => {
       if (!isAgency && !hasActiveTelephony()) {
         toast('Please connect or request an assigned VoBiz phone number in Settings to place calls.', 'err');
         return;
       }
-      openMakeCallModal();
+      toggleMakeCallDropdown(callBtn);
     }
   }, [
     uiIcon('phone', 12), el('span', {}, 'Make Call')
   ]);
+  callWrap.appendChild(callBtn);
+
   dash.appendChild(el('header', { class: 'aria-topbar', style: 'justify-content:flex-end;' }, [
-    el('div', { class: 'aria-topbar-right' }, [datePickerInput, dateLabel, refreshBtn, timeDropdown, callBtn])
+    el('div', { class: 'aria-topbar-right' }, [datePickerWrap, refreshBtn, timeDropdown, callWrap])
   ]));
 
   // Onboarding Step-by-Step Instructions Banner when no phone number is assigned
@@ -2423,8 +2946,8 @@ function renderVoiceDashboard(root, opts) {
   gaugeSvg.innerHTML = `
     <circle class="aria-gauge-track" cx="100" cy="100" r="${radius}" stroke="#d7ecdf" stroke-width="20" fill="none" />
     <circle class="aria-gauge-fill" id="sv-gauge-circle" cx="100" cy="100" r="${radius}" stroke="#0d5d41" stroke-width="20" fill="none" stroke-linecap="round" stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${circumference.toFixed(2)}" />
-    <text class="aria-gauge-text" id="sv-kpi-success-val" x="100" y="96" text-anchor="middle">0%</text>
-    <text class="aria-gauge-sub" x="100" y="122">RESOLUTION</text>`;
+    <text class="aria-gauge-text" id="sv-kpi-success-val" x="100" y="88" text-anchor="middle">0%</text>
+    <text class="aria-gauge-sub" x="100" y="126">RESOLUTION</text>`;
   const gaugeCard = el('div', { class: 'aria-gauge-card' }, [
     el('div', { class: 'aria-gauge-wrap' }, [gaugeSvg]),
     el('div', { class: 'aria-gauge-caption' }, (!isAgency && !hasActiveTelephony()) ? 'VoBiz Phone Number Required' : 'Autonomous Voice Resolution')
@@ -3325,6 +3848,48 @@ async function ensureAgents(force) {
   State.loaded.agents = true;
   return State.agents;
 }
+
+// Global reactive agent sync across the entire application
+async function syncAgentsState(detail) {
+  State.loaded.agents = false;
+  try {
+    const res = await api('/api/agents');
+    State.agents = res.agents || [];
+    State.loaded.agents = true;
+
+    if (detail && detail.agent && !State.agents.some((a) => a.id === detail.agent.id)) {
+      State.agents.unshift(detail.agent);
+    }
+
+    // Immediately repaint if All AI Agents view is visible on screen
+    const grid = $('#agentsGrid');
+    if (grid) {
+      paintAgents();
+    }
+
+    const totalM = $('#agents-metric-total');
+    if (totalM) totalM.textContent = State.agents.length;
+
+    refillDidOptions();
+
+    // Notify any components listening for live agent updates
+    document.dispatchEvent(new CustomEvent('seevora:agentsSynced', { detail: { agents: State.agents, action: detail } }));
+  } catch (err) {
+    console.warn('syncAgentsState error:', err);
+  }
+}
+
+// Global event listener for assistant agent changes
+document.addEventListener('assistant:agentChanged', async (ev) => {
+  const detail = ev.detail || {};
+  await syncAgentsState(detail);
+  const agentName = detail.agentName || (detail.agent && detail.agent.name) || 'Voice Agent';
+  if (detail.type === 'agent_created') {
+    toast(`AI Agent "${agentName}" added to All AI Agents!`, 'ok', 'Agent Live');
+  } else if (detail.type === 'agent_updated') {
+    toast(`AI Agent "${agentName}" updated.`, 'ok', 'Agent Updated');
+  }
+});
 async function ensureTelephony(force) {
   if (State.loaded.telephony && !force) return State.telephony;
   const res = await api('/api/telephony/status');
@@ -3368,10 +3933,12 @@ async function viewAgents(root) {
   function renderCurrent() {
     wrap.innerHTML = '';
     if (_agentStudioState.active) {
-      wrap.appendChild(buildAgentStudioPage(_agentStudioState.agent, () => {
+      wrap.appendChild(buildAgentStudioPage(_agentStudioState.agent, async () => {
         _agentStudioState.active = false;
         _agentStudioState.agent = null;
         renderCurrent();
+        await ensureAgents(true);
+        paintAgents();
       }));
     } else {
       renderAgentsListPage(wrap);
@@ -3381,8 +3948,8 @@ async function viewAgents(root) {
   wrap._renderCurrent = renderCurrent;
   renderCurrent();
 
-  // Load telemetry & agents in background
-  Promise.all([ensureAgents(), ensureTelephony().catch(() => null), ensureProviders().catch(() => null)]).then(() => {
+  // Load telemetry & fresh agents in background (always force sync so new agents appear instantly)
+  Promise.all([ensureAgents(true), ensureTelephony().catch(() => null), ensureProviders().catch(() => null)]).then(() => {
     refillDidOptions();
     if (!_agentStudioState.active) {
       paintAgents();
@@ -3899,13 +4466,22 @@ function buildAgentStudioPage(existing, onBack) {
         const res = await api('/api/agents/update', { method: 'POST', body: payload });
         const idx = State.agents.findIndex((a) => a.id === existing.id);
         if (idx !== -1) State.agents[idx] = res.agent || Object.assign({}, existing, payload);
+        await syncAgentsState({ type: 'agent_updated', agent: res.agent });
         toast('Agent updated successfully.', 'ok');
       } else {
         const res = await api('/api/agents', { method: 'POST', body: payload });
-        if (res.agent) State.agents.push(res.agent);
+        if (res.agent) {
+          State.agents = State.agents || [];
+          const exists = State.agents.findIndex((a) => a.id === res.agent.id);
+          if (exists >= 0) State.agents[exists] = res.agent;
+          else State.agents.unshift(res.agent);
+          State.loaded.agents = true;
+        }
+        await syncAgentsState({ type: 'agent_created', agent: res.agent });
         toast('Voice agent deployed successfully!', 'ok');
       }
       onBack();
+      paintAgents();
     } catch (ex) {
       toast(ex.message || 'Could not save agent.', 'err');
     } finally {
@@ -4017,7 +4593,7 @@ async function previewAgentVoice(a, btn) {
 
     if (res && res.dataUrl) {
       if (window._currentAgentAudio) {
-        try { window._currentAgentAudio.pause(); } catch (_) {}
+        try { window._currentAgentAudio.pause(); } catch (_) { }
       }
       const audio = new Audio(res.dataUrl);
       window._currentAgentAudio = audio;
@@ -4108,47 +4684,47 @@ function agentCard(a) {
   // Enable / Disable Toggle button
   const toggleBtn = !isEnabled
     ? el('button', {
-        type: 'button',
-        class: 'btn btn-ghost btn-sm',
-        style: 'border-radius:999px;padding:6px 14px;border:1.5px solid rgba(13,93,65,0.35);color:#0d5d41;background:rgba(13,93,65,0.08);font-weight:750;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
-        title: 'Enable this agent to answer calls and appear in flows',
-        onclick: async () => {
-          try {
-            await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: true } });
-            toast(a.name.split('-')[0].trim() + ' is now ENABLED!', 'ok');
-            await ensureAgents(true);
-            paintAgents();
-          } catch (err) {
-            toast('Could not enable agent: ' + err.message, 'err');
-          }
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 14px;border:1.5px solid rgba(13,93,65,0.35);color:#0d5d41;background:rgba(13,93,65,0.08);font-weight:750;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
+      title: 'Enable this agent to answer calls and appear in flows',
+      onclick: async () => {
+        try {
+          await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: true } });
+          toast(a.name.split('-')[0].trim() + ' is now ENABLED!', 'ok');
+          await ensureAgents(true);
+          paintAgents();
+        } catch (err) {
+          toast('Could not enable agent: ' + err.message, 'err');
         }
-      }, [
-        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' }),
-        el('span', {}, 'Enable')
-      ])
+      }
+    }, [
+      el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' }),
+      el('span', {}, 'Enable')
+    ])
     : el('button', {
-        type: 'button',
-        class: 'btn btn-ghost btn-sm',
-        style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(100,116,139,0.25);color:#475569;font-weight:650;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
-        title: 'Disable this agent to pause it from answering calls',
-        onclick: async () => {
-          if (a.isPrimary) {
-            const ok = confirm('"' + a.name.split('-')[0].trim() + '" is currently active on your live phone line. Disabling it will move live call answering to another available agent. Continue?');
-            if (!ok) return;
-          }
-          try {
-            await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: false } });
-            toast(a.name.split('-')[0].trim() + ' has been DISABLED.', 'ok');
-            await ensureAgents(true);
-            paintAgents();
-          } catch (err) {
-            toast('Could not disable agent: ' + err.message, 'err');
-          }
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(100,116,139,0.25);color:#475569;font-weight:650;font-size:0.80rem;display:inline-flex;align-items:center;gap:5px;',
+      title: 'Disable this agent to pause it from answering calls',
+      onclick: async () => {
+        if (a.isPrimary) {
+          const ok = confirm('"' + a.name.split('-')[0].trim() + '" is currently active on your live phone line. Disabling it will move live call answering to another available agent. Continue?');
+          if (!ok) return;
         }
-      }, [
-        el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' }),
-        el('span', {}, 'Disable')
-      ]);
+        try {
+          await api('/api/agents/toggle-status', { method: 'POST', body: { agentId: a.id, enabled: false } });
+          toast(a.name.split('-')[0].trim() + ' has been DISABLED.', 'ok');
+          await ensureAgents(true);
+          paintAgents();
+        } catch (err) {
+          toast('Could not disable agent: ' + err.message, 'err');
+        }
+      }
+    }, [
+      el('span', { html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' }),
+      el('span', {}, 'Disable')
+    ]);
 
   // Delete button
   const deleteBtn = el('button', {
@@ -4190,8 +4766,8 @@ function agentCard(a) {
   const statusBadge = !isEnabled
     ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(220,38,38,0.10);color:#dc2626;border:1px solid rgba(220,38,38,0.22);letter-spacing:0.02em;' }, 'Disabled')
     : (a.isPrimary
-        ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
-        : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, 'Enabled · Standby'));
+      ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
+      : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, 'Enabled · Standby'));
 
   // Title & Badges line
   const titleLine = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
@@ -8436,8 +9012,8 @@ function createFromPreset(preset) {
     confirmText: 'Create agent',
     onConfirm: async () => {
       const name = ($('#preset_agent_name').value || preset.name).trim();
-      await api('/api/agents', { method: 'POST', body: { presetId: preset.id, name: name } });
-      State.loaded.agents = false;
+      const res = await api('/api/agents', { method: 'POST', body: { presetId: preset.id, name: name } });
+      await syncAgentsState({ type: 'agent_created', agent: res.agent });
       toast(name + ' created.', 'ok');
       goto('agents');
     }
@@ -8556,7 +9132,7 @@ function buildInvoiceDetailPage(row, onBack) {
 
   // Top Navigation & Action Strip
   const topActions = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' });
-  
+
   // Print / PDF Button
   topActions.appendChild(el('button', {
     type: 'button',
@@ -9318,7 +9894,7 @@ async function viewBilling(root) {
         });
       }
     }
-  }).catch(() => {});
+  }).catch(() => { });
 
   // 3. Subscription Tiers Section
   const plansSection = el('div', { style: 'margin-bottom:48px;' });
@@ -12245,7 +12821,7 @@ async function viewSettings(root) {
         try {
           currentAudio.pause();
           currentAudio.currentTime = 0;
-        } catch (_) {}
+        } catch (_) { }
         currentAudio = null;
       }
       currentlyPlayingId = null;
@@ -12793,7 +13369,7 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-// TAB 3: DOGRAH AI FLOWS TAB (ORCHESTRATION PIPELINES & CUSTOM CLIENT FLOW BUILDER)
+  // TAB 3: DOGRAH AI FLOWS TAB (ORCHESTRATION PIPELINES & CUSTOM CLIENT FLOW BUILDER)
   // ==========================================================================
   async function renderDograhTab(panel) {
     const wrap = el('div', { class: 'settings-tab-inner aria-dograh-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
@@ -13100,11 +13676,11 @@ async function viewSettings(root) {
                 }, f.kind || 'generated'),
                 isLive
                   ? el('span', {
-                      style: 'font-size:0.70rem;font-weight:750;padding:2px 10px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
-                    }, '● Active & Dialing')
+                    style: 'font-size:0.70rem;font-weight:750;padding:2px 10px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
+                  }, '● Active & Dialing')
                   : el('span', {
-                      style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.06);color:#5d7468;'
-                    }, 'Standby')
+                    style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.06);color:#5d7468;'
+                  }, 'Standby')
               ]),
               el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-bottom:4px;' },
                 f.description || (f.greeting ? `Greeting: "${f.greeting.slice(0, 90)}..."` : 'Voice conversational flow')
@@ -13702,9 +14278,9 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-// ==========================================================================
-// ==========================================================================
-// ==========================================================================
+  // ==========================================================================
+  // ==========================================================================
+  // ==========================================================================
   // TAB 4: INBOUND AUTO-CALL & INTEGRATIONS + CONNECTED APPS HUB
   // ==========================================================================
   async function renderIntegrationsTab(panel) {
@@ -13721,7 +14297,7 @@ async function viewSettings(root) {
 
     const ALL_CHANNELS = ['whatsapp', 'hubspot', 'email', 'razorpay', 'googleCalendar', 'googleSheets', 'zohoCrm', 'slack'];
     const connectedCount = ALL_CHANNELS.filter(k => cfg[k] && cfg[k].status === 'connected').length;
-    const enabledCount   = ALL_CHANNELS.filter(k => cfg[k] && cfg[k].enabled).length;
+    const enabledCount = ALL_CHANNELS.filter(k => cfg[k] && cfg[k].enabled).length;
 
     // ---- KPI Bar (Dynamic 8-Channel Counts) ----
     wrap.appendChild(el('div', {
@@ -13878,13 +14454,13 @@ async function viewSettings(root) {
     const labelStyle = 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;';
     const inputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
     const pillGreen = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(4,120,87,0.10);color:#047857;font-size:0.72rem;font-weight:750;border-radius:999px;';
-    const pillGray  = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(93,116,104,0.10);color:#5d7468;font-size:0.72rem;font-weight:750;border-radius:999px;';
-    const pillRed   = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(220,38,38,0.10);color:#dc2626;font-size:0.72rem;font-weight:750;border-radius:999px;';
+    const pillGray = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(93,116,104,0.10);color:#5d7468;font-size:0.72rem;font-weight:750;border-radius:999px;';
+    const pillRed = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(220,38,38,0.10);color:#dc2626;font-size:0.72rem;font-weight:750;border-radius:999px;';
 
     INTEGRATIONS_META.forEach((intg) => {
-      const intgCfg   = cfg[intg.key] || {};
+      const intgCfg = cfg[intg.key] || {};
       const isEnabled = intgCfg.enabled || false;
-      const status    = intgCfg.status || 'not_connected';
+      const status = intgCfg.status || 'not_connected';
 
       const row = el('div', { style: rowStyle });
 
@@ -13941,7 +14517,7 @@ async function viewSettings(root) {
 
       intg.fields.forEach((f) => {
         const existing = intgCfg[f.key] !== undefined ? String(intgCfg[f.key]) : '';
-        const masked   = (f.type === 'password' && existing) ? '••••••••' : existing;
+        const masked = (f.type === 'password' && existing) ? '••••••••' : existing;
         const inp = el('input', {
           class: 'input',
           type: f.type === 'password' ? 'password' : (f.type === 'number' ? 'number' : 'text'),
@@ -14019,7 +14595,7 @@ async function viewSettings(root) {
       };
 
       const lastSync = intgCfg.lastSyncAt ? 'Last sync: ' + new Date(intgCfg.lastSyncAt).toLocaleString('en-IN') : '';
-      const lastErr  = intgCfg.lastError ? ' · Error: ' + String(intgCfg.lastError).slice(0, 90) : '';
+      const lastErr = intgCfg.lastError ? ' · Error: ' + String(intgCfg.lastError).slice(0, 90) : '';
 
       row.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
         saveBtn,
@@ -14383,11 +14959,11 @@ async function loadByon(host, preloadedTenants) {
               el('span', { class: 'pill', style: 'background:rgba(16,185,129,0.12);color:#10B981;font-size:0.72rem;padding:2px 8px;font-weight:700;' }, 'Active ✓'),
               isPlatformAdmin
                 ? (c.tenantId
-                    ? el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-size:0.74rem;padding:2px 10px;font-weight:700;border:1px solid rgba(13,93,65,0.2);' }, `Assigned: ${c.tenantName || c.tenantId}`)
-                    : el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.12);color:#B45309;font-size:0.74rem;padding:2px 10px;font-weight:600;' }, '★ Unassigned (Platform Pool)'))
+                  ? el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-size:0.74rem;padding:2px 10px;font-weight:700;border:1px solid rgba(13,93,65,0.2);' }, `Assigned: ${c.tenantName || c.tenantId}`)
+                  : el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.12);color:#B45309;font-size:0.74rem;padding:2px 10px;font-weight:600;' }, '★ Unassigned (Platform Pool)'))
                 : (c.assignedBy === 'admin'
-                    ? el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.12);color:#B45309;font-size:0.74rem;padding:2px 10px;font-weight:700;' }, 'Assigned by Admin ★')
-                    : el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-size:0.74rem;padding:2px 10px;font-weight:600;' }, 'Self-Connected'))
+                  ? el('span', { class: 'pill', style: 'background:rgba(234,179,8,0.12);color:#B45309;font-size:0.74rem;padding:2px 10px;font-weight:700;' }, 'Assigned by Admin ★')
+                  : el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.12);color:#0d5d41;font-size:0.74rem;padding:2px 10px;font-weight:600;' }, 'Self-Connected'))
             ]),
             el('div', { class: 'muted', style: 'font-size:0.82rem;margin-top:4px;' }, [
               `${c.label || 'VoBiz Dedicated Line'} · ${(c.provider || 'vobiz').toUpperCase()}`,
@@ -14694,16 +15270,45 @@ async function viewAssistant(wrap) {
   const card = el('div', { class: 'chat-workspace-card' });
   wrap.appendChild(card);
 
+  function toggleChatHistory(forceState) {
+    const rp = card.querySelector('.chat-right-panel');
+    const historyBtn = card.querySelector('.chat-rail-history-btn');
+    if (!rp) return;
+
+    const isMobile = window.innerWidth <= 1024;
+    let backdrop = card.querySelector('.chat-right-backdrop');
+
+    if (isMobile) {
+      const shouldOpen = forceState !== undefined ? forceState : !rp.classList.contains('mobile-drawer-open');
+      if (shouldOpen) {
+        rp.classList.add('mobile-drawer-open');
+        rp.classList.remove('collapsed');
+        if (historyBtn) historyBtn.classList.add('active');
+        if (!backdrop) {
+          backdrop = el('div', {
+            class: 'chat-right-backdrop',
+            onclick: () => toggleChatHistory(false)
+          });
+          card.appendChild(backdrop);
+        }
+      } else {
+        rp.classList.remove('mobile-drawer-open');
+        if (historyBtn) historyBtn.classList.remove('active');
+        if (backdrop) backdrop.remove();
+      }
+    } else {
+      const isCollapsed = forceState !== undefined ? !forceState : rp.classList.toggle('collapsed');
+      if (historyBtn) {
+        historyBtn.classList.toggle('active', !isCollapsed);
+        historyBtn.title = isCollapsed ? 'Show Chat History' : 'Hide Chat History';
+      }
+    }
+  }
+
   // ---- 1. Left Icon Rail ----
   const leftRail = el('div', { class: 'chat-left-rail' }, [
     el('div', { class: 'chat-rail-top' }, [
       el('button', { class: 'chat-rail-btn primary-plus', title: 'New Conversation', onclick: startNewChat }, '+'),
-      el('button', {
-        class: 'chat-rail-btn',
-        title: 'Search Chats',
-        onclick: openSearchModal,
-        html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
-      }),
       el('button', {
         class: 'chat-rail-btn',
         title: 'Explore Templates',
@@ -14717,11 +15322,12 @@ async function viewAssistant(wrap) {
         html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>'
       }),
       el('button', {
-        class: 'chat-rail-btn',
-        title: 'History Drawer',
-        onclick: () => {
-          const rp = card.querySelector('.chat-right-panel');
-          if (rp) rp.style.display = rp.style.display === 'none' ? 'flex' : 'none';
+        class: 'chat-rail-btn chat-rail-history-btn active',
+        title: 'Chat History (Past Conversations)',
+        'aria-label': 'Chat History',
+        onclick: (e) => {
+          e.stopPropagation();
+          toggleChatHistory();
         },
         html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
       })
@@ -14904,22 +15510,52 @@ async function viewAssistant(wrap) {
   // ---- 3. Right History & Context Panel (Clean Scandinavian Sage, No Duplicate Widgets) ----
   const rightPanel = el('div', { class: 'chat-right-panel' });
 
-  // Header with "+ New Chat" Button
+  // Header with Search Chats option (Cardless Scandinavian Sage Underline Style)
+  let currentChatSearchQuery = '';
+
+  const searchInput = el('input', {
+    type: 'text',
+    class: 'chat-history-search-input',
+    placeholder: 'Search chats...',
+    title: 'Filter chats by title or message'
+  });
+
+  const clearBtn = el('button', {
+    type: 'button',
+    class: 'chat-history-search-clear',
+    title: 'Clear search',
+    html: '&times;',
+    style: 'display:none;'
+  });
+
+  const searchWrap = el('div', { class: 'chat-history-search-wrap' }, [
+    el('span', {
+      class: 'chat-history-search-icon',
+      html: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    }),
+    searchInput,
+    clearBtn
+  ]);
+
+  const closeHistoryBtn = el('button', {
+    type: 'button',
+    class: 'chat-history-close-btn',
+    title: 'Close Chat History',
+    onclick: (e) => {
+      e.stopPropagation();
+      toggleChatHistory(false);
+    },
+    html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+  });
+
   const rightHeader = el('div', {
-    class: 'chat-right-header',
-    style: 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;border-bottom:1.5px solid rgba(13,93,65,0.10);margin-bottom:8px;'
+    class: 'chat-right-header'
   }, [
-    el('div', { style: 'font-size:0.75rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;' }, 'Chat History'),
-    el('button', {
-      type: 'button',
-      class: 'btn-new-chat-pill',
-      title: 'Start a fresh conversation',
-      style: 'background:#0d5d41;color:#ffffff;border:none;border-radius:999px;padding:4px 12px;font-size:0.74rem;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
-      onclick: startNewChat
-    }, [
-      el('span', { style: 'font-size:0.9rem;line-height:1;' }, '+'),
-      el('span', {}, 'New Chat')
-    ])
+    el('div', { class: 'chat-history-title-row', style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+      el('div', { class: 'chat-history-header-title' }, 'Chat History'),
+      closeHistoryBtn
+    ]),
+    searchWrap
   ]);
   rightPanel.appendChild(rightHeader);
 
@@ -14935,7 +15571,23 @@ async function viewAssistant(wrap) {
     const yestStr = yestDate.toDateString();
     const d7ago = Date.now() - 7 * 86400000;
 
-    const list = Array.isArray(sessions) ? sessions : [];
+    let list = Array.isArray(sessions) ? sessions : (allSessions || []);
+
+    if (currentChatSearchQuery) {
+      list = list.filter((s) => {
+        const titleMatch = (s.title || '').toLowerCase().includes(currentChatSearchQuery);
+        const lastMsgMatch = s.lastMessage && ((s.lastMessage.text || s.lastMessage.content || '')).toLowerCase().includes(currentChatSearchQuery);
+        return titleMatch || lastMsgMatch;
+      });
+
+      if (!list.length) {
+        historySection.appendChild(el('div', {
+          style: 'padding:24px 14px;text-align:center;color:#83978c;font-size:0.80rem;font-weight:600;'
+        }, 'No chats matching "' + currentChatSearchQuery + '"'));
+        return;
+      }
+    }
+
     const todayItems = [];
     const yestItems = [];
     const prev7Items = [];
@@ -14954,20 +15606,42 @@ async function viewAssistant(wrap) {
       }
     });
 
-    historySection.appendChild(renderDynamicGroup('Today', todayItems));
-    historySection.appendChild(renderDynamicGroup('Yesterday', yestItems));
-    historySection.appendChild(renderDynamicGroup('Previous 7 Days', prev7Items));
+    if (todayItems.length || !currentChatSearchQuery) {
+      historySection.appendChild(renderDynamicGroup('Today', todayItems));
+    }
+    if (yestItems.length || !currentChatSearchQuery) {
+      historySection.appendChild(renderDynamicGroup('Yesterday', yestItems));
+    }
+    if (prev7Items.length || !currentChatSearchQuery) {
+      historySection.appendChild(renderDynamicGroup('Previous 7 Days', prev7Items));
+    }
   }
+
+  searchInput.addEventListener('input', () => {
+    currentChatSearchQuery = searchInput.value.trim().toLowerCase();
+    clearBtn.style.display = currentChatSearchQuery ? 'inline-flex' : 'none';
+    refreshHistoryUI(allSessions);
+  });
+
+  clearBtn.onclick = () => {
+    searchInput.value = '';
+    currentChatSearchQuery = '';
+    clearBtn.style.display = 'none';
+    refreshHistoryUI(allSessions);
+    searchInput.focus();
+  };
 
   function renderDynamicGroup(title, items) {
     const group = el('div', { class: 'history-time-group' });
     let isCollapsed = false;
 
-    const header = el('div', { class: 'history-time-header', onclick: () => {
-      isCollapsed = !isCollapsed;
-      container.style.display = isCollapsed ? 'none' : 'flex';
-      arrow.textContent = isCollapsed ? '▶' : '▼';
-    } }, [
+    const header = el('div', {
+      class: 'history-time-header', onclick: () => {
+        isCollapsed = !isCollapsed;
+        container.style.display = isCollapsed ? 'none' : 'flex';
+        arrow.textContent = isCollapsed ? '▶' : '▼';
+      }
+    }, [
       el('span', {}, title),
       el('span', { class: 'history-group-arrow', style: 'font-size:0.65rem;' }, '▼')
     ]);
@@ -15114,99 +15788,32 @@ async function viewAssistant(wrap) {
     scrollBottom();
   }
 
-  function appendAssistantBubble(text, action, extraContent, tsStr) {
-    const timeDisplay = tsStr ? new Date(tsStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const row = el('div', { class: 'chat-row assistant' });
+  let typingEl = null;
+  let typingBubble = null;
+  let currentStreamTimer = null;
+
+  function showTyping() {
+    if (typingEl) return;
+    if (currentStreamTimer) {
+      clearInterval(currentStreamTimer);
+      currentStreamTimer = null;
+    }
+    typingEl = el('div', { class: 'chat-row assistant sv-typing-active' });
     const av = el('div', {
       class: 'chat-bot-avatar',
       html: '<img src="/assets/seevora-logo.png" alt="Seevora Voice" style="width:20px;height:20px;object-fit:contain;display:block;" />'
     });
     const body = el('div', { class: 'chat-bot-body' });
-
-    const bubble = el('div', { class: 'chat-bubble-assistant', html: formatMarkdown(text) });
-    body.appendChild(bubble);
-
-    if (extraContent) {
-      body.appendChild(extraContent);
-    }
-
-    if (action && action.type) {
-      if (action.type === 'open_modal') {
-        const modalFuncs = {
-          calendar: openCalendarModal,
-          whatsapp: openWhatsAppModal,
-          gmail: openGmailModal,
-          crm: openCrmModal,
-          fileReader: openFileReaderModal,
-          media: openMediaFilesModal
-        };
-        const targetFn = modalFuncs[action.modal] || modalFuncs[action.channel];
-        if (targetFn) {
-          const btn = el('button', {
-            class: 'btn btn-primary btn-sm',
-            style: 'margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:0.82rem;padding:8px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(47,138,99,0.3);cursor:pointer;',
-            onclick: () => targetFn()
-          }, action.buttonText || `Configure ${action.channel || 'Integration'} →`);
-          body.appendChild(btn);
-        }
-      }
-      const cls = action.type.replace(/_/g, '-');
-      const icons = {
-        'agent-created': 'Agent Created',
-        'agent-updated': 'Agent Updated',
-        'knowledge-added': 'Knowledge Added',
-        'test-chat': 'Test Chat',
-        'integration-connected': '✓ Connected',
-        'integration-disconnected': 'Disconnected'
-      };
-      if (icons[cls]) {
-        const badge = el('div', { class: `assistant-msg-action ${cls}` }, icons[cls]);
-        body.appendChild(badge);
-      }
-    }
-
-    // Feedback row (clean SVG icons, no emojis)
-    const feedback = el('div', { class: 'chat-feedback-row' }, [
-      el('button', { class: 'feedback-btn', onclick: () => doSendPrompt(text) }, [
-        el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' }),
-        el('span', {}, 'Retry')
-      ]),
-      el('button', { class: 'feedback-btn', onclick: () => toast('Thank you for your feedback!') }, [
-        el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' }),
-        el('span', {}, 'Helpful')
-      ]),
-      el('button', { class: 'feedback-btn', onclick: () => toast('Thank you, we will improve!') }, [
-        el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg>' }),
-        el('span', {}, 'Not helpful')
+    typingBubble = el('div', { class: 'chat-bubble-assistant sv-typing-bubble' }, [
+      el('div', { class: 'sv-typing-dots' }, [
+        el('span', { class: 'sv-dot' }),
+        el('span', { class: 'sv-dot' }),
+        el('span', { class: 'sv-dot' })
       ])
     ]);
-    body.appendChild(feedback);
-
-    const ts = el('div', { class: 'chat-ts' }, timeDisplay);
-    body.appendChild(ts);
-
-    row.appendChild(av);
-    row.appendChild(body);
-    messagesContainer.appendChild(row);
-    scrollBottom();
-  }
-
-  let typingEl = null;
-  function showTyping() {
-    if (typingEl) return;
-    typingEl = el('div', { class: 'chat-row assistant' }, [
-      el('div', {
-        class: 'chat-bot-avatar',
-        html: '<img src="/assets/seevora-logo.png" alt="Seevora Voice" style="width:20px;height:20px;object-fit:contain;display:block;" />'
-      }),
-      el('div', { class: 'chat-bot-body' }, [
-        el('div', { class: 'assistant-typing' }, [
-          el('span', { style: 'background:#181920;' }),
-          el('span', { style: 'background:#2f8a63;' }),
-          el('span', { style: 'background:#89cfab;' })
-        ])
-      ])
-    ]);
+    body.appendChild(typingBubble);
+    typingEl.appendChild(av);
+    typingEl.appendChild(body);
     messagesContainer.appendChild(typingEl);
     scrollBottom();
   }
@@ -15215,6 +15822,227 @@ async function viewAssistant(wrap) {
     if (typingEl) {
       typingEl.remove();
       typingEl = null;
+      typingBubble = null;
+    }
+  }
+
+  function appendAssistantBubble(text, action, extraContent, tsStr, stream = false) {
+    if (currentStreamTimer) {
+      clearInterval(currentStreamTimer);
+      currentStreamTimer = null;
+    }
+
+    const timeDisplay = tsStr ? new Date(tsStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let row = null;
+    let body = null;
+    let bubble = null;
+
+    if (typingEl && typingBubble) {
+      row = typingEl;
+      body = row.querySelector('.chat-bot-body');
+      bubble = typingBubble;
+      bubble.classList.remove('sv-typing-bubble');
+      bubble.innerHTML = '';
+      row.classList.remove('sv-typing-active');
+      typingEl = null;
+      typingBubble = null;
+    } else {
+      row = el('div', { class: 'chat-row assistant' });
+      const av = el('div', {
+        class: 'chat-bot-avatar',
+        html: '<img src="/assets/seevora-logo.png" alt="Seevora Voice" style="width:20px;height:20px;object-fit:contain;display:block;" />'
+      });
+      body = el('div', { class: 'chat-bot-body' });
+      bubble = el('div', { class: 'chat-bubble-assistant' });
+      body.appendChild(bubble);
+      row.appendChild(av);
+      row.appendChild(body);
+      messagesContainer.appendChild(row);
+    }
+
+    function appendExtras() {
+      if (extraContent) {
+        body.appendChild(extraContent);
+      }
+
+      if (action && action.type) {
+        if (action.type === 'open_modal') {
+          const modalFuncs = {
+            calendar: openCalendarModal,
+            whatsapp: openWhatsAppModal,
+            gmail: openGmailModal,
+            crm: openCrmModal,
+            fileReader: openFileReaderModal,
+            media: openMediaFilesModal
+          };
+          const targetFn = modalFuncs[action.modal] || modalFuncs[action.channel];
+          if (targetFn) {
+            const btn = el('button', {
+              class: 'btn btn-primary btn-sm',
+              style: 'margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:0.82rem;padding:8px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(47,138,99,0.3);cursor:pointer;',
+              onclick: () => targetFn()
+            }, action.buttonText || `Configure ${action.channel || 'Integration'} →`);
+            body.appendChild(btn);
+          }
+        }
+        const cls = action.type.replace(/_/g, '-');
+        const icons = {
+          'agent-created': 'Agent Created',
+          'agent-updated': 'Agent Updated',
+          'knowledge-added': 'Knowledge Added',
+          'test-chat': 'Test Chat',
+          'integration-connected': '✓ Connected',
+          'integration-disconnected': 'Disconnected'
+        };
+        if (icons[cls]) {
+          const badge = el('div', { class: `assistant-msg-action ${cls}` }, icons[cls]);
+          body.appendChild(badge);
+        }
+
+        if (action.type === 'file_created') {
+          const fileCard = el('div', { class: 'sv-chat-file-card' }, [
+            el('div', { class: 'sv-chat-file-info' }, [
+              el('span', { class: 'sv-chat-file-icon', html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' }),
+              el('div', { style: 'display:flex;flex-direction:column;gap:1px;' }, [
+                el('span', { class: 'sv-chat-file-name' }, action.fileName || 'generated_file.csv'),
+                el('span', { class: 'sv-chat-file-meta' }, (action.fileType || 'FILE').toUpperCase() + (action.sizeBytes ? ' • ' + Math.ceil(action.sizeBytes / 1024) + ' KB' : ''))
+              ])
+            ]),
+            el('button', {
+              type: 'button',
+              class: 'sv-chat-file-dl-btn',
+              onclick: () => {
+                if (action.dataUrl) {
+                  try {
+                    const parts = action.dataUrl.split(',');
+                    const mimeMatch = parts[0].match(/:(.*?);/);
+                    const mime = mimeMatch ? mimeMatch[1] : (action.mime || 'application/octet-stream');
+                    const bstr = atob(parts[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while (n--) {
+                      u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    const blob = new Blob([u8arr], { type: mime });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = action.fileName || 'file';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    }, 500);
+                  } catch (_) {
+                    const a = document.createElement('a');
+                    a.href = action.dataUrl;
+                    a.download = action.fileName || 'file';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  }
+                  toast('Downloading ' + (action.fileName || 'file') + '...', 'ok');
+                }
+              }
+            }, [
+              el('span', { html: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' }),
+              el('span', {}, 'Download File')
+            ])
+          ]);
+          body.appendChild(fileCard);
+        }
+
+        if (action.type === 'call_placed') {
+          const callCard = el('div', { class: 'sv-chat-call-card' }, [
+            el('div', { class: 'sv-chat-call-badge' }, [
+              el('span', { class: 'sv-live-dot', style: 'width:7px;height:7px;background:#0d5d41;border-radius:50%;display:inline-block;' }),
+              el('span', {}, 'Outbound Call Initiated')
+            ]),
+            el('div', { class: 'sv-chat-call-details' }, [
+              el('span', { style: 'font-weight:700;color:#14221c;' }, (action.callerName ? action.callerName + ' ' : '') + '(+91 ' + (action.number || '') + ')'),
+              el('span', { style: 'color:#5d7468;font-size:11px;' }, 'via dedicated line ' + (action.line || '+91 80715 82519') + (action.agentName ? ' • ' + action.agentName : ''))
+            ])
+          ]);
+          body.appendChild(callCard);
+        }
+
+        if (Array.isArray(action.suggestions) && action.suggestions.length) {
+          const chipsWrap = el('div', { class: 'sv-chat-chips-wrap' },
+            action.suggestions.map(s => el('button', {
+              type: 'button',
+              class: 'sv-chat-chip',
+              onclick: () => doSendPrompt(s)
+            }, s))
+          );
+          body.appendChild(chipsWrap);
+        }
+      }
+
+      // Feedback row (clean SVG icons, no emojis)
+      const feedback = el('div', { class: 'chat-feedback-row' }, [
+        el('button', { class: 'feedback-btn', onclick: () => doSendPrompt(text) }, [
+          el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' }),
+          el('span', {}, 'Retry')
+        ]),
+        el('button', { class: 'feedback-btn', onclick: () => toast('Thank you for your feedback!') }, [
+          el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' }),
+          el('span', {}, 'Helpful')
+        ]),
+        el('button', { class: 'feedback-btn', onclick: () => toast('Thank you, we will improve!') }, [
+          el('span', { html: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle;"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg>' }),
+          el('span', {}, 'Not helpful')
+        ])
+      ]);
+      body.appendChild(feedback);
+
+      const ts = el('div', { class: 'chat-ts' }, timeDisplay);
+      body.appendChild(ts);
+      scrollBottom();
+    }
+
+    if (stream && text && text.length > 0) {
+      let currentIdx = 0;
+      const totalLen = text.length;
+      // Adaptive typewriter chunk size for snappy response
+      const chunkSize = totalLen < 100 ? 2 : (totalLen < 350 ? 4 : (totalLen < 800 ? 7 : 12));
+      const intervalMs = 18;
+
+      const cursor = el('span', { class: 'sv-streaming-cursor' });
+      bubble.appendChild(cursor);
+
+      bubble.onclick = () => {
+        if (currentStreamTimer) {
+          clearInterval(currentStreamTimer);
+          currentStreamTimer = null;
+          cursor.remove();
+          bubble.innerHTML = formatMarkdown(text);
+          bubble.onclick = null;
+          appendExtras();
+        }
+      };
+
+      currentStreamTimer = setInterval(() => {
+        currentIdx = Math.min(totalLen, currentIdx + chunkSize);
+        const partialText = text.slice(0, currentIdx);
+        bubble.innerHTML = formatMarkdown(partialText);
+        bubble.appendChild(cursor);
+        scrollBottom();
+
+        if (currentIdx >= totalLen) {
+          clearInterval(currentStreamTimer);
+          currentStreamTimer = null;
+          cursor.remove();
+          bubble.innerHTML = formatMarkdown(text);
+          bubble.onclick = null;
+          appendExtras();
+        }
+      }, intervalMs);
+    } else {
+      bubble.innerHTML = formatMarkdown(text);
+      appendExtras();
+      scrollBottom();
     }
   }
 
@@ -15227,8 +16055,9 @@ async function viewAssistant(wrap) {
   function formatMarkdown(text) {
     return String(text || '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/```([a-z0-9]*)\n?([\s\S]*?)```/gi, '<pre style="background:rgba(13,93,65,0.06);border:1px solid rgba(13,93,65,0.15);padding:10px 14px;border-radius:10px;font-family:monospace;font-size:0.84em;overflow-x:auto;margin:8px 0;color:#14221c;"><code>$2</code></pre>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:0.85em;color:#0f172a;">$1</code>');
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(13,93,65,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:0.85em;color:#0d5d41;font-weight:600;">$1</code>');
   }
 
   // Voice note pill component (clean SVG player)
@@ -15254,13 +16083,15 @@ async function viewAssistant(wrap) {
       el('span', { class: 'wave-bar', style: 'height:9px;animation-delay:0.42s' })
     ]);
 
-    const pill = el('div', { class: 'chat-voice-note', onclick: () => {
-      isPlaying = !isPlaying;
-      playBtn.innerHTML = isPlaying
-        ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
-        : '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-      toast(isPlaying ? 'Playing simulated voice stream...' : 'Voice stream paused');
-    } }, [playBtn, wave, durLabel]);
+    const pill = el('div', {
+      class: 'chat-voice-note', onclick: () => {
+        isPlaying = !isPlaying;
+        playBtn.innerHTML = isPlaying
+          ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+          : '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        toast(isPlaying ? 'Playing simulated voice stream...' : 'Voice stream paused');
+      }
+    }, [playBtn, wave, durLabel]);
 
     return pill;
   }
@@ -15354,7 +16185,6 @@ async function viewAssistant(wrap) {
       if (token) payload.confirmToken = token;
 
       const data = await api('/api/assistant/chat', { method: 'POST', body: payload });
-      hideTyping();
 
       if (data.sessionId) {
         currentSessionId = data.sessionId;
@@ -15367,7 +16197,7 @@ async function viewAssistant(wrap) {
         extra = createVoiceNotePill('0:35');
       }
 
-      appendAssistantBubble(data.reply || '', data.action, extra);
+      appendAssistantBubble(data.reply || '', data.action, extra, null, true);
       cachedMessages.push({ role: 'assistant', text: data.reply || '', intent: data.intent, action: data.action, ts: new Date().toISOString() });
 
       if (data.needsConfirm && data.confirmToken) {
@@ -15380,7 +16210,15 @@ async function viewAssistant(wrap) {
 
       if (data.action) {
         if (data.action.type === 'agent_created' || data.action.type === 'agent_updated') {
+          if (data.action.agent) {
+            State.agents = State.agents || [];
+            const idx = State.agents.findIndex((a) => a.id === data.action.agent.id);
+            if (idx >= 0) State.agents[idx] = data.action.agent;
+            else State.agents.unshift(data.action.agent);
+            State.loaded.agents = true;
+          }
           document.dispatchEvent(new CustomEvent('assistant:agentChanged', { detail: data.action }));
+          syncAgentsState(data.action);
         }
         if (data.action.type === 'integration_connected' || data.action.type === 'integration_disconnected') {
           loadIntegrationsData();
@@ -15540,7 +16378,7 @@ async function viewAssistant(wrap) {
         currentIntegrations = res.integrations;
         updateIntegrationsUI(currentIntegrations);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Initial load
@@ -15641,7 +16479,7 @@ async function viewAssistant(wrap) {
           ])
         ]),
         isConn ? el('div', { style: 'margin-top:12px;padding-top:10px;border-top:1px solid rgba(47,138,99,0.25);display:flex;align-items:center;justify-content:space-between;' }, [
-          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sync: ${cal.lastSync ? new Date(cal.lastSync).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : 'Today'} · 16 Slots Synced`),
+          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sync: ${cal.lastSync ? new Date(cal.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'} · 16 Slots Synced`),
           el('button', {
             type: 'button',
             class: 'btn-conn-sync',
@@ -15953,7 +16791,7 @@ async function viewAssistant(wrap) {
           ])
         ]),
         isConn ? el('div', { style: 'margin-top:12px;padding-top:10px;border-top:1px solid rgba(47,138,99,0.25);display:flex;align-items:center;justify-content:space-between;' }, [
-          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sent: ${gm.lastDispatchedAt ? new Date(gm.lastDispatchedAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : 'Ready'}`),
+          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sent: ${gm.lastDispatchedAt ? new Date(gm.lastDispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ready'}`),
           el('button', {
             type: 'button',
             class: 'btn-conn-sync',
@@ -16047,7 +16885,7 @@ async function viewAssistant(wrap) {
           ])
         ]),
         isConn ? el('div', { style: 'margin-top:12px;padding-top:10px;border-top:1px solid rgba(47,138,99,0.25);display:flex;align-items:center;justify-content:space-between;' }, [
-          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sync: ${crm.lastSync ? new Date(crm.lastSync).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : 'Ready'} · Leads Synced: 8`),
+          el('span', { style: 'font-size:0.78rem;color:#5d7468;' }, `Last Sync: ${crm.lastSync ? new Date(crm.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ready'} · Leads Synced: 8`),
           el('button', {
             type: 'button',
             class: 'btn-conn-sync',
@@ -16386,7 +17224,7 @@ async function viewAssistant(wrap) {
       body,
       confirmText: 'Close',
       confirmKind: 'primary',
-      onConfirm: async () => {}
+      onConfirm: async () => { }
     });
 
     setTimeout(() => searchInput.focus(), 100);
@@ -16480,7 +17318,7 @@ async function viewAssistant(wrap) {
       body,
       confirmText: 'Cancel',
       confirmKind: 'primary',
-      onConfirm: async () => {}
+      onConfirm: async () => { }
     });
   }
 
@@ -16537,7 +17375,7 @@ async function viewAssistant(wrap) {
       body,
       confirmText: 'Done',
       confirmKind: 'primary',
-      onConfirm: async () => {}
+      onConfirm: async () => { }
     });
   }
 
@@ -16545,7 +17383,7 @@ async function viewAssistant(wrap) {
 }
 
 // Global hook so other sections can open assistant
-window.openAssistant = function(prompt) {
+window.openAssistant = function (prompt) {
   goto('assistant');
   setTimeout(() => {
     const input = document.querySelector('.chat-text-input');
