@@ -16260,3 +16260,66 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   color: #0d5d41 !important;
   font-weight: 750 !important;
 }
+
+
+/* ==========================================================================
+   Universal View Headers (Exact Manage Clients Typography, Zero Descriptions)
+   Matches Manage Clients clean 26px bold heading without description
+   ========================================================================== */
+.view-head,
+.aria-clients-view .view-head,
+.aria-features-view .view-head,
+.aria-workflows-view .view-head,
+.aria-agents-view .view-head,
+.aria-recordings-view .view-head,
+.aria-inbound-view .view-head,
+.aria-campaigns-view .view-head,
+.aria-pipeline-view .view-head,
+.aria-invoices-view .view-head,
+.aria-billing-view .view-head,
+.aria-settings-view .view-head,
+.aria-teams-view .view-head,
+.aria-support-view .view-head {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 0 18px 0 !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.view-head h2,
+.view-head h1,
+.aria-clients-view .view-head h2,
+.aria-features-view .view-head h2,
+.aria-workflows-view .view-head h2,
+.aria-agents-view .view-head h2,
+.aria-recordings-view .view-head h2,
+.aria-inbound-view .view-head h2,
+.aria-campaigns-view .view-head h2,
+.aria-pipeline-view .view-head h2,
+.aria-invoices-view .view-head h2,
+.aria-billing-view .view-head h2,
+.aria-settings-view .view-head h2,
+.aria-teams-view .view-head h2,
+.aria-support-view .view-head h2 {
+  font-family: var(--font-heading, "Manrope", "DM Sans", sans-serif) !important;
+  font-size: 26px !important;
+  font-weight: 750 !important;
+  color: #14221c !important;
+  letter-spacing: -0.02em !important;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+}
+
+/* Hide descriptions, subtitles, kickers across all view headers as requested ("without description") */
+.view-head p,
+.view-head .view-head-copy p,
+.view-head-copy p,
+.view-head .section-kicker,
+.view-head .aria-section-kicker,
+.view-head-copy .aria-section-kicker,
+.aria-section-kicker {
+  display: none !important;
+}

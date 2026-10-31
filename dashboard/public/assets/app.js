@@ -4053,13 +4053,8 @@ async function viewAgents(root) {
 }
 
 function renderAgentsListPage(wrap) {
-  // Kicker & View Header
-  const head = viewHead('All AI Voice Agents', 'Configure neural voice personas, assign dedicated or shared DID lines, and test conversations live in browser.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Voice Personas & Telephony Intelligence');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  // View Header (Clean Manage Clients Typography)
+  const head = viewHead('All AI Voice Agents');
 
   // Header Actions: Sync from Dograh + Create Voice Agent
   const syncDograhBtn = el('button', {
@@ -6144,7 +6139,7 @@ async function viewTalk(root, customAgent) {
   let currentGreeting = activeAgent.greeting || 'Hi, how can I help you today?';
 
   if (!customAgent) {
-    root.appendChild(viewHead('Talk to your agent', 'Live interactive voice conversation. Speak naturally with your microphone or test by reading from your generated script.'));
+    root.appendChild(viewHead('Talk to Agent'));
   } else {
     root.appendChild(el('div', { style: 'margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;' }, [
       el('div', {}, [
@@ -7447,12 +7442,7 @@ async function viewRecordings(root) {
   const wrap = el('div', { class: 'aria-recordings-view' });
   root.appendChild(wrap);
 
-  const head = viewHead('Call Recordings & Transcripts', 'Review every inbound and outbound voice call, complete with full conversational transcripts, audio replay, and caller details.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony Archive & Audit');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  const head = viewHead('Call Recordings');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     style: 'border-radius:999px;font-size:0.80rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;'
@@ -7770,7 +7760,7 @@ async function viewInbound(root) {
 
   const activeDid = (State.telephony && (State.telephony.did || (State.telephony.dids && State.telephony.dids[0]))) || '+91 80715 82519';
 
-  const head = viewHead('Inbound Desk & Voice Receptionist', 'Configure real-time telephony answering rules, agent assignments, 24/7 operating schedules, and monitor incoming business calls.');
+  const head = viewHead('Inbound Calls');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     onclick: async () => {
@@ -8233,7 +8223,7 @@ async function viewCampaigns(root) {
   root.appendChild(wrap);
 
   /* ---- Page header ---- */
-  const head = viewHead('Outbound Calling & Campaigns', 'Place instant direct AI phone calls, monitor outbound conversation logs, or launch automated bulk calling campaigns.');
+  const head = viewHead('Outbound Calls');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     onclick: async () => {
@@ -9546,12 +9536,7 @@ function buildInvoiceCreatePage(onBack) {
 
 function renderInvoicesListPage(wrap) {
   const canManage = isPlatformUserClient(State.me.user);
-  const head = viewHead('Invoices & Financial Register', canManage ? 'Create, issue, and reconcile client invoices, collection statuses, and payment records.' : 'Review invoices issued to this workspace. Agency operators control status and collection records.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Agency Financial Audit');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  const head = viewHead('Invoices');
   if (canManage) {
     head.appendChild(el('div', { class: 'view-actions' }, [
       el('button', { class: 'sv-btn-add-client', onclick: openInvoiceComposer }, [
@@ -9845,12 +9830,7 @@ async function viewBilling(root) {
   const wrap = el('div', { class: 'aria-billing-view' });
   root.appendChild(wrap);
 
-  const head = viewHead('Platform Billing & Quotas', 'Manage subscriptions, prepaid telephony call balances, and active workspace usage quotas.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Subscription & Usage Tiers');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  const head = viewHead('Platform Billing');
   head.appendChild(el('div', { class: 'view-actions' }, [
     el('a', {
       href: 'tel:+918982200895',
@@ -10415,13 +10395,8 @@ async function viewSupport(root) {
   const wrap = el('div', { class: 'aria-support-view aria-clients-view', style: 'width:100%;' });
   root.appendChild(wrap);
 
-  // Top Header
-  const head = viewHead('Support & Help Desk', 'Direct workspace support, ticket tracking, and multi-turn resolution threads.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Support Operations');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  // Top Header (Clean Manage Clients Typography)
+  const head = viewHead('Support & Help Desk');
   head.appendChild(el('div', { class: 'view-actions' }, [
     el('a', {
       href: 'tel:+918982200895',
@@ -10802,12 +10777,7 @@ async function viewFeatureControls(root) {
     return;
   }
 
-  const head = viewHead('Feature Controls', 'Audit, enable, and customize platform capabilities, telephony channels, and AI intelligence per workspace.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Platform Provisioning & Guardrails');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  const head = viewHead('Feature Controls');
   root.appendChild(head);
 
   // Flat KPI Metrics Row (Zero cards, transparent canvas)
@@ -11074,12 +11044,7 @@ async function viewFeatureControls(root) {
 // ============================================================================
 async function viewWorkflows(root) {
   root.classList.add('aria-workflows-view');
-  const head = viewHead('Client Workflows', 'Design, review, and provision autonomous voice call triage workflows across workspaces.');
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Autonomous Voice Logic');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  const head = viewHead('Client Workflows');
   root.appendChild(head);
 
   // Flat KPI Metrics Row
@@ -12218,15 +12183,9 @@ async function viewTeams(root) {
   const u = (State.me && State.me.user) || {};
   const canManageTeam = ['super_admin', 'admin', 'owner', 'client', 'manager'].includes(u.role);
 
-  const head = el('div', { class: 'view-head', style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:22px;' }, [
-    el('div', { class: 'view-head-copy' }, [
-      el('span', { class: 'section-kicker', style: 'color:#0d5d41;font-weight:700;letter-spacing:0.06em;font-size:11px;text-transform:uppercase;display:block;margin-bottom:4px;' }, 'Workspace Teams & Human Escalation'),
-      el('h2', { style: 'margin:0;font-family:Manrope,sans-serif;font-weight:800;color:#14221c;' }, 'Teams & Agent Assignment'),
-      el('p', { style: 'margin:4px 0 0 0;font-size:0.88rem;color:#2c4238;font-weight:500;' },
-        'Add employees, assign specific AI Voice Agents on your shared business phone number, and auto-transfer calls to employees when an agent gets stuck.'
-      )
-    ]),
-    canManageTeam ? el('div', { style: 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;' }, [
+  const head = viewHead('Teams & Agent Assignment');
+  if (canManageTeam) {
+    head.appendChild(el('div', { class: 'view-actions flex gap-2 items-center' }, [
       el('button', {
         class: 'btn btn-ghost',
         style: 'border:1px solid rgba(13,93,65,0.28);color:#0d5d41;font-weight:700;border-radius:999px;padding:9px 18px;',
@@ -12238,8 +12197,8 @@ async function viewTeams(root) {
         style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 20px;',
         onclick: () => openTeamMemberModal(null, teamState, reloadTeams)
       }, '+ Add Employee')
-    ]) : null
-  ]);
+    ]));
+  }
   root.appendChild(head);
 
   const contentWrap = el('div', { class: 'teams-workspace-wrap' }, skeleton('sk-card', 3));
@@ -12707,16 +12666,8 @@ async function viewSettings(root) {
   const u = (State.me && State.me.user) || {};
   const isAdm = ['super_admin', 'admin'].includes(u.role);
 
-  // Top View Header
-  const head = viewHead(
-    'Settings & Workspace Controls',
-    'Configure your business workspace identity, VoBiz virtual phone lines, Dograh AI dialog orchestration, and real-time CRM integrations.'
-  );
-  const headTitle = head.querySelector('h2');
-  if (headTitle) {
-    const kicker = el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Administration & Configuration');
-    headTitle.parentNode.insertBefore(kicker, headTitle);
-  }
+  // Top View Header (Clean Manage Clients Typography)
+  const head = viewHead('Settings');
   wrap.appendChild(head);
 
   // Read URL query tab
@@ -15290,7 +15241,7 @@ function provCard(p) {
 
 /* ---- 2. CRM Leads & Sales Pipeline (Kanban) ---- */
 async function viewCrmPipeline(root) {
-  root.appendChild(viewHead('Leads & Sales Pipeline', 'Kanban lead stages, deal values, and direct voice dialer integration.'));
+  root.appendChild(viewHead('Leads & Pipeline'));
 
   const syncLeadBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
