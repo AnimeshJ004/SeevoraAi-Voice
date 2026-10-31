@@ -16323,3 +16323,61 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .aria-section-kicker {
   display: none !important;
 }
+
+/* ==========================================================================
+   Manage Clients Search Bar with Icon & Underline Styling
+   ========================================================================== */
+.admin-search-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 0 !important;
+  padding: 6px 2px 8px 2px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.admin-search-wrap:focus-within {
+  border-bottom-color: #0d5d41 !important;
+}
+
+.admin-search-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #5d7468 !important;
+  flex-shrink: 0 !important;
+  transition: color 0.2s ease !important;
+}
+
+.admin-search-wrap:focus-within .admin-search-icon {
+  color: #0d5d41 !important;
+}
+
+.admin-search-wrap .admin-search-input,
+.admin-search-wrap input.admin-search-input {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #14221c !important;
+  box-shadow: none !important;
+  outline: none !important;
+  flex: 1 !important;
+  width: 100% !important;
+}

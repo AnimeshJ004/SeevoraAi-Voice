@@ -11447,7 +11447,12 @@ async function viewAdmin(root) {
   const carrierHost = el('div', { class: 'aria-carrier-host' }, skeleton('sk-card', 1));
   const watchdogHost = el('div', { class: 'aria-watchdog-host admin-table' }, skeleton('sk-card', 1));
 
-  // Search & Filter Bar for Client Workspaces (Single top Add Client button in header, clean input without emoji)
+  // Search & Filter Bar for Client Workspaces (With sleek Scandinavian Sage search icon & line style)
+  const searchIcon = el('span', {
+    class: 'admin-search-icon',
+    html: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+  });
+
   const searchInput = el('input', {
     class: 'admin-search-input',
     placeholder: 'Search client by name, email, ID or slug...',
@@ -11463,7 +11468,7 @@ async function viewAdmin(root) {
   });
 
   const searchFilterBar = el('div', { class: 'admin-workspaces-bar' }, [
-    el('div', { class: 'admin-search-wrap' }, [searchInput])
+    el('div', { class: 'admin-search-wrap' }, [searchIcon, searchInput])
   ]);
 
   // Tab Panels (Only active tab is displayed)
