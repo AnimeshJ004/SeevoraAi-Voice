@@ -30,6 +30,8 @@ const INTENTS = Object.freeze({
   ASK_REPORT: 'ask_report',
   TEST_CHAT: 'test_chat',
   CONFIRM: 'confirm_pending',
+  MAKE_CALL: 'make_call',
+  CREATE_FILE: 'create_file',
   GENERAL: 'general_chat',
 });
 
@@ -108,8 +110,31 @@ function classifyIntent(text, hasPendingToken) {
     return INTENTS.CRM_CREATE_LEAD;
   }
 
+  // Place Outbound Telephony Call via Chat
+  if (!isCallingCampaign && (
+      /\b(call|dial|phone|ring)\b.{0,30}\b(lagao|karo|kar\s*do|bhejo|laga\s*do|connect|place|dial)\b/i.test(text) ||
+      /\b(lagao|karo|kar\s*do|bhejo|laga\s*do|place|dial)\b.{0,30}\b(call|phone)\b/i.test(text) ||
+      /\b(?:call|dial)\s+(?:to\s+)?(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/i.test(text) ||
+      /\b(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b.{0,20}\b(ko|pe|par)\b.{0,20}\b(call|dial)\b/i.test(text) ||
+      /\b(call|dial)\s+[a-zA-Z]+\s+(?:on|at|pe|par)\b/i.test(text)
+  )) {
+    return INTENTS.MAKE_CALL;
+  }
+
+  // Create / Generate / Convert File (PDF, Word/DOC/DOCX, Excel/XLSX, CSV, JSON, TXT, HTML)
+  if (
+    /\b(create|generate|make|banao|bana\s*do|export|download|chahiye|chahihye|do|convert|bhejo)\b.{0,40}\b(file|csv|json|pdf|excel|xlsx|txt|html|spreadsheet|report\s*file|word|docx?|doc)\b/i.test(text) ||
+    /\b(file|csv|json|pdf|excel|xlsx|txt|html|spreadsheet|word|docx?|doc)\b.{0,40}\b(create|generate|make|banao|bana\s*do|export|download|chahiye|chahihye|do|convert|format)\b/i.test(text) ||
+    /\b(?:now\s+in|in|same\s+in|convert\s+(?:this\s+)?to|ab|ise|isko|give\s+(?:it\s+)?in|make\s+it\s+a)\s+(?:a\s+)?(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\b/i.test(text) ||
+    /\b(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\s*(?:format|file)\b/i.test(text) ||
+    /\b(csv|json|excel|xlsx|pdf|doc|docx|word)\s*(format\s*(?:me|mein|mai|chaahiye|chahiye|do|please)?|file)\b/i.test(text)
+  ) {
+    return INTENTS.CREATE_FILE;
+  }
+
   // Train / Build Voice Agent (Interactive AI Voice Agent Training)
-  if (/\b(train|sikhao|banana|banao)\b.{0,40}\b(agent|bot|receptionist|voice|ai)\b/i.test(text) ||
+  if (/\b(agent|bot|receptionist|voice|ai)\b.{0,40}\b(create|creat|build|make|train|banao|banana|setup|chahiye|karna\s*hai)\b/i.test(text) ||
+      /\b(train|sikhao|banana|banao)\b.{0,40}\b(agent|bot|receptionist|voice|ai)\b/i.test(text) ||
       /\b(agent|bot|receptionist|voice)\b.{0,40}\b(train|banao|banana)\b/i.test(text) ||
       /\b(train|build|create|make)\s+(?:an?\s+)?(?:ai\s+)?(?:voice\s+)?agent\b/i.test(text) ||
       /\b(?:voice\s+agent)\s+(?:for|ke\s+liye)\b/i.test(text) ||
@@ -128,9 +153,17 @@ function classifyIntent(text, hasPendingToken) {
   if (/\b(edit|change|update|modify|rename|fix|adjust|improve|rewrite|revise)\b.{0,50}\b(agent|persona|greeting|prompt|script|voice|name|tone|instruction)\b/i.test(text)) return INTENTS.EDIT_AGENT;
   if (/\b(agent|persona|greeting|prompt|script)\b.{0,40}\b(should|must|needs to|has to)\b/i.test(text)) return INTENTS.EDIT_AGENT;
 
-  // Add knowledge
-  if (/\b(add|upload|attach|give|teach|include)\b.{0,40}\b(knowledge|faq|info|information|document|pdf|file|data|text|url|link|webpage)\b/i.test(text)) return INTENTS.ADD_KNOWLEDGE;
-  if (/\b(the agent|it|he|she)\b.{0,30}\b(should know|needs to know|must know|can answer)\b/i.test(text)) return INTENTS.ADD_KNOWLEDGE;
+  // Disqualify queries where the user is asking FOR information, explanation, brief, or summary
+  const isQueryAskingForInfo = /\b(give\s+me|tell\s+me|explain|explanation|show\s+me|what\s+is|what\s+are|what\s+type|can\s+you|describe|summarize|summary|breakdown|brief|overview|batao|samjhao|kya\s+hai|kuch\s+aur)\b/i.test(text);
+
+  // Add knowledge to an agent's knowledge base (strict: only when explicitly adding to agent/knowledge base)
+  if (!isQueryAskingForInfo) {
+    if (/\b(add|upload|save|insert|daalo|store)\b.{0,30}\b(to\s+(?:the\s+)?knowledge\s*base|to\s+(?:the\s+)?agent|as\s+(?:a\s+)?faq|knowledge\s*base\s*(?:mein|me))\b/i.test(text) ||
+        /\b(teach|train)\b.{0,30}\b(the\s+agent|ria|bot|assistant)\b.{0,30}\b(that|about|to know)\b/i.test(text) ||
+        /\b(the agent|it|he|she)\b.{0,30}\b(should know|needs to know|must know|can answer)\b/i.test(text)) {
+      return INTENTS.ADD_KNOWLEDGE;
+    }
+  }
 
   // Analytics / reports
   if (/\b(how many|count|total|show me|tell me|report|analytics|stats|statistics|calls|spend|cost|revenue|this week|last week|last month|today|yesterday|monthly|daily)\b/i.test(text)) return INTENTS.ASK_REPORT;
@@ -145,6 +178,7 @@ function classifyIntent(text, hasPendingToken) {
 
 // ---- thread helpers -------------------------------------------------------
 function getOrCreateThread(db, tenantId, userId) {
+  if (!Array.isArray(db.assistantThreads)) db.assistantThreads = [];
   let thread = db.assistantThreads.find((t) => t.tenantId === tenantId && t.userId === userId);
   if (!thread) {
     thread = { id: genId('atr_'), tenantId, userId, messages: [], updatedAt: new Date().toISOString() };
@@ -155,6 +189,7 @@ function getOrCreateThread(db, tenantId, userId) {
 
 function appendToThread(db, tenantId, userId, role, text, meta = {}) {
   const thread = getOrCreateThread(db, tenantId, userId);
+  if (!Array.isArray(thread.messages)) thread.messages = [];
   thread.messages.push({ role, text, ...meta, ts: new Date().toISOString() });
   // Trim to most recent THREAD_MAX_MSGS to keep memory bounded
   if (thread.messages.length > THREAD_MAX_MSGS) {
@@ -165,6 +200,7 @@ function appendToThread(db, tenantId, userId, role, text, meta = {}) {
 }
 
 function getThread(db, tenantId, userId) {
+  if (!Array.isArray(db.assistantThreads)) db.assistantThreads = [];
   return db.assistantThreads.find((t) => t.tenantId === tenantId && t.userId === userId) || null;
 }
 
@@ -348,6 +384,7 @@ function walletHasCredit(db, tenantId) {
 
 // ---- confirmation tokens (AS-09) -----------------------------------------
 function createConfirmToken(db, tenantId, userId, intent, payload, previewText) {
+  if (!Array.isArray(db.pendingConfirmations)) db.pendingConfirmations = [];
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = Date.now() + CONFIRM_TTL_MS;
   db.pendingConfirmations.push({ token, tenantId, userId, intent, payload, preview: previewText, expiresAt });
@@ -355,6 +392,7 @@ function createConfirmToken(db, tenantId, userId, intent, payload, previewText) 
 }
 
 function consumeConfirmToken(db, token, tenantId, userId) {
+  if (!Array.isArray(db.pendingConfirmations)) db.pendingConfirmations = [];
   const idx = db.pendingConfirmations.findIndex(
     (c) => c.token === token && c.tenantId === tenantId && c.userId === userId
   );
@@ -368,6 +406,7 @@ function consumeConfirmToken(db, token, tenantId, userId) {
 // housekeep expired confirmations on each assistant call
 function pruneConfirmations(db) {
   const now = Date.now();
+  if (!Array.isArray(db.pendingConfirmations)) db.pendingConfirmations = [];
   db.pendingConfirmations = db.pendingConfirmations.filter((c) => c.expiresAt > now);
 }
 
@@ -430,11 +469,42 @@ function buildReportContext(db, tenantId) {
 }
 
 // ---- Exported surface ----------------------------------------------------
+
+function detectUserLanguage(text) {
+  if (!text || typeof text !== 'string') return 'English';
+  // Check for Devanagari script (Hindi)
+  if (/[\u0900-\u097F]/.test(text)) return 'Hindi';
+
+  const lower = text.toLowerCase();
+  const hindiTokens = [
+    'mera', 'meri', 'mere', 'naam', 'kya', 'hai', 'hain', 'ho', 'kaise', 'batao', 'bolo',
+    'karti', 'karta', 'karein', 'karo', 'kardo', 'kar do', 'karvana', 'karwao', 'bana', 'banao',
+    'banana', 'aap', 'aapka', 'aapko', 'hum', 'humein', 'haan', 'haanji', 'nahi', 'chahiye',
+    'baare', 'mein', 'me', 'kitna', 'kon', 'kaun', 'acha', 'accha', 'theek', 'namaste', 'shukriya',
+    'kripya', 'ki', 'ke', 'ko', 'se', 'bhi', 'kuch', 'yeh', 'ye', 'woh', 'wo', 'pe', 'par', 'pai',
+    'bhej', 'bhejo', 'bhejdo', 'bhej do', 'lagao', 'lagado', 'laga do', 'daalo', 'sikhao', 'karna'
+  ];
+
+  const words = lower.split(/[^a-z0-9]+/);
+  let hindiScore = 0;
+  for (const w of words) {
+    if (hindiTokens.includes(w)) hindiScore++;
+  }
+
+  // If at least 2 hindi tokens, or 1 token in short message (<= 6 words), classify as Hinglish
+  if (hindiScore >= 2 || (hindiScore >= 1 && words.length <= 6)) {
+    return 'Hinglish';
+  }
+
+  return 'English';
+}
+
 module.exports = {
   INTENTS,
   CHAT_DAILY_LIMIT,
   CREDIT_COST_PAISE,
   classifyIntent,
+  detectUserLanguage,
   getThread,
   getOrCreateThread,
   appendToThread,

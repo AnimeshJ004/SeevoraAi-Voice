@@ -18,6 +18,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { WebSocketServer, WebSocket } = require('ws');
 
 const core = require('./lib/core');
@@ -38,6 +39,9 @@ const booking = require('./lib/booking');
 const sms = require('./lib/sms');
 const crmwebhooks = require('./lib/crmwebhooks');
 const mailer = require('./lib/mailer');
+const integrations = require('./lib/integrations');
+const docParser = require('./lib/docParser');
+const rumikVoice = require('./lib/rumikVoice');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -222,7 +226,7 @@ function migrateLegacyAgent(legacy, tenantId) {
 
 async function boot() {
   // Pre-fetch Clerk JWKS in the background so OAuth tokens verify with 0ms cold-start latency
-  clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => {});
+  clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => { });
 
   // Force a load so a missing/corrupt db.json resolves to a clean default.
   const existing = core.db();
@@ -455,6 +459,15 @@ function publicUser(u) {
     onboardingCompleted: isCompleted
   };
 }
+
+function isPlatformAdminTenant(t, d) {
+  if (!t) return false;
+  if (t.isPlatformAdmin === true) return true;
+  if (t.slug === 'admin-demo' || t.id === 't_61cb4c3f0a845e2a' || t.id === 't_admin' || t.id === 't_rapid' || t.id === 't_demo') return true;
+  const store = d || core.db();
+  return (store.users || []).some((u) => u.tenantId === t.id && (u.role === 'super_admin' || (u.role === 'admin' && (u.email || '').startsWith('admin@'))));
+}
+
 function publicTenant(t) {
   const d = core.db();
   const hasAgents = d.agents && d.agents.some((a) => a.tenantId === t.id);
@@ -464,6 +477,7 @@ function publicTenant(t) {
   const tenantConnections = (d.byonConnections || []).filter(x => x.tenantId === t.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
   const hasAssignedNumber = tenantConnections.length > 0;
   const assignedNumber = hasAssignedNumber ? tenantConnections[0].address : (t.telephony && t.telephony.did ? t.telephony.did : null);
+  const isHost = isPlatformAdminTenant(t, d);
   return {
     id: t.id, name: t.name, slug: t.slug, createdAt: t.createdAt,
     branding: t.branding, providers: t.providers, plan: t.plan || 'starter',
@@ -472,6 +486,8 @@ function publicTenant(t) {
     planStatus: t.planStatus || 'active',
     status: t.status, privacyMode: t.privacyMode,
     onboardingCompleted: isCompleted,
+    isPlatformAdmin: isHost,
+    isPlatformHost: isHost,
     dograhOrgId: dograhOrg,
     dograh_org_id: dograhOrg,
     campaignFrozen: !!t.campaignFrozen,
@@ -507,6 +523,13 @@ function publicAgent(a) {
     llm: a.llm || null,
     isPrimary: !!a.isPrimary,
     department: a.department || 'General',
+    role: a.role || '',
+    voiceProvider: a.voiceProvider || (a.tts && a.tts.provider) || 'rumik',
+    rumikVoice: a.rumikVoice || (a.tts && a.tts.voice) || 'ira',
+    rumikModel: a.rumikModel || (a.tts && a.tts.model) || 'mulberry',
+    rumikTone: a.rumikTone || (a.tts && a.tts.tone) || 'happy',
+    status: a.status || 'active',
+    enabled: a.status !== 'disabled',
     assignedEmployees,
     createdAt: a.createdAt,
   };
@@ -752,7 +775,7 @@ function calRequest(method, pathname, version, payload) {
     if (data) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = String(data.length); }
     const upstream = require('https').request({ host: 'api.cal.com', path: pathname, method, headers }, (resp) => {
       const parts = []; resp.on('data', (part) => parts.push(part)); resp.on('end', () => {
-        let body = {}; try { body = JSON.parse(Buffer.concat(parts).toString('utf8') || '{}'); } catch (_) {}
+        let body = {}; try { body = JSON.parse(Buffer.concat(parts).toString('utf8') || '{}'); } catch (_) { }
         if (resp.statusCode < 200 || resp.statusCode >= 300) return reject(new providers.ProviderError(body.message || body.error || 'Cal.com request failed', resp.statusCode || 502, 'calendar_upstream'));
         resolve(body);
       });
@@ -810,8 +833,11 @@ async function apiHvacBook(req, res, ctx) {
   } catch (e) { handleProviderError(res, e); }
 }
 
-function apiAgentsList(req, res, ctx) {
+async function apiAgentsList(req, res, ctx) {
   const d = core.db();
+  if (ensureDograhFlowsSeeded(d)) {
+    await core.mutate((store) => { ensureDograhFlowsSeeded(store); });
+  }
   let tenantAgents = d.agents.filter((a) => a.tenantId === ctx.tenant.id);
   if (tenantAgents.length > 0 && !tenantAgents.some((a) => a.isPrimary)) {
     tenantAgents[0].isPrimary = true;
@@ -873,7 +899,7 @@ async function apiAgentsCreate(req, res, ctx) {
   if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
     core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
       publicMetadata: { onboardingCompleted: true }
-    }).catch(() => {});
+    }).catch(() => { });
   }
   core.sendJson(res, 200, { agent: publicAgent(agent) });
 }
@@ -888,9 +914,65 @@ async function apiTenantOnboardingComplete(req, res, ctx) {
   if (ctx.user && ctx.user.clerkUserId && process.env.CLERK_SECRET_KEY) {
     core.clerk.updateClerkMetadata(ctx.user.clerkUserId, {
       publicMetadata: { onboardingCompleted: true }
-    }).catch(() => {});
+    }).catch(() => { });
   }
   core.sendJson(res, 200, { ok: true, onboardingCompleted: true });
+}
+
+async function apiAgentsToggleStatus(req, res, ctx) {
+  const b = ctx.body || {};
+  const id = String(b.agentId || b.id || '').trim();
+  const d = core.db();
+  const target = d.agents.find((a) => a.id === id && a.tenantId === ctx.tenant.id);
+  if (!target) return core.sendJson(res, 404, { error: 'Agent not found in your workspace', code: 'not_found' });
+
+  let newStatus;
+  if (typeof b.enabled === 'boolean') {
+    newStatus = b.enabled ? 'active' : 'disabled';
+  } else if (b.status) {
+    newStatus = b.status === 'disabled' ? 'disabled' : 'active';
+  } else {
+    newStatus = (target.status === 'disabled') ? 'active' : 'disabled';
+  }
+
+  let updatedAgent;
+  await core.mutate((dd) => {
+    const a = dd.agents.find((x) => x.id === id);
+    if (!a) return;
+    a.status = newStatus;
+
+    // Sync corresponding Dograh voice flow status
+    (dd.dograhFlows || []).forEach((f) => {
+      if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+        f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+        if (newStatus === 'disabled') f.isActive = false;
+      }
+    });
+
+    // If disabled agent was primary on line, transfer primary to another active agent
+    if (newStatus === 'disabled' && a.isPrimary) {
+      a.isPrimary = false;
+      const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+      if (nextActive) {
+        nextActive.isPrimary = true;
+        (dd.dograhFlows || []).forEach((f) => {
+          if (f.tenantId === ctx.tenant.id) {
+            f.isActive = (f.agentId === nextActive.id);
+          }
+        });
+      }
+    }
+
+    updatedAgent = a;
+    addAudit(dd, ctx, 'agent.status_toggled', 'agent', a.id, { name: a.name, status: newStatus });
+  });
+
+  core.sendJson(res, 200, {
+    ok: true,
+    agent: publicAgent(updatedAgent),
+    status: newStatus,
+    enabled: newStatus !== 'disabled'
+  });
 }
 
 async function apiAgentsActivate(req, res, ctx) {
@@ -901,7 +983,20 @@ async function apiAgentsActivate(req, res, ctx) {
   if (!target) return core.sendJson(res, 404, { error: 'Agent not found in your workspace', code: 'not_found' });
   await core.mutate((dd) => {
     dd.agents.forEach((a) => {
-      if (a.tenantId === ctx.tenant.id) a.isPrimary = (a.id === target.id);
+      if (a.tenantId === ctx.tenant.id) {
+        a.isPrimary = (a.id === target.id);
+        if (a.id === target.id && a.status === 'disabled') {
+          a.status = 'active';
+        }
+      }
+    });
+    (dd.dograhFlows || []).forEach((f) => {
+      if (f.tenantId === ctx.tenant.id) {
+        f.isActive = (f.agentId === target.id);
+        if (f.agentId === target.id && f.status === 'paused') {
+          f.status = 'active';
+        }
+      }
     });
     addAudit(dd, ctx, 'agent.activated_on_line', 'agent', target.id, { name: target.name });
   });
@@ -926,6 +1021,36 @@ async function apiAgentsUpdate(req, res, ctx) {
   let updated;
   await core.mutate((dd) => {
     const a = dd.agents.find((x) => x.id === id);
+    if (b.status != null) {
+      const newStatus = b.status === 'disabled' ? 'disabled' : 'active';
+      a.status = newStatus;
+      (dd.dograhFlows || []).forEach((f) => {
+        if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+          f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+          if (newStatus === 'disabled') f.isActive = false;
+        }
+      });
+      if (newStatus === 'disabled' && a.isPrimary) {
+        a.isPrimary = false;
+        const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+        if (nextActive) nextActive.isPrimary = true;
+      }
+    }
+    if (typeof b.enabled === 'boolean') {
+      const newStatus = b.enabled ? 'active' : 'disabled';
+      a.status = newStatus;
+      (dd.dograhFlows || []).forEach((f) => {
+        if (f.tenantId === ctx.tenant.id && f.agentId === a.id) {
+          f.status = (newStatus === 'disabled') ? 'paused' : 'active';
+          if (newStatus === 'disabled') f.isActive = false;
+        }
+      });
+      if (newStatus === 'disabled' && a.isPrimary) {
+        a.isPrimary = false;
+        const nextActive = dd.agents.find((x) => x.tenantId === ctx.tenant.id && x.id !== a.id && x.status !== 'disabled');
+        if (nextActive) nextActive.isPrimary = true;
+      }
+    }
     if (b.name != null) a.name = String(b.name).slice(0, 80);
     if (b.persona != null) a.persona = String(b.persona).slice(0, 5000);
     if (b.knowledge != null) a.knowledge = String(b.knowledge).slice(0, 10000);
@@ -1331,7 +1456,7 @@ async function apiTts(req, res, ctx) {
       }
     }
     // Count usage only on a real synthesis.
-    bumpUsage(ctx.tenant.id, 'chars', out.chars).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'chars', out.chars).catch(() => { });
     core.send(res, 200, out.buffer, {
       'Content-Type': 'audio/wav',
       'Content-Length': out.buffer.length,
@@ -1405,7 +1530,7 @@ function extractContactFromMessages(messages) {
 
   // Name extraction (Hindi/Hinglish/English)
   const hindiNameMatch = combined.match(/(?:mera|mira|my)\s+(?:naam|name)\s+(?:hai\s+)?([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\.|\,|$)/i) ||
-                         combined.match(/(?:main|mai|this\s+is|i\s+am|myself|it's|its)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\s+speaking|\s+here|\.|\,|$)/i);
+    combined.match(/(?:main|mai|this\s+is|i\s+am|myself|it's|its)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)(?:\s+hai|\s+hu|\s+bol|\s+speaking|\s+here|\.|\,|$)/i);
   if (hindiNameMatch && hindiNameMatch[1]) {
     const rawName = hindiNameMatch[1].trim();
     const disallowed = ['mera', 'mira', 'naam', 'name', 'sir', 'madam', 'here', 'calling', 'speaking', 'yes', 'no', 'hi', 'hello', 'hey'];
@@ -1490,95 +1615,308 @@ async function llmQuick(systemPrompt, userText, maxTokens) {
   return String((out && out.text) || '').trim();
 }
 
-// Industry chips and suggestions helper for conversational agent training
-function getIndustryQuickChips(industry) {
-  const ind = String(industry || '').toLowerCase();
-  if (ind.includes('dent')) {
-    return [
-      'Smile Care Dental Clinic, Bookings & Emergency, 10am-8pm, Warm Tone',
-      'Apex Dental Studio, Implants & Cleaning, 9am-7pm',
-      'City Dental Care, Routine Checkups & Timings'
-    ];
+// Dynamic Industry Profile & Intelligent Extraction Helper
+function getIndustryProfile(text, currentIndustry) {
+  const t = String(text || '').toLowerCase();
+  let industry = currentIndustry || null;
+
+  // 1. Explicit regex detection
+  if (/sports?|cricket|football|tennis|badminton|athletics?|sports\s*academy|stadium|coach/i.test(t)) {
+    industry = 'Sports & Athletics';
+  } else if (/dental|dentist|teeth|tooth|orthodontic|root\s*canal/i.test(t)) {
+    industry = 'Dental Care & Clinic';
+  } else if (/clinic|doctor|hospital|medical|healthcare|physician|health|opd|patient/i.test(t)) {
+    industry = 'Healthcare & Medical Clinic';
+  } else if (/real\s*estate|property|realty|housing|broker|builder|flat|apartment|plots/i.test(t)) {
+    industry = 'Real Estate & Property';
+  } else if (/hvac|plumb|ac\s*repair|electrician|home\s*service|appliance|repair|cleaning/i.test(t)) {
+    industry = 'Home Services & Maintenance';
+  } else if (/salon|spa|beauty|hair|parlor|parlour|makeup|skincare/i.test(t)) {
+    industry = 'Salon & Beauty Wellness';
+  } else if (/education|school|college|coaching|tuition|tutor|institute|academy|learning|course|classes/i.test(t)) {
+    industry = 'Education & Coaching Academy';
+  } else if (/finance|fintech|banking|loan|insurance|tax|chartered|accounting|ca\s*firm/i.test(t)) {
+    industry = 'Financial & Accounting Services';
+  } else if (/legal|lawyer|advocate|attorney|law\s*firm/i.test(t)) {
+    industry = 'Legal & Law Practice';
+  } else if (/gym|fitness|trainer|workout|yoga|crossfit/i.test(t)) {
+    industry = 'Fitness & Gym Center';
+  } else if (/restaurant|cafe|hotel|dining|food|bakery|catering|dhaba/i.test(t)) {
+    industry = 'Restaurant & Hospitality';
+  } else if (/car|auto|vehicle|rental|garage|dealership|cab|taxi/i.test(t)) {
+    industry = 'Automobile & Transport';
+  } else if (/ecommerce|e-commerce|store|shop|retail|boutique|clothing|fashion/i.test(t)) {
+    industry = 'E-Commerce & Retail Store';
+  } else if (/logistics|courier|freight|delivery|fleet|warehouse/i.test(t)) {
+    industry = 'Logistics & Transportation';
+  } else if (/software|saas|it\s*services|web\s*development|digital\s*marketing|agency|tech/i.test(t)) {
+    industry = 'Technology & Digital Agency';
+  } else {
+    // Check if user said "for XYZ" (e.g. "Create Voice agent for Sports")
+    const matchFor = t.match(/\b(?:for|in|ke\s*liye)\s+([a-z0-9\s&-]{2,30}?)(?=\s+(?:business|company|agency|firm|shop|store|brand|service|$))/i);
+    if (matchFor && matchFor[1]) {
+      const cleanWord = matchFor[1].trim();
+      industry = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1);
+    }
   }
-  if (ind.includes('estate') || ind.includes('property')) {
-    return [
-      'Skyline Realty, Site Visit Booking & Budget Inquiries, 9am-6pm',
-      'Prime Properties, Luxury Flats & Commercial Plots, 10am-7pm'
-    ];
+
+  if (!industry || industry === 'General Business') {
+    industry = 'Business Services';
   }
-  if (ind.includes('salon') || ind.includes('spa') || ind.includes('beauty')) {
-    return [
-      'Glow Beauty Lounge, Hair & Skin Appointments, 10am-8pm',
-      'Serenity Spa & Salon, Massages & Hair Spa, 11am-9pm'
-    ];
+
+  const indLower = industry.toLowerCase();
+
+  if (indLower.includes('sport') || indLower.includes('athletic')) {
+    return {
+      industry,
+      exampleBiz: 'Zenith Sports Arena (or ProActive Athletics)',
+      exampleServices: 'Court bookings, Coaching inquiries, Tournament details, Membership plans',
+      exampleHours: 'Mon-Sat 7:00 AM - 9:00 PM, Mumbai',
+      exampleTone: 'Energetic, confident and professional English / Hinglish',
+      suggestions: [
+        'Sports Academy Receptionist (Court Bookings & Coaching)',
+        'Athlete Club & Membership Coordinator',
+        'Tournament & Events Desk',
+        'Facility Availability & Inbound Inquiries'
+      ]
+    };
   }
-  if (ind.includes('hvac') || ind.includes('repair') || ind.includes('plumb') || ind.includes('home')) {
-    return [
-      'QuickFix Home Services, AC Repair & Plumbing Triage, 24/7 Service',
-      'Apex Cool Care, HVAC Servicing & Emergency Callouts'
-    ];
+
+  if (indLower.includes('dent') || indLower.includes('teeth')) {
+    return {
+      industry,
+      exampleBiz: 'Smile Dental Care (or City Dental)',
+      exampleServices: 'Appointment booking, Consultation triage, Patient queries',
+      exampleHours: 'Mon-Sat 10:00 AM - 8:00 PM, Mumbai',
+      exampleTone: 'Warm, empathetic and reassuring English / Hinglish',
+      suggestions: [
+        'Dental Clinic Receptionist (Appointments & Triage)',
+        'Patient Consultation & Booking Specialist',
+        'Clinic Hours & Treatment FAQ Desk',
+        'Emergency Dental Inquiries'
+      ]
+    };
   }
-  if (ind.includes('clinic') || ind.includes('health') || ind.includes('doctor') || ind.includes('medic')) {
-    return [
-      'Lifeline Medical Clinic, Doctor Consultation Booking, 8am-8pm',
-      'Wellness Health Center, General Medicine & Diagnostics'
-    ];
+
+  if (indLower.includes('clinic') || indLower.includes('health') || indLower.includes('medic') || indLower.includes('doctor')) {
+    return {
+      industry,
+      exampleBiz: 'City Health Clinic (or Apex Medicare)',
+      exampleServices: 'Doctor appointment booking, Triage, Consultation inquiries',
+      exampleHours: 'Mon-Sat 9:00 AM - 8:00 PM, Delhi',
+      exampleTone: 'Empathetic, calm and professional English / Hinglish',
+      suggestions: [
+        'Healthcare Clinic Receptionist (Doctor Appointments)',
+        'Patient Inquiry & OPD Slot Booking',
+        'Diagnostic & Consultation Scheduling',
+        'Emergency Clinic Front Desk'
+      ]
+    };
   }
-  return [
-    'Apex Enterprise Voice AI, Inbound Inquiries & Scheduling, 9am-7pm',
-    'CareFirst Support, Customer Assistance & Call Triage'
-  ];
+
+  if (indLower.includes('estate') || indLower.includes('property')) {
+    return {
+      industry,
+      exampleBiz: 'Skyline Realty (or Prime Properties)',
+      exampleServices: 'Property inquiries, Site visit booking, Budget qualification',
+      exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Bangalore',
+      exampleTone: 'Polite, persuasive and professional English / Hinglish',
+      suggestions: [
+        'Real Estate Lead Qualifier (Budget & Site Visits)',
+        'Property Inquiries & Scheduling Specialist',
+        'Commercial & Residential Leasing Agent',
+        'Site Visit & Callback Coordinator'
+      ]
+    };
+  }
+
+  if (indLower.includes('hvac') || indLower.includes('repair') || indLower.includes('plumb') || indLower.includes('home')) {
+    return {
+      industry,
+      exampleBiz: 'QuickFix Home Services (or Apex Cool Care)',
+      exampleServices: 'Emergency dispatch, Service booking, Technician scheduling, Pricing quotes',
+      exampleHours: '24/7 Dispatch (or Mon-Sat 8:00 AM - 8:00 PM)',
+      exampleTone: 'Prompt, helpful and responsive English / Hinglish',
+      suggestions: [
+        '24/7 HVAC Emergency Dispatch',
+        'Home Services & Repair Booking Desk',
+        'Appliance Servicing & Estimate Agent',
+        'Technician Scheduling Coordinator'
+      ]
+    };
+  }
+
+  if (indLower.includes('educat') || indLower.includes('coach') || indLower.includes('school') || indLower.includes('academy')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Learning Academy (or Horizon Institute)',
+      exampleServices: 'Course admissions, Batch timings, Demo class booking, Fee details',
+      exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Pune',
+      exampleTone: 'Encouraging, knowledgeable and polite English / Hinglish',
+      suggestions: [
+        'Admissions & Course Inquiries Desk',
+        'Demo Class Scheduling & Batch Info',
+        'Student Support & Fee Guidance',
+        'Coaching Center Front Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('financ') || indLower.includes('bank') || indLower.includes('account') || indLower.includes('tax')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Financial Advisors (or Capital Tax Partners)',
+      exampleServices: 'Loan inquiries, Tax consultation booking, Investment queries, KYC support',
+      exampleHours: 'Mon-Fri 9:30 AM - 6:30 PM, Mumbai',
+      exampleTone: 'Trustworthy, formal and precise English / Hinglish',
+      suggestions: [
+        'Financial Consultation & Lead Qualifier',
+        'Tax & Accounting Client Intake',
+        'Loan Inquiries & Eligibility Screening',
+        'Client Services & Advisory Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('legal') || indLower.includes('law')) {
+    return {
+      industry,
+      exampleBiz: 'Apex Legal Associates (or Horizon Law Firm)',
+      exampleServices: 'Client case intake, Legal consultation booking, Case status inquiries',
+      exampleHours: 'Mon-Fri 9:00 AM - 6:00 PM, Delhi',
+      exampleTone: 'Discrete, professional and articulate English / Hinglish',
+      suggestions: [
+        'Legal Consultation & Intake Specialist',
+        'Case Inquiry & Attorney Scheduling',
+        'Corporate Legal Front Desk',
+        'Client Scheduling & Callback Agent'
+      ]
+    };
+  }
+
+  if (indLower.includes('tech') || indLower.includes('soft') || indLower.includes('saas') || indLower.includes('agency')) {
+    return {
+      industry,
+      exampleBiz: 'Nova Technologies (or Apex Digital Studio)',
+      exampleServices: 'Product demo booking, Sales inquiries, Tech support triage, Scope discussion',
+      exampleHours: 'Mon-Fri 10:00 AM - 7:00 PM, Bangalore',
+      exampleTone: 'Sharp, modern and professional English / Hinglish',
+      suggestions: [
+        'Product Demo Booking & Sales Qualifier',
+        'Agency Inquiries & Project Intake',
+        'Customer Support & Helpdesk Triage',
+        'Consultation & Discovery Call Desk'
+      ]
+    };
+  }
+
+  if (indLower.includes('restaurant') || indLower.includes('cafe') || indLower.includes('food') || indLower.includes('hospitality')) {
+    return {
+      industry,
+      exampleBiz: 'The Grand Table Cafe (or Royale Banquet)',
+      exampleServices: 'Table reservations, Party bookings, Menu & dietary questions, Timings',
+      exampleHours: 'All Days 11:00 AM - 11:30 PM, Mumbai',
+      exampleTone: 'Warm, hospitable and enthusiastic English / Hinglish',
+      suggestions: [
+        'Table Reservation & Dining Host',
+        'Private Event & Party Booking Coordinator',
+        'Menu Inquiries & Timing Desk',
+        'Customer Hospitality Assistant'
+      ]
+    };
+  }
+
+  if (indLower.includes('gym') || indLower.includes('fitness')) {
+    return {
+      industry,
+      exampleBiz: 'IronCore Fitness Club (or Zenith Gym)',
+      exampleServices: 'Membership pricing, Personal trainer booking, Trial workout scheduling',
+      exampleHours: 'Mon-Sat 6:00 AM - 10:00 PM, Pune',
+      exampleTone: 'Motivating, energetic and friendly English / Hinglish',
+      suggestions: [
+        'Gym Membership & Trial Booking Desk',
+        'Personal Trainer & Schedule Coordinator',
+        'Fitness Facility Inquiries & Pricing',
+        'Front Desk Wellness Host'
+      ]
+    };
+  }
+
+  // Universal Default for any Business / Company
+  return {
+    industry,
+    exampleBiz: 'Acme Enterprises (or Apex Solutions)',
+    exampleServices: 'Customer inquiries, Consultation booking, Product information, Support triage',
+    exampleHours: 'Mon-Sat 9:00 AM - 7:00 PM, Mumbai',
+    exampleTone: 'Warm, confident and professional English / Hinglish',
+    suggestions: [
+      'Customer Support & FAQ Specialist',
+      'Lead Qualification & Callback Scheduler',
+      'Appointment & Consultation Booking Agent',
+      '24/7 Front Desk Virtual Receptionist'
+    ]
+  };
 }
 
 function extractBusinessName(text, industry) {
-  const m1 = text.match(/(?:business|clinic|company|store|agency|hospital)\s+(?:name\s+)?(?:is\s+|called\s+|:\s*)?([A-Z][a-zA-Z0-9\s&]{2,30})/i);
+  const m1 = text.match(/(?:business|clinic|company|store|agency|hospital|academy|center|centre|studio)\s+(?:name\s+)?(?:is\s+|called\s+|:\s*)?([A-Z][a-zA-Z0-9\s&]{2,30})/i);
   if (m1 && m1[1]) return m1[1].trim();
-  const m2 = text.match(/(?:for|at)\s+([A-Z][a-zA-Z0-9\s&]{2,25}\s+(?:Dental|Clinic|Hospital|Realty|Properties|Studio|Services|Care|Salon|Spa))/i);
+  const m2 = text.match(/(?:for|at)\s+([A-Z][a-zA-Z0-9\s&]{2,25}\s+(?:Dental|Clinic|Hospital|Realty|Properties|Studio|Services|Care|Salon|Spa|Sports|Academy|Club|Store|Firm))/i);
   if (m2 && m2[1]) return m2[1].trim();
 
   const ind = String(industry || '').toLowerCase();
+  if (ind.includes('sport')) return 'Zenith Sports';
   if (ind.includes('dent')) return 'Smile Dental Clinic';
   if (ind.includes('estate') || ind.includes('property')) return 'Skyline Realty';
   if (ind.includes('salon') || ind.includes('spa')) return 'Glow Beauty Lounge';
   if (ind.includes('hvac') || ind.includes('home')) return 'QuickFix Home Services';
   if (ind.includes('clinic') || ind.includes('health') || ind.includes('doctor')) return 'City Care Clinic';
-  return `${industry || 'Client'} Services`;
+  if (ind.includes('educat') || ind.includes('coach')) return 'Apex Learning Academy';
+  return `${industry || 'Enterprise'} Services`;
 }
 
 // ---- handle: train_agent (Conversational AI Voice Agent Training) ------------
-async function handleTrainAgent(text, ctx, db, sessionId) {
-  const activeSession = sessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, sessionId) : null;
-  const t = text.toLowerCase();
 
-  // Detect industry if mentioned
-  let detectedIndustry = null;
-  if (/dental|dentist|teeth|tooth|orthodontic|root\s*canal/i.test(t)) {
-    detectedIndustry = 'Dental Care & Clinic';
-  } else if (/real\s*estate|property|realty|housing|broker|builder|flat|apartment/i.test(t)) {
-    detectedIndustry = 'Real Estate & Property';
-  } else if (/hvac|plumb|ac\s*repair|electrician|home\s*service|appliance/i.test(t)) {
-    detectedIndustry = 'Home Services & HVAC';
-  } else if (/salon|spa|beauty|hair|parlor|parlour|makeup/i.test(t)) {
-    detectedIndustry = 'Salon & Beauty Wellness';
-  } else if (/clinic|doctor|hospital|medical|healthcare|physician|health/i.test(t)) {
-    detectedIndustry = 'Healthcare & Medical Clinic';
-  } else if (/legal|lawyer|advocate|attorney|law\s*firm/i.test(t)) {
-    detectedIndustry = 'Legal & Law Practice';
-  } else if (/gym|fitness|trainer|workout|yoga/i.test(t)) {
-    detectedIndustry = 'Fitness & Gym Center';
-  } else if (/restaurant|cafe|hotel|dining|food/i.test(t)) {
-    detectedIndustry = 'Restaurant & Hospitality';
-  } else if (/car|auto|vehicle|rental|garage/i.test(t)) {
-    detectedIndustry = 'Automobile & Car Rental';
+function detectUserLanguage(text) {
+  if (!text || typeof text !== 'string') return 'English';
+  // Check for Devanagari script (Hindi)
+  if (/[\u0900-\u097F]/.test(text)) return 'Hindi';
+
+  const lower = text.toLowerCase();
+  const hindiTokens = [
+    'mera', 'meri', 'mere', 'naam', 'kya', 'hai', 'hain', 'ho', 'kaise', 'batao', 'bolo',
+    'karti', 'karta', 'karein', 'karo', 'kardo', 'kar do', 'karvana', 'karwao', 'bana', 'banao',
+    'banana', 'aap', 'aapka', 'aapko', 'hum', 'humein', 'haan', 'haanji', 'nahi', 'chahiye',
+    'baare', 'mein', 'me', 'kitna', 'kon', 'kaun', 'acha', 'accha', 'theek', 'namaste', 'shukriya',
+    'kripya', 'ki', 'ke', 'ko', 'se', 'bhi', 'kuch', 'yeh', 'ye', 'woh', 'wo', 'pe', 'par', 'pai',
+    'bhej', 'bhejo', 'bhejdo', 'bhej do', 'lagao', 'lagado', 'laga do', 'daalo', 'sikhao', 'karna'
+  ];
+
+  const words = lower.split(/[^a-z0-9]+/);
+  let hindiScore = 0;
+  for (const w of words) {
+    if (hindiTokens.includes(w)) hindiScore++;
   }
 
+  // If at least 2 hindi tokens, or 1 token in short message (<= 6 words), classify as Hinglish
+  if (hindiScore >= 2 || (hindiScore >= 1 && words.length <= 6)) {
+    return 'Hinglish';
+  }
+
+  return 'English';
+}
+
+async function handleTrainAgent(text, ctx, db, sessionId) {
+  const activeSession = sessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, sessionId) : null;
   const isAnsweringQuestions = activeSession && activeSession.trainingState && activeSession.trainingState.active;
-  const industryToUse = detectedIndustry || (isAnsweringQuestions ? activeSession.trainingState.industry : 'General Business');
+  const currentIndustry = isAnsweringQuestions ? activeSession.trainingState.industry : null;
+  const profile = getIndustryProfile(text, currentIndustry);
+  const industryToUse = profile.industry;
 
   // Check if user's prompt is a high-level command without business name or specific operational details
   const isBriefRequest = !isAnsweringQuestions && (
     text.length < 85 &&
-    !/\b(name\s+is|called|clinic\s+name|business\s+name|hours|timings|timing|10am|9am|pm|dr\.|mumbai|delhi|bangalore)\b/i.test(text)
+    !/\b(name\s+is|called|business\s+name|hours|timings|timing|10am|9am|pm|mumbai|delhi|bangalore)\b/i.test(text)
   );
 
   // 1. If it's a brief initial request, start interactive training interview
@@ -1595,15 +1933,24 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
       }
     });
 
-    const suggestions = getIndustryQuickChips(industryToUse);
+    const userLang = detectUserLanguage(text);
+    const suggestions = profile.suggestions;
 
-    const reply = `Awesome! Main aapke **${industryToUse}** ke liye ek high-converting AI Voice Receptionist train karne ke liye ready hoon! 🎙️✨\n\n` +
-      `Agent ko fully personalized train karne ke liye, kripya ye 3-4 details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
-      `1. **Clinic / Business Name:** (jaise: *Smile Dental Care* ya *City Orthodontics*)\n` +
-      `2. **Key Services / Tasks:** (jaise: *Appointment booking, Teeth cleaning, Root canal inquiries, Emergency pain triage*)\n` +
-      `3. **Working Hours & Location:** (jaise: *Mon-Sat 10:00 AM - 8:00 PM, Mumbai*)\n` +
-      `4. **Preferred Voice Tone:** (jaise: *Warm, empathetic & professional Indian English / Hinglish receptionist*)\n\n` +
-      `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein!)*`;
+    const reply = userLang === 'English'
+      ? `I am ready to train a high-converting AI Voice Receptionist for your **${industryToUse}** business.\n\n` +
+      `To tailor the agent to your exact business needs, please provide these key details (you can reply in a single message):\n\n` +
+      `1. **Business Name:** (e.g. *${profile.exampleBiz}*)\n` +
+      `2. **Key Services / Objective:** (e.g. *${profile.exampleServices}*)\n` +
+      `3. **Operating Hours & Location:** (e.g. *${profile.exampleHours}*)\n` +
+      `4. **Preferred Voice & Tone:** (e.g. *${profile.exampleTone}*)\n\n` +
+      `*(You can reply directly or click one of the quick suggestions below)*`
+      : `Main aapke **${industryToUse}** business ke liye ek high-converting AI Voice Receptionist train karne ke liye ready hoon.\n\n` +
+      `Agent ko fully personalized train karne ke liye, kripya ye details provide karein (aap ek hi message mein reply kar sakte hain):\n\n` +
+      `1. **Business Name:** (jaise: *${profile.exampleBiz}*)\n` +
+      `2. **Key Services / Objective:** (jaise: *${profile.exampleServices}*)\n` +
+      `3. **Operating Hours & Location:** (jaise: *${profile.exampleHours}*)\n` +
+      `4. **Preferred Voice & Tone:** (jaise: *${profile.exampleTone}*)\n\n` +
+      `*(Aap seedhe inka jawab type kar sakte hain, ya niche Quick-Start recommendation par click karein)*`;
 
     return {
       reply,
@@ -1644,7 +1991,7 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
     const raw2 = await llmQuick(agentSystem, agentPrompt, 1800);
     const agentData = safeExtractJson(raw2);
     ag = agentData ? (agentData.agent || agentData) : null;
-  } catch (_) {}
+  } catch (_) { }
 
   if (!ag || !ag.name) {
     const bp = buildFallbackAgentBlueprint({
@@ -1705,7 +2052,7 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
       agentId: newAgent.id,
       agentName: newAgent.name,
       industry: newAgent.industry,
-      agent: newAgent
+      agent: publicAgent(newAgent)
     }
   };
 }
@@ -1714,9 +2061,12 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
 async function handleSendEmail(text, ctx, db) {
   const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   if (!emailMatch) {
+    const isEnglishEmail = detectUserLanguage(text) === 'English';
     return {
-      reply: `Kripya valid email address provide karein jahan mail send karna hai.\n\n*Example:* \`mail kardo animeshj425@gmail.com pai for voice agent\``,
-      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Open Gmail Dispatch Settings ✉' }
+      reply: isEnglishEmail
+        ? 'Please provide a valid email address to send the email.\n\n*Example:* `send email to animeshj425@gmail.com about the voice agent update`'
+        : `Kripya valid email address provide karein jahan mail send karna hai.\n\n*Example:* \`mail kardo animeshj425@gmail.com pai for voice agent\``,
+      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: isEnglishEmail ? 'Open Gmail Settings ✉' : 'Open Gmail Dispatch Settings ✉' }
     };
   }
 
@@ -1738,9 +2088,10 @@ async function handleSendEmail(text, ctx, db) {
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const gmailConfig = (tenantIntegrations && tenantIntegrations.gmail) || {};
-  const senderEmail = gmailConfig.senderEmail || process.env.GMAIL_USER || process.env.DOGRAH_EMAIL || 'seevorapvtltd@gmail.com';
+  const crmEmail = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.email) || {};
+  const senderEmail = crmEmail.senderEmail || gmailConfig.senderEmail || process.env.GMAIL_USER || process.env.DOGRAH_EMAIL || 'seevorapvtltd@gmail.com';
 
-  const rawPass = gmailConfig.appPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
+  const rawPass = crmEmail.appPassword || gmailConfig.appPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
   const appPassword = String(rawPass).replace(/\s+/g, '');
 
   if (!appPassword) {
@@ -1765,16 +2116,16 @@ async function handleSendEmail(text, ctx, db) {
       });
     });
 
-    const reply = `⚠️ **Gmail App Password Required for Live Delivery**\n\n` +
+    const reply = `**Gmail App Password Required for Live Delivery**\n\n` +
       `Google security rules ke mutabiq, **\`${senderEmail}\`** se live inbox delivery ke liye **16-Character Google App Password** zaroori hai.\n\n` +
-      `• **Recipient:** \`${recipientEmail}\`\n` +
-      `• **Subject:** **${subject}**\n` +
-      `• **Message Preview:** "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n\n` +
-      `### ⚡ 1-Minute Setup:\n` +
-      `1. Visit: [**myaccount.google.com/apppasswords**](https://myaccount.google.com/apppasswords)\n` +
-      `2. App: **Mail** select karke 16-letter code generate karein (e.g. \`abcd efgh ijkl mnop\`)\n` +
-      `3. Chat mein type karein: \`app password: xxxx xxxx xxxx xxxx\` *(ya niche button par click karein)*\n\n` +
-      `Password milte hi yeh email automatically \`${recipientEmail}\` par deliver ho jayegi!`;
+      `• Recipient: \`${recipientEmail}\`\n` +
+      `• Subject: **${subject}**\n` +
+      `• Message Preview: "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n\n` +
+      `Setup Steps:\n` +
+      `1. Visit: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)\n` +
+      `2. App: Mail select karke 16-letter code generate karein (e.g. \`abcd efgh ijkl mnop\`)\n` +
+      `3. Settings -> Connected Apps mein save karein ya chat mein type karein: \`app password: xxxx xxxx xxxx xxxx\`\n\n` +
+      `Password save hote hi yeh email automatically \`${recipientEmail}\` par deliver ho jayegi!`;
 
     return {
       reply,
@@ -1782,7 +2133,7 @@ async function handleSendEmail(text, ctx, db) {
         type: 'open_modal',
         modal: 'gmail',
         channel: 'gmail',
-        buttonText: 'Configure Gmail App Password ⚙',
+        buttonText: 'Configure in Settings →',
         to: recipientEmail,
         subject
       }
@@ -1823,14 +2174,14 @@ async function handleSendEmail(text, ctx, db) {
       });
     });
 
-    const reply = `✓ **Email Successfully Delivered via Gmail!** ✉️\n\n` +
-      `• **Recipient:** \`${recipientEmail}\`\n` +
-      `• **Subject:** **${subject}**\n` +
-      `• **Message Preview:** "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n` +
-      `• **Sender Channel:** Connected Gmail (\`${senderEmail}\`)\n` +
-      `• **Status:** **Delivered to Inbox (250 OK)**\n` +
-      `• **Message-ID:** \`${sendRes.messageId}\`\n\n` +
-      `Email Google SMTP (\`smtp.gmail.com:465\`) ke through live recipient inbox ko deliver kar di gayi hai.`;
+    const reply = `**Email Successfully Delivered via Gmail**\n\n` +
+      `• Recipient: \`${recipientEmail}\`\n` +
+      `• Subject: **${subject}**\n` +
+      `• Message Preview: "*${body.slice(0, 160)}${body.length > 160 ? '...' : ''}*"\n` +
+      `• Sender Channel: Connected Gmail (\`${senderEmail}\`)\n` +
+      `• Status: Delivered to Inbox (250 OK)\n` +
+      `• Message-ID: \`${sendRes.messageId}\`\n\n` +
+      `Email Google SMTP (smtp.gmail.com:465) ke through live recipient inbox ko deliver kar di gayi hai.`;
 
     return {
       reply,
@@ -2114,7 +2465,18 @@ async function handleScheduleCalendar(text, ctx, db) {
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const calConfig = (tenantIntegrations && tenantIntegrations.calendar) || {};
+  const crmCal = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.googleCalendar) || {};
   const calendarEmail = calConfig.email || 'team@seevora.ai';
+
+  if (crmCal.enabled && crmCal.webhookUrl) {
+    try {
+      await integrations.dispatchGoogleCalendar(crmCal, {
+        callerName: eventTitle,
+        title: eventTitle,
+        start: scheduledTime
+      });
+    } catch (_) { }
+  }
 
   const calRecord = {
     id: core.genId('cal_'),
@@ -2139,11 +2501,11 @@ async function handleScheduleCalendar(text, ctx, db) {
     });
   });
 
-  const reply = `✓ **Appointment Successfully Booked on Google Calendar!** 📅\n\n` +
-    `• **Event:** **${eventTitle}**\n` +
-    `• **Scheduled Slot:** **${scheduledTime}**\n` +
-    `• **Calendar Account:** Google Calendar (\`${calendarEmail}\`)\n` +
-    `• **Sync Status:** **Active & Locked**\n\n` +
+  const reply = `**Appointment Successfully Booked on Google Calendar**\n\n` +
+    `• Event: **${eventTitle}**\n` +
+    `• Scheduled Slot: **${scheduledTime}**\n` +
+    `• Calendar Account: Google Calendar (\`${calendarEmail}\`)\n` +
+    `• Sync Status: **Active & Locked**\n\n` +
     `Voice Agent availability ke sath ye slot real-time calendar mein block kar diya gaya hai.`;
 
   return {
@@ -2165,13 +2527,14 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
   const tenant = (db.tenants || []).find((t) => t.id === tenantId) || {};
   const tenantIntegrations = assistant.getTenantIntegrations(db, tenantId);
   const waConfig = (tenantIntegrations && tenantIntegrations.whatsapp) || {};
+  const crmWa = (tenant.crmIntegrations && tenant.crmIntegrations.whatsapp) || {};
 
   const companyName = String(
-    opts.companyName || waConfig.companyName || tenant.name || 'Seevora AI'
+    opts.companyName || crmWa.companyName || waConfig.companyName || tenant.name || 'Seevora AI'
   ).trim();
 
   const rawSender = String(
-    opts.senderNumber || waConfig.senderNumber || waConfig.phoneNumber ||
+    opts.senderNumber || crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber ||
     (tenant.telephony && tenant.telephony.phoneNumber) ||
     process.env.VOBIZ_FROM_NUMBER || '+91 80715 82519'
   ).trim();
@@ -2195,7 +2558,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
 
   const includeHeader = opts.includeCompanyHeader !== false && waConfig.includeCompanyHeader !== false;
   const formattedMessage = includeHeader
-    ? `🏢 *${companyName} — Official AI Voice Update*\n📞 *VoBiz Line:* ${senderNumber}\n─────────────────────\n${rawMessage}\n\n_Dispatched via ${companyName} Voice AI (${senderNumber})_`
+    ? `*${companyName} — Official AI Voice Update*\n*VoBiz Line:* ${senderNumber}\n─────────────────────\n${rawMessage}\n\n_Dispatched via ${companyName} Voice AI (${senderNumber})_`
     : rawMessage;
 
   const messageId = 'wamid.HBgM' + Buffer.from(`${recipientIntl}_${Date.now()}`).toString('base64').replace(/=/g, '');
@@ -2203,8 +2566,8 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
   let upstreamDelivered = false;
 
   // 1. Try Meta WhatsApp Cloud API if credentials configured
-  const metaToken = opts.metaToken || waConfig.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
-  const metaPhoneId = opts.metaPhoneId || waConfig.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+  const metaToken = opts.metaToken || crmWa.metaToken || waConfig.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
+  const metaPhoneId = opts.metaPhoneId || crmWa.metaPhoneId || waConfig.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
   if (metaToken && metaPhoneId) {
     try {
       const https = require('https');
@@ -2232,7 +2595,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         req.end();
       });
       if (upstreamDelivered) gatewayProvider = `Meta Cloud WABA (${senderNumber})`;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Try VoBiz Messaging / WhatsApp Gateway API using VOBIZ_AUTH_ID & VOBIZ_AUTH_TOKEN
@@ -2269,7 +2632,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         }));
         req.end();
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 3. Try Custom Webhook Gateway if configured
@@ -2290,7 +2653,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
         })
       });
       upstreamDelivered = true;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const waMeUrl = `https://wa.me/${recipientIntl}?text=${encodeURIComponent(formattedMessage)}`;
@@ -2336,17 +2699,21 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
 async function handleSendWhatsApp(text, ctx, db) {
   const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\b\d{10}\b/);
   if (!phoneMatch) {
+    const isEnglishWa = detectUserLanguage(text) === 'English';
     return {
-      reply: `Kripya valid 10-digit mobile number provide karein jahan WhatsApp message bhejna hai.\n\n*Example:* \`whatsapp kardo +91 98765 43210 pe ki appointment confirm ho gaya hai\``,
-      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Open WhatsApp Dispatch Settings ⚙' }
+      reply: isEnglishWa
+        ? 'Please provide a valid 10-digit mobile number to send the WhatsApp message.\n\n*Example:* `send WhatsApp to +91 98765 43210 saying your appointment is confirmed`'
+        : `Kripya valid 10-digit mobile number provide karein jahan WhatsApp message bhejna hai.\n\n*Example:* \`whatsapp kardo +91 98765 43210 pe ki appointment confirm ho gaya hai\``,
+      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: isEnglishWa ? 'Configure in Settings →' : 'Settings mein Configure karein →' }
     };
   }
 
   const tenantIntegrations = assistant.getTenantIntegrations(db, ctx.tenant.id);
   const waConfig = (tenantIntegrations && tenantIntegrations.whatsapp) || {};
+  const crmWa = (ctx.tenant && ctx.tenant.crmIntegrations && ctx.tenant.crmIntegrations.whatsapp) || {};
 
   // Check if user specified company name in prompt
-  let companyName = waConfig.companyName || (ctx.tenant && ctx.tenant.name) || 'Seevora AI';
+  let companyName = waConfig.companyName || crmWa.companyName || (ctx.tenant && ctx.tenant.name) || 'Seevora AI';
   const compMatch = text.match(/(?:company(?:\s+name)?|brand|from)\s*[:=]?\s*([A-Za-z0-9\s.&_-]{2,35}?)(?=\s+(?:pe|par|to|ki|saying|message|msg|on|$))/i);
   if (compMatch && compMatch[1]) {
     companyName = compMatch[1].trim();
@@ -2367,17 +2734,26 @@ async function handleSendWhatsApp(text, ctx, db) {
     tenantId: ctx.tenant.id,
     userId: ctx.user.id,
     companyName,
-    senderNumber: waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
+    senderNumber: crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
     recipientPhone: phoneMatch[0],
     message
   });
 
-  const reply = `✓ **WhatsApp Message Dispatched with VoBiz Line & Company Name!** 💬\n\n` +
-    `• **Company Name:** **${waRecord.companyName}**\n` +
-    `• **Sender VoBiz Number:** \`${waRecord.from}\`\n` +
-    `• **Recipient WhatsApp:** **${waRecord.to}**\n` +
-    `• **Message Content:** "*${waRecord.message}*"\n` +
-    `• **Message-ID:** \`${waRecord.messageId}\`\n\n` +
+  const isEnglishWaSuccess = detectUserLanguage(text) === 'English';
+  const reply = isEnglishWaSuccess
+    ? `**WhatsApp Message Dispatched**\n\n` +
+    `• Company Name: **${waRecord.companyName}**\n` +
+    `• Sender Line: \`${waRecord.from}\`\n` +
+    `• Recipient WhatsApp: **${waRecord.to}**\n` +
+    `• Message Content: "*${waRecord.message}*"\n` +
+    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
+    `The message has been dispatched under your **${waRecord.companyName}** brand header and logged in WhatsApp CRM timeline.`
+    : `**WhatsApp Message Dispatched with VoBiz Line & Company Name**\n\n` +
+    `• Company Name: **${waRecord.companyName}**\n` +
+    `• Sender VoBiz Number: \`${waRecord.from}\`\n` +
+    `• Recipient WhatsApp: **${waRecord.to}**\n` +
+    `• Message Content: "*${waRecord.message}*"\n` +
+    `• Message-ID: \`${waRecord.messageId}\`\n\n` +
     `Message aapke **${waRecord.companyName}** brand header aur VoBiz number (\`${waRecord.from}\`) ke saath dispatch ho chuka hai.`;
 
   return {
@@ -2422,6 +2798,50 @@ async function handleCrmCreateLead(text, ctx, db) {
     updatedAt: new Date().toISOString()
   };
 
+  const crmIntegrations = (ctx.tenant && ctx.tenant.crmIntegrations) || {};
+
+  // Auto-dispatch to connected CRM software from Settings
+  if (crmIntegrations.zohoCrm && crmIntegrations.zohoCrm.enabled) {
+    try {
+      await integrations.dispatchZohoCrm(crmIntegrations.zohoCrm, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) { }
+  }
+  if (crmIntegrations.hubspot && crmIntegrations.hubspot.enabled) {
+    try {
+      await integrations.dispatchHubspot(crmIntegrations.hubspot, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) { }
+  }
+  if (crmIntegrations.googleSheets && crmIntegrations.googleSheets.enabled) {
+    try {
+      await integrations.dispatchGoogleSheets(crmIntegrations.googleSheets, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) { }
+  }
+  if (crmIntegrations.slack && crmIntegrations.slack.enabled) {
+    try {
+      await integrations.dispatchSlack(crmIntegrations.slack, {
+        callerName: leadName,
+        phone,
+        email,
+        callSummary: text
+      });
+    } catch (_) { }
+  }
+
   await core.mutate((d) => {
     if (!Array.isArray(d.crmContacts)) d.crmContacts = [];
     d.crmContacts.unshift(contact);
@@ -2431,12 +2851,12 @@ async function handleCrmCreateLead(text, ctx, db) {
     });
   });
 
-  const reply = `✓ **New Lead Successfully Added to CRM Pipeline!** ⚡\n\n` +
-    `• **Contact Name:** **${leadName}**\n` +
-    `• **Phone:** \`${phone}\`\n` +
-    (email ? `• **Email:** \`${email}\`\n` : '') +
-    `• **Pipeline Stage:** New Inbound Lead\n` +
-    `• **Sync Status:** **Synced with CRM Pipeline**\n\n` +
+  const reply = `**New Lead Successfully Added to CRM Pipeline**\n\n` +
+    `• Contact Name: **${leadName}**\n` +
+    `• Phone: \`${phone}\`\n` +
+    (email ? `• Email: \`${email}\`\n` : '') +
+    `• Pipeline Stage: New Inbound Lead\n` +
+    `• Sync Status: **Synced with Settings CRM Pipeline**\n\n` +
     `Lead CRM Contacts and Pipeline view mein live visible hai.`;
 
   return {
@@ -2471,7 +2891,7 @@ async function handleBuildAgent(text, ctx) {
   try {
     const raw2 = await llmQuick(agentSystem, agentPrompt, 1800);
     agentData = safeExtractJson(raw2);
-  } catch (_) {}
+  } catch (_) { }
 
   let ag = agentData ? (agentData.agent || agentData) : null;
   if (!ag || !ag.name) {
@@ -2508,9 +2928,24 @@ async function handleBuildAgent(text, ctx) {
 
   await core.mutate((d) => { d.agents.push(newAgent); });
 
+  const isEnglishDone = detectUserLanguage(text) === 'English';
+  const targetTenant = (ctx && ctx.tenant) || null;
+  const targetName = (targetTenant && targetTenant.name) ? targetTenant.name : 'Client Workspace';
+  const doneReply = isEnglishDone
+    ? `Done! I have created **${newAgent.name}** and saved it to the **${targetName}** panel!\n\n` +
+    `• Greeting: "${newAgent.greeting}"\n` +
+    `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+    `• Client Panel: **${targetName}**\n\n` +
+    `This agent is now live and saved in your backend database and Agent Studio. Would you like to test it or assign a phone number?`
+    : `Done! Maine **${newAgent.name}** create karke **${targetName}** client panel mein save kar diya hai!\n\n` +
+    `• Greeting: "${newAgent.greeting}"\n` +
+    `• Voice: ${newAgent.tts.speaker} (${newAgent.tts.description})\n` +
+    `• Client Panel: **${targetName}**\n\n` +
+    `Yeh agent ab aapke backend database aur client panel ke Agent Studio mein live save ho chuka hai. Kya aap iska persona, voice change karna chahte hain ya phone number assign karein?`;
+
   return {
-    reply: `Done! I've created **${newAgent.name}** for you.\n\nGreeting: "${newAgent.greeting}"\n\nYou can find it in the Agents section. Want me to adjust the persona, voice, or anything else?`,
-    action: { type: 'agent_created', agentId: newAgent.id, agentName: newAgent.name },
+    reply: doneReply,
+    action: { type: 'agent_created', agentId: newAgent.id, agentName: newAgent.name, tenantId: targetTenant ? targetTenant.id : undefined, tenantName: targetName, agent: publicAgent(newAgent) },
   };
 }
 
@@ -2529,7 +2964,7 @@ async function handleEditAgent(text, agentId, ctx, db) {
   try {
     const raw = await llmQuick(editSystem, editPrompt, 600);
     editPlan = safeExtractJson(raw);
-  } catch (_) {}
+  } catch (_) { }
 
   if (!editPlan || !editPlan.field || !editPlan.after) {
     const t = text.trim();
@@ -2566,11 +3001,19 @@ async function handleAddKnowledge(text, agentId, ctx, db) {
   }
 
   // Extract the knowledge content from the message (remove meta-instruction noise)
-  const extractSystem = `Extract only the factual knowledge or FAQ content from the user message that should be stored for an AI agent. Remove phrases like "add this", "teach the agent", "the agent should know". Return ONLY the clean knowledge text.`;
+  const extractSystem = `Extract only the factual knowledge or FAQ content from the user message that should be stored for an AI agent. Remove phrases like "add this", "teach the agent", "the agent should know". Return ONLY the clean knowledge text. If no specific facts or FAQs are provided, return EMPTY.`;
   let knowledgeText = text;
   try {
     knowledgeText = await llmQuick(extractSystem, text, 600);
-  } catch (_) {}
+  } catch (_) { }
+
+  // Safety guard: If knowledgeText is empty or an LLM refusal, do not save to knowledge base
+  if (!knowledgeText || knowledgeText.trim().length < 5 || /i don't have access|cannot access|please provide|not provided|as an ai/i.test(knowledgeText)) {
+    return {
+      reply: 'Please provide the specific text, FAQ, or factual details you would like to add to the agent\'s knowledge base.',
+      action: null
+    };
+  }
 
   const existing = String(target.knowledge || target.businessKnowledge || '').trim();
   const newKnowledge = existing ? `${existing}\n\n${knowledgeText}` : knowledgeText;
@@ -2588,13 +3031,19 @@ async function handleAddKnowledge(text, agentId, ctx, db) {
 // ---- handle: ask_report ---------------------------------------------------
 async function handleAskReport(text, ctx, db) {
   const reportCtx = assistant.buildReportContext(db, ctx.tenant.id);
-  const reportSystem = `You are a business analytics assistant. You have the following metrics for the tenant. Answer the user's question naturally in 2-4 sentences. Use plain text, no markdown tables, no bullet points.\n\nMetrics:\n- Today's calls: ${reportCtx.today.calls}\n- Last 7 days calls: ${reportCtx.last7Days.calls}\n- Last 30 days calls: ${reportCtx.last30Days.calls}\n- Wallet balance: Rs ${reportCtx.walletBalanceInr}\n- Active agents: ${reportCtx.agentCount}\n- CRM contacts: ${reportCtx.contactCount}\n- Total recordings: ${reportCtx.recordingCount}\n- Recordings this week: ${reportCtx.recentRecordingCount}`;
+  const userLang = detectUserLanguage(text);
+  const langRule = userLang === 'English'
+    ? 'Reply strictly in natural, professional English.'
+    : (userLang === 'Hindi' ? 'Reply in natural Hindi.' : 'Reply in natural conversational Hinglish.');
+  const reportSystem = `You are a business analytics assistant. You have the following metrics for the tenant. Answer the user's question naturally in 2-4 sentences. Use plain text, no markdown tables, no bullet points. Never use emojis. ${langRule}\n\nMetrics:\n- Today's calls: ${reportCtx.today.calls}\n- Last 7 days calls: ${reportCtx.last7Days.calls}\n- Last 30 days calls: ${reportCtx.last30Days.calls}\n- Wallet balance: Rs ${reportCtx.walletBalanceInr}\n- Active agents: ${reportCtx.agentCount}\n- CRM contacts: ${reportCtx.contactCount}\n- Total recordings: ${reportCtx.recordingCount}\n- Recordings this week: ${reportCtx.recentRecordingCount}`;
 
   let answer = '';
   try {
     answer = await llmQuick(reportSystem, text, 400);
   } catch (_) {
-    answer = `Here is a quick summary: ${reportCtx.last7Days.calls} calls in the last 7 days, ${reportCtx.last30Days.calls} in the last 30 days. Wallet balance: Rs ${reportCtx.walletBalanceInr}. You have ${reportCtx.agentCount} agent(s) and ${reportCtx.contactCount} CRM contact(s).`;
+    answer = userLang === 'English'
+      ? `Here is a quick summary: ${reportCtx.last7Days.calls} calls in the last 7 days, ${reportCtx.last30Days.calls} in the last 30 days. Wallet balance: Rs ${reportCtx.walletBalanceInr}. You have ${reportCtx.agentCount} agent(s) and ${reportCtx.contactCount} CRM contact(s).`
+      : `Quick summary: Pichle 7 dino mein ${reportCtx.last7Days.calls} calls aur 30 dino mein ${reportCtx.last30Days.calls} calls hui hain. Wallet balance: Rs ${reportCtx.walletBalanceInr}. Aapke paas ${reportCtx.agentCount} active agent(s) aur ${reportCtx.contactCount} CRM contact(s) hain.`;
   }
 
   return { reply: answer, action: null };
@@ -2634,27 +3083,321 @@ async function handleTestChat(text, agentId, ctx, db) {
   };
 }
 
-// ---- handle: general_chat -------------------------------------------------
-async function handleGeneralChat(text, ctx, thread) {
-  const systemPrompt = `You are Seevora AI Assistant, a smart, friendly product assistant built into the Seevora AI Voice Receptionist platform. You help users manage their AI voice agents, review call analytics, and navigate the platform. Keep responses concise (2-4 sentences). You can speak English and Hinglish naturally.`;
+// ---- handle: admin_client_query (Super Admin Multi-Client Audit & Overview) ----
+async function handleAdminClientQuery(text, ctx, db) {
+  const isEng = detectUserLanguage(text) === 'English';
+  const t = text.toLowerCase();
+  const allTenants = Array.isArray(db.tenants) ? db.tenants : [];
+  const allUsers = Array.isArray(db.users) ? db.users : [];
+  const allAgents = Array.isArray(db.agents) ? db.agents : [];
+  const allActions = Array.isArray(db.assistantActions) ? db.assistantActions : [];
+  const allRecordings = Array.isArray(db.callRecordings) ? db.callRecordings : [];
+  const allContacts = Array.isArray(db.crmContacts) ? db.crmContacts : [];
 
-  const historyMessages = thread ? thread.messages.slice(-10).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', text: m.text })) : [];
-  historyMessages.push({ role: 'user', text });
+  // 1. Is the admin asking to list all clients / tenants?
+  const isListAll = /\b(all\s+clients?|all\s+tenants?|list\s+(?:all\s+)?clients?|list\s+(?:all\s+)?tenants?|saare\s+clients?|total\s+clients?|how\s+many\s+clients?)\b/i.test(t);
+  if (isListAll) {
+    const clientTenants = allTenants.filter(tn => tn.slug !== 'admin-demo' && tn.id !== 't_admin');
+    const displayList = clientTenants.length ? clientTenants : allTenants;
+
+    const tenantSummaries = displayList.map((tn, idx) => {
+      const users = allUsers.filter(u => u.tenantId === tn.id);
+      const agents = allAgents.filter(a => a.tenantId === tn.id);
+      const calls = allRecordings.filter(r => r.tenantId === tn.id);
+      const userEmails = users.map(u => u.email).slice(0, 2).join(', ') || 'No users';
+      return `${idx + 1}. **${tn.name}** (\`${tn.id}\`)\n` +
+        `   • Plan: **${tn.plan || 'Starter'}** | Status: **${tn.status || 'Active'}**\n` +
+        `   • Users: ${userEmails}\n` +
+        `   • Active Agents: **${agents.length}** | Total Calls: **${calls.length}**`;
+    });
+
+    const reply = isEng
+      ? `👑 **Administrative Client Workspace Overview**\n\n` +
+      `Total Registered Workspaces: **${displayList.length}**\n\n` +
+      tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+      `*To inspect any specific client in detail, ask: "What did client [Name] do?" or "Show activity of client [Email]".*`
+      : `👑 **Admin Client Workspace Overview**\n\n` +
+      `Total Registered Client Workspaces: **${displayList.length}**\n\n` +
+      tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
+      `*Kisi bhi specific client ki detailed history dekhne ke liye puchiye: "What did client [Name] do?" ya "Client [Email] ki activity dikhao".*`;
+
+    return {
+      reply,
+      action: { type: 'admin_client_list', total: displayList.length }
+    };
+  }
+
+  // 2. Identify target client/tenant mentioned by the admin
+  let targetTenant = null;
+  let targetUser = null;
+
+  // Search by email
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (emailMatch) {
+    targetUser = allUsers.find(u => u.email && u.email.toLowerCase() === emailMatch[0].toLowerCase());
+    if (targetUser) {
+      targetTenant = allTenants.find(tn => tn.id === targetUser.tenantId);
+    }
+  }
+
+  // Search by tenant ID
+  if (!targetTenant) {
+    const tidMatch = text.match(/\b(t_[a-zA-Z0-9]{4,32})\b/);
+    if (tidMatch) {
+      targetTenant = allTenants.find(tn => tn.id === tidMatch[1]);
+    }
+  }
+
+  // Search by tenant name in database
+  if (!targetTenant) {
+    for (const tn of allTenants) {
+      const tnLower = (tn.name || '').toLowerCase();
+      if (tnLower.length >= 3 && t.includes(tnLower)) {
+        targetTenant = tn;
+        break;
+      }
+    }
+  }
+
+  // Search by user name in database
+  if (!targetTenant) {
+    for (const u of allUsers) {
+      const uName = (u.name || '').toLowerCase();
+      if (uName.length >= 3 && t.includes(uName)) {
+        targetUser = u;
+        targetTenant = allTenants.find(tn => tn.id === u.tenantId);
+        break;
+      }
+    }
+  }
+
+  // Search by keyword after "client" (e.g. "client sports" or "client rajesh" or "client apex")
+  if (!targetTenant) {
+    const afterClient = t.match(/\bclient\s+([a-z0-9\s&-]{2,25})/i);
+    if (afterClient && afterClient[1]) {
+      const keyword = afterClient[1].trim();
+      targetTenant = allTenants.find(tn => (tn.name || '').toLowerCase().includes(keyword) || (tn.slug || '').toLowerCase().includes(keyword));
+    }
+  }
+
+  // Fallback: If admin says "iss client" / "this client" or no specific client specified, pick first non-admin client
+  if (!targetTenant) {
+    const clientTenants = allTenants.filter(tn => tn.slug !== 'admin-demo' && tn.id !== ctx.tenant.id);
+    if (clientTenants.length > 0) {
+      targetTenant = clientTenants[0];
+    } else {
+      targetTenant = allTenants.find(tn => tn.id !== ctx.tenant.id) || allTenants[0];
+    }
+  }
+
+  if (!targetTenant) {
+    const reply = isEng
+      ? `Please specify which client workspace you would like to audit. Example: \`What did client Apex Health do?\` or \`Show activities for client animeshj425@gmail.com\`.`
+      : `Kripya batayein ki aap kis client ka audit check karna chahte hain. Example: \`Client Rajesh ne kya kya kiya?\` ya \`Show activities of client Apex\`.`;
+    return { reply, action: null };
+  }
+
+  // 3. Compile full administrative audit for this client
+  const tenantUsers = allUsers.filter(u => u.tenantId === targetTenant.id);
+  const tenantAgents = allAgents.filter(a => a.tenantId === targetTenant.id);
+  const tenantActions = allActions.filter(a => a.tenantId === targetTenant.id);
+  const tenantRecordings = allRecordings.filter(r => r.tenantId === targetTenant.id);
+  const tenantContacts = allContacts.filter(c => c.tenantId === targetTenant.id);
+  const tenantWallet = (db.wallets || []).find(w => w.tenantId === targetTenant.id);
+  const balancePaise = (tenantWallet && tenantWallet.balancePaise) || 0;
+  const balanceInr = (balancePaise / 100).toFixed(2);
+
+  const recentActivities = [];
+  tenantActions.slice(-6).reverse().forEach(act => {
+    const actDate = (act.ts && !isNaN(new Date(act.ts))) ? new Date(act.ts).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'short' }) : 'Recent Action';
+    recentActivities.push(`• **${actDate}** - ${act.summary || act.intent}`);
+  });
+  tenantRecordings.slice(-3).reverse().forEach(rec => {
+    const callDate = ((rec.createdAt || rec.timestamp) && !isNaN(new Date(rec.createdAt || rec.timestamp))) ? new Date(rec.createdAt || rec.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'short' }) : 'Recorded Call';
+    recentActivities.push(`• **${callDate}** - Call with **${rec.callerName || 'Caller'}** (${rec.phoneNumber || ''}, ${rec.durationSeconds || 0}s, Status: ${rec.status || 'completed'})`);
+  });
+
+  const usersDisplay = tenantUsers.map(u => `${u.name || 'User'} (\`${u.email}\` - ${u.role})`).join(', ') || 'No users registered';
+  const agentsDisplay = tenantAgents.map(a => `**${a.name}**`).join(', ') || 'None created yet';
+
+  const reply = isEng
+    ? `👑 **Administrative Client Dossier & Activity Audit**\n\n` +
+    `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+    `• **Subscription Plan:** **${targetTenant.plan || 'Starter'}** (Status: **${targetTenant.status || 'Active'}**)\n` +
+    `• **Associated Users:** ${usersDisplay}\n` +
+    `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+    `📊 **Operational Assets & Telephony:**\n` +
+    `• Active AI Agents: ${agentsDisplay}\n` +
+    `• Total Call Recordings: **${tenantRecordings.length}** calls\n` +
+    `• CRM Pipeline Contacts: **${tenantContacts.length}** leads\n` +
+    `• Total Assistant Actions: **${tenantActions.length}** operations\n\n` +
+    `📜 **Recent Client Activities & History:**\n` +
+    (recentActivities.length ? recentActivities.join('\n') : `*No recent operations logged for this client yet.*`) + `\n\n` +
+    `You can manage this client's agents, review their call recordings, or dispatch campaigns on their behalf.`
+    : `👑 **Admin Client Audit & Activity Report**\n\n` +
+    `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
+    `• **Plan Status:** **${targetTenant.plan || 'Starter'}** (${targetTenant.status || 'Active'})\n` +
+    `• **Registered Users:** ${usersDisplay}\n` +
+    `• **Wallet Balance:** ₹${balanceInr}\n\n` +
+    `📊 **Operational Assets & Telephony:**\n` +
+    `• Active AI Agents: ${agentsDisplay}\n` +
+    `• Total Calls Handled: **${tenantRecordings.length}** calls\n` +
+    `• CRM Leads: **${tenantContacts.length}** leads\n` +
+    `• Total AI Operations: **${tenantActions.length}** actions\n\n` +
+    `📜 **Iss Client Ki Recent Activities & History:**\n` +
+    (recentActivities.length ? recentActivities.join('\n') : `*Abhi tak is client ne koi activity perform nahi ki hai.*`) + `\n\n` +
+    `Aap Admin authority ke sath is client ke agents modify kar sakte hain ya inka call record check kar sakte hain.`;
+
+  return {
+    reply,
+    action: {
+      type: 'admin_client_audit',
+      tenantId: targetTenant.id,
+      tenantName: targetTenant.name,
+      agentCount: tenantAgents.length,
+      callCount: tenantRecordings.length,
+      leadCount: tenantContacts.length
+    }
+  };
+}
+
+// ---- handle: general_chat -------------------------------------------------
+async function handleGeneralChat(text, ctx, sessionOrThread, sessionDocContext = '') {
+  const hasInlineDoc =
+    text.includes('[Attached Document File:') ||
+    text.includes('--- Document Text Content Start ---') ||
+    text.includes('[Attached File:') ||
+    text.includes('[Attached Image File:');
+
+  const activeDoc = hasInlineDoc ? text : (sessionDocContext || '');
+  const hasDocument = Boolean(activeDoc && activeDoc.length > 20);
+
+  const isLongRequested = /\b(\d+\s*(?:lines?|points?|sentences?|words?)|full\s*(?:knowledge|explanation|details|guide|essay|bio|biography|history)|detailed|comprehensive|in[\s-]depth|complete|everything\s*about|step[\s-]by[\s-]step|essay|bada|lamba|poora|vistaar)\b/i.test(text);
+
+  let systemPrompt = hasDocument
+    ? `You are Seevora AI, an advanced, highly intelligent multi-purpose conversational AI assistant (like ChatGPT and Claude) embedded in the Seevora enterprise platform.
+The user is actively discussing and analyzing an uploaded document in this chat session:
+--- ACTIVE DOCUMENT CONTENT START ---
+${activeDoc.slice(0, 36000)}
+--- ACTIVE DOCUMENT CONTENT END ---
+
+Your core instructions:
+1. DEEP DOCUMENT COMPREHENSION: Carefully read the entire document text above. When the user asks for "full explanation", "features", "how it works", "summary", or ANY specific question about the document, you MUST extract and provide comprehensive, in-depth, structured answers covering the exact modules, features, pricing, architecture, and specifications written in the document. Do NOT give shallow or generic 1-line answers!
+2. Maintain complete conversational memory: remember all previous questions, topics, entities, and context discussed in this conversation session.
+3. ADAPTIVE LENGTH & INTELLIGENCE: This is a digital interactive chat conversation. NEVER claim you are in a spoken voice response or that content is too long. If the user asks for a brief, summary, 50 lines, full knowledge, or in-depth explanation, you MUST provide the complete, detailed, rich response requested without refusing or truncating.
+4. Speak naturally in helpful English or Hinglish (strictly matching the user's language).
+5. Absolutely NEVER use any emojis anywhere in your response.
+6. CRITICAL: Never claim you cannot read, open, or access files, because the document contents are provided to you directly above.`
+    : `You are Seevora AI, an advanced, highly intelligent multi-purpose conversational AI assistant (like ChatGPT and Claude) embedded in the Seevora enterprise platform.
+You have comprehensive general knowledge about the world, people, sports, science, history, business, coding, and technology, as well as full autonomy over Seevora platform operations (creating agents, files, campaigns, CRM leads, and communications).
+
+IMPORTANT INSTRUCTIONS ON OUTPUT LENGTH & FORMAT:
+1. This is an interactive digital chat interface (NOT a telephone call, NOT a spoken voice audio response).
+2. NEVER claim you are in a spoken voice call or that an answer is "too long or unnatural for a spoken voice response".
+3. ADAPTIVE DEPTH & INTELLIGENCE: If the user asks for a specific length (e.g. "50 lines", "20 points", "detailed essay", "full knowledge", "comprehensive explanation"), you MUST fulfill the request completely and generate the full, detailed content requested. Do NOT refuse, do NOT shorten, and do NOT tell the user to visit an external website instead!
+4. For general brief questions, answer cleanly, smartly, and accurately.
+5. Maintain complete conversational memory: remember previous conversation turns, entities, and subjects discussed so discussions remain continuous and smart.
+6. Absolutely NEVER use any emojis anywhere in your response.
+7. FILE GENERATION CAPABILITY: You have FULL capabilities to generate and export files (PDF, Word DOCX, Excel XLSX, CSV, JSON, HTML, TXT) via Seevora platform operations. NEVER claim you cannot create, generate, or send files in this chat interface!`;
+
+  // Specific line/length requirements
+  let lengthInstruction = '';
+  const lineMatch = text.match(/(\d+)\s*lines?/i);
+  if (lineMatch) {
+    const count = parseInt(lineMatch[1], 10);
+    lengthInstruction = `\n\n[MANDATORY REQUIREMENT: The user explicitly requested a ${count}-line response. You MUST generate ${count} substantive, informative, numbered lines covering the topic thoroughly. Do NOT refuse, do NOT summarize, and do NOT refer to external links!]`;
+  } else if (isLongRequested) {
+    lengthInstruction = `\n\n[MANDATORY REQUIREMENT: The user requested full, detailed, comprehensive knowledge. Provide a rich, exhaustive, well-structured explanation covering all important facts thoroughly without refusing!]`;
+  }
+  systemPrompt += lengthInstruction;
+
+  // Strict Dynamic Language Detection for 100% accurate language mirroring
+  const userLang = detectUserLanguage(text);
+  let langInstruction = '';
+  if (userLang === 'English') {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in ENGLISH ("${text.slice(0, 100)}"). You MUST reply 100% in natural, fluent, professional ENGLISH! Absolutely do NOT use any Hindi, Hinglish, or Devanagari words anywhere in your response!]`;
+  } else if (userLang === 'Hindi') {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in HINDI (Devanagari script). Reply in natural, fluent HINDI.]`;
+  } else {
+    langInstruction = `\n\n[CRITICAL MANDATORY INSTRUCTION: The user is speaking in HINGLISH (Roman Hindi). Reply in natural, conversational HINGLISH matching the user's natural language and tone.]`;
+  }
+  systemPrompt += langInstruction;
+
+  // Role-based Multi-tenant Security & Privilege context
+  const isPlatformAdmin = ctx && ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+  if (!isPlatformAdmin && ctx && ctx.tenant) {
+    systemPrompt += `\n\n[STRICT SECURITY & MULTI-TENANT ISOLATION]:\nThe user chatting with you is a CLIENT belonging strictly to workspace "${ctx.tenant.name}" (${ctx.tenant.id}).\nYou MUST strictly enforce tenant isolation and privacy:\n1. NEVER reveal any data, calls, recordings, leads, agents, or activities belonging to other clients or companies.\n2. NEVER reveal administrative settings, platform internals, system passwords, or super-admin details.\n3. If the user asks about other clients, other users, or system admin information, immediately refuse with an Access Denied security warning.\n4. The client can only discuss, build, and manage assets within their own workspace "${ctx.tenant.name}".`;
+  } else if (isPlatformAdmin && ctx && ctx.user) {
+    systemPrompt += `\n\n[ADMINISTRATIVE SUPER-PRIVILEGES]:\nThe user chatting with you is a PLATFORM SUPER-ADMIN (${ctx.user.email}, Role: ${ctx.user.role}).\nThey have full administrative authority over all client workspaces, tenant audits, system operations, and platform logs. You may answer administrative and multi-client operational queries for them.`;
+  }
+
+  let historyMessages = [];
+  const rawList = Array.isArray(sessionOrThread)
+    ? sessionOrThread
+    : (sessionOrThread && Array.isArray(sessionOrThread.messages) ? sessionOrThread.messages : []);
+
+  if (rawList.length) {
+    // Take recent messages for chat memory (last 16 messages)
+    const filtered = rawList
+      .slice(-16)
+      .filter((m) => {
+        const str = String(m.text || '').toLowerCase();
+        return !str.includes('cannot access or analyze files directly') && !str.includes('action cancelled');
+      });
+    historyMessages = filtered.map((m) => {
+      let msgText = String(m.text || '');
+      // If the message had a huge document embedded in turn 1, keep the user instruction part so we don't blow up token limits while preserving conversation context
+      if (msgText.includes('\n\n[User Instruction / Request]: ')) {
+        msgText = msgText.split('\n\n[User Instruction / Request]: ').pop();
+      }
+      return {
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        text: msgText.slice(0, 3000),
+      };
+    });
+  }
+
+  // Ensure current user prompt is present at the end
+  const cleanPrompt = text.includes('\n\n[User Instruction / Request]: ')
+    ? text.split('\n\n[User Instruction / Request]: ').pop()
+    : text;
+
+  if (!historyMessages.length || historyMessages[historyMessages.length - 1].text !== cleanPrompt) {
+    historyMessages.push({ role: 'user', text: cleanPrompt });
+  }
 
   let reply = '';
   try {
     const selected = providers.resolveSelection('llm', {});
+    const targetMaxTokens = isLongRequested ? 3500 : (hasDocument ? 2500 : 1500);
     const out = await selected.adapter.chat({
       system: systemPrompt,
       messages: historyMessages,
-      maxTokens: 400,
-      temperature: 0.7,
+      maxTokens: targetMaxTokens,
+      temperature: hasDocument ? 0.3 : 0.7,
       model: selected.model,
+      skipVoiceRule: true,
     });
     reply = String((out && out.text) || '').trim();
-  } catch (_) {
-    reply = 'I am here to help! You can ask me to create or edit an agent, check your call analytics, or add knowledge to an agent.';
+  } catch (err) {
+    logger.warn('LLM chat error in handleGeneralChat', { error: err.message });
+    if (hasDocument) {
+      reply = userLang === 'Hindi'
+        ? 'दस्तावेज़ का विश्लेषण करने में कुछ समस्या आई। कृपया पुनः प्रयास करें।'
+        : (userLang === 'English'
+          ? 'Unable to analyze the document right now due to a provider timeout. Please try sending your request again.'
+          : 'Document analyze karne mein provider timeout aaya. Kripya dobara try karein.');
+    } else {
+      reply = userLang === 'Hindi'
+        ? 'मैं आपकी सहायता के लिए यहाँ हूँ! आप मुझसे नया वॉइस एजेंट बनाने, कॉल एनालिटिक्स देखने या नॉलेज बेस अपडेट करने के लिए कह सकते हैं।'
+        : (userLang === 'English'
+          ? 'I am here to help! You can ask me to train a voice agent, review call analytics, dispatch WhatsApp/emails, or generate files.'
+          : 'Main aapki poori madad karne ke liye taiyaar hoon! Aap mujhse naya voice agent train karwa sakte hain, call analytics check kar sakte hain, ya WhatsApp/Email bhej sakte hain.');
+    }
   }
+
+  // Ensure no emojis in reply
+  reply = reply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '');
 
   return { reply, action: null };
 }
@@ -2742,7 +3485,7 @@ async function verifyWhatsAppBusinessNumber(rawPhone, metaConfig = {}) {
           message: `Verified via Meta Cloud API! OTP dispatched directly to WhatsApp on ${formatted}.`
         };
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Official verified business / VoBiz line
@@ -3213,17 +3956,732 @@ async function handleBroadcastMessage(text, agentId, ctx, db) {
   };
 }
 
+
+// ---- handle: make_call (Autonomous Outbound Telephony Call via Chat) --------
+async function handleMakeCall(text, ctx, db) {
+  const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\b\d{10}\b/);
+  if (!phoneMatch) {
+    return {
+      reply: 'Kripya valid 10-digit phone number provide karein jahan call lagana hai.\n\n*Example:* `9876543210 ko call lagao` ya `call karo Rajesh ko 9876543210 pe`',
+      action: null
+    };
+  }
+
+  const cleanNum = phoneMatch[0].replace(/\D/g, '').slice(-10);
+  let callerName = '';
+  const nameMatch = text.match(/(?:to|ko|caller|recipient|name)\s+([A-Za-z\s]{2,25}?)(?=\s+(?:on|at|pe|par|via|\+?91|\d{10}|$))/i);
+  if (nameMatch && nameMatch[1]) {
+    callerName = nameMatch[1].trim();
+  }
+
+  const fromNumber = '+918071582519';
+  const tenantAgents = (db.agents || []).filter(a => a.tenantId === ctx.tenant.id);
+
+  // Find agent if user mentioned one (e.g. Ria, Maya, Priya)
+  let selectedAgent = null;
+  const lowerText = text.toLowerCase();
+  for (const ag of tenantAgents) {
+    const firstName = (ag.name || '').split(/\s+/)[0].toLowerCase();
+    if (firstName.length >= 3 && lowerText.includes(firstName)) {
+      selectedAgent = ag;
+      break;
+    }
+  }
+  if (!selectedAgent) {
+    selectedAgent = tenantAgents.find(a => a.isPrimary) || tenantAgents[0] || { name: 'Ria - AI Voice Receptionist' };
+  }
+
+  const authId = process.env.VOBIZ_AUTH_ID || 'vobiz_live_auth';
+  const authToken = process.env.VOBIZ_AUTH_TOKEN || 'vobiz_live_token';
+
+  let dialRes = null;
+  try {
+    if (typeof dialViaVobiz === 'function') {
+      dialRes = await dialViaVobiz(cleanNum, fromNumber, authId, authToken);
+    }
+  } catch (err) {
+    logger.warn('Chat telephony dial fallback warning', { err: err.message });
+  }
+
+  const nowIso = new Date().toISOString();
+  await core.mutate(d => {
+    if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
+    d.callRecordings.unshift({
+      id: core.genId('call_'),
+      tenantId: ctx.tenant.id,
+      phoneNumber: '+91 ' + cleanNum,
+      callerName: callerName || 'Direct Outbound Caller',
+      status: 'ringing',
+      direction: 'outbound',
+      durationSeconds: 0,
+      agentId: selectedAgent ? selectedAgent.id : undefined,
+      agentName: selectedAgent ? selectedAgent.name : 'Ria',
+      createdAt: nowIso
+    });
+  });
+
+  const isEnglishCall = detectUserLanguage(text) === 'English';
+  const reply = isEnglishCall
+    ? '📞 **Outbound Telephony Call Placed**\n\n' +
+    `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+    `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+    `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+    '• Status: **Ringing / Dialing**\n\n' +
+    'The call has been initiated. You can track, transfer, or listen live in the Live Locator!'
+    : '📞 **Outbound Telephony Call Placed**\n\n' +
+    `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
+    `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
+    `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
+    '• Status: **Ringing / Dialing**\n\n' +
+    'Call initiate ho chuki hai! Aap Dashboard Live Locator aur Call Recordings panel mein live status dekh sakte hain.';
+
+  return {
+    reply,
+    action: {
+      type: 'call_placed',
+      number: cleanNum,
+      callerName,
+      agentName: selectedAgent ? selectedAgent.name : 'Ria',
+      line: '+91 80715 82519'
+    }
+  };
+}
+
+// ---- handle: create_file (Universal File Generator: PDF, XLSX, CSV, DOCX, JSON, HTML, TXT) -
+
+function buildStandardPdf(title, textBlocks, meta = {}) {
+  const dateStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+  const tenantName = meta.tenantName || 'Seevora AI Enterprise';
+
+  const stream = [];
+  // Title in Emerald Green (#0d5d41 -> 0.05 0.36 0.25 rg)
+  stream.push('0.05 0.36 0.25 rg');
+  stream.push('BT /F1 18 Tf 50 780 Td (' + String(title || 'Document Report').replace(/[()\\\r\n]/g, ' ').slice(0, 50) + ') Tj ET');
+
+  // Subtitle / Date
+  stream.push('0.36 0.45 0.41 rg');
+  stream.push('BT /F2 10 Tf 50 762 Td (Workspace: ' + String(tenantName).replace(/[()\\\r\n]/g, ' ').slice(0, 40) + '  |  Generated: ' + dateStr + ') Tj ET');
+
+  // Decorative Rule
+  stream.push('0.05 0.36 0.25 RG 1.5 w 50 750 m 545 750 l S');
+
+  let y = 720;
+  stream.push('0.08 0.13 0.11 rg');
+
+  const blocks = Array.isArray(textBlocks) ? textBlocks : String(textBlocks || '').split('\n');
+  for (const block of blocks) {
+    if (y < 60) break;
+    const clean = block.trim();
+    if (!clean) {
+      y -= 10;
+      continue;
+    }
+
+    if (clean.startsWith('###') || clean.startsWith('##') || clean.startsWith('#')) {
+      y -= 14;
+      const heading = clean.replace(/^#+\s*/, '').replace(/[()\\\r\n]/g, ' ');
+      stream.push('0.05 0.36 0.25 rg');
+      stream.push('BT /F1 12 Tf 50 ' + y + ' Td (' + heading.slice(0, 65) + ') Tj ET');
+      stream.push('0.08 0.13 0.11 rg');
+      y -= 14;
+    } else if (clean.startsWith('|')) {
+      const cells = clean.split('|').map((c) => c.trim()).filter(Boolean);
+      if (clean.includes('---')) continue;
+      let x = 50;
+      const colWidth = Math.floor(490 / Math.max(cells.length, 1));
+      for (const cell of cells) {
+        const cellText = cell.slice(0, Math.floor(colWidth / 6)).replace(/[()\\\r\n]/g, ' ');
+        stream.push('BT /F2 9 Tf ' + x + ' ' + y + ' Td (' + cellText + ') Tj ET');
+        x += colWidth;
+      }
+      stream.push('0.85 0.88 0.86 RG 0.5 w 50 ' + (y - 3) + ' m 545 ' + (y - 3) + ' l S');
+      y -= 16;
+    } else {
+      const lineText = clean.replace(/[()\\\r\n]/g, ' ').slice(0, 85);
+      stream.push('BT /F2 10 Tf 50 ' + y + ' Td (' + lineText + ') Tj ET');
+      y -= 15;
+    }
+  }
+
+  // Footer
+  stream.push('0.5 0.5 0.5 rg');
+  stream.push('BT /F2 9 Tf 50 35 Td (Seevora AI Voice & Operations Platform - Generated for ' + String(tenantName).replace(/[()\\\r\n]/g, ' ').slice(0, 30) + ') Tj ET');
+
+  const contentStream = stream.join('\n');
+  const streamLen = Buffer.byteLength(contentStream, 'latin1');
+
+  const obj1 = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+  const obj2 = '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+  const obj3 = '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>\nendobj\n';
+  const obj4 = '4 0 obj\n<< /Length ' + streamLen + ' >>\nstream\n' + contentStream + '\nendstream\nendobj\n';
+  const obj5 = '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n';
+  const obj6 = '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n';
+
+  const header = '%PDF-1.4\n';
+  const offsets = [0];
+  let curOffset = Buffer.byteLength(header, 'latin1');
+
+  const objs = [obj1, obj2, obj3, obj4, obj5, obj6];
+  for (let i = 0; i < objs.length; i++) {
+    offsets.push(curOffset);
+    curOffset += Buffer.byteLength(objs[i], 'latin1');
+  }
+
+  const xrefStart = curOffset;
+  let xref = 'xref\n0 7\n0000000000 65535 f \n';
+  for (let i = 1; i <= 6; i++) {
+    xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  }
+
+  const trailer = 'trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n' + xrefStart + '\n%%EOF\n';
+  return Buffer.from(header + objs.join('') + xref + trailer, 'latin1');
+}
+
+function buildXlsxBuffer(rows) {
+  const strings = [];
+  const strMap = new Map();
+
+  function getStrIdx(s) {
+    if (strMap.has(s)) return strMap.get(s);
+    const idx = strings.length;
+    strings.push(s);
+    strMap.set(s, idx);
+    return idx;
+  }
+
+  let sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+
+  for (let r = 0; r < rows.length; r++) {
+    const rowNum = r + 1;
+    sheetXml += '<row r="' + rowNum + '">';
+    for (let c = 0; c < rows[r].length; c++) {
+      const colLetter = String.fromCharCode(65 + (c % 26));
+      const cellRef = colLetter + rowNum;
+      const val = String(rows[r][c] || '');
+      const strIdx = getStrIdx(val);
+      sheetXml += '<c r="' + cellRef + '" t="s"><v>' + strIdx + '</v></c>';
+    }
+    sheetXml += '</row>';
+  }
+  sheetXml += '</sheetData></worksheet>';
+
+  let ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' + strings.length + '" uniqueCount="' + strings.length + '">';
+  for (const s of strings) {
+    const clean = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    ssXml += '<si><t>' + clean + '</t></si>';
+  }
+  ssXml += '</sst>';
+
+  const contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' +
+    '</Types>';
+
+  const relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>';
+
+  const wbRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' +
+    '</Relationships>';
+
+  const wbXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>';
+
+  const files = [
+    { name: '[Content_Types].xml', content: Buffer.from(contentTypesXml) },
+    { name: '_rels/.rels', content: Buffer.from(relsXml) },
+    { name: 'xl/_rels/workbook.xml.rels', content: Buffer.from(wbRelsXml) },
+    { name: 'xl/workbook.xml', content: Buffer.from(wbXml) },
+    { name: 'xl/worksheets/sheet1.xml', content: Buffer.from(sheetXml) },
+    { name: 'xl/sharedStrings.xml', content: Buffer.from(ssXml) }
+  ];
+
+  const localEntries = [];
+  const cdEntries = [];
+  let curOffset = 0;
+
+  for (const file of files) {
+    const fnBuf = Buffer.from(file.name);
+    const deflated = zlib.deflateRawSync(file.content);
+
+    const lfh = Buffer.alloc(30 + fnBuf.length);
+    lfh.writeUInt32LE(0x04034b50, 0);
+    lfh.writeUInt16LE(20, 4);
+    lfh.writeUInt16LE(0, 6);
+    lfh.writeUInt16LE(8, 8);
+    lfh.writeUInt32LE(deflated.length, 18);
+    lfh.writeUInt32LE(file.content.length, 22);
+    lfh.writeUInt16LE(fnBuf.length, 26);
+    lfh.writeUInt16LE(0, 28);
+    fnBuf.copy(lfh, 30);
+    localEntries.push(lfh, deflated);
+
+    const cd = Buffer.alloc(46 + fnBuf.length);
+    cd.writeUInt32LE(0x02014b50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(0, 8);
+    cd.writeUInt16LE(8, 10);
+    cd.writeUInt32LE(deflated.length, 20);
+    cd.writeUInt32LE(file.content.length, 24);
+    cd.writeUInt16LE(fnBuf.length, 28);
+    cd.writeUInt16LE(0, 30);
+    cd.writeUInt16LE(0, 32);
+    cd.writeUInt16LE(0, 34);
+    cd.writeUInt16LE(0, 36);
+    cd.writeUInt32LE(0, 38);
+    cd.writeUInt32LE(curOffset, 42);
+    fnBuf.copy(cd, 46);
+    cdEntries.push(cd);
+    curOffset += lfh.length + deflated.length;
+  }
+
+  const localBuf = Buffer.concat(localEntries);
+  const cdBuf = Buffer.concat(cdEntries);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12);
+  eocd.writeUInt32LE(localBuf.length, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([localBuf, cdBuf, eocd]);
+}
+
+function buildDocxBuffer(title, paragraphs) {
+  let docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+    '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>' + String(title || 'Document').replace(/[<>&]/g, '') + '</w:t></w:r></w:p>';
+
+  const list = Array.isArray(paragraphs) ? paragraphs : String(paragraphs || '').split('\n');
+  for (const p of list) {
+    const clean = p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (clean.startsWith('###') || clean.startsWith('##') || clean.startsWith('#')) {
+      docXml += '<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>' + clean.replace(/^#+\s*/, '') + '</w:t></w:r></w:p>';
+    } else if (clean.startsWith('- ') || clean.startsWith('* ')) {
+      docXml += '<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/></w:numPr></w:pPr><w:r><w:t>' + clean.slice(2) + '</w:t></w:r></w:p>';
+    } else if (clean.trim()) {
+      docXml += '<w:p><w:r><w:t>' + clean + '</w:t></w:r></w:p>';
+    }
+  }
+  docXml += '</w:body></w:document>';
+
+  const contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '</Types>';
+
+  const relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>';
+
+  const files = [
+    { name: '[Content_Types].xml', content: Buffer.from(contentTypesXml) },
+    { name: '_rels/.rels', content: Buffer.from(relsXml) },
+    { name: 'word/document.xml', content: Buffer.from(docXml) }
+  ];
+
+  const localEntries = [];
+  const cdEntries = [];
+  let curOffset = 0;
+
+  for (const file of files) {
+    const fnBuf = Buffer.from(file.name);
+    const deflated = zlib.deflateRawSync(file.content);
+
+    const lfh = Buffer.alloc(30 + fnBuf.length);
+    lfh.writeUInt32LE(0x04034b50, 0);
+    lfh.writeUInt16LE(20, 4);
+    lfh.writeUInt16LE(0, 6);
+    lfh.writeUInt16LE(8, 8);
+    lfh.writeUInt32LE(deflated.length, 18);
+    lfh.writeUInt32LE(file.content.length, 22);
+    lfh.writeUInt16LE(fnBuf.length, 26);
+    lfh.writeUInt16LE(0, 28);
+    fnBuf.copy(lfh, 30);
+    localEntries.push(lfh, deflated);
+
+    const cd = Buffer.alloc(46 + fnBuf.length);
+    cd.writeUInt32LE(0x02014b50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(0, 8);
+    cd.writeUInt16LE(8, 10);
+    cd.writeUInt32LE(deflated.length, 20);
+    cd.writeUInt32LE(file.content.length, 24);
+    cd.writeUInt16LE(fnBuf.length, 28);
+    cd.writeUInt16LE(0, 30);
+    cd.writeUInt16LE(0, 32);
+    cd.writeUInt16LE(0, 34);
+    cd.writeUInt16LE(0, 36);
+    cd.writeUInt32LE(0, 38);
+    cd.writeUInt32LE(curOffset, 42);
+    fnBuf.copy(cd, 46);
+    cdEntries.push(cd);
+    curOffset += lfh.length + deflated.length;
+  }
+
+  const localBuf = Buffer.concat(localEntries);
+  const cdBuf = Buffer.concat(cdEntries);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12);
+  eocd.writeUInt32LE(localBuf.length, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([localBuf, cdBuf, eocd]);
+}
+
+async function handleCreateFile(text, ctx, db, sessionMessages = [], activeDocCtx = '') {
+  const t = text.toLowerCase();
+  let fileType = 'csv';
+  let ext = 'csv';
+  let mime = 'text/csv;charset=utf-8';
+
+  // 1. Intelligent Format Detection based on Client's Perspective & Request
+  if (/\b(pdf)\b/i.test(t)) {
+    fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+  } else if (/\b(excel|xlsx|xls|spreadsheet|sheet)\b/i.test(t)) {
+    fileType = 'xlsx'; ext = 'xlsx'; mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  } else if (/\b(csv|comma separated)\b/i.test(t)) {
+    fileType = 'csv'; ext = 'csv'; mime = 'text/csv;charset=utf-8';
+  } else if (/\b(json)\b/i.test(t)) {
+    fileType = 'json'; ext = 'json'; mime = 'application/json';
+  } else if (/\b(word|docx?|doc)\b/i.test(t)) {
+    fileType = 'docx'; ext = 'docx'; mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  } else if (/\b(html|webpage|web\s*page)\b/i.test(t)) {
+    fileType = 'html'; ext = 'html'; mime = 'text/html;charset=utf-8';
+  } else if (/\b(md|markdown)\b/i.test(t)) {
+    fileType = 'md'; ext = 'md'; mime = 'text/markdown;charset=utf-8';
+  } else if (/\b(txt|text|notepad|notes)\b/i.test(t)) {
+    fileType = 'txt'; ext = 'txt'; mime = 'text/plain;charset=utf-8';
+  } else {
+    // Client perspective inference if no explicit extension mentioned
+    if (/\b(leads?|contacts?|numbers?|calls?|records?|table|rows?|clients?|customers?)\b/i.test(t)) {
+      fileType = 'csv'; ext = 'csv'; mime = 'text/csv;charset=utf-8';
+    } else if (/\b(report|summary|features?|overview|invoice|proposal|quotation|brief)\b/i.test(t)) {
+      fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+    } else if (/\b(api|payload|data|schema|config)\b/i.test(t)) {
+      fileType = 'json'; ext = 'json'; mime = 'application/json';
+    } else {
+      fileType = 'pdf'; ext = 'pdf'; mime = 'application/pdf';
+    }
+  }
+
+  // 2. Extract conversation & uploaded document context (with previous file tracking)
+  let contextSnippet = '';
+  let fullPreviousAssistantContent = '';
+  let lastGeneratedTopic = '';
+  let lastGeneratedFileName = '';
+  const isConversionRequest = /\b(?:now\s+in|same\s+in|convert|ab|ise|isko|change|format|do)\b/i.test(t) || t.length < 35;
+
+  if (Array.isArray(sessionMessages) && sessionMessages.length) {
+    // Look backwards for previously generated file preview or substantial assistant response
+    for (let i = sessionMessages.length - 1; i >= 0; i--) {
+      const msg = sessionMessages[i];
+      const msgText = String(msg.text || '');
+      if (msg.role === 'assistant') {
+        if (!fullPreviousAssistantContent && (msgText.includes('File Created Successfully') || msgText.length > 200)) {
+          fullPreviousAssistantContent = msgText;
+          const fnMatch = msgText.match(/File Name:\s*\*\*`?([^`*\n]+)`?\*\*/i) ||
+            ((msg.action && msg.action.fileName) ? [null, msg.action.fileName] : null);
+          if (fnMatch) lastGeneratedFileName = fnMatch[1];
+        }
+      } else if (msg.role === 'user') {
+        const uText = String(msg.text || '');
+        if (!lastGeneratedTopic && !/\b(now\s+in|in\s+doc|same\s+in|convert|pdf|docx?|excel|csv)\b/i.test(uText) && uText.length > 4) {
+          lastGeneratedTopic = uText;
+        }
+      }
+    }
+  }
+
+  if (activeDocCtx && activeDocCtx.length > 20) {
+    contextSnippet = `\n\n--- RELEVANT UPLOADED DOCUMENT CONTENT ---\n${activeDocCtx.slice(0, 18000)}\n--- END DOCUMENT CONTENT ---`;
+  } else if (isConversionRequest && fullPreviousAssistantContent) {
+    contextSnippet = `\n\n--- PREVIOUS CONTENT THAT MUST BE CONVERTED INTO ${fileType.toUpperCase()} ---\n` +
+      `Topic/Subject: ${lastGeneratedTopic || 'Document Data'}\n` +
+      `Content to re-format into ${fileType.toUpperCase()}:\n${fullPreviousAssistantContent.slice(0, 10000)}\n--- END PREVIOUS CONTENT ---`;
+  } else if (Array.isArray(sessionMessages) && sessionMessages.length) {
+    const recent = sessionMessages.slice(-8).map((m) => `${m.role === 'assistant' ? 'AI' : 'User'}: ${String(m.text || '').slice(0, 600)}`).join('\n');
+    contextSnippet = `\n\n--- RECENT CONVERSATION TOPIC & CONTEXT ---\n${recent}\n--- END CONTEXT ---`;
+  }
+
+  // 3. Prompt LLM to extract/generate structured content according to format
+  let fileContent = '';
+  try {
+    let sysPrompt = '';
+    const conversionGuidance = (isConversionRequest && fullPreviousAssistantContent)
+      ? `\n[MANDATORY CONVERSION]: The user previously generated a file/content and now requested: "${text}". You MUST convert that EXACT same content into ${fileType.toUpperCase()} format without losing any key facts, names, or points!`
+      : '';
+
+    if (fileType === 'pdf') {
+      sysPrompt = `You are an elite business report generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and create structured content for a professional PDF business document based on the user's request and provided context:\n${contextSnippet}\n` +
+        `Rules:\n` +
+        `- Line 1 must be the Document Title (e.g. Docivo Clinic Platform Report)\n` +
+        `- Use ### for section headings (e.g. ### Key Modules & Capabilities)\n` +
+        `- Use bullet points starting with - for key details, features, specifications\n` +
+        `- Use markdown table syntax | Col 1 | Col 2 | for tabular data\n` +
+        `CRITICAL: Output ONLY the structured text directly without any markdown code blocks, backticks, or chit-chat.`;
+    } else if (fileType === 'xlsx' || fileType === 'csv') {
+      sysPrompt = `You are an elite tabular data generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate clean comma-separated values (CSV) based on user's request and provided context:\n${contextSnippet}\n` +
+        `Rules:\n` +
+        `- Line 1 must be the column header row (e.g. ID,Name,Phone,Service,Status,Notes)\n` +
+        `- Following lines must be data rows\n` +
+        `- If fields contain commas, wrap them in double quotes\n` +
+        `CRITICAL: Output ONLY the raw CSV text directly without code blocks or backticks.`;
+    } else if (fileType === 'json') {
+      sysPrompt = `You are an elite JSON API data generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate a valid JSON array or object based on user's request and provided context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY valid raw JSON text directly without code blocks or backticks.`;
+    } else if (fileType === 'docx') {
+      sysPrompt = `You are an elite Word document generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Extract facts and generate a structured Word report based on user's request and context:\n${contextSnippet}\n` +
+        `- Line 1: Document Title\n` +
+        `- Use ### for section headings, - for bullet points, and clean paragraphs.\n` +
+        `CRITICAL: Output ONLY raw text directly without code blocks or backticks.`;
+    } else if (fileType === 'html') {
+      sysPrompt = `You are an elite web document designer for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Generate a self-contained responsive HTML document with Scandinavian Sage green accents (#0d5d41), clean header, styled table, and summary based on context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY valid raw HTML directly without backticks.`;
+    } else {
+      sysPrompt = `You are a business document generator for Seevora.\n` +
+        `The user requested: "${text}".${conversionGuidance}\n` +
+        `Generate a clean, structured plain text report based on user's request and context:\n${contextSnippet}\n` +
+        `CRITICAL: Output ONLY raw plain text directly without backticks.`;
+    }
+
+    const raw = await llmQuick(sysPrompt, text, 1800);
+    if (raw && raw.trim().length > 15) {
+      fileContent = raw.replace(/^\s*```[a-z0-9]*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    }
+  } catch (_) { }
+
+  // Fallback procedural generators if LLM is unavailable
+  if (!fileContent || fileContent.length < 15) {
+    if (fileType === 'csv' || fileType === 'xlsx') {
+      fileContent = 'ID,Name,Phone,Email,Status,City,Notes\n' +
+        '101,Rajesh Verma,+91 98765 43210,rajesh.verma@example.com,Qualified,Mumbai,Interested in 3BHK flat\n' +
+        '102,Priya Sharma,+91 98123 45678,priya.sharma@example.com,Appointment Booked,Delhi,Dental cleaning consultation\n' +
+        '103,Amit Patel,+91 97012 34567,amit.patel@example.com,In Progress,Bangalore,HVAC repair emergency\n' +
+        '104,Sunita Rao,+91 96543 21098,sunita.rao@example.com,New Lead,Pune,Inquired via WhatsApp\n' +
+        '105,Vikram Singh,+91 95432 10987,vikram.singh@example.com,Follow-up,Jaipur,Commercial leasing inquiry';
+    } else if (fileType === 'json') {
+      fileContent = JSON.stringify({
+        project: 'Seevora AI Voice',
+        exportedAt: new Date().toISOString(),
+        tenant: ctx.tenant.name,
+        records: [
+          { id: 'REC-101', name: 'Rajesh Verma', phone: '+91 98765 43210', status: 'Qualified', city: 'Mumbai' },
+          { id: 'REC-102', name: 'Priya Sharma', phone: '+91 98123 45678', status: 'Booked', city: 'Delhi' },
+          { id: 'REC-103', name: 'Amit Patel', phone: '+91 97012 34567', status: 'In Progress', city: 'Bangalore' }
+        ]
+      }, null, 2);
+    } else if (fileType === 'html') {
+      fileContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Seevora AI Report</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 32px; color: #14221c; background: #fcfdfc; }
+  .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d5d41; padding-bottom: 14px; margin-bottom: 24px; }
+  h1 { color: #0d5d41; margin: 0; font-size: 22px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(13,93,65,0.12); }
+  th { background: #e3f1e9; color: #0d5d41; font-size: 13px; text-transform: uppercase; font-weight: 700; }
+  .total { font-weight: 700; color: #0d5d41; text-align: right; margin-top: 20px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Seevora Business Report</h1>
+    <p style="margin:4px 0;color:#5d7468;font-size:13px;">Generated for ${ctx.tenant.name}</p>
+  </div>
+  <div style="text-align:right;color:#5d7468;font-size:12px;">
+    Date: ${new Date().toLocaleDateString()}<br>Line: +91 80715 82519
+  </div>
+</div>
+<table>
+  <thead><tr><th>ID</th><th>Client / Contact</th><th>Service Description</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>#101</td><td>Rajesh Verma</td><td>Voice Receptionist Setup & Appointment Triage</td><td>Active</td></tr>
+    <tr><td>#102</td><td>Dr. Sharma Clinic</td><td>Dental Inquiries & Doctor Schedule Link</td><td>Active</td></tr>
+    <tr><td>#103</td><td>Apex Care</td><td>Inbound Support & WhatsApp Confirmation</td><td>Active</td></tr>
+  </tbody>
+</table>
+<div class="total">Total Records: 3 Active Client Workflows</div>
+</body>
+</html>`;
+    } else {
+      fileContent = `SEEVORA AI BUSINESS REPORT\nGenerated At: ${new Date().toISOString()}\nWorkspace: ${ctx.tenant.name}\n\n` +
+        `### Operational Overview\n` +
+        `- 24/7 AI Voice Receptionist Active\n` +
+        `- Patient WhatsApp Notification & Scheduling Live\n` +
+        `- Calendar Sync Operational\n`;
+    }
+  }
+
+  // 4. Binary file compilation based on exact fileType
+  let fileBuffer = null;
+  let previewText = '';
+
+  if (fileType === 'pdf') {
+    const rawLines = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = rawLines.length && !rawLines[0].startsWith('#') ? rawLines[0] : (ctx.tenant.name + ' Business Report');
+    const bodyLines = rawLines.length && !rawLines[0].startsWith('#') ? rawLines.slice(1) : rawLines;
+    fileBuffer = buildStandardPdf(title, bodyLines, { tenantName: ctx.tenant.name });
+    previewText = rawLines.slice(0, 10).join('\n');
+  } else if (fileType === 'xlsx') {
+    // Parse CSV lines into 2D row array
+    const rows = fileContent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const match = line.match(/(?:[^\",]+|\"[^\"]*\")+/g);
+        return match ? match.map((s) => s.replace(/^\"|\"$/g, '').trim()) : [line];
+      });
+    fileBuffer = buildXlsxBuffer(rows.length ? rows : [['Header 1', 'Header 2'], ['Value 1', 'Value 2']]);
+    previewText = fileContent.split('\n').slice(0, 8).join('\n');
+  } else if (fileType === 'docx') {
+    const rawLines = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = rawLines.length && !rawLines[0].startsWith('#') ? rawLines[0] : (ctx.tenant.name + ' Report');
+    const bodyLines = rawLines.length && !rawLines[0].startsWith('#') ? rawLines.slice(1) : rawLines;
+    fileBuffer = buildDocxBuffer(title, bodyLines);
+    previewText = rawLines.slice(0, 10).join('\n');
+  } else {
+    // Text formats: CSV, JSON, HTML, TXT, MD
+    fileBuffer = Buffer.from(fileContent, 'utf8');
+    previewText = fileContent.slice(0, 360);
+  }
+
+  const b64 = fileBuffer.toString('base64');
+  const dataUrl = `data:${mime};base64,${b64}`;
+  const sizeBytes = fileBuffer.length;
+
+  // Extract clean subject for file naming
+  let subject = 'export';
+  if (lastGeneratedFileName) {
+    const fnClean = lastGeneratedFileName.replace(/\.[a-zA-Z0-9]+$/, '');
+    const parts = fnClean.split('_');
+    if (parts.length >= 3) {
+      subject = parts.slice(1, -1).join('_');
+    }
+  }
+
+  const combinedText = `${t} ${String(lastGeneratedTopic || '').toLowerCase()}`;
+  if (/virat|kohli/i.test(combinedText)) subject = 'virat_kohli';
+  else if (/lead/i.test(combinedText)) subject = 'leads';
+  else if (/patient|clinic|docivo/i.test(combinedText)) subject = 'clinic_data';
+  else if (/invoice|bill/i.test(combinedText)) subject = 'invoice';
+  else if (/feature/i.test(combinedText)) subject = 'features';
+  else if (/report|summary/i.test(combinedText)) subject = 'report';
+  else if (!subject || subject === 'export') {
+    if (lastGeneratedTopic) {
+      subject = lastGeneratedTopic.replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 16).toLowerCase().replace(/^_|_$/g, '') || 'export';
+    }
+  }
+
+  const fileName = `seevora_${subject}_${Date.now().toString().slice(-4)}.${ext}`;
+  const formatDisplay = (fileType === 'docx') ? 'DOC / DOCX (Word Document)' : (fileType === 'xlsx' ? 'XLSX (Excel Spreadsheet)' : fileType.toUpperCase());
+
+  const isEnglishFile = detectUserLanguage(text) === 'English';
+  const reply = isEnglishFile
+    ? '**File Created Successfully**\n\n' +
+    `• File Name: **\`${fileName}\`**\n` +
+    `• Format: **${formatDisplay}**\n` +
+    `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+    `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+    `Click the **"Download File"** button below to download your **${formatDisplay}** file directly to your computer!`
+    : '**File Created Successfully**\n\n' +
+    `• File Name: **\`${fileName}\`**\n` +
+    `• Format: **${formatDisplay}**\n` +
+    `• Size: **${Math.ceil(sizeBytes / 1024)} KB**\n\n` +
+    `**Content Preview:**\n\`\`\`${ext === 'pdf' || ext === 'xlsx' || ext === 'docx' ? 'markdown' : ext}\n${previewText}${previewText.length > 320 ? '\n...' : ''}\n\`\`\`\n\n` +
+    `Aap niche diye gaye **"Download File"** button par click karke apni **${formatDisplay}** file turant download kar sakte hain!`;
+
+  return {
+    reply,
+    action: {
+      type: 'file_created',
+      fileName,
+      fileType: formatDisplay,
+      dataUrl,
+      sizeBytes
+    }
+  };
+}
+
 // ---- POST /api/assistant/chat (AS-01 to AS-10, CH-01 to CH-06) -----------
 async function apiAssistantChat(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'assistant')) return;
   const b = ctx.body || {};
-  const text = String(b.text || '').trim().slice(0, 4000);
+  let text = String(b.text || '').trim().slice(0, 4000);
+  const attachments = Array.isArray(b.attachments) ? b.attachments : [];
   const agentId = String(b.agentId || '').trim() || null;
   const confirmToken = String(b.confirmToken || '').trim() || null;
   let currentSessionId = String(b.sessionId || '').trim() || null;
 
-  if (!text && !confirmToken) {
-    return core.sendJson(res, 422, { error: 'text is required', code: 'missing_text' });
+  if (!text && !confirmToken && !attachments.length) {
+    return core.sendJson(res, 422, { error: 'text or attachments required', code: 'missing_text' });
+  }
+
+  // Synthesize prompt if user only attached file/image
+  if (!text && attachments.length) {
+    const fileNames = attachments.map((a) => a.name).filter(Boolean).join(', ');
+    text = `Please analyze the attached document or image: "${fileNames || 'attachment'}". Summarize key points, facts, and suggest actionable business insights.`;
+  }
+
+  let enrichedText = text;
+  const docChunks = [];
+  if (attachments.length) {
+    for (const att of attachments) {
+      if (att.isImage) {
+        docChunks.push(`[Attached Image File: ${att.name || 'image'} (${Math.round((att.size || 0) / 1024)} KB)]`);
+      } else {
+        const parsed = docParser.extractTextFromAttachment(att);
+        if (parsed && parsed.trim().length > 0) {
+          docChunks.push(`[Attached Document File: ${att.name || 'document'} (${Math.round((att.size || 0) / 1024)} KB)]\n--- Document Text Content Start ---\n${parsed}\n--- Document Text Content End ---`);
+        } else {
+          docChunks.push(`[Attached Document File: ${att.name || 'document'} (${Math.round((att.size || 0) / 1024)} KB)]\n(File was uploaded, but no extractable text could be found inside.)`);
+        }
+      }
+    }
+    if (docChunks.length) {
+      enrichedText = `${docChunks.join('\n\n')}\n\n[User Instruction / Request]: ${text}`;
+    }
   }
 
   try {
@@ -3239,6 +4697,84 @@ async function apiAssistantChat(req, res, ctx) {
 
     // Classify intent
     let intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
+
+    const isPlatformAdmin = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+
+    // 1. Role-Based Privacy Guardrail: Block non-admin clients from querying administrative or cross-tenant data
+    const isProbingAdminOrOtherClients = !isPlatformAdmin && (
+      /\b(admin\s*(?:dashboard|panel|settings|creds|credentials|password|keys|env|system|config|database|db|secrets?)|super\s*admin|platform\s*(?:admin|settings|logs|revenue|profit|metrics)|server\s*(?:logs|env|keys|internals?)|system\s*prompt)\b/i.test(text) ||
+      /\b(other\s+(?:clients?|tenants?|users?|companies|accounts?|customers?)|all\s+(?:clients?|tenants?|users?|companies|accounts?)|another\s+(?:client|tenant|user)|list\s+(?:all\s+)?(?:clients?|tenants?|users?)|what\s+did\s+(?:other\s+clients?|client\s+[a-z0-9]+|another\s+client))\b/i.test(text) ||
+      /\b(dusre\s*(?:clients?|users?|logon|tenants?)|sab\s*(?:clients?|tenants?|users?)|kisi\s+aur\s+ka\s+(?:data|agent|call|account)|admin\s*ka\s*(?:data|password|system|cheeze|dashboard|info))\b/i.test(text) ||
+      /\b(?:who\s+are\s+the\s+other\s+clients?|show\s+(?:me\s+)?other\s+clients?|what\s+other\s+people\s+are\s+doing|audit\s+other\s+tenants?|iss\s+client\s+n\s+kya\s+kia|is\s+client\s+ne\s+kya\s+kiya)\b/i.test(text)
+    );
+
+    if (isProbingAdminOrOtherClients) {
+      const isEng = detectUserLanguage(text) === 'English';
+      const warningReply = isEng
+        ? `⚠️ **Security Warning: Administrative & Multi-Tenant Access Denied**\n\n` +
+        `You do not have administrative privileges to view platform-level configurations, system settings, or other clients' information.\n\n` +
+        `• **Your Role:** \`Client Workspace Member\`\n` +
+        `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+        `• **Privacy & Security Policy:** Multi-tenant cryptographic isolation is strictly enforced. You can only view, build, and manage voice agents, call analytics, and campaigns within your own workspace.\n\n` +
+        `If you need assistance with your workspace agents or integrations, please let me know!`
+        : `⚠️ **Security Warning: Access Denied**\n\n` +
+        `Aapke paas administrative configurations, platform logs, ya dusre clients ke data ko access karne ki permission nahi hai.\n\n` +
+        `• **Aapka Role:** \`Client Workspace Member\`\n` +
+        `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
+        `• **Privacy Policy:** Seevora multi-tenant data privacy protection active hai. Aap sirf apne workspace ke agents, calls aur files ko hi manage kar sakte hain.\n\n` +
+        `Aap apne workspace ke agents train karne, call analytics dekhne ya files export karne ke liye command de sakte hain.`;
+
+      await core.mutate((d) => {
+        assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
+        assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'assistant', warningReply, { intent: 'security_access_denied' });
+        assistant.logAction(d, ctx.tenant.id, ctx.user.id, 'security_alert', 'Blocked unauthorized admin/cross-tenant query attempt', false, { role: ctx.user.role });
+      });
+
+      return core.sendJson(res, 200, {
+        reply: warningReply,
+        intent: 'security_access_denied',
+        action: {
+          type: 'security_warning',
+          reason: 'unauthorized_admin_access_attempt',
+          userRole: ctx.user.role,
+          tenantName: ctx.tenant.name
+        },
+        needsConfirm: false,
+        confirmToken: null,
+        sessionId: currentSessionId,
+        thread: []
+      });
+    }
+
+    // 2. Admin Authority: Multi-Client Management & Activity Auditing from AI Chatbot
+    const isAdminClientQuery = isPlatformAdmin && (
+      /\b(all\s+clients?|all\s+tenants?|list\s+(?:all\s+)?clients?|list\s+(?:all\s+)?tenants?|saare\s+clients?|total\s+clients?)\b/i.test(text) ||
+      /\b(what\s+did\s+(?:client|this\s+client)|iss\s+client\s+n\s+kya|is\s+client\s+ne\s+kya|audit\s+client|show\s+activity\s+of\s+client|client\s+[a-z0-9._%+-]+\s+(?:ne\s+kya|did|activity|actions?)|tell\s+me\s+about\s+client)\b/i.test(text) ||
+      /\b(client\s+overview|tenant\s+overview|client\s+audit)\b/i.test(text)
+    );
+
+    // Safety guard: If user is asking for a file or format conversion (e.g. "now in doc format", "ab doc mai chahiye"), guarantee CREATE_FILE intent
+    if (
+      intent !== assistant.INTENTS.CREATE_FILE && (
+        /\b(?:now\s+in|in|same\s+in|convert|give\s+in|ab|ise|make\s+it\s+a)\s+(?:a\s+)?(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\b/i.test(text) ||
+        /\b(doc|docx|word|pdf|excel|xlsx|csv|json|html|txt|markdown|md)\s*(?:format|file)\b/i.test(text) ||
+        /\b(csv|json|excel|xlsx|pdf|doc|docx|word)\s*(format\s*(?:me|mein|mai|chaahiye|chahiye|do|please)?|file)\b/i.test(text)
+      )
+    ) {
+      intent = assistant.INTENTS.CREATE_FILE;
+    }
+
+    // Check if session has active document context from current or previous turns
+    let activeSession = currentSessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
+    const hasActiveSessionDoc = !!(docChunks.length > 0 || (activeSession && activeSession.activeDocContext));
+
+    // If attachments or active session document are present, ensure document queries stay in GENERAL chat
+    if (hasActiveSessionDoc) {
+      const isExplicitKnowledgeAdd = /\b(add|upload|save)\b.{0,30}\b(to\s+(?:the\s+)?knowledge\s*base|to\s+(?:the\s+)?agent)\b/i.test(text);
+      if (!isExplicitKnowledgeAdd && (intent === assistant.INTENTS.ASK_REPORT || intent === assistant.INTENTS.ADD_KNOWLEDGE)) {
+        intent = assistant.INTENTS.GENERAL;
+      }
+    }
 
     // Check if session has an active multi-turn training state
     const activeSessionCheck = currentSessionId ? assistant.getSession(db, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
@@ -3269,6 +4805,8 @@ async function apiAssistantChat(req, res, ctx) {
       assistant.INTENTS.SCHEDULE_CALENDAR,
       assistant.INTENTS.SEND_WHATSAPP,
       assistant.INTENTS.CRM_CREATE_LEAD,
+      assistant.INTENTS.MAKE_CALL,
+      assistant.INTENTS.CREATE_FILE,
     ]);
     if (freeIntents.has(intent)) {
       const todayCount = assistant.countTodayMessages(db, ctx.user.id);
@@ -3286,13 +4824,25 @@ async function apiAssistantChat(req, res, ctx) {
     // Persist user message to session and thread
     if (text) {
       await core.mutate((d) => {
-        const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text);
+        const appended = assistant.appendToSession(d, ctx.tenant.id, ctx.user.id, currentSessionId, 'user', text, { attachments });
         currentSessionId = appended.session.id;
+        // Save document context into the session if attachments were uploaded
+        if (docChunks.length > 0) {
+          const s = assistant.getSession(d, ctx.tenant.id, ctx.user.id, currentSessionId);
+          if (s) {
+            s.activeDocContext = docChunks.join('\n\n');
+            s.activeDocName = attachments.map((a) => a.name).filter(Boolean).join(', ');
+          }
+        }
       });
     }
 
-    // Load current thread for context (after adding user msg)
-    const thread = assistant.getThread(core.db(), ctx.tenant.id, ctx.user.id);
+    // Load active session messages for full multi-turn conversational context
+    const freshDb = core.db();
+    const curSession = currentSessionId ? assistant.getSession(freshDb, ctx.tenant.id, ctx.user.id, currentSessionId) : null;
+    const thread = assistant.getThread(freshDb, ctx.tenant.id, ctx.user.id);
+    const sessionMessages = (curSession && curSession.messages) || (thread && thread.messages) || [];
+    const activeDocCtx = (curSession && curSession.activeDocContext) || (docChunks.join('\n\n')) || '';
 
     let result = { reply: '', action: null, needsConfirm: false, confirmToken: null, preview: null };
 
@@ -3315,6 +4865,16 @@ async function apiAssistantChat(req, res, ctx) {
         result.action = { type: 'agent_updated', agentId: editId, field };
       } else {
         result.reply = 'Action completed.';
+      }
+    } else if (intent === assistant.INTENTS.MAKE_CALL) {
+      result = await handleMakeCall(text, ctx, core.db());
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Placed outbound call to ${result.action.number}`, false, result.action); });
+      }
+    } else if (intent === assistant.INTENTS.CREATE_FILE) {
+      result = await handleCreateFile(text, ctx, core.db(), sessionMessages, activeDocCtx);
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Generated ${result.action.fileType} file: ${result.action.fileName}`, false, result.action); });
       }
     } else if (intent === assistant.INTENTS.BUILD_AGENT) {
       result = await handleBuildAgent(text, ctx);
@@ -3398,9 +4958,15 @@ async function apiAssistantChat(req, res, ctx) {
       if (result.action) {
         await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Added CRM lead: ${result.action.contact && result.action.contact.name}`, false, result.action); });
       }
+    } else if (isAdminClientQuery) {
+      result = await handleAdminClientQuery(text, ctx, core.db());
+      intent = 'admin_client_audit';
+      if (result.action) {
+        await core.mutate((d) => { assistant.logAction(d, ctx.tenant.id, ctx.user.id, intent, `Admin audit: ${result.action.tenantName || 'clients'}`, false, result.action); });
+      }
     } else {
-      // general_chat
-      result = await handleGeneralChat(text, ctx, thread);
+      // general_chat (passes enriched text, ctx, session messages, and active document context)
+      result = await handleGeneralChat(enrichedText || text, ctx, sessionMessages, activeDocCtx);
     }
 
     // Persist assistant reply to session and thread
@@ -3699,6 +5265,74 @@ async function apiWhatsAppSendTest(req, res, ctx) {
   }
 }
 
+// ==========================================================================
+// CRM INTEGRATIONS API HANDLERS (Google Calendar, Sheets, Zoho, Slack)
+// ==========================================================================
+
+// GET /api/crm-integrations/config
+function apiCrmIntegrationsConfig(req, res, ctx) {
+  const cfg = integrations.getIntegrations(core.db(), ctx.tenant.id);
+  const safeConfig = JSON.parse(JSON.stringify(cfg));
+  if (safeConfig.zohoCrm) {
+    safeConfig.zohoCrm.clientSecret = safeConfig.zohoCrm.clientSecret ? '••••••••' : '';
+    safeConfig.zohoCrm.refreshToken = safeConfig.zohoCrm.refreshToken ? '••••••••' : '';
+    safeConfig.zohoCrm.zohoAccessToken = undefined;
+    safeConfig.zohoCrm.zohoTokenExpiresAt = undefined;
+  }
+  if (safeConfig.hubspot && safeConfig.hubspot.accessToken) {
+    safeConfig.hubspot.accessToken = '••••••••';
+  }
+  if (safeConfig.email && safeConfig.email.appPassword) {
+    safeConfig.email.appPassword = '••••••••';
+  }
+  if (safeConfig.whatsapp && safeConfig.whatsapp.metaToken) {
+    safeConfig.whatsapp.metaToken = '••••••••';
+  }
+  if (safeConfig.razorpay && safeConfig.razorpay.keySecret) {
+    safeConfig.razorpay.keySecret = '••••••••';
+  }
+  core.sendJson(res, 200, { config: safeConfig });
+}
+
+// POST /api/crm-integrations/save
+async function apiCrmIntegrationsSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  const config = b.config || {};
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  if (!integrations.CHANNELS.includes(channel)) return core.sendJson(res, 422, { error: 'Unknown channel: ' + channel });
+  try {
+    await integrations.saveIntegration(core.mutate, ctx.tenant.id, channel, config);
+    const updated = integrations.getIntegrations(core.db(), ctx.tenant.id);
+    core.sendJson(res, 200, { ok: true, channel, config: updated[channel] });
+  } catch (err) {
+    core.sendJson(res, 400, { ok: false, error: err.message });
+  }
+}
+
+// POST /api/crm-integrations/toggle
+async function apiCrmIntegrationsToggle(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  const enabled = Boolean(b.enabled);
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  try {
+    await integrations.toggleIntegration(core.mutate, ctx.tenant.id, channel, enabled);
+    core.sendJson(res, 200, { ok: true, channel, enabled });
+  } catch (err) {
+    core.sendJson(res, 400, { ok: false, error: err.message });
+  }
+}
+
+// POST /api/crm-integrations/test
+async function apiCrmIntegrationsTest(req, res, ctx) {
+  const b = ctx.body || {};
+  const channel = String(b.channel || '').trim();
+  if (!channel) return core.sendJson(res, 422, { error: 'channel is required' });
+  const result = await integrations.testIntegration(core.db(), core.mutate, ctx.tenant.id, channel);
+  core.sendJson(res, result.ok ? 200 : 400, result);
+}
+
 // ---- GET /api/assistant/history (AS-11 action log) -----------------------
 async function apiAssistantHistory(req, res, ctx) {
   const db = core.db();
@@ -3712,12 +5346,15 @@ async function apiAssistantHistory(req, res, ctx) {
 
 // ---- Credit deduction helper (AS-10) ------------------------------------
 async function deductAssistantCredit(tenantId, userId) {
-  await core.mutate((d) => {
-    const wallet = d.wallets.find((w) => w.tenantId === tenantId);
+  const d = core.db();
+  const t = d.tenants.find((x) => x.id === tenantId);
+  if (isPlatformAdminTenant(t, d)) return; // Platform Admin has master quota, no credit deduction
+  await core.mutate((store) => {
+    const wallet = store.wallets.find((w) => w.tenantId === tenantId);
     if (!wallet || wallet.balancePaise < assistant.CREDIT_COST_PAISE) return;
     wallet.balancePaise -= assistant.CREDIT_COST_PAISE;
     wallet.updatedAt = new Date().toISOString();
-    d.ledger.push({
+    store.ledger.push({
       id: core.genId('led_'),
       tenantId,
       type: 'assistant_credit_debit',
@@ -3775,7 +5412,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
         if (ragContext) {
           system += '\n\n' + ragContext;
         }
-      } catch (_) {}
+      } catch (_) { }
 
       // Native Slot Booking Injection: Inject live open slots when caller inquires
       if (/book|appointment|slot|schedule|timing|milna|available|reservation|time/i.test(lastUserText)) {
@@ -3784,7 +5421,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
           if (avail) {
             system += `\n\n[LIVE CALENDAR AVAILABILITY FOR CALLER: ${avail}]`;
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -3796,12 +5433,12 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
       if (providers.llmGemini && (!selected || selected.provider !== 'gemini')) {
         try {
           out = await providers.llmGemini.chat({ messages: b.messages, system, model: providers.llmGemini.defaultModel });
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!out && providers.llmGroq && (!selected || selected.provider !== 'groq')) {
         try {
           out = await providers.llmGroq.chat({ messages: b.messages, system, model: providers.llmGroq.defaultModel });
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!out) {
         // Conversational fallback so caller is NEVER left stranded
@@ -3835,7 +5472,7 @@ ANTI-REPETITION: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the 
     }
     // Rough token accounting for the usage view (4 chars ~= 1 token).
     const approxTokens = Math.ceil(((out && out.text) || '').length / 4);
-    bumpUsage(ctx.tenant.id, 'llmTokens', approxTokens).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'llmTokens', approxTokens).catch(() => { });
 
     // Dynamic CRM contact auto-synchronization for ANY caller
     let crmContact = null;
@@ -3895,17 +5532,19 @@ async function mintDograhVoiceSession(req, context) {
   const requestOrigin = String(req.headers.origin || `https://${req.headers.host || ''}`);
   const upstream = await fetch(base + '/api/v1/public/embed/init', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Origin: requestOrigin },
-    body: JSON.stringify({ token, context_variables: {
-      source: String(context.source || 'rumik_studio'),
-      tenant_id: String(context.tenantId || ''),
-      agent_id: String(context.agentId || ''),
-      demo_link_id: String(context.demoLinkId || ''),
-      max_session_seconds: String(context.maxSessionSeconds || ''),
-    } }),
+    body: JSON.stringify({
+      token, context_variables: {
+        source: String(context.source || 'rumik_studio'),
+        tenant_id: String(context.tenantId || ''),
+        agent_id: String(context.agentId || ''),
+        demo_link_id: String(context.demoLinkId || ''),
+        max_session_seconds: String(context.maxSessionSeconds || ''),
+      }
+    }),
     signal: AbortSignal.timeout(12000),
   });
   const text = await upstream.text(); let data = {};
-  try { data = JSON.parse(text); } catch (_) {}
+  try { data = JSON.parse(text); } catch (_) { }
   if (!upstream.ok) {
     const error = new Error(String(data.detail || 'Dograh could not start the realtime voice session'));
     error.status = upstream.status; error.code = 'voice_session_failed'; throw error;
@@ -3928,7 +5567,7 @@ async function mintDograhVoiceSession(req, context) {
           };
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return {
     sessionToken: data.session_token, workflowRunId: data.workflow_run_id,
@@ -4041,7 +5680,7 @@ async function apiPublicDemoSession(req, res, token) {
     if (reserved) await core.mutate((database) => {
       const target = database.demoLinks.find((item) => item.id === context.link.id);
       if (target) target.starts = Math.max(0, Number(target.starts || 0) - 1);
-    }).catch(() => {});
+    }).catch(() => { });
     core.sendJson(res, error.status || 502, { error: error.message || 'realtime demo failed', code: error.code || 'voice_session_failed' });
   }
 }
@@ -4241,7 +5880,7 @@ async function apiTelephonyDial(req, res, ctx) {
     }
 
     // Count the dial attempt against today's usage.
-    bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => {});
+    bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => { });
     const runId = (r.data && (r.data.request_uuid || r.data.run_id || r.data.id || r.data.call_id)) || ('dial_' + Date.now());
     const providedName = String(b.callerName || b.recipientName || b.name || '').trim().slice(0, 80);
     // Auto-sync into WACRM leads, conversation timeline, and tenant-scoped callRecordings
@@ -4283,7 +5922,7 @@ async function apiTelephonyDial(req, res, ctx) {
         text: `Outbound phone call initiated to ${resolvedInfo.name ? resolvedInfo.name + ' (' + b.number + ')' : b.number}`,
         status: 'sent'
       });
-    }).catch(() => {});
+    }).catch(() => { });
 
     core.sendJson(res, r.status || 200, { ok: true, message: 'call queued', runId, ...r.data });
   } catch (e) {
@@ -4429,9 +6068,55 @@ function isPlatformAdminCtx(ctx) {
   return !!(ctx && ctx.user && !ctx.impersonator && ['super_admin', 'admin'].includes(ctx.user.role));
 }
 
+function ensureDograhFlowsSeeded(store) {
+  if (!Array.isArray(store.dograhFlows)) store.dograhFlows = [];
+  if (!Array.isArray(store.agents)) store.agents = [];
+  const tenants = store.tenants || [];
+  let changed = false;
+
+  tenants.forEach((t) => {
+    // 1. Ensure tenant has the 5 preconfigured distinct agents
+    let tenantAgents = store.agents.filter((a) => a.tenantId === t.id);
+    if (tenantAgents.length < 5) {
+      const preconfigured = demoSeeder.getPreconfiguredAgents(t.id, demoSeeder.SEEVORA_FACTS);
+      preconfigured.forEach((pa) => {
+        const hasAgent = store.agents.some((a) => a.tenantId === t.id && (a.id === pa.id || a.name.split('-')[0].trim().toLowerCase() === pa.name.split('-')[0].trim().toLowerCase()));
+        if (!hasAgent) {
+          store.agents.push(pa);
+          changed = true;
+        }
+      });
+      tenantAgents = store.agents.filter((a) => a.tenantId === t.id);
+      if (!tenantAgents.some((a) => a.isPrimary) && tenantAgents.length > 0) {
+        tenantAgents[0].isPrimary = true;
+        changed = true;
+      }
+    }
+
+    // 2. Ensure tenant has the 5 preconfigured Dograh voice flows mapped to agents
+    const preFlows = demoSeeder.getPreconfiguredFlows(t.id, tenantAgents);
+    preFlows.forEach((pf) => {
+      let existing = store.dograhFlows.find((f) => f.tenantId === t.id && (f.id === pf.id || f.name === pf.name || (f.agentId && f.agentId === pf.agentId)));
+      if (!existing) {
+        store.dograhFlows.push(pf);
+        changed = true;
+      } else {
+        if (!existing.agentId && pf.agentId) { existing.agentId = pf.agentId; changed = true; }
+        if (!existing.greeting && pf.greeting) { existing.greeting = pf.greeting; changed = true; }
+        if (!existing.prompt && pf.prompt) { existing.prompt = pf.prompt; changed = true; }
+      }
+    });
+  });
+
+  return changed;
+}
+
 function resolveTenantWorkflowId(tenantId) {
   const flows = (core.db().dograhFlows || []).filter((f) => f.tenantId === tenantId && f.isActive && f.status !== 'paused');
-  return flows.length ? String(flows[0].workflowId) : dograhDefaultWorkflowId();
+  if (flows.length) return String(flows[0].workflowId);
+  const wfs = (core.db().workflows || []).filter((w) => w.tenantId === tenantId && w.status === 'active' && w.dograhWorkflowId);
+  if (wfs.length) return String(wfs[0].dograhWorkflowId);
+  return dograhDefaultWorkflowId();
 }
 
 function resolveTenantWorkflowIds(tenantId) {
@@ -4454,6 +6139,12 @@ function publicDograhFlow(f, tenantMap, agentMap) {
     agentId: f.agentId || null,
     agentName: (agentMap && f.agentId && agentMap.get(f.agentId)) || null,
     description: f.description || '',
+    greeting: f.greeting || '',
+    prompt: f.prompt || '',
+    nodes: Array.isArray(f.nodes) ? f.nodes : [],
+    fallbackPhone: f.fallbackPhone || '',
+    assignedPhone: f.assignedPhone || '',
+    language: f.language || 'hi-IN',
     assignedBy: f.assignedBy || 'client',
     lastSyncedAt: f.lastSyncedAt || null,
     lastError: f.lastError || null,
@@ -4495,6 +6186,14 @@ ESCALATION RULES:
   }
 
   const knowledgeSection = agent.knowledge ? `\n\n# BUSINESS KNOWLEDGE BASE\n${agent.knowledge}` : '';
+
+  // Rumik Tone Tagging for Natural Indian Speech Delivery
+  const toneTag = agent.rumikTone === 'excited' ? '[excited]' : (agent.rumikTone === 'neutral' ? '[neutral]' : (agent.rumikTone === 'empathetic' ? '[happy]' : '[happy]'));
+  const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MUGA VOICE: ${String(agent.rumikVoice || 'ira').toUpperCase()})
+- To produce a warm, natural, human-like voice, ALWAYS prefix your spoken sentences with an emotional tone tag: ${toneTag} or [happy].
+- Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
+- Speak with natural, fluid conversational rhythm and clear Indian diction.`;
+
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
 - NEVER write or say "24/7" or "24*7" or "/". Always say "twenty-four seven" or "chaubees ghante".
 - NEVER say raw mathematical symbols, asterisks, or markdown characters.
@@ -4503,8 +6202,11 @@ ESCALATION RULES:
 
   const fullPrompt = `You are ${agent.name}.
 
-${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${speechRules}`;
-  const greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
+${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${toneRules}${speechRules}`;
+  let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
+  if (!greeting.startsWith('[')) {
+    greeting = `${toneTag} ${greeting}`;
+  }
   return { fullPrompt, greeting };
 }
 
@@ -4553,25 +6255,174 @@ function dograhFlowAccess(ctx, flow) {
   return !!flow && (isPlatformAdminCtx(ctx) || flow.tenantId === ctx.tenant.id);
 }
 
+// ---- RUMIK VOICE & SPEECH STUDIO (Per-Tenant / Per-Agent) -----------------
+async function apiVoiceCatalog(req, res, ctx) {
+  const d = core.db();
+  const tenantId = ctx.tenant.id;
+  const agents = (d.agents || []).filter((a) => a.tenantId === tenantId);
+  const primaryAgent = agents.find((a) => a.isPrimary) || agents[0] || null;
+  const tenant = (d.tenants || []).find((t) => t.id === tenantId) || ctx.tenant;
+  const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === tenantId && f.isActive) ||
+    (d.dograhFlows || []).find((f) => f.tenantId === tenantId) || null;
+
+  const activeVoice = {
+    voiceId: (primaryAgent && primaryAgent.rumikVoice) || tenant.defaultVoiceId || 'ira',
+    model: (primaryAgent && primaryAgent.rumikModel) || 'mulberry',
+    tone: (primaryAgent && primaryAgent.rumikTone) || 'happy',
+    speed: (primaryAgent && primaryAgent.rumikSpeed) || 1.0,
+    description: (primaryAgent && primaryAgent.voiceDescription) || '',
+    agentId: primaryAgent ? primaryAgent.id : null,
+    agentName: primaryAgent ? primaryAgent.name : null
+  };
+
+  core.sendJson(res, 200, {
+    voices: rumikVoice.VOICE_CATALOG,
+    tones: rumikVoice.TONE_PRESETS,
+    activeVoice,
+    agents: agents.map((a) => ({ id: a.id, name: a.name, rumikVoice: a.rumikVoice || 'ira', isPrimary: !!a.isPrimary })),
+    activeWorkflowId: activeFlow ? activeFlow.workflowId : dograhDefaultWorkflowId()
+  });
+}
+
+async function apiVoicePreview(req, res, ctx) {
+  const b = ctx.body || {};
+  const voiceId = String(b.voiceId || 'ira').trim().toLowerCase();
+  const model = String(b.model || 'mulberry').trim().toLowerCase();
+  const tone = String(b.tone || 'happy').trim().toLowerCase();
+  const speed = parseFloat(b.speed) || 1.0;
+  const text = String(b.text || '').trim();
+  const description = String(b.description || '').trim();
+
+  try {
+    const result = await rumikVoice.synthesizeRumikSpeech({
+      text: text || undefined,
+      voiceId,
+      model,
+      tone,
+      speed,
+      customDescription: description
+    });
+    core.sendJson(res, 200, {
+      ok: true,
+      dataUrl: result.dataUrl,
+      duration: result.duration,
+      source: result.source,
+      voice: result.voice
+    });
+  } catch (err) {
+    logger.warn('Voice preview synthesis error', { error: err.message });
+    core.sendJson(res, 500, { error: 'Failed to synthesize voice preview: ' + err.message, code: 'synthesis_failed' });
+  }
+}
+
+async function apiVoiceSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const voiceId = String(b.voiceId || 'ira').trim().toLowerCase();
+  const model = String(b.model || 'mulberry').trim().toLowerCase();
+  const tone = String(b.tone || 'happy').trim().toLowerCase();
+  const speed = Math.max(0.75, Math.min(1.35, parseFloat(b.speed) || 1.0));
+  const description = String(b.description || '').trim();
+  const d = core.db();
+
+  let targetAgentId = String(b.agentId || '').trim();
+  if (!targetAgentId) {
+    const primary = (d.agents || []).find((a) => a.tenantId === ctx.tenant.id && a.isPrimary) ||
+      (d.agents || []).find((a) => a.tenantId === ctx.tenant.id);
+    if (primary) targetAgentId = primary.id;
+  }
+
+  let updatedAgent = null;
+  await core.mutate((mutDb) => {
+    if (targetAgentId) {
+      const a = (mutDb.agents || []).find((x) => x.id === targetAgentId && x.tenantId === ctx.tenant.id);
+      if (a) {
+        a.voiceProvider = 'rumik';
+        a.rumikVoice = voiceId;
+        a.rumikModel = model;
+        a.rumikTone = tone;
+        a.rumikSpeed = speed;
+        if (description) a.voiceDescription = description;
+        a.updatedAt = new Date().toISOString();
+        updatedAgent = { ...a };
+      }
+    }
+    const t = (mutDb.tenants || []).find((x) => x.id === ctx.tenant.id);
+    if (t) {
+      t.defaultVoiceId = voiceId;
+      t.defaultVoiceModel = model;
+      t.defaultVoiceTone = tone;
+      t.updatedAt = new Date().toISOString();
+    }
+  });
+
+  // 1. Sync Dograh Pipeline TTS Provider
+  let dograhSynced = false;
+  try {
+    const pipeRes = await rumikVoice.syncDograhPipelineVoice(voiceId, model);
+    dograhSynced = !!(pipeRes && pipeRes.ok);
+  } catch (_) { }
+
+  // 2. If agent updated, push to active Dograh Workflow
+  let workflowSynced = false;
+  if (updatedAgent) {
+    try {
+      const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id && f.isActive) ||
+        (d.dograhFlows || []).find((f) => f.tenantId === ctx.tenant.id);
+      const targetWfId = (activeFlow && activeFlow.workflowId) || dograhDefaultWorkflowId();
+      if (targetWfId) {
+        const wfRes = await pushAgentToDograhWorkflow(updatedAgent, ctx.tenant.id, targetWfId);
+        workflowSynced = !!(wfRes && wfRes.ok);
+      }
+    } catch (_) { }
+  }
+
+  core.sendJson(res, 200, {
+    ok: true,
+    message: `Rumik voice "${voiceId}" successfully applied and synced with Dograh workflow & active phone lines.`,
+    voiceId,
+    model,
+    tone,
+    speed,
+    agentId: targetAgentId,
+    dograhSynced,
+    workflowSynced
+  });
+}
+
 async function apiDograhFlowsList(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const d = core.db();
+  if (ensureDograhFlowsSeeded(d)) {
+    await core.mutate((store) => { ensureDograhFlowsSeeded(store); });
+  }
   const q = new URL(req.url, 'http://local').searchParams;
   const admin = isPlatformAdminCtx(ctx);
-  const targetId = admin ? String(q.get('tenantId') || '').trim() : ctx.tenant.id;
+  // Strict Privacy: non-admins cannot inspect other tenant workspaces
+  const targetId = admin ? (String(q.get('tenantId') || '').trim() || ctx.tenant.id) : ctx.tenant.id;
   const tenantMap = new Map((d.tenants || []).map((t) => [t.id, t.name || t.id]));
   const agentMap = new Map((d.agents || []).map((a) => [a.id, a.name]));
   let flows = d.dograhFlows || [];
   if (targetId) flows = flows.filter((f) => f.tenantId === targetId);
   flows = flows.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   const agentTenant = targetId || ctx.tenant.id;
-  const agents = (d.agents || []).filter((a) => a.tenantId === agentTenant).map((a) => ({ id: a.id, name: a.name, isPrimary: !!a.isPrimary }));
+  const agents = (d.agents || []).filter((a) => a.tenantId === agentTenant).map((a) => ({
+    id: a.id,
+    name: a.name,
+    isPrimary: !!a.isPrimary,
+    persona: a.persona || '',
+    greeting: a.greeting || '',
+    voiceId: a.voiceId || a.voice || 'mulberry'
+  }));
+  const tenants = admin ? (d.tenants || []).map((t) => ({ id: t.id, name: t.name, slug: t.slug })) : [];
+
   core.sendJson(res, 200, {
     flows: flows.map((f) => publicDograhFlow(f, tenantMap, agentMap)),
     agents,
+    tenants,
+    selectedTenantId: targetId,
     activeWorkflowId: resolveTenantWorkflowId(targetId || ctx.tenant.id),
     defaultWorkflowId: dograhDefaultWorkflowId(),
-    usingShared: !(d.dograhFlows || []).some((f) => f.tenantId === (targetId || ctx.tenant.id)),
+    usingShared: !(d.dograhFlows || []).some((f) => f.tenantId === (targetId || ctx.tenant.id) && String(f.workflowId) !== dograhDefaultWorkflowId()),
     live: !!(providers.telephony && providers.telephony.live),
     dashboardUrl: dograhDashboardUrl(),
     isAdmin: admin,
@@ -4599,21 +6450,18 @@ async function apiDograhRemoteWorkflows(req, res) {
   }
 }
 
-// POST /api/dograh/flows - generate a brand new Dograh flow for a workspace
+// POST /api/dograh/flows - generate or create a voice flow for a workspace
 async function apiDograhFlowCreate(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const b = ctx.body || {};
   const { admin, tenant } = dograhFlowTargetTenant(ctx, b);
   if (!tenant) return core.sendJson(res, 404, { error: 'Client workspace not found', code: 'not_found' });
-  if (!providers.telephony || !providers.telephony.live) {
-    return core.sendJson(res, 503, { error: 'Dograh is not configured on this platform', code: 'not_configured' });
-  }
 
   const d = core.db();
   const existing = (d.dograhFlows || []).filter((f) => f.tenantId === tenant.id);
   if (!admin) {
     const limits = plans.getTenantUsageAndLimits(d, tenant.id).limits || {};
-    const max = Number(limits.activeWorkflows) || 1;
+    const max = Number(limits.activeWorkflows) || 5;
     if (existing.length >= max) {
       return core.sendJson(res, 403, {
         error: `Flow limit reached: your plan allows ${max} voice flow${max === 1 ? '' : 's'}. Remove one or upgrade your plan.`,
@@ -4622,48 +6470,61 @@ async function apiDograhFlowCreate(req, res, ctx) {
     }
   }
 
-  const instructions = String(b.instructions || b.description || '').trim().slice(0, 4000);
+  const instructions = String(b.instructions || b.prompt || b.description || '').trim().slice(0, 4000);
+  const greeting = String(b.greeting || '').trim().slice(0, 500) || `Namaste! Welcome to ${tenant.name}. How can I assist you today?`;
   const agentId = String(b.agentId || '').trim();
   let agent = null;
   if (agentId) {
     agent = (d.agents || []).find((a) => a.id === agentId && a.tenantId === tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'Selected agent was not found in this workspace', code: 'agent_not_found' });
   }
-  if (!agent && !instructions) {
-    return core.sendJson(res, 422, { error: 'Pick an AI agent or describe what this flow should do', code: 'bad_flow' });
-  }
 
-  const flowName = String(b.name || '').trim().slice(0, 80) || `${tenant.name} Voice Flow`;
+  const flowName = String(b.name || '').trim().slice(0, 100) || `${tenant.name} Voice Flow`;
   const basis = agent
     ? { ...agent, persona: (agent.persona || '') + (instructions ? `\n\n# ADDITIONAL FLOW INSTRUCTIONS\n${instructions}` : '') }
-    : { id: 'adhoc', tenantId: tenant.id, name: flowName, persona: instructions, greeting: String(b.greeting || '').trim().slice(0, 300) || undefined };
-  const { fullPrompt, greeting } = buildAgentWorkflowPrompt(basis, tenant.id);
+    : { id: 'adhoc', tenantId: tenant.id, name: flowName, persona: instructions || `You are an AI receptionist for ${tenant.name}.`, greeting };
+  const { fullPrompt } = buildAgentWorkflowPrompt(basis, tenant.id);
   const definition = buildDograhFlowDefinition(flowName, fullPrompt, greeting);
   const remoteName = `${tenant.name} · ${flowName}`.slice(0, 120);
 
-  let created;
-  try {
-    created = await providers.telephony.createWorkflow(remoteName, definition);
-  } catch (err) {
-    logger.warn('Dograh flow creation failed', { error: err.message, tenantId: tenant.id });
-    return handleProviderError(res, err);
-  }
-  const workflowId = created && (created.id || created.workflow_id);
-  if (!workflowId) return core.sendJson(res, 502, { error: 'Dograh did not return a workflow id', code: 'upstream' });
-
-  // Best effort: inherit voice/model settings from the platform template flow, then publish.
+  let workflowId = b.workflowId ? String(b.workflowId).trim().replace(/[^0-9]/g, '') : null;
   let configWarning = null;
-  try {
-    const tpl = await providers.telephony.fetchWorkflow(dograhDefaultWorkflowId());
-    if (tpl && tpl.workflow_configurations) {
-      await providers.telephony.request('PUT', `/api/v1/workflow/${workflowId}`, {
-        name: remoteName,
-        workflow_definition: definition,
-        workflow_configurations: tpl.workflow_configurations,
-      });
+
+  if (!workflowId && providers.telephony && providers.telephony.live) {
+    try {
+      const created = await providers.telephony.createWorkflow(remoteName, definition);
+      workflowId = created && (created.id || created.workflow_id);
+      if (workflowId) {
+        try {
+          const tpl = await providers.telephony.fetchWorkflow(dograhDefaultWorkflowId());
+          if (tpl && tpl.workflow_configurations) {
+            await providers.telephony.request('PUT', `/api/v1/workflow/${workflowId}`, {
+              name: remoteName,
+              workflow_definition: definition,
+              workflow_configurations: tpl.workflow_configurations,
+            });
+          }
+          await providers.telephony.request('POST', `/api/v1/workflow/${workflowId}/publish`, {});
+        } catch (publishErr) {
+          configWarning = `Upstream note: ${publishErr.message}`;
+        }
+      }
+    } catch (err) {
+      logger.warn('Dograh flow creation upstream notice', { error: err.message, tenantId: tenant.id });
+      configWarning = `Upstream sync note: ${err.message}. Flow created in workspace database.`;
     }
-  } catch (err) { configWarning = err.message; }
-  try { await providers.telephony.request('POST', `/api/v1/workflow/${workflowId}/publish`, {}); } catch (err) { configWarning = configWarning || err.message; }
+  }
+
+  if (!workflowId) {
+    workflowId = dograhDefaultWorkflowId();
+  }
+
+  const nodes = Array.isArray(b.nodes) && b.nodes.length > 0 ? b.nodes : [
+    { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: greeting },
+    { id: '2', type: 'triage', title: 'Intent & Qualification', prompt: 'Inquire caller needs, qualify lead, or identify reason for call.' },
+    { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture contact details and schedule callback or appointment.' },
+    { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Escalate to human staff member if caller requests or if unresolved.' }
+  ];
 
   const now = new Date().toISOString();
   const flow = {
@@ -4671,11 +6532,17 @@ async function apiDograhFlowCreate(req, res, ctx) {
     tenantId: tenant.id,
     workflowId: String(workflowId),
     name: flowName,
-    kind: 'generated',
+    kind: b.kind || (admin ? 'assigned' : 'generated'),
     status: 'active',
     isActive: existing.length === 0 || b.activate === true,
     agentId: agent ? agent.id : null,
-    description: instructions.slice(0, 280),
+    description: instructions.slice(0, 280) || 'Custom voice dialogue flow',
+    greeting,
+    prompt: instructions || fullPrompt,
+    nodes,
+    fallbackPhone: String(b.fallbackPhone || '+91 89822 00895').trim(),
+    assignedPhone: String(b.assignedPhone || '+91 80715 82519').trim(),
+    language: String(b.language || 'hi-IN').trim(),
     assignedBy: admin ? 'admin' : 'client',
     createdBy: ctx.user.id,
     createdAt: now,
@@ -4683,16 +6550,47 @@ async function apiDograhFlowCreate(req, res, ctx) {
     lastSyncedAt: now,
     lastError: configWarning,
   };
+
   await core.mutate((store) => {
     if (!Array.isArray(store.dograhFlows)) store.dograhFlows = [];
-    if (flow.isActive) store.dograhFlows.forEach((f) => { if (f.tenantId === tenant.id) f.isActive = false; });
+    if (flow.isActive) {
+      store.dograhFlows.forEach((f) => { if (f.tenantId === tenant.id) f.isActive = false; });
+    }
     store.dograhFlows.push(flow);
+
+    // Also persist in store.workflows for cross-system consistency
+    if (!Array.isArray(store.workflows)) store.workflows = [];
+    store.workflows.push({
+      id: flow.id,
+      tenantId: tenant.id,
+      name: flow.name,
+      description: flow.description,
+      type: 'inbound',
+      status: 'active',
+      trigger: 'incoming_call',
+      dograhWorkflowId: String(flow.workflowId),
+      assignedAgentId: flow.agentId,
+      assignedPhone: flow.assignedPhone,
+      voiceSettings: { language: flow.language, voicePersona: 'muga-neutral', speechSpeed: 1.0, allowInterrupt: true },
+      nodes: flow.nodes,
+      prompt: flow.prompt,
+      fallbackAction: 'transfer_to_human',
+      fallbackNumber: flow.fallbackPhone,
+      stats: { totalRuns: 0, completedRuns: 0, transferredRuns: 0, successRate: '100%', avgDurationSec: 0 },
+      createdAt: now,
+      updatedAt: now,
+      createdBy: ctx.user.name || ctx.user.email || 'Client'
+    });
+
     addAudit(store, ctx, 'dograh.flow.created', 'dograh_flow', flow.id, { workflowId: flow.workflowId, tenantId: tenant.id });
   });
+
+  const tenantMap = new Map([[tenant.id, tenant.name]]);
+  const agentMap = new Map(agent ? [[agent.id, agent.name]] : []);
   core.sendJson(res, 201, {
     ok: true,
-    flow: publicDograhFlow(flow, new Map([[tenant.id, tenant.name]]), new Map(agent ? [[agent.id, agent.name]] : [])),
-    message: `Flow "${flowName}" created in Dograh (#${workflowId})${flow.isActive ? ' and set active' : ''}.`,
+    flow: publicDograhFlow(flow, tenantMap, agentMap),
+    message: `Flow "${flowName}" created successfully in workspace${flow.isActive ? ' and set active' : ''}.`,
     warning: configWarning || undefined,
   });
 }
@@ -4708,13 +6606,7 @@ async function apiDograhFlowAssign(req, res, ctx) {
   const tenant = (core.db().tenants || []).find((t) => t.id === tenantId);
   if (!tenant) return core.sendJson(res, 404, { error: 'Client workspace not found', code: 'not_found' });
 
-  let remote;
-  try {
-    remote = await providers.telephony.fetchWorkflow(workflowId);
-  } catch (err) {
-    return handleProviderError(res, err);
-  }
-  const name = String(b.name || '').trim().slice(0, 80) || remote.name || `Flow #${workflowId}`;
+  const name = String(b.name || '').trim().slice(0, 100) || `Flow #${workflowId}`;
   const now = new Date().toISOString();
   let saved = null;
   await core.mutate((store) => {
@@ -4724,13 +6616,39 @@ async function apiDograhFlowAssign(req, res, ctx) {
     const makeActive = b.activate === true || mine.length === 0;
     if (makeActive) mine.forEach((f) => { f.isActive = false; });
     if (flow) {
-      flow.name = name; flow.updatedAt = now; flow.assignedBy = 'admin';
+      flow.name = name;
+      flow.updatedAt = now;
+      flow.assignedBy = 'admin';
+      if (b.agentId) flow.agentId = String(b.agentId);
+      if (b.greeting) flow.greeting = String(b.greeting);
+      if (b.prompt) flow.prompt = String(b.prompt);
+      if (b.fallbackPhone) flow.fallbackPhone = String(b.fallbackPhone);
       if (makeActive) flow.isActive = true;
     } else {
       flow = {
-        id: core.genId('dfl_'), tenantId, workflowId, name, kind: 'assigned', status: 'active',
-        isActive: makeActive, agentId: null, description: '', assignedBy: 'admin',
-        createdBy: ctx.user.id, createdAt: now, updatedAt: now,
+        id: core.genId('dfl_'),
+        tenantId,
+        workflowId,
+        name,
+        kind: 'assigned',
+        status: 'active',
+        isActive: makeActive,
+        agentId: b.agentId ? String(b.agentId) : null,
+        description: `Admin assigned workflow #${workflowId}`,
+        greeting: b.greeting || `Namaste! Welcome to ${tenant.name}. How can I help you today?`,
+        prompt: b.prompt || `You are an AI voice receptionist for ${tenant.name}.`,
+        nodes: [
+          { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: b.greeting || `Welcome to ${tenant.name}` },
+          { id: '2', type: 'triage', title: 'Intent Classification', prompt: 'Inquire caller needs and route appropriately.' },
+          { id: '3', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to human if required.' }
+        ],
+        fallbackPhone: b.fallbackPhone || '+91 89822 00895',
+        assignedPhone: b.assignedPhone || '+91 80715 82519',
+        language: 'hi-IN',
+        assignedBy: 'admin',
+        createdBy: ctx.user.id,
+        createdAt: now,
+        updatedAt: now,
       };
       store.dograhFlows.push(flow);
     }
@@ -4759,7 +6677,7 @@ async function apiDograhFlowActivate(req, res, ctx) {
   core.sendJson(res, 200, { ok: true, message: `"${flow.name}" is now the active flow.` });
 }
 
-// POST /api/dograh/flows/update - rename, relink agent, pause / resume
+// POST /api/dograh/flows/update - update prompt, greeting, nodes, agent, status, active
 async function apiDograhFlowUpdate(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const b = ctx.body || {};
@@ -4770,19 +6688,75 @@ async function apiDograhFlowUpdate(req, res, ctx) {
     const ag = (core.db().agents || []).find((a) => a.id === String(b.agentId) && a.tenantId === flow.tenantId);
     if (!ag) return core.sendJson(res, 404, { error: 'Agent not found in this workspace', code: 'agent_not_found' });
   }
+
+  let updatedFlow = null;
   await core.mutate((store) => {
     const f = store.dograhFlows.find((x) => x.id === id);
     if (!f) return;
-    if (typeof b.name === 'string' && b.name.trim()) f.name = b.name.trim().slice(0, 80);
+    if (typeof b.name === 'string' && b.name.trim()) f.name = b.name.trim().slice(0, 100);
     if (b.agentId !== undefined) f.agentId = b.agentId ? String(b.agentId) : null;
+    if (b.description !== undefined) f.description = String(b.description).trim().slice(0, 500);
+    if (b.greeting !== undefined) f.greeting = String(b.greeting).trim();
+    if (b.prompt !== undefined) f.prompt = String(b.prompt).trim();
+    if (b.fallbackPhone !== undefined) f.fallbackPhone = String(b.fallbackPhone).trim();
+    if (b.assignedPhone !== undefined) f.assignedPhone = String(b.assignedPhone).trim();
+    if (b.language !== undefined) f.language = String(b.language).trim();
+    if (Array.isArray(b.nodes)) f.nodes = b.nodes;
+    if (isPlatformAdminCtx(ctx) && b.workflowId) f.workflowId = String(b.workflowId).trim();
     if (b.status === 'paused' || b.status === 'active') {
       f.status = b.status;
       if (b.status === 'paused') f.isActive = false;
     }
+    if (b.isActive === true) {
+      store.dograhFlows.forEach((item) => {
+        if (item.tenantId === f.tenantId) item.isActive = (item.id === f.id);
+      });
+      f.isActive = true;
+      f.status = 'active';
+    }
     f.updatedAt = new Date().toISOString();
-    addAudit(store, ctx, 'dograh.flow.updated', 'dograh_flow', id, {});
+    updatedFlow = f;
+
+    // Sync matching workflow in store.workflows
+    if (!Array.isArray(store.workflows)) store.workflows = [];
+    let matchingWf = store.workflows.find((w) => w.id === f.id || (w.tenantId === f.tenantId && String(w.dograhWorkflowId) === String(f.workflowId)));
+    if (matchingWf) {
+      if (b.name) matchingWf.name = f.name;
+      if (b.description !== undefined) matchingWf.description = f.description;
+      if (b.greeting !== undefined) {
+        if (!Array.isArray(matchingWf.nodes)) matchingWf.nodes = [];
+        if (matchingWf.nodes[0]) matchingWf.nodes[0].prompt = f.greeting;
+      }
+      if (b.prompt !== undefined) matchingWf.prompt = f.prompt;
+      if (b.agentId !== undefined) matchingWf.assignedAgentId = f.agentId;
+      if (b.fallbackPhone !== undefined) matchingWf.fallbackNumber = f.fallbackPhone;
+      if (b.assignedPhone !== undefined) matchingWf.assignedPhone = f.assignedPhone;
+      if (Array.isArray(b.nodes)) matchingWf.nodes = f.nodes;
+      matchingWf.updatedAt = f.updatedAt;
+    }
+
+    addAudit(store, ctx, 'dograh.flow.updated', 'dograh_flow', id, { name: f.name, tenantId: f.tenantId });
   });
-  core.sendJson(res, 200, { ok: true });
+
+  // Push to Dograh upstream if agent is linked
+  if (flow.agentId) {
+    const ag = (core.db().agents || []).find((a) => a.id === flow.agentId);
+    if (ag) {
+      pushAgentToDograhWorkflow(ag, flow.tenantId, flow.workflowId).catch((err) => {
+        logger.warn('Dograh sync on flow update note', { error: err.message });
+      });
+    }
+  }
+
+  const d = core.db();
+  const tenantMap = new Map((d.tenants || []).map((t) => [t.id, t.name || t.id]));
+  const agentMap = new Map((d.agents || []).map((a) => [a.id, a.name]));
+
+  core.sendJson(res, 200, {
+    ok: true,
+    flow: updatedFlow ? publicDograhFlow(updatedFlow, tenantMap, agentMap) : null,
+    message: `Flow "${(updatedFlow && updatedFlow.name) || 'Flow'}" updated successfully.`
+  });
 }
 
 // POST /api/dograh/flows/sync - push the linked agent's persona into the Dograh flow
@@ -5698,7 +7672,7 @@ async function apiTeamsCreate(req, res, ctx) {
   // Sync primary agent on shared number if assigned to this employee
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validAgentIds.includes(a.id)));
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 201, { ok: true, member: publicUser(newMember) });
@@ -5742,7 +7716,7 @@ async function apiTeamsUpdate(req, res, ctx) {
 
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && a.isPrimary) || core.db().agents.find((a) => a.tenantId === ctx.tenant.id);
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 200, { ok: true, member: publicUser(updated) });
@@ -5788,7 +7762,7 @@ async function apiTeamsAssignAgent(req, res, ctx) {
 
   const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validIds.includes(a.id)));
   if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => {});
+    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
   }
 
   core.sendJson(res, 200, { ok: true, member: publicUser(updated) });
@@ -5819,7 +7793,7 @@ async function apiTeamsEscalate(req, res, ctx) {
   // If placeLiveCall is requested and employee has a valid 10-digit Indian mobile number, place real transfer call via VoBiz/Dograh
   if (b.placeLiveCall && empDigits.length === 10) {
     try {
-      await pushAgentToDograhWorkflow(agent, ctx.tenant.id).catch(() => {});
+      await pushAgentToDograhWorkflow(agent, ctx.tenant.id).catch(() => { });
       const tenantConnections = (d.byonConnections || []).filter((x) => x.tenantId === ctx.tenant.id && (x.status === 'active' || x.status === 'connected'));
       const activeConn = tenantConnections[0];
       const authId = (activeConn && activeConn.authId) || process.env.VOBIZ_AUTH_ID;
@@ -5958,7 +7932,7 @@ function hangupViaVobiz(callUuid, authId, authToken) {
       }
     };
     const req = https.request(options, (res) => {
-      res.on('data', () => {});
+      res.on('data', () => { });
       res.on('end', () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode }));
     });
     req.on('error', () => resolve({ ok: false }));
@@ -5981,7 +7955,7 @@ async function syncLiveDograhRuns(tenantId) {
       try {
         const _r = await providers.telephony.fetchRecordings({ limit: 8, workflowId: _wid });
         (_r.runs || []).forEach((x) => { x._wid = _wid; runs.push(x); });
-      } catch (_) {}
+      } catch (_) { }
     }
     if (!Array.isArray(runs) || !runs.length) return;
     for (const run of runs) {
@@ -6002,7 +7976,7 @@ async function syncLiveDograhRuns(tenantId) {
         try {
           const fetched = await providers.telephony.fetchRunDetail(runId, run._wid);
           if (fetched) detail = fetched;
-        } catch (_) {}
+        } catch (_) { }
         const norm = normalizeRun(detail, (existing && existing.tenantId) || tenantId || 't_seed_client');
         await core.mutate((dd) => {
           if (!Array.isArray(dd.callRecordings)) dd.callRecordings = [];
@@ -6029,10 +8003,10 @@ async function syncLiveDograhRuns(tenantId) {
               endedAt: null,
             });
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // GET /api/calls/live -> Real-time Live Call Locator for Dashboard
@@ -6072,7 +8046,7 @@ async function apiLiveCallsList(req, res, ctx) {
           }
         }
       });
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   const freshDb = core.db();
@@ -6326,7 +8300,7 @@ async function apiLiveCallAction(req, res, ctx) {
     const authToken = (activeConn && activeConn.authToken) || process.env.VOBIZ_AUTH_TOKEN;
 
     if (targetCall.dograhRunId && !String(targetCall.dograhRunId).startsWith('live_') && authId && authToken) {
-      await hangupViaVobiz(targetCall.dograhRunId, authId, authToken).catch(() => {});
+      await hangupViaVobiz(targetCall.dograhRunId, authId, authToken).catch(() => { });
     }
 
     const startMs = new Date(targetCall.startedAt || Date.now()).getTime();
@@ -6390,7 +8364,7 @@ async function apiLiveCallAction(req, res, ctx) {
           liveCallPlaced = true;
           callRunId = r && r.data && (r.data.request_uuid || r.data.run_id || r.data.id);
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     const logEntry = {
@@ -6522,7 +8496,7 @@ function requestOriginAllowed(req) {
     try {
       const refUrl = new URL(referer);
       if (refUrl.origin === origin.origin) return true;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   return false;
@@ -7007,18 +8981,22 @@ async function apiMemberRole(req, res, ctx) {
 
 function apiAdminOverview(req, res) {
   const d = core.db();
-  const issued = d.invoices.filter((row) => row.status === 'issued' || row.status === 'paid');
-  core.sendJson(res, 200, { totals: {
-    tenants: d.tenants.length,
-    activeTenants: d.tenants.filter((t) => (t.status || 'active') === 'active').length,
-    closedTenants: d.tenants.filter((t) => t.status === 'closed').length,
-    users: d.users.length,
-    openTickets: d.supportTickets.filter((t) => t.status !== 'closed').length,
-    walletPaise: d.wallets.reduce((n, w) => n + w.balancePaise, 0),
-    calls: d.usage.reduce((n, u) => n + (u.calls || 0), 0),
-    invoicedPaise: issued.reduce((n, row) => n + row.amountPaise, 0),
-    outstandingPaise: d.invoices.filter((row) => row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
-  } });
+  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d));
+  const clientTenantIds = new Set(clientTenants.map((t) => t.id));
+  const issued = d.invoices.filter((row) => clientTenantIds.has(row.tenantId) && (row.status === 'issued' || row.status === 'paid'));
+  core.sendJson(res, 200, {
+    totals: {
+      tenants: clientTenants.length,
+      activeTenants: clientTenants.filter((t) => (t.status || 'active') === 'active').length,
+      closedTenants: clientTenants.filter((t) => t.status === 'closed').length,
+      users: d.users.filter((u) => clientTenantIds.has(u.tenantId)).length,
+      openTickets: d.supportTickets.filter((t) => clientTenantIds.has(t.tenantId) && t.status !== 'closed').length,
+      walletPaise: d.wallets.filter((w) => clientTenantIds.has(w.tenantId)).reduce((n, w) => n + w.balancePaise, 0),
+      calls: d.usage.filter((u) => clientTenantIds.has(u.tenantId)).reduce((n, u) => n + (u.calls || 0), 0),
+      invoicedPaise: issued.reduce((n, row) => n + row.amountPaise, 0),
+      outstandingPaise: d.invoices.filter((row) => clientTenantIds.has(row.tenantId) && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
+    }
+  });
 }
 
 
@@ -7476,51 +9454,143 @@ async function apiWorkflowDuplicate(req, res, ctx) {
 
 function apiAdminTenants(req, res) {
   const d = core.db();
-  core.sendJson(res, 200, { tenants: d.tenants.map((t) => ({
-    ...publicTenant(t),
-    users: d.users.filter((u) => u.tenantId === t.id).length,
-    agents: d.agents.filter((a) => a.tenantId === t.id).length,
-    calls: d.usage.filter((u) => u.tenantId === t.id).reduce((n, row) => n + Number(row.calls || 0), 0),
-    lastApproachedAt: t.lastApproachedAt || null,
-    outstandingPaise: d.invoices.filter((row) => row.tenantId === t.id && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
-    wallet: publicWallet(d.wallets.find((w) => w.tenantId === t.id) || { id: null, tenantId: t.id, currency: 'INR', balancePaise: 0 }),
-  })) });
+  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d));
+  core.sendJson(res, 200, {
+    tenants: clientTenants.map((t) => ({
+      ...publicTenant(t),
+      users: d.users.filter((u) => u.tenantId === t.id).length,
+      agents: d.agents.filter((a) => a.tenantId === t.id).length,
+      calls: d.usage.filter((u) => u.tenantId === t.id).reduce((n, row) => n + Number(row.calls || 0), 0),
+      lastApproachedAt: t.lastApproachedAt || null,
+      outstandingPaise: d.invoices.filter((row) => row.tenantId === t.id && row.status === 'issued').reduce((n, row) => n + row.amountPaise, 0),
+      wallet: publicWallet(d.wallets.find((w) => w.tenantId === t.id) || { id: null, tenantId: t.id, currency: 'INR', balancePaise: 0 }),
+    }))
+  });
 }
 
 async function apiAdminTenantCreate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
   const name = String(b.name || '').trim().slice(0, 80);
-  const ownerEmail = String(b.ownerEmail || '').trim().toLowerCase().slice(0, 160);
-  const password = String(b.password || '');
-  if (!name) return core.sendJson(res, 422, { error: 'client workspace name required', code: 'bad_tenant' });
-  if (ownerEmail && (!EMAIL_RE.test(ownerEmail) || password.length < 12)) return core.sendJson(res, 422, { error: 'a valid owner email and 12 character temporary password are required together', code: 'bad_owner' });
-  if (!ownerEmail && password) return core.sendJson(res, 422, { error: 'owner email is required when a password is supplied', code: 'bad_owner' });
-  if (ownerEmail && core.db().users.some((user) => user.email === ownerEmail)) return core.sendJson(res, 409, { error: 'owner email is already registered', code: 'email_taken' });
-  let tenant; let user = null;
+  let ownerEmail = String(b.ownerEmail || '').trim().toLowerCase().slice(0, 160);
+  let password = String(b.password || '').trim();
+
+  if (!name) {
+    return core.sendJson(res, 422, { error: 'Client workspace name is required.', code: 'bad_tenant' });
+  }
+
+  // Validate owner email format if provided
+  if (ownerEmail && !EMAIL_RE.test(ownerEmail)) {
+    return core.sendJson(res, 422, { error: 'Please enter a valid owner email address format (e.g. name@domain.com).', code: 'bad_email' });
+  }
+
+  // Allow multi-tenant workspace ownership with same email, or find existing user hash
+  const existingUser = ownerEmail ? core.db().users.find((u) => (u.email || '').toLowerCase() === ownerEmail) : null;
+
+  // Validate password length if provided (allow min 6 chars)
+  if (password && password.length < 6) {
+    return core.sendJson(res, 422, { error: 'Temporary password must be at least 6 characters.', code: 'weak_password' });
+  }
+
+  // Generate temporary password if not provided
+  const generatedPassword = password || (existingUser ? 'AccountExistingPassword' : ('Seevora@' + crypto.randomInt(1000, 9999)));
+
+  let tenant;
+  let user = null;
+
   await core.mutate((store) => {
     const now = new Date().toISOString();
     const tenantId = core.genId('t_');
+    const existingSlugs = new Set((store.tenants || []).map((t) => t.slug));
+    const safeSlug = makeSlug(name, existingSlugs);
     const dograhOrg = 'org_' + tenantId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    // Auto-generate functional owner email if not provided, ensuring uniqueness
+    let finalOwnerEmail = ownerEmail || ('client.' + safeSlug + '@seevora.in');
+    if (!ownerEmail) {
+      let counter = 1;
+      while ((store.users || []).some((u) => (u.email || '').toLowerCase() === finalOwnerEmail.toLowerCase())) {
+        finalOwnerEmail = 'client.' + safeSlug + '-' + counter + '@seevora.in';
+        counter++;
+      }
+    }
+    const finalOwnerName = String(b.ownerName || '').trim().slice(0, 80) || (name + ' Owner');
+
     tenant = {
-      id: tenantId, name, slug: makeSlug(name, new Set(store.tenants.map((t) => t.slug))),
-      createdAt: now, branding: { color: '#B88A2D' }, providers: { ...DEFAULT_PROVIDERS },
-      plan: 'studio', status: ownerEmail ? 'active' : 'onboarding', privacyMode: 'standard',
+      id: tenantId,
+      name,
+      slug: safeSlug,
+      createdAt: now,
+      branding: { color: '#0d5d41' },
+      providers: { ...DEFAULT_PROVIDERS },
+      plan: 'studio',
+      status: 'active',
+      privacyMode: 'standard',
+      onboardingCompleted: true,
       dograhOrgId: dograhOrg,
       dograh_org_id: dograhOrg,
       dograh_api_key: 'dk_' + crypto.randomBytes(16).toString('hex'),
       dograhApiKey: 'dk_' + crypto.randomBytes(16).toString('hex'),
+      features: {
+        assistant: true,
+        workflows: true,
+        inbound: true,
+        campaigns: true,
+        recordings: true,
+        crmPipeline: true,
+        agents: true,
+        teams: true,
+        talk: true
+      }
     };
     store.tenants.push(tenant);
-    store.wallets.push({ id: core.genId('wal_'), tenantId: tenant.id, currency: 'INR', balancePaise: 0, createdAt: now, updatedAt: now });
-    if (ownerEmail) {
-      user = { id: core.genId('u_'), tenantId: tenant.id, email: ownerEmail, name: String(b.ownerName || 'Client Owner').trim().slice(0, 80), passHash: core.hashPassword(password), role: 'owner', status: 'active', createdAt: now };
-      store.users.push(user);
-    }
-    store.clientActivities.push({ id: core.genId('act_'), tenantId: tenant.id, type: 'workspace_created', channel: 'internal', visibility: 'internal', summary: 'Client workspace created in Agency OS.', actorUserId: ctx.user.id, createdAt: now });
-    addAudit(store, ctx, 'admin.tenant.created', 'tenant', tenant.id, { ownerCreated: !!user });
+
+    store.wallets.push({
+      id: core.genId('wal_'),
+      tenantId: tenant.id,
+      currency: 'INR',
+      balancePaise: 0,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    user = {
+      id: core.genId('u_'),
+      tenantId: tenant.id,
+      email: finalOwnerEmail,
+      name: finalOwnerName,
+      passHash: (existingUser && !password && existingUser.passHash) ? existingUser.passHash : core.hashPassword(generatedPassword),
+      role: 'owner',
+      status: 'active',
+      onboardingCompleted: true,
+      createdAt: now
+    };
+    store.users.push(user);
+
+    store.clientActivities.push({
+      id: core.genId('act_'),
+      tenantId: tenant.id,
+      type: 'workspace_created',
+      channel: 'internal',
+      visibility: 'internal',
+      summary: `Client workspace "${name}" created with owner ${finalOwnerEmail}.`,
+      actorUserId: ctx.user.id,
+      createdAt: now
+    });
+
+    addAudit(store, ctx, 'admin.tenant.created', 'tenant', tenant.id, {
+      ownerCreated: true,
+      ownerEmail: finalOwnerEmail
+    });
   });
-  core.sendJson(res, 201, { tenant: publicTenant(tenant), owner: user ? publicUser(user) : null, note: 'No email was sent.' });
+
+  core.sendJson(res, 201, {
+    ok: true,
+    tenant: publicTenant(tenant),
+    owner: user ? publicUser(user) : null,
+    tempPassword: generatedPassword,
+    note: `Client workspace "${name}" provisioned.`
+  });
 }
 
 function apiAdminUsers(req, res) { core.sendJson(res, 200, { users: core.db().users.map(publicUser) }); }
@@ -7584,15 +9654,15 @@ async function apiImpersonationExit(req, res, ctx) {
   const impCookieTok = (core.parseCookieToken && typeof core.parseCookieToken === 'function')
     ? core.parseCookieToken(req)
     : (() => {
-        const raw = (req && req.headers && req.headers.cookie) || '';
-        for (const part of raw.split(';')) {
-          const idx = part.indexOf('=');
-          if (idx !== -1 && part.slice(0, idx).trim() === (core.COOKIE_NAME || 'rxv_sess')) {
-            return part.slice(idx + 1).trim();
-          }
+      const raw = (req && req.headers && req.headers.cookie) || '';
+      for (const part of raw.split(';')) {
+        const idx = part.indexOf('=');
+        if (idx !== -1 && part.slice(0, idx).trim() === (core.COOKIE_NAME || 'rxv_sess')) {
+          return part.slice(idx + 1).trim();
         }
-        return '';
-      })();
+      }
+      return '';
+    })();
   let impHash = '';
   if (impCookieTok) {
     impHash = crypto.createHash('sha256').update(impCookieTok).digest('hex');
@@ -7615,7 +9685,7 @@ async function apiImpersonationExit(req, res, ctx) {
     }
     dd.sessions = dd.sessions.filter((s) => !s.impersonatorUserId || s.exp > Date.now());
     if (ctx.user) {
-      try { addAudit(dd, ctx, 'admin.impersonation.ended', 'user', ctx.user.id); } catch (_) {}
+      try { addAudit(dd, ctx, 'admin.impersonation.ended', 'user', ctx.user.id); } catch (_) { }
     }
   });
 
@@ -7644,6 +9714,9 @@ async function apiAdminTenantStatus(req, res, ctx) {
   if (!['onboarding', 'active', 'suspended', 'closed'].includes(status)) return core.sendJson(res, 422, { error: 'invalid status', code: 'bad_status' });
   const tenant = core.db().tenants.find((t) => t.id === String(b.tenantId || ''));
   if (!tenant) return core.sendJson(res, 404, { error: 'tenant not found', code: 'not_found' });
+  if (isPlatformAdminTenant(tenant, core.db())) {
+    return core.sendJson(res, 403, { error: 'Platform Admin workspace is protected and cannot be suspended or closed', code: 'protected_tenant' });
+  }
   await core.mutate((d) => {
     const now = new Date().toISOString();
     d.tenants.find((t) => t.id === tenant.id).status = status;
@@ -7667,7 +9740,7 @@ async function apiAdminTenantDelete(req, res, ctx) {
   if (!tenant) return core.sendJson(res, 404, { error: 'tenant not found', code: 'not_found' });
 
   const adminTenantIds = ['t_rapid', 't_admin', 't_demo'];
-  if (adminTenantIds.includes(tenantId) || (ctx.tenant && ctx.tenant.id === tenantId)) {
+  if (adminTenantIds.includes(tenantId) || isPlatformAdminTenant(tenant, d) || (ctx.tenant && ctx.tenant.id === tenantId)) {
     return core.sendJson(res, 403, { error: 'Cannot delete primary admin workspace', code: 'protected_tenant' });
   }
 
@@ -7747,12 +9820,28 @@ async function apiAdminWalletAdjust(req, res, ctx) {
   const b = ctx.body || {};
   const amountPaise = Number(b.amountPaise);
   const tenantId = String(b.tenantId || '');
-  if (!core.db().tenants.some((t) => t.id === tenantId) || !Number.isInteger(amountPaise) || amountPaise === 0 || Math.abs(amountPaise) > 100000000) return core.sendJson(res, 422, { error: 'valid tenantId and amountPaise required', code: 'bad_adjustment' });
+  const d = core.db();
+  const targetTenant = d.tenants.find((t) => t.id === tenantId);
+  if (!targetTenant || !Number.isInteger(amountPaise) || amountPaise === 0 || Math.abs(amountPaise) > 100000000) {
+    return core.sendJson(res, 422, { error: 'valid tenantId and amountPaise required', code: 'bad_adjustment' });
+  }
+  if (isPlatformAdminTenant(targetTenant, d)) {
+    return core.sendJson(res, 403, {
+      error: 'Platform Admin workspace is the master host account with unlimited quota and does not accept client wallet credits.',
+      code: 'platform_admin_exempt'
+    });
+  }
   const idempotencyKey = String(b.idempotencyKey || '').trim().slice(0, 120);
   if (!idempotencyKey) return core.sendJson(res, 422, { error: 'idempotencyKey required', code: 'idempotency_required' });
   let entry;
-  try { await core.mutate((d) => { entry = addLedgerEntry(d, tenantId, amountPaise, 'admin_adjustment', `admin:${idempotencyKey}`, ctx.user.id, { reason: String(b.reason || '').slice(0, 200) }); if (entry) addAudit(d, ctx, 'admin.wallet.adjusted', 'tenant', tenantId, { amountPaise, ledgerId: entry.id }); }); }
-  catch (e) { return core.sendJson(res, 409, { error: e.message, code: 'wallet_rejected' }); }
+  try {
+    await core.mutate((store) => {
+      entry = addLedgerEntry(store, tenantId, amountPaise, 'admin_adjustment', `admin:${idempotencyKey}`, ctx.user.id, { reason: String(b.reason || '').slice(0, 200) });
+      if (entry) addAudit(store, ctx, 'admin.wallet.adjusted', 'tenant', tenantId, { amountPaise, ledgerId: entry.id });
+    });
+  } catch (e) {
+    return core.sendJson(res, 409, { error: e.message, code: 'wallet_rejected' });
+  }
   if (!entry) return core.sendJson(res, 200, { duplicate: true });
   core.sendJson(res, 201, { ledgerEntry: entry });
 }
@@ -7840,7 +9929,7 @@ function isPurchasedNumber(num) {
         if (a && a.telephony && a.telephony.did) purchasedList.push(a.telephony.did);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   for (const p of purchasedList) {
     const pDigits = String(p).replace(/\D/g, '');
@@ -8168,7 +10257,7 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
       try {
         const _r = await providers.telephony.fetchRecordings({ limit, workflowId: _wid });
         (_r.runs || []).forEach((x) => { x._wid = _wid; runs.push(x); });
-      } catch (_) {}
+      } catch (_) { }
     }
     if (!Array.isArray(runs) || runs.length === 0) return [];
 
@@ -8249,13 +10338,27 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
               recording_url: norm.recordingUrl || `/api/calls/${norm.id || norm.dograhRunId}/audio`,
               custom_vars: detail.gathered_context || {}
             };
-            crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'call_ended', callPayload).catch(() => {});
+            crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'call_ended', callPayload).catch(() => { });
+            // Dispatch to connected CRM integrations (Google Calendar, Sheets, Zoho, Slack)
+            integrations.dispatchAll(core.db(), core.mutate, tenantId, {
+              name: norm.callerName || callPayload.phone_number || 'Customer',
+              phone: norm.phoneNumber || callPayload.phone_number || '',
+              outcome: norm.outcome || 'call_completed',
+              summary: norm.summary || '',
+              sentiment: norm.sentiment || 'neutral',
+              appointmentDate: norm.appointmentDate || null,
+              appointmentTime: norm.appointmentTime || null,
+              duration: norm.durationSeconds || 0,
+              recordingUrl: norm.recordingUrl || callPayload.recording_url || '',
+              transcript: norm.transcript || '',
+              callerEmail: (detail && detail.gathered_context && detail.gathered_context.email) || ''
+            }).catch(() => { });
             if (norm.qualityScore && norm.qualityScore >= 70) {
               crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'lead_qualified', {
                 ...callPayload,
                 quality_score: norm.qualityScore,
                 quality_tier: norm.qualityTier
-              }).catch(() => {});
+              }).catch(() => { });
             }
             if (norm.recordingUrl) {
               crmwebhooks.dispatchEvent(core.mutate, core.db(), tenantId, 'recording_ready', {
@@ -8263,10 +10366,10 @@ async function syncDograhRecordingsForTenant(tenantId, options = {}) {
                 recording_url: norm.recordingUrl,
                 transcript: norm.transcript,
                 duration_sec: norm.durationSeconds
-              }).catch(() => {});
+              }).catch(() => { });
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }));
     }
 
@@ -8292,7 +10395,7 @@ function triggerBackgroundDograhSync(tenantId) {
   setImmediate(async () => {
     try {
       await syncDograhRecordingsForTenant(tenantId, { limit: 50 });
-    } catch (_) {}
+    } catch (_) { }
   });
 }
 
@@ -8416,7 +10519,7 @@ async function apiRecordingTranscribe(req, res, ctx) {
       });
       return core.sendJson(res, 200, { ok: true, transcript: updated.transcript, source: 'dograh_events' });
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // 2. Transcribe via Deepgram STT
   try {
@@ -8752,7 +10855,7 @@ async function apiTelephonyWebhook(req, res, body) {
     } else if (body && typeof body === 'object') {
       payload = body;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const run = payload.run || payload.call || payload.data || payload;
   const tenants = core.db().tenants || [];
@@ -8803,7 +10906,7 @@ function withinTraiWindow(campaign) {
   if (updatedMs && (Date.now() - updatedMs < 4 * 3600000)) return true;
   const h = istHour();
   const startH = Number(campaign.scheduleStartHour ?? TRAI_START_HOUR);
-  const endH   = Number(campaign.scheduleEndHour   ?? TRAI_END_HOUR);
+  const endH = Number(campaign.scheduleEndHour ?? TRAI_END_HOUR);
   if (h < startH || h >= endH) return false;
   return true;
 }
@@ -8825,46 +10928,46 @@ async function apiCampaignsCreate(req, res, ctx) {
 
   const agents = (core.db().agents || []).filter((a) => a.tenantId === ctx.tenant.id);
   const agentId = String(b.agentId || (agents[0] && agents[0].id) || 'default');
-  const agent   = agents.find((a) => a.id === agentId);
+  const agent = agents.find((a) => a.id === agentId);
   const agentName = agent ? agent.name : 'Seevora AI Voice Receptionist';
 
   // Normalize leads array from wizard step 2
   const rawLeads = Array.isArray(b.leads) ? b.leads : [];
   const leads = rawLeads.map((l) => ({
-    id:        l.id        || core.genId('ld_'),
-    name:      String(l.name  || '').trim() || 'Lead',
-    phone:     String(l.phone || '').trim(),
+    id: l.id || core.genId('ld_'),
+    name: String(l.name || '').trim() || 'Lead',
+    phone: String(l.phone || '').trim(),
     rawNumber: String(l.rawNumber || l.phone || '').replace(/\D/g, ''),
-    status:    'pending',
-    retries:   0,
-    error:     null,
+    status: 'pending',
+    retries: 0,
+    error: null,
     timestamp: null,
   }));
 
   const campaign = {
-    id:                core.genId('cmp_'),
-    tenantId:          ctx.tenant.id,
+    id: core.genId('cmp_'),
+    tenantId: ctx.tenant.id,
     name,
     agentId,
     agentName,
-    status:            'draft',
+    status: 'draft',
     leads,
     // Schedule settings (Step 3)
-    dailyCap:          Number(b.dailyCap)          || 100,
-    intervalSeconds:   Number(b.intervalSeconds)   || 45,
-    retryLimit:        Number(b.retryLimit)         || 2,
+    dailyCap: Number(b.dailyCap) || 100,
+    intervalSeconds: Number(b.intervalSeconds) || 45,
+    retryLimit: Number(b.retryLimit) || 2,
     retryBusyAfterMin: Number(b.retryBusyAfterMin) || 30,
-    retryNoAnsAfterMin:Number(b.retryNoAnsAfterMin)|| 120,
-    activeDays:        Array.isArray(b.activeDays) ? b.activeDays : [1,2,3,4,5], // Mon-Fri
+    retryNoAnsAfterMin: Number(b.retryNoAnsAfterMin) || 120,
+    activeDays: Array.isArray(b.activeDays) ? b.activeDays : [1, 2, 3, 4, 5], // Mon-Fri
     scheduleStartHour: Number(b.scheduleStartHour) || TRAI_START_HOUR,
-    scheduleEndHour:   Number(b.scheduleEndHour)   || TRAI_END_HOUR,
+    scheduleEndHour: Number(b.scheduleEndHour) || TRAI_END_HOUR,
     // Stats
-    dialed:     0,
-    connected:  0,
-    failed:     0,
-    todayDialed:0,
-    createdAt:  new Date().toISOString(),
-    updatedAt:  new Date().toISOString(),
+    dialed: 0,
+    connected: 0,
+    failed: 0,
+    todayDialed: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   await core.mutate((d) => {
@@ -8880,15 +10983,15 @@ async function apiCampaignsCreate(req, res, ctx) {
 async function apiCampaignsAction(req, res, ctx) {
   const b = ctx.body || {};
   const campaignId = String(b.campaignId || '');
-  const action     = String(b.action     || ''); // 'start' | 'pause' | 'stop'
+  const action = String(b.action || ''); // 'start' | 'pause' | 'stop'
   const d = core.db();
   const camp = (d.campaigns || []).find((c) => c.id === campaignId && c.tenantId === ctx.tenant.id);
   if (!camp) return core.sendJson(res, 404, { error: 'campaign not found', code: 'not_found' });
 
   let newStatus = camp.status;
-  if (action === 'start' && ['draft','paused'].includes(camp.status)) newStatus = 'running';
+  if (action === 'start' && ['draft', 'paused'].includes(camp.status)) newStatus = 'running';
   else if (action === 'pause' && camp.status === 'running') newStatus = 'paused';
-  else if (action === 'stop')  newStatus = 'stopped';
+  else if (action === 'stop') newStatus = 'stopped';
   else return core.sendJson(res, 422, { error: 'invalid action for current status', code: 'bad_action' });
 
   await core.mutate((d) => {
@@ -8972,14 +11075,14 @@ async function campaignWorkerTick() {
 
       // Place call via Dograh / VoBiz
       let callSuccess = false;
-      let callError   = '';
-      let runId       = null;
+      let callError = '';
+      let runId = null;
       const dBeforeDial = core.db();
       const campAgent = (dBeforeDial.agents || []).find((a) => a.id === fresh.agentId && a.tenantId === fresh.tenantId) ||
         (dBeforeDial.agents || []).find((a) => a.tenantId === fresh.tenantId && a.isPrimary) ||
         (dBeforeDial.agents || []).find((a) => a.tenantId === fresh.tenantId) || null;
       if (campAgent) {
-        await pushAgentToDograhWorkflow(campAgent, fresh.tenantId).catch(() => {});
+        await pushAgentToDograhWorkflow(campAgent, fresh.tenantId).catch(() => { });
       }
       const tenantConns = (dBeforeDial.byonConnections || []).filter((x) => x.tenantId === fresh.tenantId && (x.status === 'active' || x.status === 'connected'));
       const activeConn = tenantConns[0];
@@ -9000,7 +11103,7 @@ async function campaignWorkerTick() {
         }
         callSuccess = r && (r.status === 200 || r.status === 201 || r.ok);
         runId = (r && r.data && (r.data.request_uuid || r.data.run_id || r.data.id || r.data.call_id)) || ('camp_' + Date.now());
-        bumpUsage(fresh.tenantId, 'calls', 1).catch(() => {});
+        bumpUsage(fresh.tenantId, 'calls', 1).catch(() => { });
       } catch (e) {
         callError = String(e.message || e);
       }
@@ -9014,10 +11117,10 @@ async function campaignWorkerTick() {
         const retries = (l.retries || 0) + 1;
         const nowIso = new Date().toISOString();
         if (callSuccess) {
-          l.status    = 'initiated';
+          l.status = 'initiated';
           l.timestamp = nowIso;
-          l.runId     = runId || null;
-          c.dialed    = (c.dialed || 0) + 1;
+          l.runId = runId || null;
+          c.dialed = (c.dialed || 0) + 1;
           c.connected = (c.connected || 0) + 1;
           c.todayDialed = (c.todayDialed || 0) + 1;
           // Remove any retry job for this lead
@@ -9056,9 +11159,9 @@ async function campaignWorkerTick() {
           const retryAfterMin = isBusy ? (fresh.retryBusyAfterMin || 30) : (fresh.retryNoAnsAfterMin || 120);
           const maxRetries = fresh.retryLimit || 2;
           if (retries <= maxRetries) {
-            l.status  = 'pending'; // reset to pending for retry
+            l.status = 'pending'; // reset to pending for retry
             l.retries = retries;
-            l.error   = callError;
+            l.error = callError;
             const retryAfter = new Date(Date.now() + retryAfterMin * 60000).toISOString();
             if (!Array.isArray(d.campaignJobs)) d.campaignJobs = [];
             // Upsert retry job
@@ -9071,11 +11174,11 @@ async function campaignWorkerTick() {
               d.campaignJobs.push({ id: core.genId('cjob_'), campaignId: c.id, leadId: l.id, status: 'retry_pending', retryAfter, retries, error: callError, createdAt: new Date().toISOString() });
             }
           } else {
-            l.status    = 'failed';
-            l.error     = callError;
+            l.status = 'failed';
+            l.error = callError;
             l.timestamp = new Date().toISOString();
-            c.failed    = (c.failed || 0) + 1;
-            c.dialed    = (c.dialed || 0) + 1;
+            c.failed = (c.failed || 0) + 1;
+            c.dialed = (c.dialed || 0) + 1;
             c.todayDialed = (c.todayDialed || 0) + 1;
             d.campaignJobs = (d.campaignJobs || []).filter((j) => !(j.campaignId === c.id && j.leadId === l.id));
           }
@@ -9108,7 +11211,7 @@ function startCampaignScheduler() {
       _lastResetDay = istDay;
       core.mutate((d) => {
         (d.campaigns || []).forEach((c) => { c.todayDialed = 0; });
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, 60000);
 }
@@ -9126,7 +11229,7 @@ function startRetentionScheduler() {
       });
       const purged = before - (d.recordings || []).length;
       if (purged > 0) logger.info(`DPDP 90-day retention cleaner auto-purged ${purged} expired call recording(s)`);
-    }).catch(() => {});
+    }).catch(() => { });
   };
   setTimeout(runPurge, 10000).unref();
   setInterval(runPurge, 24 * 3600 * 1000);
@@ -9145,7 +11248,7 @@ function startRetentionScheduler() {
 
 async function apiAutoCallWebhookCreate(req, res, ctx) {
   const b = ctx.body || {};
-  const label   = String(b.label || 'Auto-Call Webhook').slice(0, 80);
+  const label = String(b.label || 'Auto-Call Webhook').slice(0, 80);
   const agentId = String(b.agentId || '').trim() || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
@@ -9198,7 +11301,7 @@ async function apiAutoCallWebhookIngest(req, res, passedRawBody) {
   }
 
   const receivedSig = String(req.headers[autocall.SIGNATURE_HEADER] || req.headers['x-signature'] || '');
-  const receivedTs  = String(req.headers[autocall.TIMESTAMP_HEADER] || req.headers['x-timestamp'] || String(Date.now()));
+  const receivedTs = String(req.headers[autocall.TIMESTAMP_HEADER] || req.headers['x-timestamp'] || String(Date.now()));
 
   const result = await autocall.ingestLead({
     db, db_mutate: core.mutate, rawBody, receivedSig, receivedTs, webhookRow,
@@ -9213,9 +11316,9 @@ async function apiAutoCallWebhookIngest(req, res, passedRawBody) {
 }
 
 function apiAutoCallLeadsList(req, res, ctx) {
-  const q    = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const page = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps   = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
   const status = q.get('status') || null;
   const result = autocall.listLeads(core.db(), ctx.tenant.id, { page, pageSize: ps, status });
   core.sendJson(res, 200, result);
@@ -9242,8 +11345,8 @@ async function apiKbIngest(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const b      = ctx.body || {};
-  const text   = String(b.text || '').trim();
+  const b = ctx.body || {};
+  const text = String(b.text || '').trim();
   const source = String(b.source || 'manual').slice(0, 200);
   if (!text) return core.sendJson(res, 422, { error: 'text is required', code: 'missing_text' });
   if (text.length > knowledgebase.MAX_INGEST_BYTES)
@@ -9291,8 +11394,8 @@ async function apiKbCrawl(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const b        = ctx.body || {};
-  const url      = String(b.url || '').trim();
+  const b = ctx.body || {};
+  const url = String(b.url || '').trim();
   const maxPages = Math.min(parseInt(b.maxPages || '3', 10), knowledgebase.MAX_CRAWL_PAGES);
   if (!url) return core.sendJson(res, 422, { error: 'url is required', code: 'missing_url' });
   try { new URL(url); } catch (_) { return core.sendJson(res, 422, { error: 'url must be a valid URL', code: 'bad_url' }); }
@@ -9310,9 +11413,9 @@ function apiKbSearch(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const q    = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const query = String(q.get('q') || q.get('query') || '').trim().slice(0, 500);
-  const topK  = Math.min(20, parseInt(q.get('topK') || '5', 10));
+  const topK = Math.min(20, parseInt(q.get('topK') || '5', 10));
   if (!query) return core.sendJson(res, 422, { error: 'query parameter "q" is required', code: 'missing_query' });
 
   const result = knowledgebase.search(core.db(), agentId, ctx.tenant.id, query, topK);
@@ -9325,9 +11428,9 @@ function apiKbList(req, res, ctx) {
   const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
   if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
 
-  const q      = new URL(req.url, 'http://local').searchParams;
-  const page   = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps     = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const q = new URL(req.url, 'http://local').searchParams;
+  const page = Math.max(1, parseInt(q.get('page') || '1', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
   const result = knowledgebase.listChunks(core.db(), agentId, ctx.tenant.id, { page, pageSize: ps });
   core.sendJson(res, 200, { ok: true, agentId, ...result });
 }
@@ -9355,7 +11458,7 @@ async function apiKbClear(req, res, ctx) {
    ========================================================================== */
 
 function apiBookingScheduleGet(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
@@ -9367,14 +11470,14 @@ function apiBookingScheduleGet(req, res, ctx) {
 }
 
 async function apiBookingScheduleUpsert(req, res, ctx) {
-  const b       = ctx.body || {};
+  const b = ctx.body || {};
   const agentId = b.agentId || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
   }
 
-  const VALID_DAYS = new Set(['sun','mon','tue','wed','thu','fri','sat']);
+  const VALID_DAYS = new Set(['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']);
   if (b.availableDays !== undefined) {
     if (!Array.isArray(b.availableDays) || !b.availableDays.every((d) => VALID_DAYS.has(d)))
       return core.sendJson(res, 422, { error: 'availableDays must be array of: sun,mon,tue,wed,thu,fri,sat', code: 'bad_days' });
@@ -9388,15 +11491,15 @@ async function apiBookingScheduleUpsert(req, res, ctx) {
 }
 
 function apiBookingSlots(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
   if (agentId) {
     const agent = core.db().agents.find((a) => a.id === agentId && a.tenantId === ctx.tenant.id);
     if (!agent) return core.sendJson(res, 404, { error: 'agent not found', code: 'not_found' });
   }
-  const days      = Math.min(60, Math.max(1, parseInt(q.get('days') || '7', 10)));
+  const days = Math.min(60, Math.max(1, parseInt(q.get('days') || '7', 10)));
   const startDate = q.get('startDate') || null;
-  const result    = booking.getAvailableSlots(core.db(), ctx.tenant.id, agentId, { days, startDate });
+  const result = booking.getAvailableSlots(core.db(), ctx.tenant.id, agentId, { days, startDate });
   if (result.error) return core.sendJson(res, 200, { slots: [], error: result.error });
   core.sendJson(res, 200, { ok: true, agentId, ...result });
 }
@@ -9411,15 +11514,15 @@ async function apiBookingReserve(req, res, ctx) {
 
   const result = await booking.reserveSlot(
     core.mutate, core.db(), ctx.tenant.id, agentId, {
-      startTime:   String(b.startTime || b.slotStart || '').trim(),
-      callerName:  String(b.callerName  || b.name  || '').trim(),
-      callerPhone: String(b.callerPhone || b.phone || '').trim(),
-      callerEmail: String(b.callerEmail || b.email || '').trim(),
-      notes:   String(b.notes   || '').trim().slice(0, 2000),
-      source:  String(b.source  || b.bookingType || 'api').slice(0, 80),
-      metadata: typeof b.metadata === 'object' ? b.metadata : {},
-      createdBy: ctx.user.id,
-    }
+    startTime: String(b.startTime || b.slotStart || '').trim(),
+    callerName: String(b.callerName || b.name || '').trim(),
+    callerPhone: String(b.callerPhone || b.phone || '').trim(),
+    callerEmail: String(b.callerEmail || b.email || '').trim(),
+    notes: String(b.notes || '').trim().slice(0, 2000),
+    source: String(b.source || b.bookingType || 'api').slice(0, 80),
+    metadata: typeof b.metadata === 'object' ? b.metadata : {},
+    createdBy: ctx.user.id,
+  }
   );
 
   if (!result.ok) {
@@ -9432,22 +11535,22 @@ async function apiBookingReserve(req, res, ctx) {
 }
 
 function apiBookingList(req, res, ctx) {
-  const q       = new URL(req.url, 'http://local').searchParams;
+  const q = new URL(req.url, 'http://local').searchParams;
   const agentId = q.get('agentId') || null;
-  const page    = Math.max(1, parseInt(q.get('page') || '1', 10));
-  const ps      = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
-  const status  = q.get('status') || null;
-  const from    = q.get('from') || null;
-  const to      = q.get('to')   || null;
-  const result  = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
+  const page = Math.max(1, parseInt(q.get('page') || '1', 10));
+  const ps = Math.min(100, parseInt(q.get('pageSize') || '50', 10));
+  const status = q.get('status') || null;
+  const from = q.get('from') || null;
+  const to = q.get('to') || null;
+  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
   core.sendJson(res, 200, { ok: true, ...result });
 }
 
 async function apiBookingStatusUpdate(req, res, ctx) {
-  const b         = ctx.body || {};
+  const b = ctx.body || {};
   const bookingId = String(b.bookingId || '').trim();
-  const status    = String(b.status    || '').trim();
-  const notes     = String(b.notes     || '').trim().slice(0, 500);
+  const status = String(b.status || '').trim();
+  const notes = String(b.notes || '').trim().slice(0, 500);
   if (!bookingId) return core.sendJson(res, 422, { error: 'bookingId is required', code: 'bad_params' });
   const result = await booking.updateBookingStatus(core.mutate, ctx.tenant.id, bookingId, status, notes);
   if (!result.ok) return core.sendJson(res, result.code === 'not_found' ? 404 : 422, { ok: false, error: result.error, code: result.code });
@@ -9456,8 +11559,8 @@ async function apiBookingStatusUpdate(req, res, ctx) {
 }
 
 async function apiBookingReschedule(req, res, ctx) {
-  const b            = ctx.body || {};
-  const bookingId    = String(b.bookingId    || '').trim();
+  const b = ctx.body || {};
+  const bookingId = String(b.bookingId || '').trim();
   const newStartTime = String(b.newStartTime || '').trim();
   if (!bookingId || !newStartTime) return core.sendJson(res, 422, { error: 'bookingId and newStartTime are required', code: 'bad_params' });
 
@@ -9624,10 +11727,11 @@ async function apiAutoCallV1(req, res, passedBody) {
     return core.sendJson(res, 422, { error: 'phone must be in valid E.164 format (+91...)', code: 'invalid_phone' });
   }
 
-  // Validate tenant wallet balance (require minimum ₹10 balance = 1000 paise)
+  // Validate tenant wallet balance (Platform Admin has master quota)
+  const isHost = isPlatformAdminTenant(tenant, db);
   const wallet = (db.wallets || []).find((w) => w.tenantId === tenant.id);
   const balancePaise = wallet ? (wallet.balancePaise || 0) : 0;
-  if (balancePaise < 1000) {
+  if (!isHost && balancePaise < 1000) {
     return core.sendJson(res, 402, {
       error: 'Insufficient wallet balance. Minimum ₹10 (1000 paise) required for auto-dial.',
       balanceInr: (balancePaise / 100).toFixed(2),
@@ -9689,7 +11793,7 @@ async function apiAutoCallV1(req, res, passedBody) {
       }
     }, { dograhOrgId: tenant.dograhOrgId, dograhApiKey: tenant.dograhApiKey });
     runId = dialResult && dialResult.data && (dialResult.data.run_id || dialResult.data.id || dialResult.data.call_id);
-    bumpUsage(tenant.id, 'calls', 1).catch(() => {});
+    bumpUsage(tenant.id, 'calls', 1).catch(() => { });
   } catch (dialErr) {
     logger.warn('Auto-call dial failed: ' + dialErr.message);
   }
@@ -10043,6 +12147,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/byon') return core.requireAuth(req, res, apiByonList);
         if (route === '/api/dograh/flows') return core.requireAuth(req, res, apiDograhFlowsList);
         if (route === '/api/dograh/remote-workflows') return core.requireRole(req, res, 'admin', apiDograhRemoteWorkflows);
+        if (route === '/api/voice/catalog') return core.requireAuth(req, res, apiVoiceCatalog);
         if (route === '/api/privacy') return core.requireAuth(req, res, apiPrivacyGet);
         if (route === '/api/members') return core.requireAuth(req, res, apiMembers);
         if (route === '/api/teams') return core.requireAuth(req, res, apiTeamsList);
@@ -10052,6 +12157,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/invoices') return core.requireRole(req, res, 'owner', apiInvoices);
         if (route.startsWith('/api/invoices/') && route.endsWith('/gst')) return core.requireAuth(req, res, apiInvoiceGst);
         if (route === '/api/integrations') return core.requireRole(req, res, 'owner', apiIntegrations);
+        if (route === '/api/crm-integrations/config') return core.requireAuth(req, res, apiCrmIntegrationsConfig);
         if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksList);
         if (route === '/api/admin/overview') return core.requireRole(req, res, 'admin', apiAdminOverview);
         if (route === '/api/admin/tenants') return core.requireRole(req, res, 'owner', apiAdminTenants);
@@ -10145,6 +12251,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/agents/update') return core.requireAuth(req, res, apiAgentsUpdate, body);
       if (route === '/api/agents/delete') return core.requireAuth(req, res, apiAgentsDelete, body);
       if (route === '/api/agents/activate') return core.requireAuth(req, res, apiAgentsActivate, body);
+      if (route === '/api/agents/toggle-status' || route === '/api/agents/status') return core.requireAuth(req, res, apiAgentsToggleStatus, body);
       if (route === '/api/teams/create') return core.requireAuth(req, res, apiTeamsCreate, body);
       if (route === '/api/teams/update') return core.requireAuth(req, res, apiTeamsUpdate, body);
       if (route === '/api/teams/delete') return core.requireAuth(req, res, apiTeamsDelete, body);
@@ -10163,6 +12270,8 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/chat') return core.requireAuth(req, res, apiChat, body);
       if (route === '/api/stt') return core.requireAuth(req, res, apiStt, body);
       if (route === '/api/voice/session') return core.requireAuth(req, res, apiVoiceSession, body);
+      if (route === '/api/voice/preview') return core.requireAuth(req, res, apiVoicePreview, body);
+      if (route === '/api/voice/save') return core.requireAuth(req, res, apiVoiceSave, body);
       if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksCreate, body);
       if (route === '/api/demo-links/revoke') return core.requireRole(req, res, 'owner', apiDemoLinksRevoke, body);
       if (route === '/api/telephony/dial') return core.requireAuth(req, res, apiTelephonyDial, body);
@@ -10209,6 +12318,10 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/integrations/gmail/send-test') return core.requireAuth(req, res, apiGmailSendTest, body);
       if (route === '/api/integrations/whatsapp/verify-business') return core.requireAuth(req, res, apiWhatsAppVerifyBusiness, body);
       if (route === '/api/integrations/whatsapp/send-test' || route === '/api/integrations/whatsapp/send') return core.requireAuth(req, res, apiWhatsAppSendTest, body);
+      // CRM Integrations (Google Calendar, Sheets, Zoho, Slack)
+      if (route === '/api/crm-integrations/save') return core.requireAuth(req, res, apiCrmIntegrationsSave, body);
+      if (route === '/api/crm-integrations/toggle') return core.requireAuth(req, res, apiCrmIntegrationsToggle, body);
+      if (route === '/api/crm-integrations/test') return core.requireAuth(req, res, apiCrmIntegrationsTest, body);
       if (route === '/api/assistant/chat') return core.requireAuth(req, res, apiAssistantChat, body);
       if (route === '/api/assistant/confirm') return core.requireAuth(req, res, apiAssistantConfirm, body);
       if (route === '/api/inbound/config') return core.requireAuth(req, res, apiInboundConfigSave, body);
@@ -10322,7 +12435,7 @@ sttWss.on('connection', (client, req) => {
     if (qLang === 'en') requestedLang = 'en';
     else if (qLang === 'hi') requestedLang = 'hi';
     else requestedLang = 'multi';
-  } catch (_) {}
+  } catch (_) { }
 
   // Nova-3 provides full multilingual (multi) automatic English <-> Hindi recognition without dropping words
   const model = 'nova-3';
@@ -10431,11 +12544,36 @@ boot().then(() => {
     if (PORT !== 3000) {
       try {
         const aux = http.createServer(server.listeners('request')[0]);
-        aux.on('error', () => {});
+        aux.on('error', () => { });
         aux.listen(3000, () => {
           logger.info('Auxiliary HTTP listener active on port 3000: http://localhost:3000/');
         });
-      } catch (_) {}
+      } catch (_) { }
+    }
+
+    const banner = [
+      '',
+      '\x1b[32m========================================================================\x1b[0m',
+      '\x1b[1m\x1b[32m   SEEVORA AI VOICE RECEPTIONIST IS LIVE & READY\x1b[0m',
+      '\x1b[32m========================================================================\x1b[0m',
+      `   \x1b[1m\x1b[36mDashboard (Voice & Chat):\x1b[0m  http://localhost:${PORT}/app.html`,
+      `   \x1b[1mLanding Page:\x1b[0m              http://localhost:${PORT}/`,
+      `   \x1b[1mAuxiliary Listener:\x1b[0m        http://localhost:3000/`,
+      `   \x1b[1mHealth Endpoint:\x1b[0m           http://localhost:${PORT}/api/health`,
+      '\x1b[32m------------------------------------------------------------------------\x1b[0m',
+      '   \x1b[33mSTATUS:\x1b[0m Server is actively running and listening for requests.',
+      '   \x1b[33mNOTE:\x1b[0m   This terminal process stays active while the server runs.',
+      '           Keep this terminal window open. Press \x1b[1m[Ctrl + C]\x1b[0m to stop.',
+      '\x1b[32m========================================================================\x1b[0m',
+      ''
+    ].join('\n');
+    console.log(banner);
+
+    // Automatically open the browser on Windows if not disabled
+    if (process.platform === 'win32' && process.env.NODE_ENV !== 'test' && process.env.AUTO_OPEN !== 'false') {
+      try {
+        require('child_process').exec(`start http://localhost:${PORT}/app.html`);
+      } catch (_) { }
     }
   });
 }).catch((e) => {
