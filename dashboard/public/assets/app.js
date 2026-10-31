@@ -1085,8 +1085,10 @@ function createThemedDropdown(cfg) {
       ];
       if (opt.badge) {
         optContents.push(el('span', {
-          class: 'pill',
-          style: 'font-size:0.68rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;margin-left:auto;margin-right:8px;'
+          class: 'pill aria-opt-badge',
+          style: isSelected
+            ? 'font-size:0.68rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,0.22);color:#ffffff;margin-left:auto;margin-right:8px;border:1px solid rgba(255,255,255,0.35);'
+            : 'font-size:0.68rem;font-weight:750;letter-spacing:0.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;margin-left:auto;margin-right:8px;border:1px solid rgba(13,93,65,0.15);'
         }, opt.badge));
       }
       if (isSelected) {
