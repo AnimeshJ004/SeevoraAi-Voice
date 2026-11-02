@@ -282,15 +282,18 @@ function loadDb() {
 function flushSync() {
   ensureDataDir();
   const json = JSON.stringify(_db, null, 2);
+  const tmp = `${DB_TMP}.${process.pid}.${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   try {
-    fs.writeFileSync(DB_TMP, json, { mode: 0o600 });
-    try { fs.chmodSync(DB_TMP, 0o600); } catch (_) {}
-    fs.renameSync(DB_TMP, DB_FILE);
+    fs.writeFileSync(tmp, json, { mode: 0o600 });
+    try { fs.chmodSync(tmp, 0o600); } catch (_) {}
+    fs.renameSync(tmp, DB_FILE);
     try { fs.chmodSync(DB_FILE, 0o600); } catch (_) {}
   } catch (_) {
     try {
       fs.writeFileSync(DB_FILE, json, { mode: 0o600 });
     } catch (_) {}
+  } finally {
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (_) {}
   }
 }
 
@@ -322,13 +325,18 @@ function syncMutationsToSupabase(d) {
   } catch (_) {}
 }
 
+const _tenantChains = new Map();
+
 /**
- * Run a mutation against the db under the serial write lock.
+ * Run a mutation against the db under a serial write lock.
  * `fn(db)` receives the live in-memory db, may mutate it, and may return a value
  * which becomes the resolved value of the returned promise. The db is flushed
  * atomically after fn runs. Errors inside fn reject without flushing a partial.
+ *
+ * If `tenantId` is provided, mutations for different tenants execute concurrently
+ * on their own serial chains without blocking each other.
  */
-function mutate(fn) {
+function mutate(fn, tenantId) {
   const run = async () => {
     const db = loadDb();
     const out = await fn(db);
@@ -336,9 +344,20 @@ function mutate(fn) {
     syncMutationsToSupabase(db);
     return out;
   };
-  // Chain onto the tail so writes execute one at a time, in order. We swallow
-  // the previous result/error for the chain itself but surface this run's own
-  // result to the caller.
+
+  if (tenantId && typeof tenantId === 'string') {
+    const prev = _tenantChains.get(tenantId) || Promise.resolve();
+    const next = prev.then(run, run);
+    _tenantChains.set(tenantId, next.catch(() => {}));
+    next.finally(() => {
+      if (_tenantChains.get(tenantId) === next) {
+        _tenantChains.delete(tenantId);
+      }
+    });
+    return next;
+  }
+
+  // Fallback to global serial queue for cross-tenant mutations
   const next = _writeChain.then(run, run);
   _writeChain = next.catch(() => {});
   return next;

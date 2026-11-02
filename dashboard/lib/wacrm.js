@@ -690,12 +690,12 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
     notes: `[Voice Call ${now.slice(0, 10)}] ${extracted.structuredNotes || summary}`
   });
 
-  // 2. Append call summary into the WhatsApp timeline as a system event
+  // 2. Append call summary and Q&A into the WhatsApp timeline as a system event
   recordMessage(db, tenantId, {
     phone,
     direction: 'system',
     type: 'call_summary',
-    text: `Call Completed (${callDetails.durationSec || callDetails.durationSeconds || 0}s): ${summary}`,
+    text: `Voice Call Completed (${callDetails.durationSec || callDetails.durationSeconds || 0}s): ${summary}`,
     status: 'delivered',
     metadata: {
       callId: callDetails.callId || callDetails.dograhRunId || callDetails.id,
@@ -709,6 +709,37 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
       }
     }
   });
+
+  // 3. Automatically sync appointment into bookings collection if detected
+  if (extracted.appointment) {
+    if (!Array.isArray(db.bookings)) db.bookings = [];
+    const existing = db.bookings.find((b) => b.tenantId === tenantId && b.callerPhone === phone && b.status === 'confirmed');
+    if (!existing) {
+      const startTime = new Date(Date.now() + 24 * 3600000).toISOString();
+      const endTime = new Date(Date.now() + 24 * 3600000 + 30 * 60000).toISOString();
+      db.bookings.unshift({
+        id: 'bk_' + crypto.randomBytes(8).toString('hex'),
+        tenantId,
+        contactId: contact.id,
+        agentId: callDetails.agentId || 'ag_primary',
+        scheduleId: 'bsched_voice_auto',
+        startTime,
+        endTime,
+        durationMin: 30,
+        callerName: contact.name || 'Voice Lead',
+        callerPhone: phone,
+        callerEmail: contact.email || '',
+        notes: `Booked via Voice AI: ${extracted.appointment}. Call summary: ${summary}`,
+        source: 'voice_ai',
+        status: 'confirmed',
+        confirmationCode: 'VC-' + Math.floor(1000 + Math.random() * 9000),
+        createdBy: 'system_voice_ai',
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+  }
+
   return contact;
 }
 

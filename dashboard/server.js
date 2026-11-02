@@ -42,6 +42,7 @@ const mailer = require('./lib/mailer');
 const integrations = require('./lib/integrations');
 const docParser = require('./lib/docParser');
 const rumikVoice = require('./lib/rumikVoice');
+const whatsappAutomation = require('./lib/whatsappAutomation');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -5234,6 +5235,7 @@ async function apiWhatsAppVerifyBusiness(req, res, ctx) {
 
 // ---- POST /api/integrations/whatsapp/send-test ( & /send ) -----------------
 async function apiWhatsAppSendTest(req, res, ctx) {
+  if (!checkFeatureOrReject(res, ctx, 'whatsappMessaging')) return;
   const b = ctx.body || {};
   try {
     const waRecord = await dispatchWhatsAppViaVoBiz({
@@ -6013,12 +6015,20 @@ async function syncDograhWorkflow(workflowId) {
 }
 
 
+const _dograhWorkflowSyncLocks = new Map();
+
 // Push a specific Client/Employee Agent's persona, greeting, knowledge, and employee escalation rules to the shared Dograh Workflow #13027
+// Serialized per workflowId to guarantee multi-user dynamic updates without race conditions or overwrites.
 async function pushAgentToDograhWorkflow(agent, tenantId, workflowId) {
   if (!agent) return { ok: false, error: 'no_agent' };
   const wid = workflowId || resolveTenantWorkflowId(tenantId || agent.tenantId);
   if (!wid) return { ok: false, error: 'no_workflow_id' };
-  try {
+
+  const syncKey = String(wid);
+  const prevLock = _dograhWorkflowSyncLocks.get(syncKey) || Promise.resolve();
+
+  const doSync = async () => {
+    try {
     const { fullPrompt, greeting: agentGreeting } = buildAgentWorkflowPrompt(agent, tenantId);
 
     const fetchRes = await providers.telephony.request('GET', `/api/v1/workflow/fetch/${wid}`);
@@ -6045,11 +6055,21 @@ async function pushAgentToDograhWorkflow(agent, tenantId, workflowId) {
     });
     await providers.telephony.request('POST', `/api/v1/workflow/${wid}/publish`, {});
     logger.info('Synced & published agent to shared Dograh line', { agentId: agent.id, agentName: agent.name, workflowId: wid });
-    return { ok: true, workflowId: wid, agentId: agent.id };
-  } catch (err) {
-    logger.warn('pushAgentToDograhWorkflow notice', { error: err.message });
-    return { ok: false, error: err.message };
-  }
+      return { ok: true, workflowId: wid, agentId: agent.id };
+    } catch (err) {
+      logger.warn('pushAgentToDograhWorkflow notice', { error: err.message });
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const nextLock = prevLock.then(doSync, doSync);
+  _dograhWorkflowSyncLocks.set(syncKey, nextLock.catch(() => {}));
+  nextLock.finally(() => {
+    if (_dograhWorkflowSyncLocks.get(syncKey) === nextLock) {
+      _dograhWorkflowSyncLocks.delete(syncKey);
+    }
+  });
+  return nextLock;
 }
 
 /* ==========================================================================
@@ -11063,6 +11083,7 @@ async function apiCrmLeadFromCall(req, res, ctx) {
 
 // POST /api/crm/whatsapp/send - record and dispatch WhatsApp message to lead
 async function apiCrmWhatsAppSend(req, res, ctx) {
+  if (!checkFeatureOrReject(res, ctx, 'whatsappMessaging')) return;
   const b = ctx.body || {};
   const phone = b.phone || '';
   const text = b.text || '';
@@ -11140,6 +11161,85 @@ async function apiTelephonyWebhook(req, res, body) {
   });
 
   return core.sendJson(res, 200, { ok: true, runId: updated.dograhRunId || updated.id });
+}
+
+// GET /api/whatsapp/webhook - Meta WhatsApp Webhook verification handshake
+function apiWhatsAppWebhookVerify(req, res) {
+  const q = new URL(req.url, 'http://local').searchParams;
+  const mode = q.get('hub.mode');
+  const token = q.get('hub.verify_token');
+  const challenge = q.get('hub.challenge');
+
+  const EXPECTED_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || 'seevora_whatsapp_verify_token_2026';
+
+  if (mode === 'subscribe' && token === EXPECTED_TOKEN) {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end(challenge || 'ok');
+  }
+  return core.sendJson(res, 403, { error: 'Verification token mismatch', code: 'forbidden' });
+}
+
+// POST /api/whatsapp/webhook - Meta WhatsApp Inbound Message webhook
+async function apiWhatsAppWebhook(req, res, body) {
+  let payload = {};
+  try {
+    if (typeof body === 'string') payload = JSON.parse(body);
+    else if (body && typeof body === 'object') payload = body;
+  } catch (_) {
+    return core.sendJson(res, 400, { error: 'Invalid JSON payload', code: 'bad_json' });
+  }
+
+  // Acknowledge Meta immediately
+  core.sendJson(res, 200, { ok: true, status: 'received' });
+
+  try {
+    const entries = Array.isArray(payload.entry) ? payload.entry : [];
+    for (const entry of entries) {
+      const changes = Array.isArray(entry.changes) ? entry.changes : [];
+      for (const change of changes) {
+        const val = change.value || {};
+        const messages = Array.isArray(val.messages) ? val.messages : [];
+        const contacts = Array.isArray(val.contacts) ? val.contacts : [];
+
+        const metaPhoneId = (val.metadata && val.metadata.phone_number_id) || val.phone_number_id;
+        const tenant = (core.db().tenants || []).find((t) => {
+          const cfg = wacrm.getTenantWacrmConfig(core.db(), t.id);
+          return cfg && (cfg.phoneNumberId === metaPhoneId || cfg.metaPhoneId === metaPhoneId);
+        }) || (core.db().tenants || [])[0];
+
+        if (!tenant) continue;
+
+        for (const msg of messages) {
+          let msgText = '';
+          if (msg.type === 'text' && msg.text) {
+            msgText = msg.text.body;
+          } else if (msg.type === 'interactive' && msg.interactive) {
+            msgText = (msg.interactive.button_reply && msg.interactive.button_reply.title) ||
+                      (msg.interactive.list_reply && msg.interactive.list_reply.title) || '';
+          } else if (msg.type === 'button' && msg.button) {
+            msgText = msg.button.text;
+          }
+          if (!msgText) continue;
+
+          const senderContact = contacts.find((c) => c.wa_id === msg.from) || {};
+          const senderName = senderContact.profile && senderContact.profile.name;
+
+          await whatsappAutomation.processIncomingWhatsAppMessage({
+            db: core.db(),
+            db_mutate: (fn) => core.mutate(fn, tenant.id),
+            tenantId: tenant.id,
+            fromPhone: msg.from,
+            text: msgText,
+            senderName,
+            providers,
+            genId: core.genId
+          });
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('Error processing incoming WhatsApp webhook: ' + err.message);
+  }
 }
 
 /* ==========================================================================
@@ -11801,7 +11901,9 @@ function apiBookingList(req, res, ctx) {
   const status = q.get('status') || null;
   const from = q.get('from') || null;
   const to = q.get('to') || null;
-  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
+  const phone = q.get('phone') || null;
+  const contactId = q.get('contactId') || null;
+  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to, phone, contactId });
   core.sendJson(res, 200, { ok: true, ...result });
 }
 
@@ -12330,7 +12432,7 @@ const server = http.createServer(async (req, res) => {
 
       const isAutoCallIngest = (route.startsWith('/api/autocall/webhook/') || (route.startsWith('/api/auto-call/') && !route.startsWith('/api/auto-call/sources') && !route.startsWith('/api/auto-call/leads'))) && req.method === 'POST';
       const isKbUpload = route.startsWith('/api/kb/') && route.endsWith('/upload') && req.method === 'POST';
-      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return' || route === '/api/telephony/webhook' || route === '/api/calls/webhook' || isAutoCallIngest;
+      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return' || route === '/api/telephony/webhook' || route === '/api/calls/webhook' || route === '/api/whatsapp/webhook' || isAutoCallIngest;
 
       if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !inboundWebhook && !requestOriginAllowed(req)) {
         return core.sendJson(res, 403, { error: 'cross-origin request blocked', code: 'bad_origin' });
@@ -12377,6 +12479,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       // ---- Public GET routes ----
+      if (route === '/api/whatsapp/webhook' && req.method === 'GET') return apiWhatsAppWebhookVerify(req, res);
       if (route === '/api/health' && req.method === 'GET') return apiHealth(req, res);
       if (route === '/api/providers' && req.method === 'GET') return apiProviders(req, res);
       if (route === '/api/billing/config' && req.method === 'GET') return apiBillingConfig(req, res);
@@ -12486,6 +12589,7 @@ const server = http.createServer(async (req, res) => {
 
       // Public POST (auth & webhooks) routes.
       if (route === '/api/telephony/webhook' || route === '/api/calls/webhook') return apiTelephonyWebhook(req, res, body);
+      if (route === '/api/whatsapp/webhook' && req.method === 'POST') return apiWhatsAppWebhook(req, res, body);
       if (route === '/api/auth/signup') return apiSignup(req, res, body);
       if (route === '/api/auth/login') return apiLogin(req, res, body);
       if (route === '/api/auth/logout') return apiLogout(req, res);

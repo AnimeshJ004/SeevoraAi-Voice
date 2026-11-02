@@ -605,6 +605,7 @@ module.exports = {
   rotateWebhookSecret,
   findWebhookByToken,
   ingestLead,
+  dispatchOutboundCall,
   listLeads,
   ensureCollections,
   SIGNATURE_HEADER,
