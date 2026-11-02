@@ -12630,7 +12630,25 @@ const server = http.createServer(async (req, res) => {
       req.url = '/demo.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/sign-in' || route === '/sign-up' || route === '/login' || route === '/signup')) {
-      req.url = '/index.html';
+      req.url = '/login.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/home' || route === '/home.html')) {
+      req.url = '/home.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/features') {
+      req.url = '/features.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/pricing') {
+      req.url = '/pricing.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/contact' || route === '/contact-us')) {
+      req.url = '/contact.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/privacy') {
+      req.url = '/privacy.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/terms' || route === '/terms-and-conditions' || route === '/terms-of-service')) {
+      req.url = '/terms.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/recordings' || route === '/recordings/' || route === '/recordings.html')) {
       res.writeHead(302, { Location: '/app.html#/recordings', 'Cache-Control': 'no-store' });

@@ -1596,6 +1596,10 @@ function renderShell() {
     class: 'side-collapse-btn', title: 'Toggle Sidebar Width', type: 'button',
     onclick: (e) => { e.stopPropagation(); $('.shell').classList.toggle('side-collapsed'); }
   }, [el('span', {}, '◨')]);
+  const mobileCloseBtn = el('button', {
+    class: 'side-mobile-close-btn', title: 'Close Navigation', type: 'button',
+    onclick: (e) => { e.stopPropagation(); $('.shell').classList.remove('nav-open'); }
+  }, [el('span', {}, '✕')]);
   const sideBrand = el('div', {
     class: 'side-brand',
     style: 'cursor:pointer;',
@@ -1607,7 +1611,7 @@ function renderShell() {
       }
     }
   }, [
-    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle])
+    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle, mobileCloseBtn])
   ]);
 
   const side = el('aside', { class: 'side' }, [
@@ -1634,7 +1638,11 @@ function renderShell() {
 
   const top = el('header', { class: 'top' }, [
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
-      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
+      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
+      el('div', { class: 'top-mobile-brand' }, [
+        el('img', { src: '/assets/seevora-logo.png', alt: 'Seevora', width: '26', height: '26', style: 'border-radius:6px;object-fit:contain;' }),
+        el('span', { class: 'top-mobile-brand-title' }, 'SEEVORA')
+      ])
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
