@@ -163,7 +163,7 @@ async function main() {
   const leads = parseLeads(fileArg);
 
   console.log('\n\x1b[1m\x1b[32m====================================================\x1b[0m');
-  console.log(`\x1b[1m📞 Seevora AI - Batch Outbound Dialer\x1b[0m`);
+  console.log(`\x1b[1mSeevora AI - Batch Outbound Dialer\x1b[0m`);
   console.log(`\x1b[32m====================================================\x1b[0m`);
   console.log(`Caller ID (From):    \x1b[33m${CALLER_NUMBER}\x1b[0m`);
   console.log(`Agent Workflow:      \x1b[33mSeevora AI Voice Receptionist (ID: ${WORKFLOW_ID})\x1b[0m`);

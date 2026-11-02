@@ -42,6 +42,7 @@ const mailer = require('./lib/mailer');
 const integrations = require('./lib/integrations');
 const docParser = require('./lib/docParser');
 const rumikVoice = require('./lib/rumikVoice');
+const whatsappAutomation = require('./lib/whatsappAutomation');
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -2034,7 +2035,7 @@ async function handleTrainAgent(text, ctx, db, sessionId) {
     if (s) s.trainingState = null;
   });
 
-  const reply = `🎉 **AI Voice Agent Successfully Trained & Saved to Database!** 🚀\n\n` +
+  const reply = `**AI Voice Agent Successfully Trained & Saved to Database!**\n\n` +
     `Aapka **${newAgent.name}** ab backend database mein save ho chuka hai aur incoming calls attend karne ke liye ready hai!\n\n` +
     `• **Agent Name:** **${newAgent.name}**\n` +
     `• **Industry:** ${newAgent.industry || industry}\n` +
@@ -2196,7 +2197,7 @@ async function handleSendEmail(text, ctx, db) {
     };
   } catch (err) {
     const isAuthErr = err.isAuthError || (err.message && (err.message.includes('BadCredentials') || err.message.includes('535')));
-    const reply = `⚠️ **Email Delivery Failed via Gmail SMTP**\n\n` +
+    const reply = `**Email Delivery Failed via Gmail SMTP**\n\n` +
       `• **Recipient:** \`${recipientEmail}\`\n` +
       `• **Error:** ${err.message}\n\n` +
       (isAuthErr
@@ -2209,7 +2210,7 @@ async function handleSendEmail(text, ctx, db) {
         type: 'open_modal',
         modal: 'gmail',
         channel: 'gmail',
-        buttonText: 'Update Gmail App Password ⚙',
+        buttonText: 'Update Gmail App Password',
         to: recipientEmail
       }
     };
@@ -2231,7 +2232,7 @@ async function handleEmailTroubleshoot(text, ctx, db) {
   const appPassword = String(rawPass).replace(/\s+/g, '');
 
   if (!appPassword) {
-    const reply = `### 🔍 Email Delivery Diagnosis\n\n` +
+    const reply = `### Email Delivery Diagnosis\n\n` +
       `Aapko **\`${targetRecipient}\`** par email isliye nahi mila kyunki **Google SMTP (\`smtp.gmail.com:465\`)** se live inbox deliver karne ke liye **16-Character Google App Password** configured nahi tha.\n\n` +
       `Pehle backend ne email dispatch record database mein save kar liya tha, lekin Google ke security protocol ke anusar jab tak 16-character App Password authenticate nahi hota, tab tak Google inbox mein mail allow nahi karta.\n\n` +
       `---\n\n` +
@@ -2251,7 +2252,7 @@ async function handleEmailTroubleshoot(text, ctx, db) {
         type: 'open_modal',
         modal: 'gmail',
         channel: 'gmail',
-        buttonText: 'Configure Gmail App Password ⚙',
+        buttonText: 'Configure Gmail App Password',
         targetRecipient
       }
     };
@@ -2261,7 +2262,7 @@ async function handleEmailTroubleshoot(text, ctx, db) {
   try {
     const testRes = await mailer.verifySmtp({ user: senderEmail, pass: appPassword });
     if (!testRes.ok) {
-      const reply = `### ⚠️ Gmail SMTP Authentication Error (535)\n\n` +
+      const reply = `### Gmail SMTP Authentication Error (535)\n\n` +
         `Saved App Password ko Google SMTP ne reject kar diya: \`${testRes.error || 'Bad Credentials'}\`.\n\n` +
         `**Fix:**\n` +
         `1. [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) par jakar naya 16-letter App Password banayein.\n` +
@@ -2273,7 +2274,7 @@ async function handleEmailTroubleshoot(text, ctx, db) {
           type: 'open_modal',
           modal: 'gmail',
           channel: 'gmail',
-          buttonText: 'Update Gmail App Password ⚙',
+          buttonText: 'Update Gmail App Password',
           targetRecipient
         }
       };
@@ -2310,7 +2311,7 @@ async function handleEmailTroubleshoot(text, ctx, db) {
       });
     });
 
-    const reply = `✓ **Email Successfully Re-Dispatched & Delivered!** ✉️\n\n` +
+    const reply = `**Email Successfully Re-Dispatched & Delivered!**\n\n` +
       `• **Recipient:** \`${targetRecipient}\`\n` +
       `• **Subject:** **${lastEmail.subject || 'Update from Seevora Voice AI'}**\n` +
       `• **Status:** **Delivered via smtp.gmail.com (250 OK)**\n` +
@@ -2329,8 +2330,8 @@ async function handleEmailTroubleshoot(text, ctx, db) {
     };
   } catch (err) {
     return {
-      reply: `⚠️ Email dispatch attempt failed: ${err.message}. Kripya App Password check karein.`,
-      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Configure Gmail App Password ⚙' }
+      reply: `Email dispatch attempt failed: ${err.message}. Kripya App Password check karein.`,
+      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Configure Gmail App Password' }
     };
   }
 }
@@ -2360,7 +2361,7 @@ async function handleConfigureGmail(text, ctx, db) {
   if (!passCandidate || passCandidate.length < 16) {
     return {
       reply: `Kripya apna **16-character Google App Password** provide karein.\n\n*Format:* \`app password: abcd efgh ijkl mnop\`\n\nAap isse [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) se generate kar sakte hain.`,
-      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Configure Gmail App Password ⚙' }
+      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Configure Gmail App Password' }
     };
   }
 
@@ -2370,8 +2371,8 @@ async function handleConfigureGmail(text, ctx, db) {
   const verifyRes = await mailer.verifySmtp({ user: senderEmail, pass: cleanPass });
   if (!verifyRes.ok) {
     return {
-      reply: `⚠️ **Gmail SMTP Authentication Failed (535 Bad Credentials)**\n\nGoogle ne is password ko reject kar diya: \`${verifyRes.error || 'BadCredentials'}\`.\n\n**Common Reasons:**\n1. Sender account (\`${senderEmail}\`) par 2-Step Verification enable hona chahiye.\n2. Password regular Gmail password nahi hona chahiye, balki [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) se generate kiya hua 16-letter code hona chahiye.\n\nKripya re-check karke dobara paste karein.`,
-      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Retry Gmail App Password ⚙' }
+      reply: `**Gmail SMTP Authentication Failed (535 Bad Credentials)**\n\nGoogle ne is password ko reject kar diya: \`${verifyRes.error || 'BadCredentials'}\`.\n\n**Common Reasons:**\n1. Sender account (\`${senderEmail}\`) par 2-Step Verification enable hona chahiye.\n2. Password regular Gmail password nahi hona chahiye, balki [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) se generate kiya hua 16-letter code hona chahiye.\n\nKripya re-check karke dobara paste karein.`,
+      action: { type: 'open_modal', modal: 'gmail', channel: 'gmail', buttonText: 'Retry Gmail App Password' }
     };
   }
 
@@ -2418,7 +2419,7 @@ async function handleConfigureGmail(text, ctx, db) {
       });
     });
 
-    sendStatusNote = `\n\n🎉 **Real Email Successfully Delivered!**\n• **Recipient:** \`${targetRecipient}\`\n• **Status:** Delivered to Inbox (250 OK)\n• **Message-ID:** \`${sendRes.messageId}\`\n\nAb aapka inbox check karein, email pahunch chuki hai!`;
+    sendStatusNote = `\n\n**Real Email Successfully Delivered!**\n• **Recipient:** \`${targetRecipient}\`\n• **Status:** Delivered to Inbox (250 OK)\n• **Message-ID:** \`${sendRes.messageId}\`\n\nAb aapka inbox check karein, email pahunch chuki hai!`;
     sendAction = {
       type: 'email_sent',
       to: targetRecipient,
@@ -2427,10 +2428,10 @@ async function handleConfigureGmail(text, ctx, db) {
       messageId: sendRes.messageId
     };
   } catch (err) {
-    sendStatusNote = `\n\n⚠️ Password save ho gaya hai, par email dispatch karte waqt issue aaya: ${err.message}`;
+    sendStatusNote = `\n\nPassword save ho gaya hai, par email dispatch karte waqt issue aaya: ${err.message}`;
   }
 
-  const reply = `✓ **Gmail App Password Verified & Connected!** ✉️\n\n` +
+  const reply = `**Gmail App Password Verified & Connected!**\n\n` +
     `• **Sender Account:** \`${senderEmail}\`\n` +
     `• **Protocol:** Google SMTP (SSL/TLS 465)\n` +
     `• **Authentication:** Validated (235 Authentication Succeeded)${sendStatusNote}`;
@@ -3112,11 +3113,11 @@ async function handleAdminClientQuery(text, ctx, db) {
     });
 
     const reply = isEng
-      ? `👑 **Administrative Client Workspace Overview**\n\n` +
+      ? `**Administrative Client Workspace Overview**\n\n` +
       `Total Registered Workspaces: **${displayList.length}**\n\n` +
       tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
       `*To inspect any specific client in detail, ask: "What did client [Name] do?" or "Show activity of client [Email]".*`
-      : `👑 **Admin Client Workspace Overview**\n\n` +
+      : `**Admin Client Workspace Overview**\n\n` +
       `Total Registered Client Workspaces: **${displayList.length}**\n\n` +
       tenantSummaries.slice(0, 15).join('\n\n') + '\n\n' +
       `*Kisi bhi specific client ki detailed history dekhne ke liye puchiye: "What did client [Name] do?" ya "Client [Email] ki activity dikhao".*`;
@@ -3221,30 +3222,30 @@ async function handleAdminClientQuery(text, ctx, db) {
   const agentsDisplay = tenantAgents.map(a => `**${a.name}**`).join(', ') || 'None created yet';
 
   const reply = isEng
-    ? `👑 **Administrative Client Dossier & Activity Audit**\n\n` +
+    ? `**Administrative Client Dossier & Activity Audit**\n\n` +
     `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
     `• **Subscription Plan:** **${targetTenant.plan || 'Starter'}** (Status: **${targetTenant.status || 'Active'}**)\n` +
     `• **Associated Users:** ${usersDisplay}\n` +
     `• **Wallet Balance:** ₹${balanceInr}\n\n` +
-    `📊 **Operational Assets & Telephony:**\n` +
+    `**Operational Assets & Telephony:**\n` +
     `• Active AI Agents: ${agentsDisplay}\n` +
     `• Total Call Recordings: **${tenantRecordings.length}** calls\n` +
     `• CRM Pipeline Contacts: **${tenantContacts.length}** leads\n` +
     `• Total Assistant Actions: **${tenantActions.length}** operations\n\n` +
-    `📜 **Recent Client Activities & History:**\n` +
+    `**Recent Client Activities & History:**\n` +
     (recentActivities.length ? recentActivities.join('\n') : `*No recent operations logged for this client yet.*`) + `\n\n` +
     `You can manage this client's agents, review their call recordings, or dispatch campaigns on their behalf.`
-    : `👑 **Admin Client Audit & Activity Report**\n\n` +
+    : `**Admin Client Audit & Activity Report**\n\n` +
     `• **Client Workspace:** **${targetTenant.name}** (\`${targetTenant.id}\`)\n` +
     `• **Plan Status:** **${targetTenant.plan || 'Starter'}** (${targetTenant.status || 'Active'})\n` +
     `• **Registered Users:** ${usersDisplay}\n` +
     `• **Wallet Balance:** ₹${balanceInr}\n\n` +
-    `📊 **Operational Assets & Telephony:**\n` +
+    `**Operational Assets & Telephony:**\n` +
     `• Active AI Agents: ${agentsDisplay}\n` +
     `• Total Calls Handled: **${tenantRecordings.length}** calls\n` +
     `• CRM Leads: **${tenantContacts.length}** leads\n` +
     `• Total AI Operations: **${tenantActions.length}** actions\n\n` +
-    `📜 **Iss Client Ki Recent Activities & History:**\n` +
+    `**Iss Client Ki Recent Activities & History:**\n` +
     (recentActivities.length ? recentActivities.join('\n') : `*Abhi tak is client ne koi activity perform nahi ki hai.*`) + `\n\n` +
     `Aap Admin authority ke sath is client ke agents modify kar sakte hain ya inka call record check kar sakte hain.`;
 
@@ -3579,7 +3580,7 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
         `Aap apna phone number yahan type karke reply kar sakte hain (jaise: \`Connect WhatsApp to +91 80715 82519\`) ya direct setup modal open karein:`;
       return {
         reply,
-        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Configure WhatsApp Alerts ⚙' }
+        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Configure WhatsApp Alerts' }
       };
     }
 
@@ -3587,12 +3588,12 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
     const waCheck = await verifyWhatsAppBusinessNumber(rawPhone);
 
     if (!waCheck.isBusiness) {
-      const reply = `⚠️ **Personal WhatsApp Account Detected**: **${rawPhone}**\n\n` +
+      const reply = `**Personal WhatsApp Account Detected**: **${rawPhone}**\n\n` +
         `Seevora Voice AI production-grade automated call transcripts aur booking alerts dispatch karne ke liye official **WhatsApp Business Account (WABA)** require karta hai.\n\n` +
         `Aap official business number use karein (testing ke liye verified number: \`+91 80715 82519\`) ya right panel se WhatsApp modal open karke custom Meta Cloud API credentials configure karein.`;
       return {
         reply,
-        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Open WhatsApp Modal ⚙' }
+        action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Open WhatsApp Modal' }
       };
     }
 
@@ -3638,7 +3639,7 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
         `Aap apna email yahan reply kar sakte hain (jaise: \`Connect calendar to team@myclinic.com\`) ya direct modal open karein:`;
       return {
         reply,
-        action: { type: 'open_modal', modal: 'calendar', channel: 'calendar', buttonText: 'Configure Calendar & Planning 📅' }
+        action: { type: 'open_modal', modal: 'calendar', channel: 'calendar', buttonText: 'Configure Calendar & Planning' }
       };
     }
 
@@ -3762,7 +3763,7 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
       `Niche diye gaye button se File Reader modal open karein aur document upload karein:`;
     return {
       reply,
-      action: { type: 'open_modal', modal: 'fileReader', channel: 'fileReader', buttonText: 'Open File Reader 📄' }
+      action: { type: 'open_modal', modal: 'fileReader', channel: 'fileReader', buttonText: 'Open File Reader' }
     };
   }
 
@@ -3774,7 +3775,7 @@ async function handleConnectIntegration(text, agentId, ctx, db) {
       `Media Files manager open karne ke liye niche button par click karein:`;
     return {
       reply,
-      action: { type: 'open_modal', modal: 'media', channel: 'media', buttonText: 'Open Media Files 🎵' }
+      action: { type: 'open_modal', modal: 'media', channel: 'media', buttonText: 'Open Media Files' }
     };
   }
 
@@ -4022,13 +4023,13 @@ async function handleMakeCall(text, ctx, db) {
 
   const isEnglishCall = detectUserLanguage(text) === 'English';
   const reply = isEnglishCall
-    ? '📞 **Outbound Telephony Call Placed**\n\n' +
+    ? '**Outbound Telephony Call Placed**\n\n' +
     `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
     `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
     `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
     '• Status: **Ringing / Dialing**\n\n' +
     'The call has been initiated. You can track, transfer, or listen live in the Live Locator!'
-    : '📞 **Outbound Telephony Call Placed**\n\n' +
+    : '**Outbound Telephony Call Placed**\n\n' +
     `• Recipient: **${callerName ? callerName + ' ' : ''}(+91 ${cleanNum})**\n` +
     `• Outbound Line: **+91 80715 82519** (VoBiz Dedicated Business Line)\n` +
     `• Assigned Voice Agent: **${selectedAgent ? selectedAgent.name : 'Ria'}**\n` +
@@ -4711,13 +4712,13 @@ async function apiAssistantChat(req, res, ctx) {
     if (isProbingAdminOrOtherClients) {
       const isEng = detectUserLanguage(text) === 'English';
       const warningReply = isEng
-        ? `⚠️ **Security Warning: Administrative & Multi-Tenant Access Denied**\n\n` +
+        ? `**Security Warning: Administrative & Multi-Tenant Access Denied**\n\n` +
         `You do not have administrative privileges to view platform-level configurations, system settings, or other clients' information.\n\n` +
         `• **Your Role:** \`Client Workspace Member\`\n` +
         `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
         `• **Privacy & Security Policy:** Multi-tenant cryptographic isolation is strictly enforced. You can only view, build, and manage voice agents, call analytics, and campaigns within your own workspace.\n\n` +
         `If you need assistance with your workspace agents or integrations, please let me know!`
-        : `⚠️ **Security Warning: Access Denied**\n\n` +
+        : `**Security Warning: Access Denied**\n\n` +
         `Aapke paas administrative configurations, platform logs, ya dusre clients ke data ko access karne ki permission nahi hai.\n\n` +
         `• **Aapka Role:** \`Client Workspace Member\`\n` +
         `• **Authorized Workspace:** **${ctx.tenant.name}**\n` +
@@ -6013,43 +6014,61 @@ async function syncDograhWorkflow(workflowId) {
 }
 
 
+const _dograhWorkflowSyncLocks = new Map();
+
 // Push a specific Client/Employee Agent's persona, greeting, knowledge, and employee escalation rules to the shared Dograh Workflow #13027
+// Serialized per workflowId to guarantee multi-user dynamic updates without race conditions or overwrites.
 async function pushAgentToDograhWorkflow(agent, tenantId, workflowId) {
   if (!agent) return { ok: false, error: 'no_agent' };
   const wid = workflowId || resolveTenantWorkflowId(tenantId || agent.tenantId);
   if (!wid) return { ok: false, error: 'no_workflow_id' };
-  try {
-    const { fullPrompt, greeting: agentGreeting } = buildAgentWorkflowPrompt(agent, tenantId);
 
-    const fetchRes = await providers.telephony.request('GET', `/api/v1/workflow/fetch/${wid}`);
-    if (!fetchRes || !fetchRes.data || !fetchRes.data.workflow_definition) {
-      return { ok: false, error: 'workflow_fetch_failed' };
-    }
-    const wf = fetchRes.data;
-    const def = wf.workflow_definition;
-    const nodes = def.nodes || [];
-    const globalNode = nodes.find((n) => n.type === 'globalNode' || n.id === '0') || nodes[0];
-    const startNode = nodes.find((n) => n.type === 'startCall' || (n.data && n.data.is_start) || n.id === '1') || nodes[1];
+  const syncKey = String(wid);
+  const prevLock = _dograhWorkflowSyncLocks.get(syncKey) || Promise.resolve();
 
-    if (globalNode && globalNode.data) {
-      globalNode.data.prompt = fullPrompt;
-    }
-    if (startNode && startNode.data) {
-      if (startNode.data.greeting !== undefined) startNode.data.greeting = agentGreeting;
-      startNode.data.prompt = `Greet the user warmly with: "${agentGreeting}"`;
-    }
+  const doSync = async () => {
+    try {
+      const { fullPrompt, greeting: agentGreeting } = buildAgentWorkflowPrompt(agent, tenantId);
 
-    await providers.telephony.request('PUT', `/api/v1/workflow/${wid}`, {
-      name: wf.name || agent.name,
-      workflow_definition: def,
-    });
-    await providers.telephony.request('POST', `/api/v1/workflow/${wid}/publish`, {});
-    logger.info('Synced & published agent to shared Dograh line', { agentId: agent.id, agentName: agent.name, workflowId: wid });
-    return { ok: true, workflowId: wid, agentId: agent.id };
-  } catch (err) {
-    logger.warn('pushAgentToDograhWorkflow notice', { error: err.message });
-    return { ok: false, error: err.message };
-  }
+      const fetchRes = await providers.telephony.request('GET', `/api/v1/workflow/fetch/${wid}`);
+      if (!fetchRes || !fetchRes.data || !fetchRes.data.workflow_definition) {
+        return { ok: false, error: 'workflow_fetch_failed' };
+      }
+      const wf = fetchRes.data;
+      const def = wf.workflow_definition;
+      const nodes = def.nodes || [];
+      const globalNode = nodes.find((n) => n.type === 'globalNode' || n.id === '0') || nodes[0];
+      const startNode = nodes.find((n) => n.type === 'startCall' || (n.data && n.data.is_start) || n.id === '1') || nodes[1];
+
+      if (globalNode && globalNode.data) {
+        globalNode.data.prompt = fullPrompt;
+      }
+      if (startNode && startNode.data) {
+        if (startNode.data.greeting !== undefined) startNode.data.greeting = agentGreeting;
+        startNode.data.prompt = `Greet the user warmly with: "${agentGreeting}"`;
+      }
+
+      await providers.telephony.request('PUT', `/api/v1/workflow/${wid}`, {
+        name: wf.name || agent.name,
+        workflow_definition: def,
+      });
+      await providers.telephony.request('POST', `/api/v1/workflow/${wid}/publish`, {});
+      logger.info('Synced & published agent to shared Dograh line', { agentId: agent.id, agentName: agent.name, workflowId: wid });
+      return { ok: true, workflowId: wid, agentId: agent.id };
+    } catch (err) {
+      logger.warn('pushAgentToDograhWorkflow notice', { error: err.message });
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const nextLock = prevLock.then(doSync, doSync);
+  _dograhWorkflowSyncLocks.set(syncKey, nextLock.catch(() => {}));
+  nextLock.finally(() => {
+    if (_dograhWorkflowSyncLocks.get(syncKey) === nextLock) {
+      _dograhWorkflowSyncLocks.delete(syncKey);
+    }
+  });
+  return nextLock;
 }
 
 /* ==========================================================================
@@ -7852,7 +7871,7 @@ async function apiTeamsEscalate(req, res, ctx) {
    ========================================================================== */
 const KNOWN_CALLER_DIRECTORY = {
   '9876543210': { name: 'Dr. Sunita Sharma', source: 'CRM Directory' },
-  '8120590466': { name: 'Rajesh Verma', source: 'CRM Lead' },
+  '9876543210': { name: 'Rajesh Verma', source: 'CRM Lead' },
   '8982200895': { name: 'CarePlus Diagnostic', source: 'Verified Client' },
   '9425012345': { name: 'Anita Deshmukh', source: 'Service CRM' },
   '9826054321': { name: 'Metropolis Lab Desk', source: 'Partner Directory' },
@@ -8188,7 +8207,7 @@ async function apiLiveCallAction(req, res, ctx) {
     const sampleScenarios = [
       {
         callerName: b.callerName || (contacts[0] && contacts[0].name) || 'Rajesh Verma',
-        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+918120590466',
+        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+919876543210',
         direction: b.direction || 'inbound',
         department: 'Sales & Lead Qualification',
         scriptTurns: [
@@ -11137,9 +11156,88 @@ async function apiTelephonyWebhook(req, res, body) {
         logs: run.logs
       });
     }
-  });
+  }, tenantId);
 
   return core.sendJson(res, 200, { ok: true, runId: updated.dograhRunId || updated.id });
+}
+
+// GET /api/whatsapp/webhook - Meta WhatsApp Webhook verification handshake
+function apiWhatsAppWebhookVerify(req, res) {
+  const q = new URL(req.url, 'http://local').searchParams;
+  const mode = q.get('hub.mode');
+  const token = q.get('hub.verify_token');
+  const challenge = q.get('hub.challenge');
+
+  const EXPECTED_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || 'seevora_whatsapp_verify_token_2026';
+
+  if (mode === 'subscribe' && token === EXPECTED_TOKEN) {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end(challenge || 'ok');
+  }
+  return core.sendJson(res, 403, { error: 'Verification token mismatch', code: 'forbidden' });
+}
+
+// POST /api/whatsapp/webhook - Meta WhatsApp Inbound Message webhook
+async function apiWhatsAppWebhook(req, res, body) {
+  let payload = {};
+  try {
+    if (typeof body === 'string') payload = JSON.parse(body);
+    else if (body && typeof body === 'object') payload = body;
+  } catch (_) {
+    return core.sendJson(res, 400, { error: 'Invalid JSON payload', code: 'bad_json' });
+  }
+
+  // Acknowledge Meta immediately
+  core.sendJson(res, 200, { ok: true, status: 'received' });
+
+  try {
+    const entries = Array.isArray(payload.entry) ? payload.entry : [];
+    for (const entry of entries) {
+      const changes = Array.isArray(entry.changes) ? entry.changes : [];
+      for (const change of changes) {
+        const val = change.value || {};
+        const messages = Array.isArray(val.messages) ? val.messages : [];
+        const contacts = Array.isArray(val.contacts) ? val.contacts : [];
+
+        const metaPhoneId = (val.metadata && val.metadata.phone_number_id) || val.phone_number_id;
+        const tenant = (core.db().tenants || []).find((t) => {
+          const cfg = wacrm.getTenantWacrmConfig(core.db(), t.id);
+          return cfg && (cfg.phoneNumberId === metaPhoneId || cfg.metaPhoneId === metaPhoneId);
+        }) || (core.db().tenants || [])[0];
+
+        if (!tenant) continue;
+
+        for (const msg of messages) {
+          let msgText = '';
+          if (msg.type === 'text' && msg.text) {
+            msgText = msg.text.body;
+          } else if (msg.type === 'interactive' && msg.interactive) {
+            msgText = (msg.interactive.button_reply && msg.interactive.button_reply.title) ||
+                      (msg.interactive.list_reply && msg.interactive.list_reply.title) || '';
+          } else if (msg.type === 'button' && msg.button) {
+            msgText = msg.button.text;
+          }
+          if (!msgText) continue;
+
+          const senderContact = contacts.find((c) => c.wa_id === msg.from) || {};
+          const senderName = senderContact.profile && senderContact.profile.name;
+
+          await whatsappAutomation.processIncomingWhatsAppMessage({
+            db: core.db(),
+            db_mutate: (fn) => core.mutate(fn, tenant.id),
+            tenantId: tenant.id,
+            fromPhone: msg.from,
+            text: msgText,
+            senderName,
+            providers,
+            genId: core.genId
+          });
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('Error processing incoming WhatsApp webhook: ' + err.message);
+  }
 }
 
 /* ==========================================================================
@@ -11801,7 +11899,9 @@ function apiBookingList(req, res, ctx) {
   const status = q.get('status') || null;
   const from = q.get('from') || null;
   const to = q.get('to') || null;
-  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to });
+  const phone = q.get('phone') || null;
+  const contactId = q.get('contactId') || null;
+  const result = booking.listBookings(core.db(), ctx.tenant.id, agentId, { page, pageSize: ps, status, from, to, phone, contactId });
   core.sendJson(res, 200, { ok: true, ...result });
 }
 
@@ -12330,7 +12430,7 @@ const server = http.createServer(async (req, res) => {
 
       const isAutoCallIngest = (route.startsWith('/api/autocall/webhook/') || (route.startsWith('/api/auto-call/') && !route.startsWith('/api/auto-call/sources') && !route.startsWith('/api/auto-call/leads'))) && req.method === 'POST';
       const isKbUpload = route.startsWith('/api/kb/') && route.endsWith('/upload') && req.method === 'POST';
-      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return' || route === '/api/telephony/webhook' || route === '/api/calls/webhook' || isAutoCallIngest;
+      const inboundWebhook = route === '/api/billing/razorpay/webhook' || route === '/api/clerk/webhook' || route === '/api/payu/callback' || route === '/api/payu/webhook' || route === '/api/payu/return' || route === '/api/telephony/webhook' || route === '/api/calls/webhook' || route === '/api/whatsapp/webhook' || isAutoCallIngest;
 
       if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method || '') && !inboundWebhook && !requestOriginAllowed(req)) {
         return core.sendJson(res, 403, { error: 'cross-origin request blocked', code: 'bad_origin' });
@@ -12377,6 +12477,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       // ---- Public GET routes ----
+      if (route === '/api/whatsapp/webhook' && req.method === 'GET') return apiWhatsAppWebhookVerify(req, res);
       if (route === '/api/health' && req.method === 'GET') return apiHealth(req, res);
       if (route === '/api/providers' && req.method === 'GET') return apiProviders(req, res);
       if (route === '/api/billing/config' && req.method === 'GET') return apiBillingConfig(req, res);
@@ -12486,6 +12587,7 @@ const server = http.createServer(async (req, res) => {
 
       // Public POST (auth & webhooks) routes.
       if (route === '/api/telephony/webhook' || route === '/api/calls/webhook') return apiTelephonyWebhook(req, res, body);
+      if (route === '/api/whatsapp/webhook' && req.method === 'POST') return apiWhatsAppWebhook(req, res, body);
       if (route === '/api/auth/signup') return apiSignup(req, res, body);
       if (route === '/api/auth/login') return apiLogin(req, res, body);
       if (route === '/api/auth/logout') return apiLogout(req, res);

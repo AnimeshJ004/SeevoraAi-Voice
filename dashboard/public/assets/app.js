@@ -812,7 +812,7 @@ function getVisibleRoutes() {
       { id: 'inbound', label: 'Inbound Calls', icon: 'phone', disabled: tFeats.inbound === false },
       { id: 'campaigns', label: 'Outbound Calls', icon: 'send', disabled: tFeats.campaigns === false },
       { id: 'recordings', label: 'Call Recordings', icon: 'record', disabled: tFeats.recordings === false },
-      { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline', disabled: tFeats.crmPipeline === false },
+      { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: tFeats.crmPipeline === false },
       { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
       { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
       { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
@@ -834,7 +834,7 @@ function getVisibleRoutes() {
     { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
     { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
     { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-    { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
+    { id: 'crm-pipeline', label: 'Contacts', icon: 'users' },
     { id: 'agents', label: 'All AI Agents', icon: 'mic' },
     { id: 'talk', label: 'Talk to Agent', icon: 'wave' },
     { id: 'invoices', label: 'Invoices', icon: 'invoice' },
@@ -849,7 +849,7 @@ const ROUTES = [
   { id: 'inbound', label: 'Inbound Calls', icon: 'phone' },
   { id: 'campaigns', label: 'Outbound Calls', icon: 'send' },
   { id: 'recordings', label: 'Call Recordings', icon: 'record' },
-  { id: 'crm-pipeline', label: 'Leads & Pipeline', icon: 'pipeline' },
+  { id: 'crm-pipeline', label: 'Contacts', icon: 'users' },
   { id: 'agents', label: 'Agents', icon: 'mic' },
   { id: 'teams', label: 'Teams', icon: 'users' },
   { id: 'talk', label: 'Talk to Agent', icon: 'mic' },
@@ -1750,7 +1750,7 @@ function currentRoute() {
     if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
       return 'overview';
     }
-    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'features', 'workflows', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'dograh', 'dograh-flows', 'kb', 'knowledge-base', 'crm-webhooks'];
+    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'features', 'workflows', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'dograh', 'dograh-flows', 'kb', 'knowledge-base', 'crm-webhooks'];
     if (hash && adminAllowed.includes(hash)) {
       return hash;
     }
@@ -1772,7 +1772,7 @@ function currentRoute() {
     return isCompleted ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
+  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
   if (hash && allowed.includes(hash)) {
     return hash;
   }
@@ -1837,6 +1837,7 @@ function onRoute() {
     recordings: viewRecordings,
     campaigns: viewCampaigns,
     'crm-pipeline': viewCrmPipeline,
+  'contacts': viewCrmPipeline,
     invoices: viewInvoices,
     billing: viewBilling,
     support: viewSupport,
@@ -3646,7 +3647,7 @@ function openLiveCallTransferModal(call, employees, onDone) {
   modal({
     title: 'Transfer Live Call to Team Member',
     body,
-    confirmText: '📲 Transfer Live Call Now',
+    confirmText: 'Transfer Live Call Now',
     confirmKind: 'primary',
     onConfirm: async () => {
       const res = await api('/api/calls/live/action', {
@@ -3699,7 +3700,7 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
           style: `align-self:${t.isAgent ? 'flex-start' : 'flex-end'};max-width:85%;padding:10px 14px;border-radius:12px;font-size:0.86rem;line-height:1.48;background:${t.isAgent ? '#e7f4ed' : '#ffffff'};border:1px solid ${t.isAgent ? 'rgba(13,93,65,0.24)' : 'rgba(0,0,0,0.09)'};color:#14221c;box-shadow:0 2px 6px rgba(0,0,0,0.02);`
         }, [
           el('div', { style: 'font-size:0.7rem;font-weight:800;text-transform:uppercase;color:#0d5d41;margin-bottom:3px;' },
-            t.isAgent ? `🤖 ${callObj.agentName || 'AI Voice Agent'}` : `👤 ${callObj.callerName || callObj.formattedPhone || 'Caller'}`
+            t.isAgent ? (callObj.agentName || 'AI Voice Agent') : (callObj.callerName || callObj.formattedPhone || 'Caller')
           ),
           el('div', {}, t.text)
         ]));
@@ -3736,10 +3737,10 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
       } catch (err) {
         toast(err.message || 'Could not end call', 'err');
         btn.disabled = false;
-        btn.textContent = '🔴 Decline / End Call';
+        btn.textContent = 'Decline / End Call';
       }
     }
-  }, '🔴 Decline / End Call');
+  }, 'Decline / End Call');
 
   const transferBtn = el('button', {
     type: 'button',
@@ -3750,7 +3751,7 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
       if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
       openLiveCallTransferModal(currentCall, employees, onDone);
     }
-  }, assignedEmp ? `📲 Transfer to ${assignedEmp.name}` : '📲 Transfer to Team Employee');
+  }, assignedEmp ? `Transfer to ${assignedEmp.name}` : 'Transfer to Team Employee');
 
   const detailsGrid = el('div', {
     style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:18px;padding:14px 0;margin-bottom:16px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);'
@@ -3795,7 +3796,7 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
         class: 'btn btn-ghost btn-sm',
         style: 'border:1px solid rgba(13,93,65,0.3);color:#0d5d41;font-weight:700;',
         onclick: () => openEditLiveCallerNameModal(currentCall, onDone)
-      }, '✎ Edit Caller Name'),
+      }, 'Edit Caller Name'),
       el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
         transferBtn,
         declineBtn
@@ -5034,7 +5035,7 @@ function agentCard(a) {
     el('b', { style: 'font-size:1.02rem;color:#14221c;letter-spacing:-0.01em;' }, a.name),
     rolePill,
     statusBadge,
-    el('span', { style: 'font-size:0.74rem;font-family:var(--mono);color:#5d7468;' }, '📞 ' + did),
+    el('span', { style: 'font-size:0.74rem;font-family:var(--mono);color:#5d7468;' }, did),
     el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, voiceLine)
   ]);
   bodyWrap.appendChild(titleLine);
@@ -9124,7 +9125,7 @@ async function viewCampaigns(root) {
           toast('No valid numbers found in file.', 'err');
           fileFeedback.style.display = 'block';
           fileFeedback.style.color = '#dc2626';
-          fileFeedback.textContent = '❌ ' + file.name + ': No valid phone numbers found.';
+          fileFeedback.textContent = file.name + ': No valid phone numbers found.';
           return;
         }
         fileFeedback.style.display = 'block';
@@ -10838,6 +10839,26 @@ async function startCustomRecharge(amount) {
 async function viewSupport(root) {
   root.innerHTML = '';
   root.classList.add('aria-clients-view', 'aria-support-view');
+
+  // Feature Lock Check: ensure at least one agent exists for support
+  if (!hasTenantAgent('support')) {
+    root.appendChild(viewHead('Support & Help Desk'));
+    const skeletonContent = el('div', { style: 'padding:16px;' }, [
+      el('div', { class: 'settings-kpi-bar', style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0;margin-bottom:20px;border:1px solid var(--line-2);border-radius:12px;opacity:0.5;' }, [
+        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'OPEN TICKETS'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
+        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'RESOLVED'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
+        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'SLA'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '< 2 Hours')]),
+        el('div', { style: 'padding:16px 20px;' }, [el('div', { style: 'font-weight:700;' }, 'DESK'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, 'In-App')])
+      ])
+    ]);
+    renderFeatureLock(root, skeletonContent, {
+      title: 'Customer Care Agent Required',
+      description: 'Create a Customer Care AI agent to unlock the Support Help Desk, ticket management, and automated response workflows.',
+      buttonText: '+ Create Customer Care Agent to Unlock',
+      agentType: 'support'
+    });
+    return;
+  }
 
   const wrap = el('div', { class: 'aria-support-view aria-clients-view', style: 'width:100%;' });
   root.appendChild(wrap);
@@ -12915,7 +12936,7 @@ async function viewTeams(root) {
                     el('span', {
                       class: 'pill',
                       style: 'background:#e3f1e9;color:#0d5d41;font-weight:700;font-size:0.75rem;border:1px solid rgba(13,93,65,0.22);'
-                    }, '🤖 ' + ag.name + (ag.isPrimary ? ' (Live)' : ''))
+                    }, ag.name + (ag.isPrimary ? ' (Live)' : ''))
                   ))
                   : el('span', { style: 'font-size:0.78rem;color:#2c4238;font-style:italic;' }, 'No specific agent assigned')
               ]),
@@ -12953,7 +12974,7 @@ async function viewTeams(root) {
                     style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
                     title: 'Simulate or trigger live call transfer when AI agent gets stuck',
                     onclick: () => openTestHandoffModal(m, teamState, reloadTeams)
-                  }, '📞 Test Handoff'),
+                  }, 'Test Handoff'),
                   canManageTeam ? el('button', {
                     class: 'btn btn-ghost btn-sm',
                     style: 'padding:5px 10px;font-size:0.76rem;',
@@ -13021,7 +13042,7 @@ async function viewTeams(root) {
                 style: h.liveCallPlaced
                   ? 'background:rgba(16,185,129,0.15);color:#065f46;font-weight:700;font-size:0.73rem;'
                   : 'background:rgba(13,93,65,0.10);color:#0d5d41;font-weight:700;font-size:0.73rem;'
-              }, h.liveCallPlaced ? '📞 Live Call Transferred' : '✓ Escalation Logged'))
+              }, h.liveCallPlaced ? 'Live Call Transferred' : '✓ Escalation Logged'))
             ])))
           ])
         ])
@@ -13153,7 +13174,7 @@ function openTestHandoffModal(member, teamState, onDone) {
   const liveDialCheck = el('input', { type: 'checkbox', checked: !!member.phone });
 
   modal({
-    title: '📞 Trigger Human Call Handoff → ' + member.name,
+    title: 'Trigger Human Call Handoff → ' + member.name,
     body: el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
       el('p', { style: 'font-size:0.85rem;color:#2c4238;margin:0;' },
         'When the AI Voice Agent cannot resolve a caller query or gets stuck, it automatically escalates the call to the assigned employee (' + (member.phone || 'No phone set') + ') from your shared line (' + teamState.sharedNumber + ').'
@@ -16066,13 +16087,270 @@ function provCard(p) {
   ]);
 }
 
+
+/* ===========================================================================
+   FEATURE LOCKING GUARD - Renders blurred lock overlay when agent is missing
+   =========================================================================== */
+
+/**
+ * Checks whether the tenant has at least one agent matching the given criteria.
+ * @param {'sales'|'support'|'any'} agentType
+ * @returns {boolean}
+ */
+function hasTenantAgent(agentType) {
+  const agents = (State.agents && Array.isArray(State.agents)) ? State.agents : [];
+  if (!agents.length) return false;
+  if (agentType === 'any') return agents.length > 0;
+  if (agentType === 'sales') {
+    return agents.some(function(a) {
+      return a.role === 'sales' || a.department === 'sales' ||
+             (a.tags && a.tags.includes('sales')) ||
+             (a.name && /sales|crm|lead/i.test(a.name));
+    }) || agents.length > 0; // Fallback: any agent qualifies for sales pipeline
+  }
+  if (agentType === 'support') {
+    return agents.some(function(a) {
+      return a.role === 'support' || a.role === 'customer_care' ||
+             a.department === 'support' || a.department === 'customer_care' ||
+             (a.tags && (a.tags.includes('support') || a.tags.includes('customer_care'))) ||
+             (a.name && /support|care|help|ticket/i.test(a.name));
+    }) || agents.length > 0; // Fallback: any agent qualifies
+  }
+  return agents.length > 0;
+}
+
+/**
+ * Renders a frosted-glass lock overlay with guidance when the feature is locked.
+ * @param {HTMLElement} container - The parent container
+ * @param {HTMLElement} lockedContent - The blurred content behind the lock
+ * @param {{ title: string, description: string, buttonText: string, agentType: string, icon: string }} opts
+ */
+function renderFeatureLock(container, lockedContent, opts) {
+  const wrapper = el('div', { class: 'sv-feature-lock-wrapper' });
+
+  // Blurred background content
+  lockedContent.classList.add('sv-feature-locked-content');
+  wrapper.appendChild(lockedContent);
+
+  // Lock overlay
+  const lockSvg = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d5d41" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+  const lockCard = el('div', { class: 'sv-lock-card' }, [
+    el('div', { class: 'sv-lock-icon-bubble', html: lockSvg }),
+    el('h3', { style: 'margin:0;font-size:1.15rem;font-weight:800;color:#14221c;' }, opts.title || 'Feature Locked'),
+    el('p', { style: 'margin:0;font-size:0.88rem;color:#5d7468;line-height:1.5;max-width:380px;' }, opts.description || 'Create an AI agent to unlock this feature.'),
+    el('button', {
+      class: 'btn btn-primary',
+      style: 'margin-top:8px;border-radius:999px;font-weight:700;padding:10px 24px;font-size:0.88rem;background:#0d5d41;color:#fff;border:none;cursor:pointer;',
+      onclick: function() { goto('agents'); }
+    }, opts.buttonText || '+ Create AI Agent to Unlock')
+  ]);
+
+  const overlay = el('div', { class: 'sv-feature-lock-overlay' });
+  overlay.appendChild(lockCard);
+  wrapper.appendChild(overlay);
+
+  container.appendChild(wrapper);
+}
+
+/* ===========================================================================
+   CONTACTS SUB-NAVIGATION TABS (All, Pipeline, Appointments, Visitors)
+   =========================================================================== */
+
+function buildContactsSubNav(activeTab, onSwitch) {
+  const tabs = [
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'all', label: 'All Contacts' },
+    { id: 'appointments', label: 'Appointments' },
+    { id: 'visitors', label: 'Visitors' }
+  ];
+
+  const nav = el('div', { class: 'sv-contacts-subnav' });
+  tabs.forEach(function(tab) {
+    const btn = el('button', {
+      type: 'button',
+      class: 'sv-contacts-subnav-btn' + (activeTab === tab.id ? ' active' : ''),
+      onclick: function() { onSwitch(tab.id); }
+    }, (tab.icon ? (tab.icon + ' ') : '') + tab.label);
+    nav.appendChild(btn);
+  });
+  return nav;
+}
+
 /* ===========================================================================
    CRM LEADS & SALES PIPELINE
    =========================================================================== */
 
 /* ---- 2. CRM Leads & Sales Pipeline (Kanban) ---- */
 async function viewCrmPipeline(root) {
-  root.appendChild(viewHead('Leads & Pipeline'));
+  root.appendChild(viewHead('Contacts', 'Unified management for leads, visitors, and appointment bookings.'));
+
+  // Feature Lock Check: ensure at least one agent exists
+  if (!hasTenantAgent('sales')) {
+    // Render a skeleton pipeline preview behind the lock
+    const skeletonContent = el('div', { style: 'padding:16px;' }, [
+      buildContactsSubNav('pipeline', function() {}),
+      el('div', { class: 'wacrm-pipeline-board', style: 'opacity:0.5;' }, [
+        el('div', { class: 'wacrm-pipeline-col' }, [el('div', { class: 'wacrm-pipeline-col-header' }, [el('span', {}, 'New Lead'), el('span', { class: 'pill', style: 'font-size:0.7rem' }, '0')])]),
+        el('div', { class: 'wacrm-pipeline-col' }, [el('div', { class: 'wacrm-pipeline-col-header' }, [el('span', {}, 'Call Completed'), el('span', { class: 'pill', style: 'font-size:0.7rem' }, '0')])]),
+        el('div', { class: 'wacrm-pipeline-col' }, [el('div', { class: 'wacrm-pipeline-col-header' }, [el('span', {}, 'Qualified'), el('span', { class: 'pill', style: 'font-size:0.7rem' }, '0')])]),
+        el('div', { class: 'wacrm-pipeline-col' }, [el('div', { class: 'wacrm-pipeline-col-header' }, [el('span', {}, 'Proposal Sent'), el('span', { class: 'pill', style: 'font-size:0.7rem' }, '0')])])
+      ])
+    ]);
+    renderFeatureLock(root, skeletonContent, {
+      title: 'Sales Agent Required',
+      description: 'Create your first AI Voice Agent to unlock the Contacts pipeline, lead tracking, appointment scheduling, and WhatsApp automation workflows.',
+      buttonText: '+ Create Sales Agent to Unlock',
+      agentType: 'sales'
+    });
+    return;
+  }
+
+  // Contacts Sub-Navigation (Pipeline / All / Appointments / Visitors)
+  let activeContactsTab = 'pipeline';
+  const subNavContainer = el('div', { id: 'sv-contacts-subnav-host' });
+  const tabContentHost = el('div', { id: 'sv-contacts-tab-content' });
+  root.appendChild(subNavContainer);
+  root.appendChild(tabContentHost);
+
+  function switchContactsTab(tabId) {
+    activeContactsTab = tabId;
+    subNavContainer.innerHTML = '';
+    subNavContainer.appendChild(buildContactsSubNav(tabId, switchContactsTab));
+
+    tabContentHost.innerHTML = '';
+    if (tabId === 'pipeline') {
+      renderPipelineTab(tabContentHost);
+    } else if (tabId === 'all') {
+      renderAllContactsTab(tabContentHost);
+    } else if (tabId === 'appointments') {
+      renderAppointmentsTab(tabContentHost);
+    } else if (tabId === 'visitors') {
+      renderVisitorsTab(tabContentHost);
+    }
+  }
+
+  async function renderAllContactsTab(host) {
+    host.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading all contacts...</div>';
+    try {
+      const res = await api('/api/crm/pipeline');
+      const allLeads = [];
+      if (res && Array.isArray(res.pipeline)) {
+        res.pipeline.forEach(function(st) { if (st.deals) st.deals.forEach(function(d) { allLeads.push(d); }); });
+      }
+      host.innerHTML = '';
+      if (!allLeads.length) {
+        host.appendChild(el('div', { class: 'muted', style: 'text-align:center;padding:40px 16px;' }, 'No contacts found. Add your first lead or wait for WhatsApp and Voice AI inbound traffic.'));
+        return;
+      }
+      const table = el('table', { class: 'data-table', style: 'width:100%;border-collapse:collapse;font-size:0.85rem;' });
+      table.appendChild(el('thead', {}, [
+        el('tr', {}, ['Name', 'Phone', 'Stage', 'Deal Value', 'Company', 'Tags'].map(function(h) {
+          return el('th', { style: 'text-align:left;padding:10px 12px;font-weight:700;color:var(--ink-dim);border-bottom:1.5px solid var(--line-2);font-size:0.78rem;text-transform:uppercase;' }, h);
+        }))
+      ]));
+      const tbody = el('tbody', {});
+      allLeads.forEach(function(d) {
+        const row = el('tr', { style: 'border-bottom:1px solid var(--line-2);cursor:pointer;', onclick: function() { openContactInspectionDrawer(d); } }, [
+          el('td', { style: 'padding:10px 12px;font-weight:600;color:var(--ink);' }, d.name || 'Unknown'),
+          el('td', { style: 'padding:10px 12px;color:var(--ink-dim);' }, d.phone || ''),
+          el('td', { style: 'padding:10px 12px;' }, [el('span', { class: 'pill', style: 'font-size:0.72rem;' }, d.stage || 'New Lead')]),
+          el('td', { style: 'padding:10px 12px;font-weight:600;color:var(--brand, #0d5d41);' }, d.dealValue ? '₹' + fmtInr(d.dealValue) : '-'),
+          el('td', { style: 'padding:10px 12px;color:var(--ink-dim);' }, d.company || '-'),
+          el('td', { style: 'padding:10px 12px;' }, (d.tags || []).slice(0, 2).map(function(t) { return el('span', { class: 'pill', style: 'font-size:0.68rem;margin-right:4px;' }, t); }))
+        ]);
+        tbody.appendChild(row);
+      });
+      table.appendChild(tbody);
+      host.appendChild(el('div', { style: 'overflow-x:auto;border:1px solid var(--line-2);border-radius:14px;background:#fff;' }, [table]));
+    } catch (err) {
+      host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load contacts: ' + err.message + '</div>';
+    }
+  }
+
+  async function renderAppointmentsTab(host) {
+    host.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading appointments...</div>';
+    try {
+      const res = await api('/api/booking/list');
+      const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+      host.innerHTML = '';
+      if (!bookings.length) {
+        host.appendChild(el('div', { style: 'text-align:center;padding:40px 16px;' }, [
+          
+          el('p', { style: 'font-weight:600;color:var(--ink);margin:0 0 6px 0;' }, 'No Appointments Scheduled'),
+          el('p', { class: 'muted', style: 'font-size:0.85rem;margin:0;' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or manual intake will appear here.')
+        ]));
+        return;
+      }
+      const list = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
+      bookings.forEach(function(b) {
+        list.appendChild(el('div', {
+          class: 'card',
+          style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;cursor:pointer;',
+          onclick: function() { openContactInspectionDrawer({ phone: b.callerPhone, name: b.callerName, email: b.callerEmail }); }
+        }, [
+          el('div', {}, [
+            el('div', { style: 'font-weight:700;color:var(--ink);font-size:0.95rem;' }, (b.callerName || 'Contact') + ' · ' + new Date(b.startTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })),
+            el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:3px;' }, 'Duration: ' + (b.durationMin || 30) + ' min · Source: ' + (b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual')) + (b.confirmationCode ? ' · Code: ' + b.confirmationCode : ''))
+          ]),
+          el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.78rem;' }, (b.status || 'confirmed').toUpperCase())
+        ]));
+      });
+      host.appendChild(list);
+    } catch (err) {
+      host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load appointments: ' + err.message + '</div>';
+    }
+  }
+
+  async function renderVisitorsTab(host) {
+    host.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading visitor data...</div>';
+    try {
+      const res = await api('/api/crm/pipeline');
+      const visitors = [];
+      if (res && Array.isArray(res.pipeline)) {
+        res.pipeline.forEach(function(st) {
+          if (st.deals) st.deals.forEach(function(d) {
+            if (d.stage === 'New Lead' || (d.tags && (d.tags.includes('whatsapp_inbound') || d.tags.includes('visitor')))) {
+              visitors.push(d);
+            }
+          });
+        });
+      }
+      host.innerHTML = '';
+      if (!visitors.length) {
+        host.appendChild(el('div', { class: 'muted', style: 'text-align:center;padding:40px 16px;' }, 'No inbound visitors captured yet. Visitors arriving via WhatsApp or inbound Voice AI calls will appear here.'));
+        return;
+      }
+      const list = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' });
+      visitors.forEach(function(d) {
+        list.appendChild(el('div', {
+          class: 'card',
+          style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;padding:14px;cursor:pointer;',
+          onclick: function() { openContactInspectionDrawer(d); }
+        }, [
+          el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
+            el('div', {}, [
+              el('span', { style: 'font-weight:700;color:var(--ink);' }, d.name || 'Visitor'),
+              el('span', { style: 'margin-left:10px;font-size:0.82rem;color:var(--ink-dim);' }, d.phone || '')
+            ]),
+            el('span', { class: 'pill', style: 'font-size:0.72rem;' }, d.stage || 'New Lead')
+          ]),
+          d.notes ? el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:6px;' }, d.notes) : ''
+        ]));
+      });
+      host.appendChild(list);
+    } catch (err) {
+      host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load visitors: ' + err.message + '</div>';
+    }
+  }
+
+  function renderPipelineTab(host) {
+    // The existing pipeline board renders into this host
+    host.appendChild(pipelineContentContainer);
+  }
+
+  const pipelineContentContainer = el('div', {});
+  switchContactsTab('pipeline');
 
   const PIPELINE_STORAGE_KEY = 'seevora_crm_pipeline_cache';
   let currentTenantFilter = '';
@@ -16722,10 +17000,10 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       el('span', { class: 'pill', style: 'font-size:0.75rem' }, 'Live CRM Leads')
     ])
   ]);
-  root.appendChild(topBar);
+  pipelineContentContainer.appendChild(topBar);
 
   const board = el('div', { class: 'wacrm-pipeline-board' });
-  root.appendChild(board);
+  pipelineContentContainer.appendChild(board);
 
   const defaultStages = [
     { stage: 'New Lead', count: 0, totalValue: 0, deals: [] },
@@ -16772,6 +17050,8 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
           })();
 
           const card = el('div', { class: 'wacrm-deal-card' });
+          card.style.cursor = 'pointer';
+          card.onclick = function() { openContactInspectionDrawer(deal); };
 
           // Row 1: Name + Deal Value + Actions (Edit & Delete)
           const headerRow = el('div', { class: 'wacrm-deal-card-header-row' });
@@ -16923,6 +17203,314 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       }
     });
     return dd;
+  }
+
+
+  /* ---- Dedicated Contact Inspection Drawer with Appointments Sub-Section ---- */
+  async function openContactInspectionDrawer(deal) {
+    if (!deal) return;
+    const phone = deal.phone || '';
+    const cleanPhone = phone.replace(/\D/g, '');
+
+    const container = el('div', { class: 'sv-contact-drawer-container', style: 'display:flex;flex-direction:column;gap:16px;' });
+
+    // 1. Top Contact Header Card
+    const headerCard = el('div', {
+      class: 'card',
+      style: 'background:var(--bg-2, #f5f7fa);border:1px solid var(--line-2, rgba(34,43,56,0.1));border-radius:14px;padding:16px;'
+    }, [
+      el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;' }, [
+        el('div', {}, [
+          el('h3', { style: 'margin:0 0 4px 0;font-size:1.15rem;font-weight:700;color:var(--ink);' }, deal.name || ('Contact ' + phone.slice(-4))),
+          el('div', { style: 'font-size:0.85rem;color:var(--ink-dim, #5d7468);display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;gap:4px;' }, [iconCallSvg(13), phone]),
+            deal.email ? el('span', {}, deal.email) : '',
+            deal.company ? el('span', { class: 'pill', style: 'font-size:0.75rem;padding:2px 8px;' }, deal.company) : ''
+          ])
+        ]),
+        el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;' }, [
+          el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.8rem;padding:3px 10px;' }, deal.stage || 'New Lead'),
+          deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--brand, #0d5d41);font-size:0.95rem;' }, '₹' + fmtInr(deal.dealValue)) : ''
+        ])
+      ]),
+      el('div', { style: 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;' }, [
+        (deal.communicationPreference && deal.communicationPreference.prefersWhatsApp)
+          ? el('span', { class: 'pill', style: 'background:rgba(37,211,102,0.15);color:#0d5d41;border:1px solid rgba(37,211,102,0.3);font-size:0.75rem;font-weight:600;' }, '💬 Prefers WhatsApp (Calls Paused)')
+          : el('span', { class: 'pill', style: 'background:rgba(14,143,99,0.12);color:#0E8F63;border:1px solid rgba(14,143,99,0.25);font-size:0.75rem;font-weight:600;' }, '📞 Voice AI Auto-Dial Eligible'),
+        el('span', { class: 'pill', style: 'font-size:0.75rem;background:var(--bg);border:1px solid var(--line-2);' }, 'Type: ' + (deal.type || 'Lead')),
+        ...(deal.tags || []).map((t) => el('span', { class: 'pill', style: 'font-size:0.75rem;background:rgba(0,0,0,0.04);' }, t))
+      ])
+    ]);
+    container.appendChild(headerCard);
+
+    // 2. Navigation Tabs
+    const tabNav = el('div', {
+      style: 'display:flex;gap:8px;border-bottom:1.5px solid var(--line-2, rgba(34,43,56,0.1));padding-bottom:8px;margin-top:4px;'
+    });
+
+    const apptTabBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm',
+      style: 'border-radius:999px;font-weight:600;padding:5px 14px;background:#0d5d41;color:#ffffff;border:none;cursor:pointer;',
+      onclick: () => switchDrawerTab('appointments')
+    }, 'Appointments');
+
+    const timelineTabBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm btn-ghost',
+      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      onclick: () => switchDrawerTab('timeline')
+    }, 'Voice & WhatsApp History');
+
+    const detailsTabBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm btn-ghost',
+      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      onclick: () => switchDrawerTab('details')
+    }, 'Notes & Settings');
+
+    tabNav.appendChild(apptTabBtn);
+    tabNav.appendChild(timelineTabBtn);
+    tabNav.appendChild(detailsTabBtn);
+    container.appendChild(tabNav);
+
+    // 3. Tab Content Area
+    const tabContent = el('div', { class: 'sv-drawer-tab-content', style: 'min-height:240px;' });
+    container.appendChild(tabContent);
+
+    function switchDrawerTab(tab) {
+      [apptTabBtn, timelineTabBtn, detailsTabBtn].forEach((btn) => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--ink)';
+        btn.style.border = '1px solid var(--line-2)';
+      });
+      if (tab === 'appointments') {
+        apptTabBtn.style.background = '#0d5d41';
+        apptTabBtn.style.color = '#ffffff';
+        apptTabBtn.style.border = 'none';
+        renderAppointmentsTab(tabContent);
+      } else if (tab === 'timeline') {
+        timelineTabBtn.style.background = '#0d5d41';
+        timelineTabBtn.style.color = '#ffffff';
+        timelineTabBtn.style.border = 'none';
+        renderTimelineTab(tabContent);
+      } else if (tab === 'details') {
+        detailsTabBtn.style.background = '#0d5d41';
+        detailsTabBtn.style.color = '#ffffff';
+        detailsTabBtn.style.border = 'none';
+        renderDetailsTab(tabContent);
+      }
+    }
+
+    async function renderAppointmentsTab(panel) {
+      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading appointments...</div>';
+      try {
+        const res = await api('/api/booking/list?phone=' + encodeURIComponent(phone) + '&contactId=' + encodeURIComponent(deal.id));
+        const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+
+        panel.innerHTML = '';
+        const topActions = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
+          el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, `Scheduled Appointments (${bookings.length})`),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+            style: 'border-radius:999px;font-size:0.8rem;padding:4px 14px;background:#0d5d41;color:#fff;border:none;cursor:pointer;',
+            onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
+          }, '+ Book Appointment')
+        ]);
+        panel.appendChild(topActions);
+
+        if (!bookings.length) {
+          panel.appendChild(el('div', {
+            style: 'text-align:center;padding:32px 16px;background:var(--bg-2);border-radius:12px;border:1px dashed var(--line-2);'
+          }, [
+            
+            el('p', { style: 'margin:0 0 10px 0;font-weight:600;color:var(--ink);font-size:0.92rem;' }, 'No Appointments Scheduled'),
+            el('p', { style: 'margin:0 0 14px 0;font-size:0.82rem;color:var(--ink-dim);' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or direct intake appear here.'),
+            el('button', {
+              type: 'button',
+              class: 'btn btn-secondary btn-sm',
+              style: 'border-radius:999px;',
+              onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
+            }, 'Schedule First Appointment')
+          ]));
+          return;
+        }
+
+        const apptList = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' });
+        bookings.forEach((b) => {
+          const isConfirmed = b.status === 'confirmed';
+          const card = el('div', {
+            class: 'card',
+            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;'
+          }, [
+            el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
+              el('span', { style: 'font-weight:700;color:var(--ink);font-size:0.95rem;' },
+                new Date(b.startTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })),
+              el('span', {
+                class: 'pill ' + (isConfirmed ? 'badge-gold' : ''),
+                style: 'font-size:0.75rem;font-weight:700;'
+              }, (b.status || 'confirmed').toUpperCase())
+            ]),
+            el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);display:flex;gap:12px;align-items:center;' }, [
+              el('span', {}, `Duration: ${b.durationMin || 30} mins`),
+              el('span', {}, `Source: ${b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual')}`),
+              b.confirmationCode ? el('span', { class: 'pill', style: 'font-size:0.7rem;padding:1px 6px;' }, 'Code: ' + b.confirmationCode) : ''
+            ]),
+            b.notes ? el('div', {
+              style: 'font-size:0.82rem;background:var(--bg);padding:8px 10px;border-radius:8px;margin-top:4px;color:var(--ink);'
+            }, b.notes) : ''
+          ]);
+          apptList.appendChild(card);
+        });
+        panel.appendChild(apptList);
+      } catch (err) {
+        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load appointments: ${err.message}</div>`;
+      }
+    }
+
+    async function renderTimelineTab(panel) {
+      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading conversation history...</div>';
+      try {
+        const recsRes = await api('/api/recordings').catch(() => ({ recordings: [] }));
+        const calls = (recsRes.recordings || []).filter((r) => {
+          const cPhone = String(r.phoneNumber || r.calledNumber || r.callerNumber || '').replace(/\D/g, '').slice(-10);
+          return cPhone && cPhone === cleanPhone.slice(-10);
+        });
+
+        panel.innerHTML = '';
+        if (!calls.length && !deal.notes) {
+          panel.innerHTML = '<div class="muted" style="text-align:center;padding:24px;">No call recordings or logs logged for this contact yet.</div>';
+          return;
+        }
+
+        const timelineList = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
+        if (deal.notes) {
+          timelineList.appendChild(el('div', {
+            class: 'card',
+            style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);font-size:0.85rem;'
+          }, [
+            el('div', { style: 'font-weight:600;margin-bottom:4px;color:var(--ink);' }, 'Contact Notes & Summary:'),
+            el('div', { style: 'white-space:pre-wrap;color:var(--ink-dim);line-height:1.45;' }, deal.notes)
+          ]));
+        }
+
+        calls.forEach((c) => {
+          const item = el('div', {
+            class: 'card',
+            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;'
+          }, [
+            el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
+              el('span', { style: 'font-weight:600;color:var(--ink);font-size:0.9rem;' },
+                `Voice Call (${c.direction === 'outbound' ? 'Outbound AI' : 'Inbound'}) · ${c.durationSeconds || 0}s`),
+              el('span', { style: 'font-size:0.75rem;color:var(--ink-dim);' }, (c.startedAt || '').slice(0, 16).replace('T', ' '))
+            ]),
+            c.summary ? el('div', { style: 'font-size:0.83rem;color:var(--ink);line-height:1.4;' }, `AI Summary: ${c.summary}`) : '',
+            c.transcript ? el('details', { style: 'font-size:0.8rem;margin-top:4px;' }, [
+              el('summary', { style: 'cursor:pointer;color:var(--brand);font-weight:600;' }, 'View Full Transcript'),
+              el('pre', { style: 'background:var(--bg);padding:8px;border-radius:8px;white-space:pre-wrap;font-size:0.78rem;max-height:160px;overflow-y:auto;margin-top:6px;' }, c.transcript)
+            ]) : ''
+          ]);
+          timelineList.appendChild(item);
+        });
+
+        panel.appendChild(timelineList);
+      } catch (err) {
+        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load conversation history: ${err.message}</div>`;
+      }
+    }
+
+    function renderDetailsTab(panel) {
+      panel.innerHTML = '';
+      const form = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
+        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:10px;' }, [
+          el('div', { class: 'form-group' }, [
+            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Pipeline Stage'),
+            createStageSelect(deal.id, deal.stage, () => loadPipeline(currentTenantFilter))
+          ]),
+          el('div', { class: 'form-group' }, [
+            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Deal Value (INR)'),
+            el('input', { class: 'input', value: '₹' + fmtInr(deal.dealValue || 0), disabled: true })
+          ])
+        ]),
+        el('div', { class: 'card', style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);' }, [
+          el('div', { style: 'font-weight:600;font-size:0.88rem;margin-bottom:6px;' }, 'Customer Communication Preferences'),
+          el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);line-height:1.5;' }, [
+            el('div', {}, `• WhatsApp Messaging: ${(deal.communicationPreference && deal.communicationPreference.prefersWhatsApp) ? 'Preferred by customer' : 'Default'}`),
+            el('div', {}, `• Phone / Voice Calling: ${(deal.communicationPreference && deal.communicationPreference.doNotCall) ? 'Paused / Do Not Call' : 'Active and Enabled'}`),
+            el('div', {}, `• Call Attempts Made: ${(deal.communicationPreference && deal.communicationPreference.voiceCallAttempts) || 0}`)
+          ])
+        ]),
+        el('div', { style: 'display:flex;gap:10px;margin-top:8px;' }, [
+          el('button', {
+            type: 'button',
+            class: 'btn btn-secondary btn-sm',
+            onclick: () => { openEditLeadModal(deal); }
+          }, 'Edit Contact Details'),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-danger btn-sm',
+            onclick: () => { openDeleteLeadModal(deal); }
+          }, 'Delete Contact')
+        ])
+      ]);
+      panel.appendChild(form);
+    }
+
+    function openScheduleAppointmentModal(targetContact, onSaved) {
+      const dateInp = el('input', { class: 'input', type: 'datetime-local' });
+      const nowPlusDay = new Date(Date.now() + 24 * 3600000);
+      const pad = (n) => String(n).padStart(2, '0');
+      dateInp.value = `${nowPlusDay.getFullYear()}-${pad(nowPlusDay.getMonth() + 1)}-${pad(nowPlusDay.getDate())}T10:00`;
+
+      const durationSel = el('select', { class: 'input' }, [
+        el('option', { value: '15' }, '15 minutes'),
+        el('option', { value: '30', selected: true }, '30 minutes'),
+        el('option', { value: '45' }, '45 minutes'),
+        el('option', { value: '60' }, '60 minutes')
+      ]);
+      const notesInp = el('textarea', { class: 'textarea', rows: 2, placeholder: 'Agenda or discussion topic...' });
+
+      modal({
+        title: 'Schedule Appointment: ' + (targetContact.name || targetContact.phone),
+        body: el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
+          el('div', { class: 'form-group' }, [el('label', {}, 'Date & Time'), dateInp]),
+          el('div', { class: 'form-group' }, [el('label', {}, 'Duration'), durationSel]),
+          el('div', { class: 'form-group' }, [el('label', {}, 'Notes / Agenda'), notesInp])
+        ]),
+        confirmText: 'Schedule Appointment',
+        onConfirm: async () => {
+          if (!dateInp.value) throw new Error('Date and time are required.');
+          const startTime = new Date(dateInp.value).toISOString();
+          const duration = parseInt(durationSel.value, 10) || 30;
+          await api('/api/booking/reserve', {
+            method: 'POST',
+            body: {
+              contactId: targetContact.id,
+              callerPhone: targetContact.phone,
+              callerName: targetContact.name || 'Contact',
+              callerEmail: targetContact.email || '',
+              startTime,
+              durationMin: duration,
+              notes: notesInp.value.trim() || 'Scheduled from Contacts overview',
+              source: 'manual_admin'
+            }
+          });
+          toast('Appointment scheduled successfully!', 'ok');
+          if (typeof onSaved === 'function') onSaved();
+        }
+      });
+    }
+
+    switchDrawerTab('appointments');
+
+    modal({
+      title: 'Contact Inspection: ' + (deal.name || deal.phone),
+      className: 'sv-contact-inspection-modal',
+      body: container,
+      confirmText: 'Close',
+      onConfirm: async () => {}
+    });
   }
 
   function openAddLeadModal() {
@@ -17103,7 +17691,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       el('div', {
         style: 'background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.25);border-radius:10px;padding:10px 14px;color:#b91c1c;font-size:0.82rem;display:flex;align-items:center;gap:8px;'
       }, [
-        el('span', { style: 'font-size:1.1rem;font-weight:700;' }, '⚠'),
+        el('span', { style: 'font-size:1.1rem;font-weight:700;' }, '!'),
         el('span', {}, 'This lead and its conversation history will be permanently deleted from the CRM database.')
       ])
     ]);
@@ -17257,7 +17845,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     const warningBox = el('div', {
       style: 'margin-top:10px;padding:9px 12px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.22);border-radius:8px;color:#b91c1c;font-size:0.8rem;display:flex;align-items:center;gap:8px;'
     }, [
-      el('span', { style: 'font-weight:700;font-size:1rem;' }, '⚠'),
+      el('span', { style: 'font-weight:700;font-size:1rem;' }, '!'),
       el('span', {}, 'Selected leads and their conversation history will be permanently deleted from the CRM database.')
     ]);
 

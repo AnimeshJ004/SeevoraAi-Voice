@@ -359,14 +359,19 @@ function publicBooking(b) {
   };
 }
 
-function listBookings(db, tenantId, agentId, { page = 1, pageSize = 50, status, from, to } = {}) {
+function listBookings(db, tenantId, agentId, { page = 1, pageSize = 50, status, from, to, phone, contactId } = {}) {
   let bookings = (db.bookings || []).filter(
     (b) => b.tenantId === tenantId && (!agentId || b.agentId === agentId)
   );
   if (status) bookings = bookings.filter((b) => b.status === status);
   if (from)   bookings = bookings.filter((b) => b.startTime >= from);
   if (to)     bookings = bookings.filter((b) => b.startTime <= to);
-  bookings = bookings.slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
+  if (contactId) bookings = bookings.filter((b) => b.contactId === contactId);
+  if (phone) {
+    const clean = String(phone).replace(/\D/g, '').slice(-10);
+    bookings = bookings.filter((b) => String(b.callerPhone || '').replace(/\D/g, '').slice(-10) === clean);
+  }
+  bookings = bookings.slice().sort((a, b) => (b.startTime || '').localeCompare(a.startTime || ''));
   const total = bookings.length;
   const start = (page - 1) * pageSize;
   return { bookings: bookings.slice(start, start + pageSize).map(publicBooking), total, page, pageSize };
