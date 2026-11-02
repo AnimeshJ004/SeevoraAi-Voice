@@ -8,6 +8,11 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+const htmlEscape = escapeHtml;
+if (typeof window !== 'undefined') {
+  window.htmlEscape = escapeHtml;
+  window.escapeHtml = escapeHtml;
+}
 'use strict';
 /* ==========================================================================
    RapidX Voice , Console (product dashboard) SPA.
@@ -169,10 +174,12 @@ function modal(opts, maybeBody) {
   // opts: { title, body(node), confirmText, confirmKind, onConfirm, cancelText, wide }
   const host = $('#modal-host');
   const close = () => { host.classList.add('hide'); host.setAttribute('aria-hidden', 'true'); host.innerHTML = ''; };
+  const isDanger = opts.confirmKind === 'danger';
   const confirmBtn = el('button', {
-    class: 'btn ' + (opts.confirmKind === 'danger' ? 'btn-danger' : 'btn-primary'),
-    style: 'background:#0d5d41;color:#ffffff;border:none;'
+    class: 'btn ' + (isDanger ? 'btn-danger' : 'btn-primary'),
+    style: isDanger ? 'background:#dc2626;color:#ffffff;border:none;' : 'background:#0d5d41;color:#ffffff;border:none;'
   }, opts.confirmText || 'Confirm');
+  if (opts.confirmId) confirmBtn.id = opts.confirmId;
 
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
@@ -896,6 +903,10 @@ function navIcon(name) {
     'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
     'git-branch': '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
     bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    arrowUp: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>',
+    arrowDown: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>',
+    upload: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/><path d="M4 21h16"/>',
+    download: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><path d="M4 21h16"/>',
     logout: '<path d="M14 3.5H6.5A1.5 1.5 0 0 0 5 5v14a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M17 8l4 4-4 4"/><path d="M21 12H9"/>'
   };
   return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || paths.grid) + '</svg>';
@@ -994,8 +1005,27 @@ function closeAllFloatingPopovers(exceptEl) {
   document.querySelectorAll(".aria-custom-dropdown.open, .sv-fc-workspace-dropdown.open, .sv-call-agent-dropdown-wrap.open").forEach(dd => {
     if (!exceptEl || (!dd.contains(exceptEl) && dd !== exceptEl)) {
       dd.classList.remove("open");
+      const m = dd.querySelector(".aria-dropdown-menu");
+      if (m) m.classList.remove("open-upward");
       const tr = dd.querySelector(".aria-dropdown-trigger, .sv-cal-dropdown-trigger, .sv-call-agent-trigger");
       if (tr) tr.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.querySelectorAll(".wacrm-deal-card.dropdown-active").forEach(card => {
+    if (!exceptEl || !card.contains(exceptEl)) {
+      card.classList.remove("dropdown-active");
+      card.style.zIndex = "";
+    }
+  });
+  document.querySelectorAll(".wacrm-pipeline-col.dropdown-open").forEach(col => {
+    if (!exceptEl || !col.contains(exceptEl)) {
+      col.classList.remove("dropdown-open");
+      col.style.zIndex = "";
+    }
+  });
+  document.querySelectorAll(".wacrm-pipeline-deals.has-open-dropdown").forEach(deals => {
+    if (!exceptEl || !deals.contains(exceptEl)) {
+      deals.classList.remove("has-open-dropdown");
     }
   });
 }
@@ -1049,6 +1079,9 @@ function createThemedDropdown(cfg) {
     ? cfg.options.map(o => typeof o === 'object' && o !== null ? { value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? ''), badge: o.badge ? String(o.badge) : '' } : { value: String(o), label: String(o), badge: '' })
     : [];
 
+  const isSearchable = cfg.searchable === true || (cfg.searchable !== false && options.length >= 6);
+  let searchQuery = '';
+
   const alignClass = cfg.align === 'right' ? 'align-right' : 'align-left';
   const wrap = el('div', { class: 'aria-custom-dropdown sv-themed-dropdown ' + (cfg.className || ''), style: cfg.style || '' });
 
@@ -1076,11 +1109,84 @@ function createThemedDropdown(cfg) {
     'aria-expanded': 'false'
   }, [labelSpan, arrowSpan]);
 
-  const menu = el('div', { class: 'aria-dropdown-menu ' + alignClass });
+  const menu = el('div', { class: 'aria-dropdown-menu ' + alignClass + (isSearchable ? ' has-search' : '') });
+
+  let searchInput = null;
+  let clearBtn = null;
+  let searchWrap = null;
+
+  if (isSearchable) {
+    searchInput = el('input', {
+      type: 'text',
+      class: 'aria-dropdown-search-inp',
+      placeholder: cfg.searchPlaceholder || 'Search clients / workspaces...',
+      autocomplete: 'off',
+      spellcheck: 'false'
+    });
+
+    const searchIcon = el('span', {
+      class: 'aria-dropdown-search-icon',
+      style: 'color:#0d5d41;display:inline-flex;align-items:center;flex-shrink:0;',
+      html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    });
+
+    clearBtn = el('button', {
+      type: 'button',
+      class: 'aria-dropdown-search-clear',
+      title: 'Clear search',
+      onclick: (e) => {
+        e.stopPropagation();
+        searchInput.value = '';
+        searchQuery = '';
+        clearBtn.style.display = 'none';
+        renderOptions();
+        searchInput.focus();
+      }
+    }, '✕');
+
+    const searchBox = el('div', { class: 'aria-dropdown-search-box' }, [searchIcon, searchInput, clearBtn]);
+    searchWrap = el('div', { class: 'aria-dropdown-search-wrap' }, [searchBox]);
+    searchWrap.onclick = (e) => e.stopPropagation();
+
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      if (clearBtn) clearBtn.style.display = searchQuery ? 'inline-block' : 'none';
+      renderOptions();
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeDropdown();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        const firstOpt = optionsContainer.querySelector('.aria-dropdown-opt:not(.aria-dropdown-no-results)');
+        if (firstOpt) firstOpt.click();
+      }
+    });
+  }
+
+  const optionsContainer = el('div', { class: 'aria-dropdown-options-container' });
 
   function renderOptions() {
-    menu.innerHTML = '';
-    options.forEach(opt => {
+    optionsContainer.innerHTML = '';
+    const filtered = searchQuery
+      ? options.filter(opt =>
+          (opt.label && opt.label.toLowerCase().includes(searchQuery)) ||
+          (opt.badge && opt.badge.toLowerCase().includes(searchQuery)) ||
+          (opt.value && opt.value.toLowerCase().includes(searchQuery))
+        )
+      : options;
+
+    if (!filtered.length) {
+      optionsContainer.appendChild(el('div', {
+        class: 'aria-dropdown-no-results muted'
+      }, 'No matching results found'));
+      return;
+    }
+
+    filtered.forEach(opt => {
       const isSelected = String(opt.value) === String(currentVal);
       const optContents = [
         el('span', { class: 'aria-opt-label' }, opt.label)
@@ -1112,7 +1218,7 @@ function createThemedDropdown(cfg) {
           wrap.dispatchEvent(new CustomEvent('change', { detail: { value: currentVal, option: opt }, bubbles: true }));
         }
       }, optContents);
-      menu.appendChild(optEl);
+      optionsContainer.appendChild(optEl);
     });
   }
 
@@ -1121,19 +1227,75 @@ function createThemedDropdown(cfg) {
     closeAllFloatingPopovers(wrap);
     wrap.classList.add('open');
     triggerBtn.setAttribute('aria-expanded', 'true');
-    // Prevent right-side overflow off screen
+
+    if (searchInput) {
+      searchInput.value = '';
+      searchQuery = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      renderOptions();
+      setTimeout(() => { searchInput.focus(); }, 40);
+    }
+
+    // Elevate parent card, column, and deals container z-index
+    const parentCard = wrap.closest('.wacrm-deal-card');
+    if (parentCard) {
+      parentCard.classList.add('dropdown-active');
+      parentCard.style.zIndex = '99999';
+    }
+    const parentCol = wrap.closest('.wacrm-pipeline-col');
+    if (parentCol) {
+      parentCol.classList.add('dropdown-open');
+      parentCol.style.zIndex = '9999';
+    }
+    const parentDeals = wrap.closest('.wacrm-pipeline-deals');
+    if (parentDeals) {
+      parentDeals.classList.add('has-open-dropdown');
+    }
+
+    // Prevent right-side overflow off screen & calculate upward/downward flip
     requestAnimationFrame(() => {
       const rect = menu.getBoundingClientRect();
       if (rect.right > (window.innerWidth - 16)) {
         menu.classList.add('align-right');
         menu.classList.remove('align-left');
       }
+      const triggerRect = triggerBtn.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+      if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+        menu.classList.add('open-upward');
+      } else {
+        menu.classList.remove('open-upward');
+      }
     });
   }
 
   function closeDropdown() {
     wrap.classList.remove('open');
+    menu.classList.remove('open-upward');
     triggerBtn.setAttribute('aria-expanded', 'false');
+
+    if (searchInput) {
+      searchInput.value = '';
+      searchQuery = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      renderOptions();
+    }
+
+    const parentCard = wrap.closest('.wacrm-deal-card');
+    if (parentCard) {
+      parentCard.classList.remove('dropdown-active');
+      parentCard.style.zIndex = '';
+    }
+    const parentCol = wrap.closest('.wacrm-pipeline-col');
+    if (parentCol) {
+      parentCol.classList.remove('dropdown-open');
+      parentCol.style.zIndex = '';
+    }
+    const parentDeals = wrap.closest('.wacrm-pipeline-deals');
+    if (parentDeals) {
+      parentDeals.classList.remove('has-open-dropdown');
+    }
   }
 
   triggerBtn.onclick = (e) => {
@@ -1151,6 +1313,8 @@ function createThemedDropdown(cfg) {
     if (e.key === 'Escape' && wrap.classList.contains('open')) closeDropdown();
   });
 
+  if (searchWrap) menu.appendChild(searchWrap);
+  menu.appendChild(optionsContainer);
   renderOptions();
   wrap.appendChild(triggerBtn);
   wrap.appendChild(menu);
@@ -1184,8 +1348,8 @@ function createThemedDropdown(cfg) {
   wrap.setOptions = (newOpts) => {
     options.length = 0;
     (newOpts || []).forEach(o => {
-      if (typeof o === 'object' && o !== null) options.push({ value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? '') });
-      else options.push({ value: String(o), label: String(o) });
+      if (typeof o === 'object' && o !== null) options.push({ value: String(o.value ?? o.val ?? ''), label: String(o.label ?? o.name ?? o.value ?? ''), badge: o.badge ? String(o.badge) : '' });
+      else options.push({ value: String(o), label: String(o), badge: '' });
     });
     labelSpan.textContent = getSelectedLabel();
     renderOptions();
@@ -8190,38 +8354,119 @@ function normalizeLeadNumber(raw) {
   if (!raw) return null;
   const digits = String(raw).replace(/\D/g, '');
   if (digits.length === 10) return { formatted: '+91 ' + digits, raw: digits };
-  if (digits.length === 12 && digits.startsWith('91')) return { formatted: '+91 ' + digits.slice(2), raw: digits.slice(2) };
-  if (digits.length > 10 && digits.startsWith('0')) return { formatted: '+91 ' + digits.slice(1), raw: digits.slice(1) };
+  if (digits.length === 11 && digits.startsWith('0')) {
+    const d = digits.slice(1);
+    return { formatted: '+91 ' + d, raw: d };
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    const d = digits.slice(2);
+    return { formatted: '+91 ' + d, raw: d };
+  }
+  if (digits.length === 13 && digits.startsWith('091')) {
+    const d = digits.slice(3);
+    return { formatted: '+91 ' + d, raw: d };
+  }
+  if (digits.length === 14 && digits.startsWith('0091')) {
+    const d = digits.slice(4);
+    return { formatted: '+91 ' + d, raw: d };
+  }
+  if (digits.length >= 10) {
+    const last10 = digits.slice(-10);
+    if (/^[6-9]\d{9}$/.test(last10)) {
+      return { formatted: '+91 ' + last10, raw: last10 };
+    }
+  }
   return null;
 }
 
-function parseImportText(text) {
+function parseImportText(text, defaultSource = 'csv') {
   const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const leads = [];
   if (!lines.length) return leads;
 
-  // Check if first line is a CSV header
-  const firstLower = lines[0].toLowerCase();
-  let startIdx = 0;
-  let phoneCol = 0;
-  let nameCol = 1;
+  // Auto-detect delimiter from first line (comma, semicolon, tab, pipe)
+  const firstLine = lines[0];
+  let delimiter = ',';
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const pipeCount = (firstLine.match(/\|/g) || []).length;
+  if (tabCount > commaCount && tabCount >= semiCount) delimiter = '\t';
+  else if (semiCount > commaCount && semiCount >= pipeCount) delimiter = ';';
+  else if (pipeCount > commaCount) delimiter = '|';
 
-  if (firstLower.includes('phone') || firstLower.includes('mobile') || firstLower.includes('number') || firstLower.includes('contact')) {
+  const splitLine = (l) => {
+    if (delimiter === '\t') return l.split('\t').map(s => s.trim().replace(/^["']|["']$/g, ''));
+    const res = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let c = 0; c < l.length; c++) {
+      const ch = l[c];
+      if (ch === '"' || ch === "'") {
+        inQuotes = !inQuotes;
+      } else if (ch === delimiter && !inQuotes) {
+        res.push(cur.trim().replace(/^["']|["']$/g, ''));
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    res.push(cur.trim().replace(/^["']|["']$/g, ''));
+    return res;
+  };
+
+  let startIdx = 0;
+  let phoneCol = -1;
+  let nameCol = -1;
+
+  const firstCols = splitLine(firstLine).map(c => c.toLowerCase());
+  const isHeader = firstCols.some(c =>
+    c.includes('phone') || c.includes('mobile') || c.includes('number') ||
+    c.includes('contact') || c.includes('name') || c.includes('tel') || c.includes('cell')
+  );
+
+  if (isHeader) {
     startIdx = 1;
-    const headerCols = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
-    phoneCol = headerCols.findIndex((h) => h.includes('phone') || h.includes('mobile') || h.includes('number') || h.includes('contact'));
-    if (phoneCol === -1) phoneCol = 0;
-    nameCol = headerCols.findIndex((h) => h.includes('name'));
-    if (nameCol === -1) nameCol = phoneCol === 0 ? 1 : 0;
+    phoneCol = firstCols.findIndex(c =>
+      c.includes('phone') || c.includes('mobile') || c.includes('number') ||
+      c.includes('contact') || c.includes('tel') || c.includes('cell') || c.includes('call')
+    );
+    nameCol = firstCols.findIndex(c =>
+      c.includes('name') || c.includes('person') || c.includes('lead') || c.includes('client') || c.includes('customer')
+    );
   }
 
   for (let i = startIdx; i < lines.length; i++) {
     const rawLine = lines[i];
-    const parts = rawLine.includes(',') ? rawLine.split(',').map((p) => p.trim().replace(/^["']|["']$/g, '')) : [rawLine];
-    let candidateNum = parts[phoneCol] || parts[0];
-    let candidateName = (nameCol !== -1 && parts[nameCol]) || '';
+    if (!rawLine) continue;
 
-    // If candidateName looks like the number and candidateNum looks like the name, swap
+    let parts = splitLine(rawLine).filter(Boolean);
+    if (parts.length === 1) {
+      if (rawLine.includes(' - ')) parts = rawLine.split(' - ').map(s => s.trim());
+      else if (rawLine.includes(':')) parts = rawLine.split(':').map(s => s.trim());
+      else if (rawLine.includes('  ')) parts = rawLine.split(/\s{2,}/).map(s => s.trim());
+    }
+
+    let candidateNum = '';
+    let candidateName = '';
+
+    if (parts.length === 1) {
+      candidateNum = parts[0];
+    } else if (phoneCol !== -1 || nameCol !== -1) {
+      candidateNum = (phoneCol !== -1 ? parts[phoneCol] : '') || parts[0];
+      candidateName = (nameCol !== -1 ? parts[nameCol] : '') || parts[1] || '';
+    } else {
+      const part0Digits = parts[0].replace(/\D/g, '').length;
+      const part1Digits = (parts[1] || '').replace(/\D/g, '').length;
+      if (part1Digits >= 10 && part0Digits < 10) {
+        candidateName = parts[0];
+        candidateNum = parts[1];
+      } else {
+        candidateNum = parts[0];
+        candidateName = parts[1] || '';
+      }
+    }
+
     if (candidateName && candidateName.replace(/\D/g, '').length >= 10 && candidateNum.replace(/\D/g, '').length < 10) {
       const tmp = candidateNum; candidateNum = candidateName; candidateName = tmp;
     }
@@ -8230,10 +8475,11 @@ function parseImportText(text) {
     if (norm) {
       leads.push({
         id: 'ld_' + Math.random().toString(36).slice(2, 9),
-        name: candidateName || 'Contact #' + (campaignState.leads.length + leads.length + 1),
+        name: candidateName ? candidateName.slice(0, 60) : ('Lead #' + (leads.length + 1)),
         phone: norm.formatted,
         rawNumber: norm.raw,
-        status: 'pending', // pending | dialing | initiated | failed | dry_run
+        source: defaultSource,
+        status: 'pending',
         error: null,
         timestamp: null
       });
@@ -8736,36 +8982,135 @@ async function viewCampaigns(root) {
     const tabCsv = el('button', { class: 'cw-tab active', type: 'button' }, 'Upload CSV');
     const tabPaste = el('button', { class: 'cw-tab', type: 'button' }, 'Paste Numbers');
     const tabCrm = el('button', { class: 'cw-tab', type: 'button' }, 'From CRM');
-    const csvPan = el('div', {}); const pastePan = el('div', { style: 'display:none' }); const crmPan = el('div', { style: 'display:none' });
+    const csvPan = el('div', { class: 'cw-source-panel' });
+    const pastePan = el('div', { class: 'cw-source-panel', style: 'display:none' });
+    const crmPan = el('div', { class: 'cw-source-panel', style: 'display:none' });
+
     const switchTab = (t, pan) => {
       [tabCsv, tabPaste, tabCrm].forEach((x) => x.classList.remove('active'));
       [csvPan, pastePan, crmPan].forEach((x) => { x.style.display = 'none'; });
-      t.classList.add('active'); pan.style.display = '';
+      t.classList.add('active');
+      pan.style.display = '';
     };
     tabCsv.addEventListener('click', () => switchTab(tabCsv, csvPan));
     tabPaste.addEventListener('click', () => switchTab(tabPaste, pastePan));
     tabCrm.addEventListener('click', () => switchTab(tabCrm, crmPan));
 
-    const countEl = el('div', {});
-    const refreshCount = () => {
-      countEl.innerHTML = '';
-      if (wiz.leads.length) countEl.appendChild(el('div', { class: 'cw-lead-count' }, [el('b', {}, String(wiz.leads.length)), ' contacts queued']));
-    };
-    refreshCount();
+    // Shared queued preview section across all tabs
+    const queuedSection = el('div', { class: 'cw-queued-section', style: 'margin-top:20px;' });
 
-    /* CSV drop zone */
-    const fi = el('input', { type: 'file', accept: '.csv,.txt', style: 'display:none' });
+    const addLeadsWithDedup = (newLeads, sourceName) => {
+      if (!newLeads || !newLeads.length) return;
+      let added = 0;
+      let dupes = 0;
+      newLeads.forEach(l => {
+        const exists = wiz.leads.some(existing => existing.rawNumber === l.rawNumber);
+        if (!exists) {
+          wiz.leads.push(l);
+          added++;
+        } else {
+          dupes++;
+        }
+      });
+      refreshQueuedUi();
+      if (added > 0) {
+        toast('Added ' + added + ' contact' + (added > 1 ? 's' : '') + (dupes > 0 ? ' (' + dupes + ' duplicate' + (dupes > 1 ? 's' : '') + ' skipped)' : '') + '.', 'ok');
+      } else if (dupes > 0) {
+        toast('All ' + dupes + ' contact' + (dupes > 1 ? 's are' : ' is') + ' already in the queue.', 'info');
+      }
+    };
+
+    const removeLead = (leadId) => {
+      wiz.leads = wiz.leads.filter(l => l.id !== leadId);
+      refreshQueuedUi();
+    };
+
+    const clearAllLeads = () => {
+      wiz.leads = [];
+      refreshQueuedUi();
+      toast('Cleared all contacts.', 'info');
+    };
+
+    const refreshQueuedUi = () => {
+      queuedSection.innerHTML = '';
+      const total = wiz.leads.length;
+
+      const headerRow = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+          el('span', { style: 'font-size:0.86rem;font-weight:800;color:#14221c;letter-spacing:-0.01em;' }, 'Queued Contacts'),
+          el('span', { class: 'cw-lead-badge' }, total + ' ready')
+        ]),
+        total > 0 ? el('button', {
+          type: 'button',
+          class: 'btn btn-ghost',
+          style: 'font-size:0.75rem;color:#b91c1c;padding:3px 10px;height:auto;',
+          onclick: clearAllLeads
+        }, 'Clear All') : null
+      ]);
+      queuedSection.appendChild(headerRow);
+
+      if (total === 0) {
+        queuedSection.appendChild(el('div', { class: 'cw-empty-leads-box' }, [
+          el('div', { style: 'font-size:0.88rem;font-weight:700;color:#2d4036;margin-bottom:4px;' }, 'No contacts queued yet'),
+          el('div', { style: 'font-size:0.78rem;color:#5d7468;' }, 'Upload a CSV file, paste numbers, or sync from your CRM pipeline above to add contacts to this campaign.')
+        ]));
+        return;
+      }
+
+      // Table of queued contacts
+      const tableWrap = el('div', { class: 'cw-leads-table-wrap' });
+      const table = el('table', { class: 'cw-leads-table' });
+      const thead = el('thead', {}, [
+        el('tr', {}, [
+          el('th', { style: 'width:36px;' }, '#'),
+          el('th', {}, 'NAME'),
+          el('th', {}, 'PHONE NUMBER'),
+          el('th', { style: 'width:80px;' }, 'SOURCE'),
+          el('th', { style: 'width:40px;text-align:center;' }, '')
+        ])
+      ]);
+      const tbody = el('tbody', {});
+      wiz.leads.forEach((lead, idx) => {
+        const sourceLabel = lead.source === 'crm' ? 'CRM' : lead.source === 'paste' ? 'Pasted' : 'CSV';
+        const sourceClass = lead.source === 'crm' ? 'src-crm' : lead.source === 'paste' ? 'src-paste' : 'src-csv';
+        const tr = el('tr', {}, [
+          el('td', { style: 'color:#8fa397;font-size:0.75rem;font-weight:600;' }, String(idx + 1)),
+          el('td', { style: 'font-weight:700;color:#14221c;' }, lead.name),
+          el('td', { style: 'font-family:monospace;font-size:0.82rem;font-weight:600;color:#0d5d41;' }, lead.phone),
+          el('td', {}, [el('span', { class: 'cw-src-pill ' + sourceClass }, sourceLabel)]),
+          el('td', { style: 'text-align:center;' }, [
+            el('button', {
+              type: 'button',
+              class: 'cw-remove-lead-btn',
+              title: 'Remove contact',
+              onclick: () => removeLead(lead.id)
+            }, '✕')
+          ])
+        ]);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      tableWrap.appendChild(table);
+      queuedSection.appendChild(tableWrap);
+    };
+
+    /* 1. CSV Dropzone */
+    const fi = el('input', { type: 'file', accept: '.csv,.txt,.tsv', style: 'display:none' });
+    const fileFeedback = el('div', { style: 'font-size:0.8rem;color:#0d5d41;font-weight:600;margin-top:8px;display:none;' });
     const dz = el('div', { class: 'dropzone-box' }, [
-      el('div', { style: 'margin-bottom:8px;color:var(--accent);display:flex;justify-content:center;' }, [
-        el('svg', { width: '28', height: '28', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      el('div', { style: 'margin-bottom:8px;color:#0d5d41;display:flex;justify-content:center;' }, [
+        el('svg', { width: '30', height: '30', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
           el('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
           el('polyline', { points: '17 8 12 3 7 8' }),
           el('line', { x1: '12', y1: '3', x2: '12', y2: '15' })
         ])
       ]),
-      el('div', { style: 'font-weight:600;font-size:.92rem;margin-bottom:4px' }, 'Drop CSV or TXT here'),
-      el('div', { class: 'muted', style: 'font-size:.8rem;margin-bottom:14px' }, 'Columns: Name, Phone (10-digit Indian numbers)'),
-      el('button', { type: 'button', class: 'btn btn-primary', onclick: () => fi.click() }, 'Browse Files'), fi
+      el('div', { style: 'font-weight:700;font-size:0.92rem;color:#14221c;margin-bottom:4px' }, 'Drop CSV, TXT, or TSV here'),
+      el('div', { class: 'muted', style: 'font-size:0.78rem;color:#5d7468;margin-bottom:14px' }, 'Columns: Name, Phone (10-digit Indian numbers auto-formatted to +91)'),
+      el('button', { type: 'button', class: 'btn btn-primary', onclick: () => fi.click() }, 'Browse Files'),
+      fi,
+      fileFeedback
     ]);
     dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
     dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
@@ -8773,44 +9118,117 @@ async function viewCampaigns(root) {
     fi.addEventListener('change', () => { if (fi.files[0]) doFile(fi.files[0]); });
     function doFile(file) {
       const r = new FileReader();
-      r.onload = (ev) => { const parsed = parseImportText(ev.target.result); if (!parsed.length) { toast('No valid numbers found.', 'err'); return; } wiz.leads = [...wiz.leads, ...parsed]; refreshCount(); toast('Imported ' + parsed.length + ' contacts.', 'ok'); };
+      r.onload = (ev) => {
+        const parsed = parseImportText(ev.target.result, 'csv');
+        if (!parsed.length) {
+          toast('No valid numbers found in file.', 'err');
+          fileFeedback.style.display = 'block';
+          fileFeedback.style.color = '#dc2626';
+          fileFeedback.textContent = '❌ ' + file.name + ': No valid phone numbers found.';
+          return;
+        }
+        fileFeedback.style.display = 'block';
+        fileFeedback.style.color = '#0d5d41';
+        fileFeedback.textContent = '✓ ' + file.name + ': Found ' + parsed.length + ' contacts';
+        addLeadsWithDedup(parsed, 'CSV');
+      };
       r.readAsText(file);
     }
-    const sBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:.8rem;margin-top:10px' }, 'Load 3 Sample Leads');
+    const sBtn = el('button', { type: 'button', class: 'btn btn-ghost', style: 'font-size:0.80rem;margin-top:10px;' }, 'Load 3 Sample Leads');
     sBtn.addEventListener('click', () => {
-      wiz.leads = [...wiz.leads,
-      { id: 'ld_s1', name: 'Dr. Sameer Verma', phone: '+91 9820144521', rawNumber: '9820144521', status: 'pending', error: null, timestamp: null },
-      { id: 'ld_s2', name: 'Pooja Agarwal', phone: '+91 9167288410', rawNumber: '9167288410', status: 'pending', error: null, timestamp: null },
-      { id: 'ld_s3', name: 'Kavita Menon', phone: '+91 9845012399', rawNumber: '9845012399', status: 'pending', error: null, timestamp: null }
+      const samples = [
+        { id: 'ld_s1', name: 'Dr. Sameer Verma', phone: '+91 9820144521', rawNumber: '9820144521', source: 'csv', status: 'pending', error: null, timestamp: null },
+        { id: 'ld_s2', name: 'Pooja Agarwal', phone: '+91 9167288410', rawNumber: '9167288410', source: 'csv', status: 'pending', error: null, timestamp: null },
+        { id: 'ld_s3', name: 'Kavita Menon', phone: '+91 9845012399', rawNumber: '9845012399', source: 'csv', status: 'pending', error: null, timestamp: null }
       ];
-      refreshCount(); toast('3 sample contacts added.', 'ok');
+      addLeadsWithDedup(samples, 'Sample Leads');
     });
-    csvPan.appendChild(dz); csvPan.appendChild(sBtn); csvPan.appendChild(countEl);
+    csvPan.appendChild(dz);
+    csvPan.appendChild(sBtn);
 
-    /* Paste */
-    const ta = el('textarea', { class: 'textarea', rows: 5, placeholder: '9876543210, Ramesh\n8765432109, Priya\n+919988776655' });
-    const addBtn = el('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:10px' }, 'Add Numbers');
-    addBtn.addEventListener('click', () => { const p = parseImportText(ta.value); if (!p.length) { toast('No valid numbers.', 'err'); return; } wiz.leads = [...wiz.leads, ...p]; refreshCount(); ta.value = ''; toast('Added ' + p.length + ' contacts.', 'ok'); });
-    pastePan.appendChild(ta); pastePan.appendChild(addBtn); pastePan.appendChild(countEl.cloneNode(true));
+    /* 2. Paste Numbers */
+    const ta = el('textarea', {
+      class: 'textarea',
+      rows: 5,
+      style: 'width:100%;font-family:monospace;font-size:0.84rem;line-height:1.5;box-sizing:border-box;border-radius:10px;padding:10px;',
+      placeholder: 'Enter numbers (one per line):\n9876543210, Ramesh Verma\n+91 98201 44521, Dr. Anita\n8765432109'
+    });
+    const addBtn = el('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:10px;' }, 'Add Numbers');
+    addBtn.addEventListener('click', () => {
+      const p = parseImportText(ta.value, 'paste');
+      if (!p.length) { toast('No valid phone numbers found in input.', 'err'); return; }
+      addLeadsWithDedup(p, 'Pasted Numbers');
+      ta.value = '';
+    });
+    pastePan.appendChild(el('p', { class: 'muted', style: 'font-size:0.82rem;margin-bottom:8px;color:#5d7468;' }, 'Enter 10-digit Indian numbers. You can optionally include names separated by a comma (e.g. "9876543210, John Doe").'));
+    pastePan.appendChild(ta);
+    pastePan.appendChild(addBtn);
 
-    /* CRM */
+    /* 3. CRM Sync */
+    const crmStatus = el('div', { class: 'cw-crm-status-card', style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.15);border-radius:12px;padding:16px;margin-bottom:12px;' });
     const crmBtn = el('button', { type: 'button', class: 'btn btn-primary' }, 'Sync from CRM');
-    crmBtn.addEventListener('click', async () => {
-      crmBtn.disabled = true; crmBtn.textContent = 'Syncing...';
+
+    const loadCrmPreview = async () => {
+      crmStatus.innerHTML = '<div style="color:#5d7468;font-size:0.82rem;">Loading CRM contacts...</div>';
       try {
         const res = await api('/api/crm/contacts');
-        const nl = ((res && res.contacts) || []).map((c) => { const n = normalizeLeadNumber(c.phone); return n ? { id: 'ld_' + Math.random().toString(36).slice(2, 9), name: c.name || 'Lead', phone: n.formatted, rawNumber: n.raw, status: 'pending', error: null, timestamp: null } : null; }).filter(Boolean);
-        wiz.leads = [...wiz.leads, ...nl]; refreshCount(); toast('Imported ' + nl.length + ' CRM contacts.', 'ok');
-      } catch (e) { toast('CRM sync failed: ' + e.message, 'err'); }
-      finally { crmBtn.disabled = false; crmBtn.textContent = 'Sync from CRM'; }
+        const count = (res && res.contacts && res.contacts.length) || 0;
+        crmStatus.innerHTML = '<div style="font-weight:750;font-size:0.90rem;color:#14221c;margin-bottom:4px;">WhatsApp & Inbound CRM Pipeline</div>' +
+          '<div style="font-size:0.80rem;color:#5d7468;margin-bottom:12px;">Pull verified active leads directly from your CRM database into this automated outbound campaign.</div>' +
+          '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(13,93,65,0.08);color:#0d5d41;padding:4px 10px;border-radius:999px;font-size:0.78rem;font-weight:750;">' +
+          '<span>●</span> ' + count + ' active CRM contact' + (count !== 1 ? 's' : '') + ' available' +
+          '</div>';
+      } catch (_) {
+        crmStatus.innerHTML = '<div style="font-weight:750;font-size:0.90rem;color:#14221c;margin-bottom:4px;">WhatsApp & Inbound CRM Pipeline</div>' +
+          '<div style="font-size:0.80rem;color:#5d7468;">Pull active leads directly from your CRM database.</div>';
+      }
+    };
+    loadCrmPreview();
+
+    crmBtn.addEventListener('click', async () => {
+      crmBtn.disabled = true;
+      crmBtn.textContent = 'Syncing from CRM...';
+      try {
+        const res = await api('/api/crm/contacts');
+        const contacts = (res && res.contacts) || [];
+        const nl = contacts.map((c) => {
+          const n = normalizeLeadNumber(c.phone);
+          return n ? {
+            id: 'ld_' + Math.random().toString(36).slice(2, 9),
+            name: c.name || 'Lead',
+            phone: n.formatted,
+            rawNumber: n.raw,
+            source: 'crm',
+            status: 'pending',
+            error: null,
+            timestamp: null
+          } : null;
+        }).filter(Boolean);
+
+        if (!nl.length) {
+          toast('No valid contacts found in CRM.', 'info');
+        } else {
+          addLeadsWithDedup(nl, 'CRM');
+        }
+      } catch (e) {
+        toast('CRM sync failed: ' + e.message, 'err');
+      } finally {
+        crmBtn.disabled = false;
+        crmBtn.textContent = 'Sync from CRM';
+      }
     });
-    crmPan.appendChild(el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:14px' }, 'Pull all active contacts from your CRM.'));
-    crmPan.appendChild(crmBtn); crmPan.appendChild(countEl.cloneNode(true));
+
+    crmPan.appendChild(crmStatus);
+    crmPan.appendChild(crmBtn);
+
+    // Initial render of queued UI
+    refreshQueuedUi();
 
     return el('div', { class: 'cw-panel' }, [
-      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:16px' }, 'Upload a CSV, paste numbers, or sync from CRM. Numbers are automatically normalized to Indian national format.'),
+      el('p', { class: 'muted', style: 'font-size:.85rem;margin-bottom:16px;color:#5d7468;' }, 'Upload a CSV, paste numbers, or sync from CRM. Numbers are automatically normalized to Indian national format (+91).'),
       el('div', { class: 'cw-tabs' }, [tabCsv, tabPaste, tabCrm]),
-      csvPan, pastePan, crmPan
+      csvPan, pastePan, crmPan,
+      queuedSection
     ]);
   }
 
@@ -10875,6 +11293,8 @@ async function viewFeatureControls(root) {
       align: 'left',
       style: 'min-width:320px;',
       className: 'sv-fc-workspace-dropdown',
+      searchable: true,
+      searchPlaceholder: 'Search clients / workspaces...',
       onChange: (val) => {
         selectedTenantId = val;
         updateMetrics();
@@ -11209,6 +11629,8 @@ async function viewWorkflows(root) {
         align: 'left',
         style: 'min-width:280px;',
         className: 'sv-fc-workspace-dropdown',
+        searchable: true,
+        searchPlaceholder: 'Search clients / workspaces...',
         onChange: async (val) => {
           const fresh = await api('/api/workflows' + (val ? `?tenantId=${encodeURIComponent(val)}` : ''));
           renderWorkflowRows((fresh && fresh.workflows) || []);
@@ -12802,16 +13224,16 @@ async function viewSettings(root) {
   // Read URL query tab
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
   let currentTab = urlParams.get('tab') || 'general';
-  if (!['general', 'rumik', 'vobiz', 'dograh', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
+  if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
+  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
-    { id: 'rumik', label: 'Rumik Voice & Speech', icon: 'mic' },
-    { id: 'vobiz', label: 'VoBiz Phone Numbers', icon: 'phone' },
-    { id: 'dograh', label: 'Dograh AI Flows', icon: 'git-branch' },
+    { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
   ];
@@ -12856,11 +13278,13 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
-    else if (tabId === 'rumik') renderRumikVoiceTab(contentHost);
-    else if (tabId === 'vobiz') renderVoBizTab(contentHost);
-    else if (tabId === 'dograh') renderDograhTab(contentHost);
+    else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
+    // Legacy aliases (keep functions alive for internal calls)
+    else if (tabId === 'rumik') renderVoiceIntegrationsTab(contentHost, 'voice');
+    else if (tabId === 'vobiz') renderVoiceIntegrationsTab(contentHost, 'phone');
+    else if (tabId === 'dograh') renderVoiceIntegrationsTab(contentHost, 'flows');
   }
 
   // Initial tab render
@@ -13065,7 +13489,285 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-  // TAB 2: RUMIK VOICE & STREAMING SPEECH STUDIO
+  // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
+  // ==========================================================================
+  async function renderVoiceIntegrationsTab(panel, _scrollToSection) {
+    const wrap = el('div', { class: 'settings-tab-inner aria-voice-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 3));
+    panel.innerHTML = '';
+    panel.appendChild(wrap);
+
+    // ---- Load all data in parallel ----
+    let catalogData = null, flowsData = null;
+    try {
+      [catalogData, flowsData] = await Promise.all([
+        api('/api/voice/catalog').catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
+        api('/api/dograh/flows').catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' }))
+      ]);
+    } catch (_) {}
+
+    wrap.innerHTML = '';
+
+    const voices = (catalogData && catalogData.voices) || [];
+    const tones = (catalogData && catalogData.tones) || [];
+    const active = (catalogData && catalogData.activeVoice) || {};
+    const agentsCatalog = (catalogData && catalogData.agents) || [];
+    const activeWfId = (catalogData && catalogData.activeWorkflowId) || (flowsData && flowsData.activeWorkflowId) || '13027';
+    const flows = (flowsData && flowsData.flows) || [];
+    const activeFlow = flows.find(f => f.isActive) || flows[0];
+
+    let selectedVoiceId = active.voiceId || 'ira';
+    let selectedTone = active.tone || 'happy';
+    let selectedSpeed = active.speed || 1.0;
+    let selectedAgentId = active.agentId || (agentsCatalog[0] && agentsCatalog[0].id) || '';
+    let currentAudio = null;
+    let currentlyPlayingId = null;
+
+    // ── PAGE HEADER ──────────────────────────────────────────────────────────
+    const pageHeader = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
+      el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
+      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
+        'Complete voice pipeline in one place. Choose your AI voice persona (Rumik), assign your VoBiz phone number, and configure the Dograh AI call flow — all changes sync live to your phone lines instantly.'
+      ),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
+          el('span', { id: 'vi-voice-pill' }, 'Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik Mulberry)')
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
+          el('span', {}, 'Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Shared Core)'))
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
+          el('span', {}, 'VoBiz SIP Carrier: Ready')
+        ])
+      ])
+    ]);
+    wrap.appendChild(pageHeader);
+
+    // ── SECTION TAB BAR ───────────────────────────────────────────────────────
+    let activeSectionTab = _scrollToSection || 'voice';
+    const sectionTabs = [
+      { id: 'voice', label: 'Voice & Speech (Rumik)' },
+      { id: 'phone', label: 'Phone Numbers (VoBiz)' },
+      { id: 'flows', label: 'AI Call Flows (Dograh)' }
+    ];
+    const sectionBtnMap = {};
+    const sectionPanelMap = {};
+
+    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:32px;border-bottom:2px solid rgba(13,93,65,0.12);' });
+
+    function activateSectionTab(id) {
+      activeSectionTab = id;
+      sectionTabs.forEach(function(s) {
+        const btn = sectionBtnMap[s.id];
+        const sp = sectionPanelMap[s.id];
+        if (!btn || !sp) return;
+        if (s.id === id) {
+          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:750;color:#0d5d41;background:transparent;border:none;border-bottom:2.5px solid #0d5d41;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
+          sp.style.display = 'block';
+        } else {
+          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:600;color:#5d7468;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
+          sp.style.display = 'none';
+        }
+      });
+    }
+
+    sectionTabs.forEach(function(s) {
+      const sId = s.id;
+      const btn = el('button', {
+        type: 'button',
+        style: 'padding:10px 22px;font-size:0.88rem;font-weight:600;color:#5d7468;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;margin-bottom:-2px;white-space:nowrap;',
+        onclick: function() { activateSectionTab(sId); }
+      }, s.label);
+      sectionBtnMap[s.id] = btn;
+      sectionNav.appendChild(btn);
+    });
+    wrap.appendChild(sectionNav);
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION 1: VOICE & SPEECH (RUMIK)
+    // ══════════════════════════════════════════════════════════════════════════
+    const voicePanel = el('div', { style: 'display:none;' });
+    sectionPanelMap['voice'] = voicePanel;
+
+    function stopPlayback() {
+      if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
+      currentlyPlayingId = null;
+      updatePlayButtons();
+    }
+    function playAudioUrl(url, id) {
+      stopPlayback();
+      currentlyPlayingId = id;
+      updatePlayButtons();
+      var a = new Audio(url);
+      currentAudio = a;
+      a.onended = function() { stopPlayback(); };
+      a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
+      a.play().catch(function() { stopPlayback(); });
+    }
+    var playBtnElements = new Map();
+    function updatePlayButtons() {
+      voices.forEach(function(v) {
+        var btn = playBtnElements.get(v.id);
+        if (!btn) return;
+        var isPlaying = currentlyPlayingId === v.id;
+        btn.innerHTML = isPlaying
+          ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+          : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+        btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
+        btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
+      });
+    }
+
+    // Voice Selection Grid
+    var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
+    voices.forEach(function(v) {
+      var isSelected = v.id === selectedVoiceId;
+      var card = el('div', {
+        'data-voice-card': v.id,
+        style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
+      });
+      card.onclick = function() {
+        selectedVoiceId = v.id;
+        selectedTone = v.defaultTone || 'happy';
+        voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
+          c.style.borderColor = c.dataset.voiceCard === v.id ? '#0d5d41' : 'rgba(13,93,65,0.14)';
+          c.style.background = c.dataset.voiceCard === v.id ? 'rgba(13,93,65,0.04)' : '#fff';
+        });
+        var pill = document.getElementById('vi-voice-pill');
+        if (pill) pill.textContent = 'Voice: ' + v.name + ' (Rumik Mulberry)';
+      };
+
+      var previewBtn = el('button', {
+        type: 'button',
+        style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
+      }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
+      previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+      (function(voiceId, voiceMeta, btn) {
+        btn.onclick = async function(e) {
+          e.stopPropagation();
+          if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
+          btn.disabled = true;
+          btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
+          try {
+            var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
+            if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
+            else toast('No audio received.', 'err');
+          } catch (err) { toast('Preview error: ' + err.message, 'err'); }
+          finally { btn.disabled = false; }
+        };
+      })(v.id, v, previewBtn);
+      playBtnElements.set(v.id, previewBtn);
+
+      var selectedBadge = isSelected ? el('span', { style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '\u2713 Active') : null;
+      card.appendChild(el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
+        el('div', {}, [
+          el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
+          el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' \u00b7 ' + (v.gender === 'female' ? 'Female' : 'Male'))
+        ]),
+        selectedBadge
+      ].filter(Boolean)));
+      card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
+      card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
+        return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
+      })));
+      card.appendChild(previewBtn);
+      voiceGrid.appendChild(card);
+    });
+
+    // Tone & Speed Controls
+    var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
+    if (tones.length > 0) {
+      var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
+        tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
+      );
+      toneSel.onchange = function() { selectedTone = toneSel.value; };
+      toneRow.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
+        toneSel
+      ]));
+    }
+
+    var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
+    var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
+    speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
+    toneRow.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
+      el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
+    ]));
+
+    var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
+      el('option', { value: '' }, 'Primary Agent (Default)'),
+      ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
+    ]);
+    agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
+    toneRow.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
+      agentSel2
+    ]));
+
+    var saveVoiceBtn = el('button', {
+      type: 'button',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
+    }, 'Save Voice & Sync to All Phone Lines');
+    saveVoiceBtn.onclick = async function() {
+      saveVoiceBtn.disabled = true;
+      saveVoiceBtn.textContent = 'Saving & Syncing...';
+      try {
+        var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
+        toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
+        var pill = document.getElementById('vi-voice-pill');
+        var vMeta = voices.find(function(v) { return v.id === selectedVoiceId; });
+        if (pill && vMeta) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik Mulberry)';
+      } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
+      finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
+    };
+
+    voicePanel.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine (Rumik Mulberry)'),
+      el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
+      el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the one that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
+    ]));
+    voicePanel.appendChild(voiceGrid);
+    voicePanel.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
+      el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
+      toneRow
+    ]));
+    voicePanel.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION 2: PHONE NUMBERS (VOBIZ) — renders existing VoBiz UI
+    // ══════════════════════════════════════════════════════════════════════════
+    var phonePanel = el('div', { style: 'display:none;' });
+    sectionPanelMap['phone'] = phonePanel;
+    (async function() {
+      var vobizInner = el('div');
+      phonePanel.appendChild(vobizInner);
+      await renderVoBizTab(vobizInner);
+    })();
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION 3: AI CALL FLOWS (DOGRAH) — renders existing Dograh UI
+    // ══════════════════════════════════════════════════════════════════════════
+    var flowsPanel = el('div', { style: 'display:none;' });
+    sectionPanelMap['flows'] = flowsPanel;
+    (async function() {
+      var dograhInner = el('div');
+      flowsPanel.appendChild(dograhInner);
+      await renderDograhTab(dograhInner);
+    })();
+
+    wrap.appendChild(voicePanel);
+    wrap.appendChild(phonePanel);
+    wrap.appendChild(flowsPanel);
+
+    activateSectionTab(activeSectionTab);
+  }
+
+  // ==========================================================================
+  // TAB 2 (Legacy compat): RUMIK VOICE & STREAMING SPEECH STUDIO
   // ==========================================================================
   async function renderRumikVoiceTab(panel) {
     const wrap = el('div', { class: 'settings-tab-inner aria-rumik-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
@@ -15372,13 +16074,36 @@ function provCard(p) {
 async function viewCrmPipeline(root) {
   root.appendChild(viewHead('Leads & Pipeline'));
 
+  const PIPELINE_STORAGE_KEY = 'seevora_crm_pipeline_cache';
+  let currentTenantFilter = '';
+
+  function readStoredPipeline() {
+    try {
+      const raw = localStorage.getItem(PIPELINE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.pipeline)) return parsed;
+      }
+    } catch (_) { }
+    return _pipelineCache;
+  }
+
+  function writeStoredPipeline(data) {
+    _pipelineCache = data;
+    try {
+      if (data && Array.isArray(data.pipeline)) {
+        localStorage.setItem(PIPELINE_STORAGE_KEY, JSON.stringify(data));
+      }
+    } catch (_) { }
+  }
+
   const syncLeadBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     onclick: async () => {
       try {
         syncLeadBtn.disabled = true;
         syncLeadBtn.innerHTML = '<span class="boot-spin"></span> Syncing...';
-        await loadPipeline();
+        await loadPipeline(currentTenantFilter);
         toast('Voice leads & pipeline synchronized.', 'ok');
       } catch (err) {
         toast('Failed to sync leads: ' + err.message, 'err');
@@ -15392,12 +16117,607 @@ async function viewCrmPipeline(root) {
     el('span', {}, 'Sync Leads')
   ]);
 
-  const topBar = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:16px;flex-wrap:wrap;gap:12px' }, [
-    el('div', { class: 'flex gap-2 items-center' }, [
-      el('button', { class: 'btn btn-primary', onclick: openAddLeadModal }, '+ Add New Lead'),
-      el('button', { class: 'btn btn-ghost', onclick: () => goto('campaigns') }, 'Go to Outbound Calls')
-    ]),
-    el('div', { class: 'flex gap-2 items-center' }, [
+  async function handleExportPipelineData() {
+    try {
+      if (exportBtn) {
+        exportBtn.disabled = true;
+        exportBtn.style.opacity = '0.5';
+        exportBtn.style.cursor = 'wait';
+      }
+      toast('Preparing Excel export (.xlsx)...', 'info');
+      const q = (currentTenantFilter && currentTenantFilter !== 'all')
+        ? ('?tenantId=' + encodeURIComponent(currentTenantFilter) + '&format=xlsx')
+        : (currentTenantFilter === 'all' ? '?tenantId=all&format=xlsx' : '?format=xlsx');
+
+      const headers = {};
+      if (window.Clerk && window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
+        try {
+          const tok = await window.Clerk.session.getToken();
+          if (tok) headers['Authorization'] = 'Bearer ' + tok;
+          if (window.Clerk.user) {
+            const cu = window.Clerk.user;
+            const fullName = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.fullName || cu.username || '';
+            const emailAddr = (cu.primaryEmailAddress && cu.primaryEmailAddress.emailAddress) || (cu.emailAddresses && cu.emailAddresses[0] && cu.emailAddresses[0].emailAddress) || '';
+            const isOnboarded = (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) || (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) || (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true');
+            if (fullName) headers['X-Clerk-User-Name'] = encodeURIComponent(fullName);
+            if (emailAddr) headers['X-Clerk-User-Email'] = encodeURIComponent(emailAddr);
+            if (isOnboarded) headers['X-Clerk-Onboarded'] = '1';
+          }
+        } catch (_) {}
+      }
+
+      const res = await fetch('/api/crm/export' + q, {
+        method: 'GET',
+        credentials: 'include',
+        headers
+      });
+
+      if (!res.ok) {
+        let errMsg = 'Export request failed';
+        try { const errJson = await res.json(); errMsg = errJson.error || errMsg; } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `seevora-crm-leads-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+
+      toast('CRM leads exported successfully (.xlsx)!', 'ok');
+    } catch (err) {
+      console.error('Export error:', err);
+      toast('Export failed: ' + err.message, 'err');
+    } finally {
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.style.opacity = '1';
+        exportBtn.style.cursor = 'pointer';
+      }
+    }
+  }
+
+  function openBulkImportModal() {
+    let queuedLeads = [];
+    let activeTab = 'file';
+    let isParsingFile = false;
+
+    const fileTab = el('button', {
+      type: 'button',
+      class: 'btn btn-sm sv-import-tab-file',
+      style: 'background:#0d5d41;color:#fff;border:none;border-radius:999px;font-size:0.8rem;padding:5px 16px;font-weight:600;cursor:pointer;',
+      onclick: () => switchTab('file')
+    }, 'Upload File (XLSX / CSV)');
+
+    const pasteTab = el('button', {
+      type: 'button',
+      class: 'btn btn-sm sv-import-tab-paste',
+      style: 'background:transparent;border:1px solid rgba(13,93,65,0.25);color:#0d5d41;border-radius:999px;font-size:0.8rem;padding:5px 16px;font-weight:600;cursor:pointer;',
+      onclick: () => switchTab('paste')
+    }, 'Paste Text / Table');
+
+    const tabsWrap = el('div', { style: 'display:flex;gap:8px;' }, [fileTab, pasteTab]);
+
+    const topHeaderRow = el('div', { style: 'display:flex;align-items:center;margin-bottom:8px;' }, [
+      tabsWrap
+    ]);
+
+    // Independent hidden file input completely detached from dropzone to eliminate bubbling cancellation
+    const fileInput = el('input', { type: 'file', accept: '.xlsx,.xls,.csv,.txt,.tsv', style: 'display:none;' });
+    fileInput.addEventListener('click', (e) => e.stopPropagation());
+
+    const fileStatus = el('div', {
+      class: 'sv-import-file-status',
+      style: 'display:none;margin-top:12px;padding:9px 14px;border-radius:8px;background:rgba(13,93,65,0.07);border:1px solid rgba(13,93,65,0.2);font-size:0.82rem;font-weight:600;color:#0d5d41;'
+    });
+
+    const dropzone = el('div', {
+      class: 'sv-import-dropzone',
+      style: 'border:2px dashed rgba(13,93,65,0.3);border-radius:12px;padding:26px 16px;text-align:center;background:rgba(13,93,65,0.02);cursor:pointer;transition:all 0.2s;'
+    }, [
+      el('div', {
+        html: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0d5d41" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+        style: 'color:#0d5d41;margin-bottom:8px;'
+      }),
+      el('div', { style: 'font-weight:700;font-size:0.92rem;color:#14221c;' }, 'Click or drag & drop spreadsheet here'),
+      el('div', { class: 'muted', style: 'font-size:0.78rem;margin-top:4px;' }, 'Supports Excel (.xlsx, .xls), CSV (.csv), or Tab-separated (.tsv, .txt)'),
+      el('button', {
+        type: 'button',
+        class: 'btn btn-sm sv-browse-file-btn',
+        style: 'margin-top:12px;background:#0d5d41;color:#fff;border-radius:999px;padding:6px 20px;font-size:0.82rem;font-weight:600;box-shadow:0 2px 6px rgba(13,93,65,0.18);pointer-events:none;border:none;'
+      }, 'Browse Spreadsheet File (.xlsx, .csv)'),
+      fileStatus
+    ]);
+
+    dropzone.onclick = (e) => {
+      e.stopPropagation();
+      fileInput.value = '';
+      fileInput.click();
+    };
+
+    dropzone.ondragover = (e) => {
+      e.preventDefault();
+      dropzone.style.background = 'rgba(13,93,65,0.08)';
+      dropzone.style.borderColor = '#0d5d41';
+    };
+    dropzone.ondragleave = () => {
+      dropzone.style.background = 'rgba(13,93,65,0.02)';
+      dropzone.style.borderColor = 'rgba(13,93,65,0.3)';
+    };
+    dropzone.ondrop = (e) => {
+      e.preventDefault();
+      dropzone.style.background = 'rgba(13,93,65,0.02)';
+      dropzone.style.borderColor = 'rgba(13,93,65,0.3)';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    fileInput.onchange = () => {
+      if (fileInput.files && fileInput.files[0]) {
+        processFile(fileInput.files[0]);
+      }
+    };
+
+    const pasteArea = el('textarea', {
+      class: 'textarea',
+      rows: 6,
+      placeholder: 'Paste rows here (supports CSV, tab-separated Excel copy/paste, or plain text)...\nExample:\nRajesh Verma, 9876543210, 50000, New Lead, Callback requested\nAnanya Roy, +91 9123456789, 75000, Qualified, High intent',
+      style: 'font-family:monospace;font-size:0.8rem;width:100%;'
+    });
+
+    pasteArea.addEventListener('input', () => {
+      const text = pasteArea.value.trim();
+      if (text.length > 15) {
+        try { parseRawTextRows(text, 'pasted', true); } catch (_) {}
+      }
+    });
+
+    const parsePasteBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm sv-parse-paste-btn',
+      style: 'margin-top:8px;background:#0d5d41;color:#fff;border-radius:999px;padding:6px 18px;font-weight:600;border:none;cursor:pointer;',
+      onclick: () => {
+        const text = pasteArea.value.trim();
+        if (!text) { toast('Please paste tabular text or CSV lines.', 'info'); return; }
+        parseRawTextRows(text, 'pasted');
+      }
+    }, 'Parse Pasted Rows');
+
+    const pastePanel = el('div', { style: 'display:none;' }, [
+      pasteArea,
+      el('div', { style: 'display:flex;justify-content:flex-end;' }, [parsePasteBtn])
+    ]);
+
+    function switchTab(t) {
+      activeTab = t;
+      if (t === 'file') {
+        fileTab.style.background = '#0d5d41'; fileTab.style.color = '#fff'; fileTab.style.border = 'none';
+        pasteTab.style.background = 'transparent'; pasteTab.style.color = '#0d5d41'; pasteTab.style.border = '1px solid rgba(13,93,65,0.25)';
+        dropzone.style.display = 'block';
+        pastePanel.style.display = 'none';
+      } else {
+        pasteTab.style.background = '#0d5d41'; pasteTab.style.color = '#fff'; pasteTab.style.border = 'none';
+        fileTab.style.background = 'transparent'; fileTab.style.color = '#0d5d41'; fileTab.style.border = '1px solid rgba(13,93,65,0.25)';
+        dropzone.style.display = 'none';
+        pastePanel.style.display = 'block';
+      }
+    }
+
+    const countStatus = el('div', {
+      style: 'display:none;align-items:center;justify-content:space-between;margin-top:14px;padding:8px 12px;background:rgba(13,93,65,0.06);border:1px solid rgba(13,93,65,0.18);border-radius:8px;'
+    });
+
+    const previewWrap = el('div', { style: 'margin-top:8px;max-height:260px;overflow-y:auto;border:1px solid rgba(13,93,65,0.14);border-radius:10px;display:none;' });
+
+    async function processFile(file) {
+      if (!file) return;
+      isParsingFile = true;
+      fileStatus.style.display = 'block';
+      fileStatus.innerHTML = `<span class="boot-spin" style="display:inline-block;width:12px;height:12px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;vertical-align:middle;"></span> Reading <b>${escapeHtml(file.name)}</b> (${Math.max(1, Math.round(file.size / 1024))} KB)...`;
+      updateModalConfirmText('Processing spreadsheet...');
+
+      const name = (file.name || '').toLowerCase();
+      if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+        const reader = new FileReader();
+        reader.onerror = () => {
+          isParsingFile = false;
+          fileStatus.innerHTML = `<span style="color:#dc2626;">Error reading file from disk.</span>`;
+          updateModalConfirmText('Import Leads to Pipeline');
+          toast('Error reading file from disk', 'err');
+        };
+        reader.onload = async (ev) => {
+          try {
+            fileStatus.innerHTML = `<span class="boot-spin" style="display:inline-block;width:12px;height:12px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;vertical-align:middle;"></span> Parsing Excel rows from <b>${escapeHtml(file.name)}</b>...`;
+            const base64 = ev.target.result;
+            const res = await api('/api/crm/parse-import', {
+              method: 'POST',
+              body: { fileBase64: base64, fileName: file.name }
+            });
+            isParsingFile = false;
+            if (res && res.text) {
+              parseRawTextRows(res.text, file.name);
+            } else {
+              fileStatus.innerHTML = `<span style="color:#dc2626;">Could not extract contacts from spreadsheet.</span>`;
+              updateModalConfirmText('Import Leads to Pipeline');
+              toast('Could not extract data from spreadsheet', 'err');
+            }
+          } catch (err) {
+            isParsingFile = false;
+            fileStatus.innerHTML = `<span style="color:#dc2626;">Excel parsing error: ${escapeHtml(err.message)}</span>`;
+            updateModalConfirmText('Import Leads to Pipeline');
+            toast('Failed to parse Excel file: ' + err.message, 'err');
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const reader = new FileReader();
+        reader.onerror = () => {
+          isParsingFile = false;
+          fileStatus.innerHTML = `<span style="color:#dc2626;">Error reading file.</span>`;
+          updateModalConfirmText('Import Leads to Pipeline');
+          toast('Error reading file', 'err');
+        };
+        reader.onload = (ev) => {
+          isParsingFile = false;
+          parseRawTextRows(ev.target.result, file.name);
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function parseRawTextRows(rawText, source, isSilent) {
+      const rawLines = String(rawText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      // Filter out markdown table delimiter rows like |---|---|
+      const lines = rawLines.filter(l => !/^[|\s\-:]+$/.test(l));
+      if (!lines.length) {
+        if (!isSilent) toast('File contains no lines of data.', 'info');
+        return;
+      }
+
+      // Strip leading and trailing pipe if row is pipe-delimited
+      const cleanLines = lines.map(l => {
+        let s = l.trim();
+        if (s.startsWith('|') && s.endsWith('|')) s = s.slice(1, -1).trim();
+        return s;
+      });
+
+      const firstLine = cleanLines[0];
+      let delimiter = ',';
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      const semiCount = (firstLine.match(/;/g) || []).length;
+      const tabCount = (firstLine.match(/\t/g) || []).length;
+      const pipeCount = (firstLine.match(/\|/g) || []).length;
+      if (tabCount > commaCount && tabCount >= semiCount && tabCount >= pipeCount) delimiter = '\t';
+      else if (pipeCount > commaCount && pipeCount >= semiCount) delimiter = '|';
+      else if (semiCount > commaCount && semiCount >= pipeCount) delimiter = ';';
+
+      const splitLine = (l) => {
+        if (delimiter === '\t') return l.split('\t').map(s => s.trim().replace(/^["']|["']$/g, ''));
+        const res = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let c = 0; c < l.length; c++) {
+          const ch = l[c];
+          if (ch === '"' || ch === "'") inQuotes = !inQuotes;
+          else if (ch === delimiter && !inQuotes) {
+            res.push(cur.trim().replace(/^["']|["']$/g, ''));
+            cur = '';
+          } else cur += ch;
+        }
+        res.push(cur.trim().replace(/^["']|["']$/g, ''));
+        return res;
+      };
+
+      let startIdx = 0;
+      let nameCol = -1;
+      let phoneCol = -1;
+      let valCol = -1;
+      let stageCol = -1;
+      let notesCol = -1;
+
+      const firstCols = splitLine(firstLine).map(c => c.toLowerCase());
+      const isHeader = firstCols.some(c =>
+        c.includes('phone') || c.includes('mobile') || c.includes('number') ||
+        c.includes('contact') || c.includes('name') || c.includes('stage') || c.includes('deal')
+      );
+
+      if (isHeader) {
+        startIdx = 1;
+        nameCol = firstCols.findIndex(c => c.includes('name') || c.includes('person') || c.includes('client'));
+        phoneCol = firstCols.findIndex(c => c.includes('phone') || c.includes('mobile') || c.includes('number') || c.includes('contact'));
+        valCol = firstCols.findIndex(c => c.includes('value') || c.includes('deal') || c.includes('amount') || c.includes('price') || c.includes('inr'));
+        stageCol = firstCols.findIndex(c => c.includes('stage') || c.includes('status') || c.includes('state'));
+        notesCol = firstCols.findIndex(c => c.includes('note') || c.includes('desc') || c.includes('comment') || c.includes('remark'));
+      }
+
+      const results = [];
+      for (let i = startIdx; i < cleanLines.length; i++) {
+        const parts = splitLine(cleanLines[i]);
+        if (!parts.length || (parts.length === 1 && !parts[0])) continue;
+
+        let phoneCandidate = '';
+        let nameCandidate = '';
+        let valCandidate = 0;
+        let stageCandidate = 'New Lead';
+        let notesCandidate = '';
+
+        if (phoneCol !== -1 && parts[phoneCol]) {
+          phoneCandidate = parts[phoneCol];
+        } else {
+          for (const p of parts) {
+            const d = p.replace(/\D/g, '');
+            if (d.length >= 10) { phoneCandidate = p; break; }
+          }
+        }
+
+        const digits = phoneCandidate.replace(/\D/g, '');
+        if (digits.length < 10) continue;
+
+        let normPhone = '';
+        if (digits.length === 10) normPhone = '+91' + digits;
+        else if (digits.length === 12 && digits.startsWith('91')) normPhone = '+' + digits;
+        else normPhone = '+' + digits;
+
+        if (nameCol !== -1 && parts[nameCol]) nameCandidate = parts[nameCol];
+        else {
+          const firstNonPhone = parts.find(p => p && p !== phoneCandidate && p.replace(/\D/g, '').length < 8);
+          nameCandidate = firstNonPhone || `Lead ${digits.slice(-4)}`;
+        }
+
+        if (valCol !== -1 && parts[valCol]) {
+          valCandidate = Number(String(parts[valCol]).replace(/[^\d.]/g, '')) || 0;
+        }
+
+        if (stageCol !== -1 && parts[stageCol]) {
+          const st = String(parts[stageCol]).trim();
+          const known = ['New Lead', 'Call Completed', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'];
+          const matched = known.find(k => k.toLowerCase() === st.toLowerCase());
+          stageCandidate = matched || st || 'New Lead';
+        }
+
+        if (notesCol !== -1 && parts[notesCol]) {
+          notesCandidate = String(parts[notesCol]).trim();
+        }
+
+        results.push({
+          name: nameCandidate,
+          phone: normPhone,
+          dealValue: valCandidate,
+          stage: stageCandidate,
+          notes: notesCandidate
+        });
+      }
+
+      if (!results.length) {
+        if (fileStatus) {
+          fileStatus.innerHTML = `<span style="color:#dc2626;">No contacts with valid 10-digit phone numbers detected.</span>`;
+        }
+        if (!isSilent) toast('No valid contacts with phone numbers found.', 'err');
+        return;
+      }
+
+      queuedLeads = results;
+      if (fileStatus) {
+        fileStatus.innerHTML = `✓ <b>${escapeHtml(source || 'File')}</b> — <span style="color:#0d5d41;">${queuedLeads.length} valid leads ready for import!</span>`;
+      }
+      renderPreviewTable();
+      if (!isSilent) toast(`Found ${queuedLeads.length} valid leads. Ready to import!`, 'ok');
+    }
+
+    function renderPreviewTable() {
+      if (!queuedLeads.length) {
+        previewWrap.style.display = 'none';
+        countStatus.style.display = 'none';
+        updateModalConfirmText('Import Leads to Pipeline');
+        return;
+      }
+      previewWrap.style.display = 'block';
+      countStatus.style.display = 'flex';
+      countStatus.innerHTML = '';
+
+      const countText = el('div', { style: 'font-size:0.84rem;font-weight:700;color:#0d5d41;display:flex;align-items:center;gap:6px;' }, [
+        el('span', { html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0d5d41" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' }),
+        el('span', {}, `${queuedLeads.length} lead${queuedLeads.length === 1 ? '' : 's'} ready for import:`)
+      ]);
+
+      const quickImportBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-sm sv-quick-import-btn',
+        style: 'background:#0d5d41;color:#ffffff;border:none;border-radius:999px;font-size:0.8rem;padding:6px 18px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(13,93,65,0.22);display:inline-flex;align-items:center;gap:6px;',
+        onclick: async (e) => {
+          e.stopPropagation();
+          await doImportLeads();
+        }
+      }, [
+        el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' }),
+        el('span', {}, `Import All ${queuedLeads.length} Leads Now`)
+      ]);
+
+      countStatus.appendChild(countText);
+      countStatus.appendChild(quickImportBtn);
+
+      updateModalConfirmText(`Import ${queuedLeads.length} Lead${queuedLeads.length === 1 ? '' : 's'} to Pipeline`);
+
+      const tbl = el('table', { class: 'table', style: 'width:100%;font-size:0.78rem;margin:0;' }, [
+        el('thead', { style: 'background:rgba(13,93,65,0.06);position:sticky;top:0;' }, [
+          el('tr', {}, [
+            el('th', { style: 'padding:6px 8px;width:30px;' }, '#'),
+            el('th', { style: 'padding:6px 8px;' }, 'Name'),
+            el('th', { style: 'padding:6px 8px;' }, 'Phone'),
+            el('th', { style: 'padding:6px 8px;' }, 'Stage'),
+            el('th', { style: 'padding:6px 8px;' }, 'Value (₹)'),
+            el('th', { style: 'padding:6px 8px;' }, 'Notes'),
+            el('th', { style: 'padding:6px 8px;width:30px;text-align:center;' }, '')
+          ])
+        ]),
+        el('tbody', {}, queuedLeads.slice(0, 50).map((ld, idx) => {
+          const row = el('tr', { style: 'border-bottom:1px solid rgba(13,93,65,0.08);' }, [
+            el('td', { style: 'padding:6px 8px;color:#5d7468;' }, String(idx + 1)),
+            el('td', { style: 'padding:6px 8px;font-weight:650;' }, ld.name),
+            el('td', { style: 'padding:6px 8px;color:#0d5d41;font-weight:600;' }, ld.phone),
+            el('td', { style: 'padding:6px 8px;' }, [el('span', { class: 'pill', style: 'font-size:0.68rem;padding:2px 8px;' }, ld.stage)]),
+            el('td', { style: 'padding:6px 8px;' }, ld.dealValue ? ('₹' + fmtInr(ld.dealValue)) : '—'),
+            el('td', { style: 'padding:6px 8px;color:#5d7468;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' }, ld.notes || '—'),
+            el('td', { style: 'padding:6px 8px;text-align:center;' }, [
+              el('button', {
+                type: 'button',
+                class: 'btn btn-ghost btn-sm',
+                style: 'padding:2px 6px;color:#dc2626;font-size:0.75rem;',
+                onclick: () => {
+                  queuedLeads.splice(idx, 1);
+                  renderPreviewTable();
+                }
+              }, '✕')
+            ])
+          ]);
+          return row;
+        }))
+      ]);
+
+      previewWrap.innerHTML = '';
+      previewWrap.appendChild(tbl);
+      if (queuedLeads.length > 50) {
+        previewWrap.appendChild(el('div', { class: 'muted', style: 'padding:6px;text-align:center;font-size:0.72rem;background:#f8faf9;' }, `Showing first 50 of ${queuedLeads.length} leads`));
+      }
+    }
+
+    function updateModalConfirmText(txt) {
+      const btn = document.querySelector('#sv-bulk-import-confirm-btn') ||
+                  document.querySelector('#modal-host .modal-actions .btn-primary') ||
+                  document.querySelector('#modal-host .modal-actions button:last-child');
+      if (btn) btn.textContent = txt;
+    }
+
+    async function doImportLeads() {
+      if (isParsingFile) {
+        toast('Reading file data. Please wait a moment...', 'info');
+        return false;
+      }
+      if (!queuedLeads.length && activeTab === 'paste' && pasteArea.value.trim()) {
+        parseRawTextRows(pasteArea.value.trim(), 'pasted');
+      }
+
+      if (!queuedLeads.length) {
+        dropzone.style.borderColor = '#dc2626';
+        setTimeout(() => { dropzone.style.borderColor = 'rgba(13,93,65,0.3)'; }, 2000);
+        toast('Please select a spreadsheet file (.xlsx, .csv) or paste contact rows first.', 'err');
+        return false;
+      }
+
+      const allConfirmBtns = document.querySelectorAll('#sv-bulk-import-confirm-btn, #modal-host .modal-actions .btn-primary, .sv-quick-import-btn');
+      allConfirmBtns.forEach((b) => {
+        b.disabled = true;
+        b.innerHTML = '<span class="boot-spin" style="display:inline-block;width:12px;height:12px;border:2px solid #ffffff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;vertical-align:middle;"></span> Importing leads...';
+      });
+
+      try {
+        const targetTid = (currentTenantFilter && currentTenantFilter !== 'all')
+          ? currentTenantFilter
+          : undefined;
+
+        const res = await api('/api/crm/import', {
+          method: 'POST',
+          body: {
+            contacts: queuedLeads,
+            tenantId: targetTid
+          }
+        });
+
+        _pipelineCache = null;
+        localStorage.removeItem('seevora_crm_pipeline_cache');
+        localStorage.removeItem('wacrm_pipeline_cache');
+
+        // Close modal
+        const host = $('#modal-host');
+        if (host) {
+          host.classList.add('hide');
+          host.setAttribute('aria-hidden', 'true');
+          host.innerHTML = '';
+        }
+
+        const count = (res && res.imported) || queuedLeads.length;
+        toast(`Successfully imported ${count} leads into the pipeline!`, 'ok');
+
+        await loadPipeline(currentTenantFilter);
+        return true;
+      } catch (err) {
+        allConfirmBtns.forEach((b) => {
+          b.disabled = false;
+          b.textContent = `Import ${queuedLeads.length} Lead${queuedLeads.length === 1 ? '' : 's'} to Pipeline`;
+        });
+        toast('Import failed: ' + (err.message || 'Server error'), 'err');
+        return false;
+      }
+    }
+
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:10px;' }, [
+      topHeaderRow,
+      dropzone,
+      fileInput,
+      pastePanel,
+      countStatus,
+      previewWrap
+    ]);
+
+    modal({
+      title: 'Bulk Import CRM Leads',
+      className: 'sv-bulk-import-modal',
+      body,
+      confirmId: 'sv-bulk-import-confirm-btn',
+      confirmText: 'Import Leads to Pipeline',
+      onConfirm: async () => {
+        return await doImportLeads();
+      }
+    });
+  }
+
+  // Icon-only import button (Arrow Up)
+  const importBtn = el('button', {
+    class: 'btn btn-ghost sv-btn-import',
+    title: 'Import Leads (Upload Spreadsheet / CSV)',
+    'aria-label': 'Import Leads (Upload Spreadsheet / CSV)',
+    style: 'border:1.5px solid rgba(13,93,65,0.3);color:#0d5d41;border-radius:999px;padding:0;background:#ffffff;box-shadow:0 1px 3px rgba(13,93,65,0.07);display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;cursor:pointer;',
+    onclick: openBulkImportModal
+  });
+  importBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/><path d="M4 21h16"/></svg>';
+
+  // Icon-only export button (Arrow Down)
+  const exportBtn = el('button', {
+    class: 'btn btn-ghost sv-btn-export',
+    title: 'Export All Leads to Excel (.xlsx)',
+    'aria-label': 'Export All Leads to Excel (.xlsx)',
+    style: 'border:1.5px solid rgba(13,93,65,0.3);color:#0d5d41;border-radius:999px;padding:0;background:#ffffff;box-shadow:0 1px 3px rgba(13,93,65,0.07);display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;cursor:pointer;',
+    onclick: handleExportPipelineData
+  });
+  exportBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><path d="M4 21h16"/></svg>';
+
+  // Icon-only bulk delete button (Trash can)
+  const bulkDeleteBtn = el('button', {
+    class: 'btn btn-ghost sv-btn-bulk-delete',
+    title: 'Bulk Delete Leads',
+    'aria-label': 'Bulk Delete Leads',
+    onclick: openBulkDeleteModal
+  });
+  bulkDeleteBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+
+
+    const leftControls = [
+    el('button', { class: 'btn btn-primary', style: 'border-radius:999px;font-weight:700;', onclick: openAddLeadModal }, '+ Add New Lead'),
+    el('button', { class: 'btn btn-ghost', style: 'border-radius:999px;font-weight:600;', onclick: () => goto('campaigns') }, 'Go to Outbound Calls')
+  ];
+const topBar = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:16px;flex-wrap:wrap;gap:12px' }, [
+    el('div', { class: 'flex gap-2 items-center', style: 'flex-wrap:wrap;' }, leftControls),
+    el('div', { class: 'flex gap-2 items-center', style: 'gap:8px;' }, [
+      importBtn,
+      exportBtn,
+      bulkDeleteBtn,
       syncLeadBtn,
       el('span', { class: 'pill', style: 'font-size:0.75rem' }, 'Live CRM Leads')
     ])
@@ -15416,7 +16736,20 @@ async function viewCrmPipeline(root) {
     { stage: 'Closed Lost', count: 0, totalValue: 0, deals: [] }
   ];
 
+  let latestRenderedStages = defaultStages;
+
+  function getAllCurrentLeads() {
+    const list = [];
+    (latestRenderedStages || []).forEach(function(st) {
+      if (st.deals && Array.isArray(st.deals)) {
+        st.deals.forEach(function(d) { list.push(d); });
+      }
+    });
+    return list;
+  }
+
   function renderStages(stages) {
+    latestRenderedStages = stages || defaultStages;
     board.innerHTML = '';
     (stages || defaultStages).forEach((st) => {
       const col = el('div', { class: 'wacrm-pipeline-col' }, [
@@ -15431,40 +16764,105 @@ async function viewCrmPipeline(root) {
         dealsContainer.appendChild(el('div', { class: 'muted', style: 'padding:24px 8px;text-align:center;font-size:0.78rem' }, 'No leads in this stage.'));
       } else {
         st.deals.forEach((deal) => {
-          const card = el('div', { class: 'wacrm-deal-card' }, [
-            el('div', { class: 'flex items-center justify-between' }, [
-              el('b', { style: 'font-size:0.88rem' }, deal.name || deal.phone),
-              deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--ok);font-size:0.8rem' }, '₹' + fmtInr(deal.dealValue)) : null
-            ]),
-            el('div', { class: 'muted', style: 'font-size:0.78rem' }, [
-              deal.phone,
-              deal.company ? ` • ${deal.company}` : ''
-            ].filter(Boolean).join('')),
-            deal.email ? el('div', { class: 'soft', style: 'font-size:0.72rem;margin-top:2px' }, deal.email) : null,
-            deal.notes ? el('p', { class: 'muted', title: deal.notes, style: 'font-size:0.75rem;margin:4px 0;line-height:1.3;max-height:50px;overflow:hidden;text-overflow:ellipsis' }, deal.notes) : null,
-            el('div', { class: 'flex gap-2 items-center', style: 'margin-top:6px;flex-wrap:wrap' },
-              (deal.tags || []).slice(0, 3).map((t) => el('span', { class: 'pill', style: 'font-size:0.65rem' }, t))
-            ),
-            el('div', { class: 'wacrm-deal-card-footer' }, [
-              el('div', { class: 'wacrm-deal-card-actions' }, [
-                el('button', {
-                  type: 'button',
-                  class: 'wacrm-card-btn btn-call',
-                  title: 'Call lead with AI Voice Agent (' + (deal.phone || '') + ')',
-                  onclick: (e) => { e.stopPropagation(); openMakeCallModal(deal.phone); },
-                  html: iconCallSvg(14) + '<span>Call</span>'
-                }),
-                el('button', {
-                  type: 'button',
-                  class: 'wacrm-card-btn btn-whatsapp',
-                  title: 'Send message on WhatsApp (' + (deal.phone || '') + ')',
-                  onclick: (e) => { e.stopPropagation(); openWhatsAppModal(deal); },
-                  html: iconWhatsAppSvg(14) + '<span>WhatsApp</span>'
-                })
-              ]),
-              createStageSelect(deal.id, deal.stage, loadPipeline)
-            ])
-          ]);
+          // Clean notes: strip "[Voice Call YYYY-MM-DD] Inquiry:" prefix
+          const noteClean = (() => {
+            if (!deal.notes) return null;
+            let s = deal.notes.replace(/^\[Voice Call [^\]]+\]\s*/i, '').replace(/^Inquiry:\s*/i, '').trim();
+            return s || null;
+          })();
+
+          const card = el('div', { class: 'wacrm-deal-card' });
+
+          // Row 1: Name + Deal Value + Actions (Edit & Delete)
+          const headerRow = el('div', { class: 'wacrm-deal-card-header-row' });
+          const nameSpan = el('span', { class: 'wacrm-deal-name' }, deal.name || ('Lead ' + (deal.phone || '').slice(-4)));
+          nameSpan.title = deal.name || deal.phone || '';
+          headerRow.appendChild(nameSpan);
+
+          const headerRight = el('div', { class: 'wacrm-deal-header-right' });
+          if (deal.dealValue) {
+            headerRight.appendChild(el('span', { class: 'wacrm-deal-value' }, '₹' + fmtInr(deal.dealValue)));
+          }
+
+          // Edit icon button
+          const editBtn = el('button', {
+            type: 'button',
+            class: 'wacrm-card-icon-btn sv-deal-edit-btn',
+            title: 'Edit Lead (' + (deal.name || deal.phone || '') + ')',
+            'aria-label': 'Edit Lead',
+            onclick: function(e) {
+              e.stopPropagation();
+              openEditLeadModal(deal);
+            }
+          });
+          editBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+          headerRight.appendChild(editBtn);
+
+          // Delete icon button
+          const delBtn = el('button', {
+            type: 'button',
+            class: 'wacrm-card-icon-btn sv-deal-del-btn',
+            title: 'Delete Lead (' + (deal.name || deal.phone || '') + ')',
+            'aria-label': 'Delete Lead',
+            onclick: function(e) {
+              e.stopPropagation();
+              openDeleteLeadModal(deal);
+            }
+          });
+          delBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+          headerRight.appendChild(delBtn);
+
+          headerRow.appendChild(headerRight);
+          card.appendChild(headerRow);
+
+          // Row 2: Phone + company
+          const phoneRow = el('div', { class: 'wacrm-deal-phone' });
+          phoneRow.textContent = (deal.phone || '') + (deal.company ? ' · ' + deal.company : '');
+          card.appendChild(phoneRow);
+
+          // Row 3: Notes (2-line clamp, cleaned)
+          if (noteClean) {
+            const notesEl = el('div', { class: 'wacrm-deal-notes' });
+            notesEl.title = deal.notes || '';
+            notesEl.textContent = noteClean;
+            card.appendChild(notesEl);
+          }
+
+          // Row 4: Tags (max 3 pills)
+          if (deal.tags && deal.tags.length) {
+            const tagsRow = el('div', { class: 'wacrm-deal-tags' });
+            deal.tags.slice(0, 3).forEach(function(t) {
+              tagsRow.appendChild(el('span', { class: 'wacrm-deal-tag' }, t));
+            });
+            card.appendChild(tagsRow);
+          }
+
+          // Divider
+          card.appendChild(el('div', { class: 'wacrm-deal-divider' }));
+
+          // Footer: Action buttons + Stage dropdown
+          const footer = el('div', { class: 'wacrm-deal-card-footer' });
+          const actions = el('div', { class: 'wacrm-deal-card-actions' });
+          const callBtn = el('button', {
+            type: 'button',
+            class: 'wacrm-card-btn btn-call',
+            title: 'Call ' + (deal.phone || ''),
+            onclick: function(e) { e.stopPropagation(); openMakeCallModal(deal.phone); }
+          });
+          callBtn.innerHTML = iconCallSvg(13) + '<span>Call</span>';
+          const waBtn = el('button', {
+            type: 'button',
+            class: 'wacrm-card-btn btn-whatsapp',
+            title: 'WhatsApp ' + (deal.phone || ''),
+            onclick: function(e) { e.stopPropagation(); openWhatsAppModal(deal); }
+          });
+          waBtn.innerHTML = iconWhatsAppSvg(13) + '<span>WhatsApp</span>';
+          actions.appendChild(callBtn);
+          actions.appendChild(waBtn);
+          footer.appendChild(actions);
+          footer.appendChild(createStageSelect(deal.id, deal.stage, function() { return loadPipeline(currentTenantFilter); }));
+          card.appendChild(footer);
+
           dealsContainer.appendChild(card);
         });
       }
@@ -15473,16 +16871,21 @@ async function viewCrmPipeline(root) {
     });
   }
 
-  // Paint immediately in 0ms from cache or defaults
-  renderStages((_pipelineCache && _pipelineCache.pipeline) || defaultStages);
+  // Paint immediately in 0ms from localStorage cache or defaults
+  const initialPipelineData = readStoredPipeline();
+  latestRenderedStages = (initialPipelineData && initialPipelineData.pipeline) || defaultStages;
+  renderStages(latestRenderedStages);
 
-  async function loadPipeline() {
+  async function loadPipeline(tenantFilter) {
     try {
-      const res = await api('/api/crm/pipeline');
+      const ts = '_t=' + Date.now();
+      const q = tenantFilter ? ('?tenantId=' + encodeURIComponent(tenantFilter) + '&' + ts) : ('?' + ts);
+      const res = await api('/api/crm/pipeline' + q);
       const stages = (res && Array.isArray(res.pipeline)) ? res.pipeline : [];
-      _pipelineCache = res;
+      writeStoredPipeline(res);
       renderStages(stages);
     } catch (e) {
+      console.warn('Pipeline load notice:', e);
       if (!board.children.length) {
         board.innerHTML = '';
         board.appendChild(el('div', { class: 'err-msg' }, 'Failed to load pipeline: ' + e.message));
@@ -15491,36 +16894,60 @@ async function viewCrmPipeline(root) {
   }
 
   function createStageSelect(contactId, currentStage, onUpdate) {
-    const sel = el('select', { class: 'select wacrm-stage-select', title: 'Update lead stage' }, [
-      'New Lead', 'Call Completed', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'
-    ].map((s) => el('option', { value: s, selected: s === currentStage }, s)));
+    const stageOptions = [
+      { value: 'New Lead', label: 'New Lead' },
+      { value: 'Call Completed', label: 'Call Completed' },
+      { value: 'Qualified', label: 'Qualified' },
+      { value: 'Proposal Sent', label: 'Proposal Sent' },
+      { value: 'Closed Won', label: 'Closed Won' },
+      { value: 'Closed Lost', label: 'Closed Lost' }
+    ];
 
-    sel.addEventListener('change', async (e) => {
-      e.stopPropagation();
-      try {
-        await api('/api/crm/pipeline/deal', {
-          method: 'POST',
-          body: { contactId, stage: sel.value }
-        });
-        toast('Stage updated to ' + sel.value, 'ok');
-        onUpdate();
-      } catch (err) {
-        toast('Failed to update stage: ' + err.message, 'err');
+    const dd = createThemedDropdown({
+      options: stageOptions,
+      value: currentStage || 'New Lead',
+      align: 'left',
+      className: 'wacrm-card-stage-dropdown w-full',
+      style: 'width:100%;margin-top:6px;',
+      onChange: async (newVal) => {
+        try {
+          await api('/api/crm/pipeline/deal', {
+            method: 'POST',
+            body: { contactId, stage: newVal }
+          });
+          toast('Stage updated to ' + newVal, 'ok');
+          if (typeof onUpdate === 'function') await onUpdate();
+        } catch (err) {
+          toast('Failed to update stage: ' + err.message, 'err');
+        }
       }
     });
-    return sel;
+    return dd;
   }
 
   function openAddLeadModal() {
     const nameInp = el('input', { class: 'input', placeholder: 'e.g. Ramesh Sharma' });
     const phoneInp = el('input', { class: 'input', placeholder: 'e.g. +91 9876543210' });
     const valueInp = el('input', { class: 'input', type: 'number', placeholder: 'e.g. 50000' });
-    const stageSel = el('select', { class: 'select' }, [
-      'New Lead', 'Call Completed', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'
-    ].map((s) => el('option', { value: s }, s)));
+    let selectedStage = 'New Lead';
+    const stageSel = createThemedDropdown({
+      options: [
+        { value: 'New Lead', label: 'New Lead' },
+        { value: 'Call Completed', label: 'Call Completed' },
+        { value: 'Qualified', label: 'Qualified' },
+        { value: 'Proposal Sent', label: 'Proposal Sent' },
+        { value: 'Closed Won', label: 'Closed Won' },
+        { value: 'Closed Lost', label: 'Closed Lost' }
+      ],
+      value: selectedStage,
+      placeholder: 'Select Initial Stage...',
+      className: 'w-full sv-lead-stage-dropdown',
+      style: 'width:100%;',
+      onChange: (val) => { selectedStage = val; }
+    });
     const notesInp = el('textarea', { class: 'textarea', rows: 2, placeholder: 'Lead background and notes...' });
 
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:12px' }, [
+    const body = el('div', { class: 'sv-add-lead-body', style: 'display:flex;flex-direction:column;gap:14px;overflow:visible;' }, [
       el('div', { class: 'form-group' }, [el('label', {}, 'Contact Full Name'), nameInp]),
       el('div', { class: 'form-group' }, [el('label', {}, 'Phone Number (E.164 with +91)'), phoneInp]),
       el('div', { class: 'form-group' }, [el('label', {}, 'Estimated Deal Value (INR)'), valueInp]),
@@ -15530,28 +16957,351 @@ async function viewCrmPipeline(root) {
 
     modal({
       title: 'Add New CRM Lead',
+      className: 'sv-add-lead-modal',
       body,
       confirmText: 'Create Lead',
       onConfirm: async () => {
-        const phone = phoneInp.value.trim();
+        let phone = phoneInp.value.trim();
         if (!phone) throw new Error('Phone number is required.');
-        await api('/api/crm/contacts', {
+        const rawDigits = phone.replace(/\D/g, '');
+        if (rawDigits.length === 10) phone = '+91' + rawDigits;
+        else if (rawDigits.length === 12 && rawDigits.startsWith('91')) phone = '+' + rawDigits;
+        else if (!phone.startsWith('+')) phone = '+' + rawDigits;
+
+        const stage = stageSel.value || selectedStage || 'New Lead';
+        const dealValue = Number(valueInp.value || 0);
+        const name = nameInp.value.trim() || undefined;
+        const notes = notesInp.value.trim() || undefined;
+
+        const targetTid = (currentTenantFilter && currentTenantFilter !== 'all')
+          ? currentTenantFilter
+          : ((State.me && State.me.tenant && State.me.tenant.id) || undefined);
+
+        const res = await api('/api/crm/contacts', {
           method: 'POST',
           body: {
             phone,
-            name: nameInp.value.trim() || undefined,
-            dealValue: Number(valueInp.value || 0),
-            stage: stageSel.value,
-            notes: notesInp.value.trim() || undefined
+            name,
+            dealValue,
+            stage,
+            notes,
+            tenantId: targetTid
           }
         });
+
+        if (!res || !res.contact) {
+          throw new Error('Server did not confirm lead creation. Please try again.');
+        }
+
+        // Clear localStorage cache so fresh server data is loaded on next fetch
+        localStorage.removeItem('seevora_crm_pipeline_cache');
+        localStorage.removeItem('wacrm_pipeline_cache');
+
         toast('Lead added to pipeline.', 'ok');
-        loadPipeline();
+        await loadPipeline(currentTenantFilter);
       }
     });
   }
 
-  loadPipeline();
+  function openEditLeadModal(deal) {
+    if (!deal) return;
+    const nameInp = el('input', { class: 'input', value: deal.name || '', placeholder: 'e.g. Ramesh Sharma' });
+    const phoneInp = el('input', { class: 'input', value: deal.phone || '', placeholder: 'e.g. +91 9876543210' });
+    const companyInp = el('input', { class: 'input', value: deal.company || '', placeholder: 'Company or Organization...' });
+    const emailInp = el('input', { class: 'input', type: 'email', value: deal.email || '', placeholder: 'email@example.com' });
+    const valueInp = el('input', { class: 'input', type: 'number', value: String(deal.dealValue !== undefined ? deal.dealValue : 0), placeholder: 'e.g. 50000' });
+    let selectedStage = deal.stage || 'New Lead';
+    const stageSel = createThemedDropdown({
+      options: [
+        { value: 'New Lead', label: 'New Lead' },
+        { value: 'Call Completed', label: 'Call Completed' },
+        { value: 'Qualified', label: 'Qualified' },
+        { value: 'Proposal Sent', label: 'Proposal Sent' },
+        { value: 'Closed Won', label: 'Closed Won' },
+        { value: 'Closed Lost', label: 'Closed Lost' }
+      ],
+      value: selectedStage,
+      placeholder: 'Select Pipeline Stage...',
+      className: 'w-full sv-lead-stage-dropdown',
+      style: 'width:100%;',
+      onChange: function(val) { selectedStage = val; }
+    });
+    const notesInp = el('textarea', { class: 'textarea', rows: 3, placeholder: 'Lead background and notes...' });
+    notesInp.value = deal.notes || '';
+
+    const body = el('div', { class: 'sv-edit-lead-body', style: 'display:flex;flex-direction:column;gap:12px;overflow:visible;' }, [
+      el('div', { class: 'form-group' }, [el('label', {}, 'Contact Full Name'), nameInp]),
+      el('div', { class: 'form-group' }, [el('label', {}, 'Phone Number (E.164 with +91)'), phoneInp]),
+      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:10px;' }, [
+        el('div', { class: 'form-group' }, [el('label', {}, 'Company'), companyInp]),
+        el('div', { class: 'form-group' }, [el('label', {}, 'Email Address'), emailInp])
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:10px;' }, [
+        el('div', { class: 'form-group' }, [el('label', {}, 'Estimated Deal Value (INR)'), valueInp]),
+        el('div', { class: 'form-group' }, [el('label', {}, 'Pipeline Stage'), stageSel])
+      ]),
+      el('div', { class: 'form-group' }, [el('label', {}, 'Lead Notes / Summary'), notesInp])
+    ]);
+
+    modal({
+      title: 'Edit Lead: ' + (deal.name || deal.phone || 'Contact'),
+      className: 'sv-edit-lead-modal',
+      body,
+      confirmText: 'Save Changes',
+      onConfirm: async function() {
+        let phone = phoneInp.value.trim();
+        if (!phone) throw new Error('Phone number is required.');
+        const rawDigits = phone.replace(/\D/g, '');
+        if (rawDigits.length === 10) phone = '+91' + rawDigits;
+        else if (rawDigits.length === 12 && rawDigits.startsWith('91')) phone = '+' + rawDigits;
+        else if (!phone.startsWith('+')) phone = '+' + rawDigits;
+
+        const stage = stageSel.value || selectedStage || 'New Lead';
+        const dealValue = Number(valueInp.value || 0);
+        const name = nameInp.value.trim() || undefined;
+        const company = companyInp.value.trim() || '';
+        const email = emailInp.value.trim() || '';
+        const notes = notesInp.value.trim();
+
+        const targetTid = (currentTenantFilter && currentTenantFilter !== 'all')
+          ? currentTenantFilter
+          : ((State.me && State.me.tenant && State.me.tenant.id) || undefined);
+
+        await api('/api/crm/contacts', {
+          method: 'POST',
+          body: {
+            id: deal.id,
+            phone,
+            name,
+            company,
+            email,
+            dealValue,
+            stage,
+            notes,
+            tenantId: targetTid
+          }
+        });
+
+        localStorage.removeItem('seevora_crm_pipeline_cache');
+        localStorage.removeItem('wacrm_pipeline_cache');
+
+        toast('Lead updated successfully.', 'ok');
+        await loadPipeline(currentTenantFilter);
+      }
+    });
+  }
+
+  function openDeleteLeadModal(deal) {
+    if (!deal) return;
+    const body = el('div', { style: 'font-size:0.9rem;color:#2a3d34;line-height:1.5;' }, [
+      el('p', { style: 'margin-bottom:12px;' }, [
+        'Are you sure you want to delete ',
+        el('strong', { style: 'color:#0d1a13;' }, deal.name || ('Lead ' + (deal.phone || '').slice(-4))),
+        deal.phone ? (' (' + deal.phone + ')') : '',
+        '?'
+      ]),
+      el('div', {
+        style: 'background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.25);border-radius:10px;padding:10px 14px;color:#b91c1c;font-size:0.82rem;display:flex;align-items:center;gap:8px;'
+      }, [
+        el('span', { style: 'font-size:1.1rem;font-weight:700;' }, '⚠'),
+        el('span', {}, 'This lead and its conversation history will be permanently deleted from the CRM database.')
+      ])
+    ]);
+
+    modal({
+      title: 'Delete Lead',
+      className: 'sv-delete-lead-modal',
+      body,
+      confirmKind: 'danger',
+      confirmText: 'Delete Lead',
+      cancelText: 'Cancel',
+      onConfirm: async function() {
+        const targetTid = (currentTenantFilter && currentTenantFilter !== 'all')
+          ? currentTenantFilter
+          : (deal.tenantId || (State.me && State.me.tenant && State.me.tenant.id) || undefined);
+
+        await api('/api/crm/contacts/delete', {
+          method: 'POST',
+          body: { id: deal.id, tenantId: targetTid }
+        });
+
+        _pipelineCache = null;
+        localStorage.removeItem('seevora_crm_pipeline_cache');
+        localStorage.removeItem('wacrm_pipeline_cache');
+
+        toast('Lead deleted from pipeline.', 'ok');
+        await loadPipeline(currentTenantFilter);
+      }
+    });
+  }
+
+  async function openBulkDeleteModal() {
+    let leads = [];
+    try {
+      const q = (currentTenantFilter && currentTenantFilter !== 'all') ? ('?tenantId=' + encodeURIComponent(currentTenantFilter)) : '';
+      const res = await api('/api/crm/contacts' + q);
+      leads = (res && Array.isArray(res.contacts)) ? res.contacts : [];
+    } catch (_) {
+      leads = getAllCurrentLeads();
+    }
+    if (!leads.length) leads = getAllCurrentLeads();
+    if (!leads.length) {
+      toast('No leads found to delete in current pipeline.', 'info');
+      return;
+    }
+
+    const selectedIds = new Set();
+    let filterQuery = '';
+
+    const countStatus = el('span', { class: 'pill', style: 'font-size:0.75rem;font-weight:700;' }, '0 selected');
+    const selectAllCb = el('input', { type: 'checkbox', style: 'accent-color:#dc2626;cursor:pointer;width:15px;height:15px;' });
+    const selectAllLabel = el('label', { style: 'font-size:0.82rem;font-weight:600;color:#2a3d34;cursor:pointer;display:inline-flex;align-items:center;gap:6px;' }, [
+      selectAllCb,
+      el('span', {}, 'Select All')
+    ]);
+
+    const searchInp = el('input', {
+      class: 'input',
+      type: 'text',
+      placeholder: 'Search leads by name, phone, or company...',
+      style: 'margin-bottom:8px;font-size:0.83rem;'
+    });
+
+    const listWrap = el('div', { class: 'sv-bulk-del-table-wrap' });
+
+    function getFilteredLeads() {
+      const q = filterQuery.toLowerCase().trim();
+      if (!q) return leads;
+      return leads.filter(function(l) {
+        return (l.name && l.name.toLowerCase().includes(q)) ||
+          (l.phone && l.phone.includes(q)) ||
+          (l.company && l.company.toLowerCase().includes(q)) ||
+          (l.stage && l.stage.toLowerCase().includes(q));
+      });
+    }
+
+    function renderList() {
+      listWrap.innerHTML = '';
+      const visible = getFilteredLeads();
+      if (!visible.length) {
+        listWrap.appendChild(el('div', { style: 'padding:24px;text-align:center;color:#7a9487;font-size:0.82rem;' }, 'No matching leads found.'));
+        return;
+      }
+      visible.forEach(function(deal) {
+        const isSelected = selectedIds.has(deal.id);
+        const cb = el('input', {
+          type: 'checkbox',
+          checked: isSelected,
+          onclick: function(e) { e.stopPropagation(); }
+        });
+        cb.addEventListener('change', function() {
+          if (cb.checked) selectedIds.add(deal.id);
+          else selectedIds.delete(deal.id);
+          updateCount();
+          row.classList.toggle('selected', cb.checked);
+        });
+
+        const row = el('div', {
+          class: 'sv-bulk-del-row' + (isSelected ? ' selected' : ''),
+          onclick: function() {
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event('change'));
+          }
+        }, [
+          el('div', { style: 'display:flex;align-items:center;gap:10px;min-width:0;flex:1;' }, [
+            cb,
+            el('div', { style: 'min-width:0;overflow:hidden;' }, [
+              el('div', { style: 'font-weight:700;color:#0d1a13;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;' }, deal.name || ('Lead ' + (deal.phone || '').slice(-4))),
+              el('div', { style: 'color:#5d7468;font-size:0.75rem;' }, (deal.phone || '') + (deal.company ? ' · ' + deal.company : ''))
+            ])
+          ]),
+          el('div', { style: 'display:flex;align-items:center;gap:6px;flex-shrink:0;' }, [
+            deal.dealValue ? el('span', { class: 'pill', style: 'font-size:0.72rem;font-weight:700;color:#0d5d41;background:rgba(13,93,65,0.08);border:1px solid rgba(13,93,65,0.2);' }, '₹' + fmtInr(deal.dealValue)) : null,
+            el('span', { class: 'pill', style: 'font-size:0.72rem;background:#f0f5f2;color:#334d40;' }, deal.stage || 'New Lead')
+          ].filter(Boolean))
+        ]);
+
+        listWrap.appendChild(row);
+      });
+      updateCount();
+    }
+
+    function updateCount() {
+      const visible = getFilteredLeads();
+      const visSelected = visible.filter(function(d) { return selectedIds.has(d.id); }).length;
+      countStatus.textContent = selectedIds.size + ' selected of ' + leads.length;
+      selectAllCb.checked = visible.length > 0 && visSelected === visible.length;
+      selectAllCb.indeterminate = visSelected > 0 && visSelected < visible.length;
+    }
+
+    selectAllCb.addEventListener('change', function() {
+      const visible = getFilteredLeads();
+      if (selectAllCb.checked) {
+        visible.forEach(function(d) { selectedIds.add(d.id); });
+      } else {
+        visible.forEach(function(d) { selectedIds.delete(d.id); });
+      }
+      renderList();
+    });
+
+    searchInp.addEventListener('input', function() {
+      filterQuery = searchInp.value;
+      renderList();
+    });
+
+    const controlsBar = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:2px 4px;' }, [
+      selectAllLabel,
+      countStatus
+    ]);
+
+    const warningBox = el('div', {
+      style: 'margin-top:10px;padding:9px 12px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.22);border-radius:8px;color:#b91c1c;font-size:0.8rem;display:flex;align-items:center;gap:8px;'
+    }, [
+      el('span', { style: 'font-weight:700;font-size:1rem;' }, '⚠'),
+      el('span', {}, 'Selected leads and their conversation history will be permanently deleted from the CRM database.')
+    ]);
+
+    const body = el('div', { style: 'display:flex;flex-direction:column;gap:4px;' }, [
+      searchInp,
+      controlsBar,
+      listWrap,
+      warningBox
+    ]);
+
+    renderList();
+
+    modal({
+      title: 'Bulk Delete CRM Leads',
+      className: 'sv-bulk-delete-modal',
+      body,
+      confirmKind: 'danger',
+      confirmText: 'Delete Selected Leads',
+      cancelText: 'Cancel',
+      onConfirm: async function() {
+        if (!selectedIds.size) {
+          toast('Please select at least one lead to delete.', 'err');
+          return false;
+        }
+        const ids = Array.from(selectedIds);
+        const targetTid = (currentTenantFilter && currentTenantFilter !== 'all')
+          ? currentTenantFilter
+          : ((State.me && State.me.tenant && State.me.tenant.id) || undefined);
+
+        const res = await api('/api/crm/contacts/bulk-delete', {
+          method: 'POST',
+          body: { ids: ids, tenantId: targetTid }
+        });
+        _pipelineCache = null;
+        localStorage.removeItem('seevora_crm_pipeline_cache');
+        localStorage.removeItem('wacrm_pipeline_cache');
+        const count = (res && res.deletedCount) || ids.length;
+        toast('Successfully deleted ' + count + ' leads from pipeline.', 'ok');
+        await loadPipeline(currentTenantFilter);
+      }
+    });
+  }
+
+  loadPipeline(currentTenantFilter);
 }
 
 /* ===========================================================================

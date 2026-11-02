@@ -507,12 +507,22 @@ function upsertContact(db, tenantId, contactData) {
     }
   }
 
-  let contact = db.crmContacts.find((c) => c.tenantId === tenantId && c.phone === phone);
-  if (!contact && contactData.name) {
+  let contact = null;
+  if (contactData.id) {
+    contact = db.crmContacts.find((c) => c.id === contactData.id && (c.tenantId === tenantId || !tenantId));
+  }
+  if (!contact && phone) {
+    contact = db.crmContacts.find((c) => c.tenantId === tenantId && c.phone === phone);
+  }
+  if (!contact && !contactData.phone && contactData.name) {
     contact = db.crmContacts.find((c) => c.tenantId === tenantId && c.name && c.name.toLowerCase() === contactData.name.toLowerCase());
   }
   const now = new Date().toISOString();
 
+  if (db.crmDeletedLeadPhones && phone) {
+    const p = normalizeE164(phone);
+    db.crmDeletedLeadPhones = db.crmDeletedLeadPhones.filter((x) => x !== p && x !== `${tenantId}:${p}`);
+  }
   if (!contact) {
     contact = {
       id: 'ct_' + crypto.randomBytes(8).toString('hex'),
@@ -532,21 +542,31 @@ function upsertContact(db, tenantId, contactData) {
     };
     db.crmContacts.unshift(contact);
   } else {
-    // If contact has a placeholder or phone as name, update with real name
-    if (contactData.name && (contact.name === contact.phone || contact.name.startsWith('Lead ') || contactData.name !== contact.phone)) {
-      contact.name = contactData.name;
-    }
-    if (contactData.email) contact.email = contactData.email;
-    if (contactData.company) contact.company = contactData.company;
-    if (contactData.stage) contact.stage = contactData.stage;
-    if (contactData.dealValue !== undefined && Number(contactData.dealValue) > 0) {
-      contact.dealValue = Number(contactData.dealValue);
-    }
-    if (contactData.notes) {
-      if (!contact.notes) {
-        contact.notes = contactData.notes;
-      } else if (!contact.notes.includes(contactData.notes)) {
-        contact.notes = contact.notes + '\n\n' + contactData.notes;
+    if (contactData.id) {
+      if (phone && phone !== contact.phone) contact.phone = phone;
+      if (contactData.name !== undefined) contact.name = contactData.name || ('Lead ' + contact.phone.slice(-4));
+      if (contactData.email !== undefined) contact.email = contactData.email;
+      if (contactData.company !== undefined) contact.company = contactData.company;
+      if (contactData.stage !== undefined) contact.stage = contactData.stage;
+      if (contactData.dealValue !== undefined) contact.dealValue = Number(contactData.dealValue || 0);
+      if (contactData.notes !== undefined) contact.notes = contactData.notes;
+    } else {
+      // If contact has a placeholder or phone as name, update with real name
+      if (contactData.name && (contact.name === contact.phone || contact.name.startsWith('Lead ') || contactData.name !== contact.phone)) {
+        contact.name = contactData.name;
+      }
+      if (contactData.email) contact.email = contactData.email;
+      if (contactData.company) contact.company = contactData.company;
+      if (contactData.stage) contact.stage = contactData.stage;
+      if (contactData.dealValue !== undefined && Number(contactData.dealValue) > 0) {
+        contact.dealValue = Number(contactData.dealValue);
+      }
+      if (contactData.notes) {
+        if (!contact.notes) {
+          contact.notes = contactData.notes;
+        } else if (!contact.notes.includes(contactData.notes)) {
+          contact.notes = contact.notes + '\n\n' + contactData.notes;
+        }
       }
     }
     if (Array.isArray(contactData.tags)) {
@@ -554,6 +574,13 @@ function upsertContact(db, tenantId, contactData) {
     }
     contact.lastContactedAt = now;
     contact.updatedAt = now;
+
+    // Bring updated contact to front of list
+    const cIdx = db.crmContacts.indexOf(contact);
+    if (cIdx > 0) {
+      db.crmContacts.splice(cIdx, 1);
+      db.crmContacts.unshift(contact);
+    }
   }
 
   // Ensure contact exists in conversation list
@@ -951,11 +978,22 @@ function syncCallRecordingsToCrm(db, tenantId) {
   if (!db || !Array.isArray(db.callRecordings)) return [];
   const recs = db.callRecordings.filter((r) => r.tenantId === tenantId && (r.phoneNumber || r.callerNumber || r.calledNumber));
   const synced = [];
+  const deletedPhones = new Set((db.crmDeletedLeadPhones || []).map(normalizeE164));
+  const deletedIds = new Set(db.crmDeletedLeadIds || []);
+
   for (const r of recs) {
     const phone = normalizeE164(r.phoneNumber || (r.direction === 'inbound' ? r.callerNumber : r.calledNumber));
     if (!phone) continue;
 
+    // Do NOT resurrect leads that the user explicitly deleted!
+    if (deletedPhones.has(phone) || deletedPhones.has(`${tenantId}:${phone}`)) {
+      continue;
+    }
+
     const existing = (db.crmContacts || []).find((c) => c.tenantId === tenantId && c.phone === phone);
+    if (existing && deletedIds.has(existing.id)) {
+      continue;
+    }
     const hasPlaceholderName = !existing || !existing.name || existing.name === phone || existing.name.startsWith('Lead ');
     const hasMissingDealValue = !existing || !existing.dealValue || existing.dealValue === 0;
     const hasMissingNotes = !existing || !existing.notes;
@@ -976,6 +1014,76 @@ function syncCallRecordingsToCrm(db, tenantId) {
     }
   }
   return synced;
+}
+
+function recordDeletedContact(db, contact) {
+  if (!contact) return;
+  if (!db.crmDeletedLeadIds) db.crmDeletedLeadIds = [];
+  if (!db.crmDeletedLeadIds.includes(contact.id)) {
+    db.crmDeletedLeadIds.push(contact.id);
+  }
+  if (contact.phone) {
+    if (!db.crmDeletedLeadPhones) db.crmDeletedLeadPhones = [];
+    const p = normalizeE164(contact.phone);
+    if (p && !db.crmDeletedLeadPhones.includes(p)) {
+      db.crmDeletedLeadPhones.push(p);
+    }
+    const tenantPhoneKey = `${contact.tenantId}:${p}`;
+    if (!db.crmDeletedLeadPhones.includes(tenantPhoneKey)) {
+      db.crmDeletedLeadPhones.push(tenantPhoneKey);
+    }
+  }
+}
+
+/**
+ * Delete a single CRM contact and associated conversation thread.
+ * Records deletion so background call syncing or re-seeding NEVER resurrects it.
+ */
+function deleteContact(db, tenantId, contactId, isPlatformAdmin = false) {
+  if (!db.crmContacts) db.crmContacts = [];
+  let idx = db.crmContacts.findIndex((c) => c.id === contactId && (isPlatformAdmin || !tenantId || c.tenantId === tenantId));
+  if (idx === -1) {
+    // If tenant filter was omitted or mismatched, permit by unique contact ID
+    idx = db.crmContacts.findIndex((c) => c.id === contactId);
+    if (idx === -1) return false;
+    if (!isPlatformAdmin && tenantId && db.crmContacts[idx].tenantId !== tenantId) return false;
+  }
+  const removed = db.crmContacts.splice(idx, 1)[0];
+  recordDeletedContact(db, removed);
+
+  if (db.waConversations) {
+    db.waConversations = db.waConversations.filter((c) => !(c.contactId === contactId && (isPlatformAdmin || !tenantId || c.tenantId === tenantId)));
+  }
+  if (db.waMessages) {
+    db.waMessages = db.waMessages.filter((m) => !(m.contactId === contactId && (isPlatformAdmin || !tenantId || m.tenantId === tenantId)));
+  }
+  return true;
+}
+
+/**
+ * Bulk delete CRM contacts by array of IDs.
+ */
+function bulkDeleteContacts(db, tenantId, contactIds, isPlatformAdmin = false) {
+  if (!Array.isArray(contactIds) || !contactIds.length) return { deletedCount: 0 };
+  const idSet = new Set(contactIds.map(String));
+  let count = 0;
+  if (db.crmContacts) {
+    db.crmContacts = db.crmContacts.filter((c) => {
+      if (idSet.has(c.id) && (isPlatformAdmin || !tenantId || c.tenantId === tenantId)) {
+        count++;
+        recordDeletedContact(db, c);
+        return false;
+      }
+      return true;
+    });
+  }
+  if (db.waConversations) {
+    db.waConversations = db.waConversations.filter((c) => !(idSet.has(c.contactId) && (isPlatformAdmin || !tenantId || c.tenantId === tenantId)));
+  }
+  if (db.waMessages) {
+    db.waMessages = db.waMessages.filter((m) => !(idSet.has(m.contactId) && (isPlatformAdmin || !tenantId || m.tenantId === tenantId)));
+  }
+  return { deletedCount: count };
 }
 
 module.exports = {
@@ -999,6 +1107,8 @@ module.exports = {
   verifyPhoneCode,
   fetchWabaPhoneNumbers,
   exchangeMetaOAuthCode,
-  DEFAULT_STAGES
+  DEFAULT_STAGES,
+  deleteContact,
+  bulkDeleteContacts
 };
 

@@ -667,7 +667,10 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
 
   // 5. CRM Contacts
   const tenantCrm = d.crmContacts.filter((c) => c.tenantId === tid);
-  if (tenantCrm.length < 5) {
+  const deletedIds = new Set(d.crmDeletedLeadIds || []);
+  const deletedPhones = new Set(d.crmDeletedLeadPhones || []);
+  const hasUserDeletions = (d.crmDeletedLeadIds && d.crmDeletedLeadIds.length > 0) || (d.crmDeletedLeadPhones && d.crmDeletedLeadPhones.length > 0);
+  if (tenantCrm.length < 5 && !hasUserDeletions) {
     const sampleContacts = [
       { name: 'Rohan Sharma', phone: '+919820154321', stage: 'Closed Won', dealValue: 18500, notes: 'Full comprehensive consultation completed. Highly satisfied.' },
       { name: 'Ananya Roy', phone: '+919811234567', stage: 'Proposal Sent', dealValue: 35000, notes: 'Sent digital service catalog & quotation on WhatsApp.' },
@@ -680,7 +683,8 @@ function seedTenantDataIfEmpty(d, tid, tenantName) {
 
     sampleContacts.forEach((sc, idx) => {
       const cid = 'con_' + tid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
-      if (!d.crmContacts.some((c) => c.id === cid)) {
+      const p = sc.phone ? sc.phone.replace(/\s+/g, '') : '';
+      if (!d.crmContacts.some((c) => c.id === cid) && !deletedIds.has(cid) && !deletedPhones.has(p)) {
         d.crmContacts.push({
           id: cid,
           tenantId: tid,

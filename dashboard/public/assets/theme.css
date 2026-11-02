@@ -13030,12 +13030,17 @@ button:disabled {
 }
 
 .wacrm-pipeline-deals {
-  padding: 0 !important;
+  padding: 2px 6px 36px 2px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
+  max-height: calc(100vh - 215px) !important;
+  min-height: 420px !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   flex: 1 !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(13, 93, 65, 0.22) transparent !important;
 }
 
 /* Deal Item Chip / Minimal Card */
@@ -13061,7 +13066,7 @@ button:disabled {
 /* Guard: Prevent any inner deal item from becoming a card or box */
 .wacrm-deal-card .muted,
 .wacrm-deal-card p,
-.wacrm-deal-card div:not(.wacrm-deal-card-actions):not(.wacrm-deal-card-footer):not(.wacrm-deal-header):not(.wacrm-deal-tags) {
+.wacrm-deal-card div:not(.wacrm-deal-card-actions):not(.wacrm-deal-card-footer):not(.wacrm-deal-header):not(.wacrm-deal-tags):not(.aria-custom-dropdown):not(.aria-dropdown-menu):not(.aria-dropdown-opt):not(.sv-themed-dropdown):not(.wacrm-card-stage-dropdown):not(.wacrm-deal-card-header-row):not(.wacrm-deal-header-right):not(.wacrm-card-icon-btn) {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -16561,4 +16566,921 @@ body > .sv-quick-call-popover {
 
 .aria-dropdown-menu {
   max-width: min(480px, calc(100vw - 20px)) !important;
+}
+
+/* ================================================================
+   Campaign Wizard Step 2 Queued Contacts Styling
+   ================================================================ */
+.cw-lead-badge {
+  background: rgba(13, 93, 65, 0.10) !important;
+  color: #0d5d41 !important;
+  font-size: 0.75rem !important;
+  font-weight: 750 !important;
+  padding: 2px 9px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(13, 93, 65, 0.20) !important;
+  display: inline-block !important;
+}
+
+.cw-empty-leads-box {
+  background: #fbfdfc !important;
+  border: 1px dashed rgba(13, 93, 65, 0.22) !important;
+  border-radius: 12px !important;
+  padding: 22px 16px !important;
+  text-align: center !important;
+  margin-top: 6px !important;
+}
+
+.cw-leads-table-wrap {
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  border: 1px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+}
+
+.cw-leads-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.82rem !important;
+}
+
+.cw-leads-table th {
+  background: #eef6f1 !important;
+  color: #5d7468 !important;
+  font-size: 0.70rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  padding: 8px 12px !important;
+  text-align: left !important;
+  position: sticky !important;
+  top: 0 !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.12) !important;
+  z-index: 2 !important;
+}
+
+.cw-leads-table td {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.06) !important;
+  vertical-align: middle !important;
+}
+
+.cw-leads-table tbody tr:hover {
+  background: rgba(227, 241, 233, 0.25) !important;
+}
+
+.cw-src-pill {
+  display: inline-block !important;
+  font-size: 0.68rem !important;
+  font-weight: 750 !important;
+  padding: 2px 7px !important;
+  border-radius: 999px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.cw-src-pill.src-crm {
+  background: rgba(13, 93, 65, 0.12) !important;
+  color: #0d5d41 !important;
+  border: 1px solid rgba(13, 93, 65, 0.25) !important;
+}
+
+.cw-src-pill.src-paste {
+  background: rgba(217, 119, 6, 0.12) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(217, 119, 6, 0.25) !important;
+}
+
+.cw-src-pill.src-csv {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+}
+
+.cw-remove-lead-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.cw-remove-lead-btn:hover {
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.10) !important;
+}
+
+/* ================================================================
+   Add Lead Modal & Pipeline Stage Dropdown Styling
+   ================================================================ */
+.sv-add-lead-modal {
+  overflow: visible !important;
+}
+
+.sv-add-lead-modal .sv-add-lead-body {
+  overflow: visible !important;
+}
+
+.modal.sv-add-lead-modal:has(.aria-custom-dropdown.open),
+.sv-add-lead-modal:has(.aria-custom-dropdown.open) > div:not(.modal-actions) {
+  overflow: visible !important;
+}
+
+.sv-lead-stage-dropdown {
+  width: 100% !important;
+  position: relative !important;
+  margin-top: 4px !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-trigger {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  font-family: inherit !important;
+  font-size: 0.90rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+  box-sizing: border-box !important;
+  transition: all 0.18s ease !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-trigger:hover,
+.sv-lead-stage-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-current-label {
+  font-size: 0.90rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-menu {
+  width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 36px rgba(13, 93, 65, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 999999 !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt {
+  padding: 9px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.88rem !important;
+  font-weight: 550 !important;
+  color: #2c3e35 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  font-weight: 650 !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 650 !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-label {
+  color: #ffffff !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-check {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   SCANDINAVIAN SAGE CRM STAGE DROPDOWN (Matches Exact Brand Design)
+   ========================================================================== */
+.aria-dropdown-menu.open-upward {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  transform: translateY(6px) scale(0.97) !important;
+}
+.aria-custom-dropdown.open .aria-dropdown-menu.open-upward {
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Kanban column and deals container: allow dropdown popovers to overflow seamlessly */
+.wacrm-pipeline-col {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.wacrm-pipeline-col:has(.dropdown-active),
+.wacrm-pipeline-col:has(.aria-custom-dropdown.open),
+.wacrm-pipeline-col.dropdown-open {
+  z-index: 9999 !important;
+}
+
+/* Independent smooth scroll for each Kanban column */
+.wacrm-pipeline-deals {
+  max-height: calc(100vh - 215px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 2px 6px 36px 2px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(13, 93, 65, 0.22) transparent !important;
+}
+
+.wacrm-pipeline-deals::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+.wacrm-pipeline-deals::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.wacrm-pipeline-deals::-webkit-scrollbar-thumb {
+  background: rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+}
+
+.wacrm-pipeline-deals::-webkit-scrollbar-thumb:hover {
+  background: #0d5d41 !important;
+}
+
+/* Deal Card Stacking: Default z-index 1; elevated to 99999 when dropdown is open */
+.wacrm-deal-card {
+  position: relative !important;
+  z-index: 1 !important;
+  overflow: visible !important;
+}
+
+.wacrm-deal-card:hover {
+  z-index: 5 !important;
+}
+
+.wacrm-deal-card.dropdown-active,
+.wacrm-deal-card:has(.aria-custom-dropdown.open),
+.wacrm-deal-card:has(.wacrm-card-stage-dropdown.open) {
+  z-index: 99999 !important;
+}
+
+.wacrm-deal-card-footer {
+  position: relative !important;
+  z-index: 10 !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin-top: 10px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid rgba(13, 93, 65, 0.12) !important;
+}
+
+.wacrm-deal-card.dropdown-active .wacrm-deal-card-footer,
+.wacrm-deal-card:has(.aria-custom-dropdown.open) .wacrm-deal-card-footer {
+  z-index: 99999 !important;
+}
+
+.wacrm-card-stage-dropdown {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  margin-top: 2px !important;
+  z-index: 20 !important;
+}
+
+.wacrm-card-stage-dropdown.open {
+  z-index: 99999 !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-trigger {
+  width: 100% !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+  padding: 5.5px 14px !important;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  color: #0d5d41 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.05) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.wacrm-card-stage-dropdown:hover .aria-dropdown-trigger,
+.wacrm-card-stage-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #f4fbf7 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-arrow {
+  color: #0d5d41 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: transform 0.2s ease !important;
+}
+
+.wacrm-card-stage-dropdown.open .aria-dropdown-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  min-width: 100% !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.22), 0 3px 8px rgba(0, 0, 0, 0.06) !important;
+  padding: 5px !important;
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-menu.open-upward {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  box-shadow: 0 -16px 36px rgba(13, 93, 65, 0.22), 0 -3px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 7.5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 550 !important;
+  border-radius: 8px !important;
+  color: #14221c !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  font-weight: 650 !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 650 !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-opt.selected .aria-opt-label {
+  color: #ffffff !important;
+}
+
+.wacrm-card-stage-dropdown .aria-dropdown-opt.selected:hover {
+  background: #094732 !important;
+  color: #ffffff !important;
+}
+
+/* CRM Import & Export Controls */
+.sv-btn-import:hover,
+.sv-btn-export:hover {
+  background: #f4fbf7 !important;
+  border-color: #0d5d41 !important;
+  color: #0d5d41 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(13,93,65,0.12) !important;
+}
+
+.sv-bulk-import-modal {
+  max-width: 680px !important;
+  width: 95vw !important;
+}
+
+.sv-import-dropzone:hover {
+  border-color: #0d5d41 !important;
+  background: rgba(13,93,65,0.05) !important;
+}
+
+/* ---- Redesigned Lead Card Layout (v303) ---- */
+.wacrm-deal-card-header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  margin-bottom: 4px !important;
+}
+.wacrm-deal-name {
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  color: #0d1a13 !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.wacrm-deal-value {
+  font-weight: 700 !important;
+  color: #0d5d41 !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+.wacrm-deal-phone {
+  font-size: 0.76rem !important;
+  color: #5a7568 !important;
+  margin-bottom: 4px !important;
+  font-weight: 500 !important;
+}
+.wacrm-deal-notes {
+  font-size: 0.73rem !important;
+  color: #6b7c74 !important;
+  line-height: 1.4 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin-bottom: 6px !important;
+  max-height: 2.8em !important;
+}
+.wacrm-deal-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  margin-bottom: 6px !important;
+}
+.wacrm-deal-tag {
+  background: rgba(13,93,65,0.08) !important;
+  color: #0d5d41 !important;
+  border: 1px solid rgba(13,93,65,0.15) !important;
+  border-radius: 999px !important;
+  font-size: 0.63rem !important;
+  font-weight: 600 !important;
+  padding: 1px 7px !important;
+  white-space: nowrap !important;
+  max-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.wacrm-deal-divider {
+  height: 1px !important;
+  background: rgba(13,93,65,0.1) !important;
+  margin: 6px 0 8px 0 !important;
+}
+/* Import/Export icon buttons */
+.sv-btn-import,
+.sv-btn-export {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(13,93,65,0.28) !important;
+  background: #ffffff !important;
+  color: #0d5d41 !important;
+  transition: background 0.15s, box-shadow 0.15s !important;
+}
+.sv-btn-import:hover,
+.sv-btn-export:hover {
+  background: rgba(13,93,65,0.06) !important;
+  box-shadow: 0 2px 6px rgba(13,93,65,0.13) !important;
+}
+
+
+/* ==========================================================================
+   BULLETPROOF CRM STAGE DROPDOWN & FORM DROPDOWN THEME (v304)
+   Fixes transparency, overlapping cards, invisible white text & clipping
+   ========================================================================== */
+
+/* Stage Dropdown on Deal Card */
+.wacrm-deal-card .wacrm-card-stage-dropdown {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  margin-top: 6px !important;
+  z-index: 20 !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown.open {
+  z-index: 999999 !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-trigger {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+  padding: 6px 14px !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  color: #0d5d41 !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-trigger:hover,
+.wacrm-deal-card .wacrm-card-stage-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  min-width: 170px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 40px rgba(13, 93, 65, 0.24), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  padding: 6px !important;
+  z-index: 999999 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-6px) scale(0.97) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown.open .aria-dropdown-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-menu.open-upward {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  box-shadow: 0 -16px 40px rgba(13, 93, 65, 0.24), 0 -4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  font-size: 0.80rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  color: #14221c !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+  margin: 1px 0 !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  background-color: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+}
+
+.wacrm-deal-card .wacrm-card-stage-dropdown .aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  background-color: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Modal Stage Dropdown (Add Lead Modal) */
+.sv-lead-stage-dropdown {
+  width: 100% !important;
+  position: relative !important;
+  margin-top: 4px !important;
+  z-index: 50 !important;
+}
+
+.sv-lead-stage-dropdown.open {
+  z-index: 999999 !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-trigger {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  font-family: inherit !important;
+  font-size: 0.90rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-trigger:hover,
+.sv-lead-stage-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 40px rgba(13, 93, 65, 0.24), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  padding: 6px !important;
+  z-index: 999999 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-6px) scale(0.97) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+.sv-lead-stage-dropdown.open .aria-dropdown-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 9px 14px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  color: #14221c !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+  margin: 1px 0 !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  background-color: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+}
+
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  background-color: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   Scandinavian Sage: Searchable Themed Dropdown Styles
+   ========================================================================== */
+.aria-dropdown-menu.has-search {
+  padding-top: 0 !important;
+}
+
+.aria-dropdown-search-wrap {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  background: #ffffff !important;
+  padding: 8px 6px 6px 6px !important;
+  margin: 0 0 4px 0 !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.12) !important;
+  box-sizing: border-box !important;
+}
+
+.aria-dropdown-search-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  background: #f7faf8 !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
+}
+
+.aria-dropdown-search-box:focus-within {
+  background: #ffffff !important;
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.aria-dropdown-search-inp {
+  width: 100% !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-size: 0.82rem !important;
+  padding: 6px 0 !important;
+  color: #14221c !important;
+  font-family: inherit !important;
+}
+
+.aria-dropdown-search-inp::placeholder {
+  color: #7a9487 !important;
+  font-size: 0.80rem !important;
+}
+
+.aria-dropdown-search-clear {
+  border: none !important;
+  background: transparent !important;
+  color: #7a9487 !important;
+  font-size: 0.75rem !important;
+  cursor: pointer !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
+  border-radius: 50% !important;
+  transition: color 0.15s !important;
+}
+
+.aria-dropdown-search-clear:hover {
+  color: #0d5d41 !important;
+}
+
+.aria-dropdown-options-container {
+  padding-top: 2px !important;
+}
+
+.aria-dropdown-no-results {
+  padding: 16px 12px !important;
+  text-align: center !important;
+  font-size: 0.82rem !important;
+  color: #5d7468 !important;
+}
+
+
+/* ==========================================================================
+   Leads & Pipeline: Edit, Delete & Bulk Delete Theme Styling (v310)
+   ========================================================================== */
+.wacrm-deal-header-right {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.wacrm-card-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 25px !important;
+  height: 25px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  line-height: 1 !important;
+  outline: none !important;
+  user-select: none !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.wacrm-card-icon-btn svg {
+  pointer-events: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* Edit Lead Button */
+.sv-deal-edit-btn {
+  color: #0d5d41 !important;
+  background: rgba(13, 93, 65, 0.08) !important;
+  border: 1px solid rgba(13, 93, 65, 0.22) !important;
+}
+.sv-deal-edit-btn:hover {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border-color: #0d5d41 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(13, 93, 65, 0.22) !important;
+}
+.sv-deal-edit-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Delete Lead Button */
+.sv-deal-del-btn {
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+  border: 1px solid rgba(220, 38, 38, 0.22) !important;
+}
+.sv-deal-del-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25) !important;
+}
+.sv-deal-del-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Bulk Delete Top Bar Button */
+.sv-btn-bulk-delete {
+  border: 1.5px solid rgba(220, 38, 38, 0.35) !important;
+  color: #dc2626 !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.08) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.sv-btn-bulk-delete:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+.sv-btn-bulk-delete:active {
+  transform: translateY(0) !important;
+}
+
+/* Bulk Delete Modal Styles */
+.sv-bulk-del-table-wrap {
+  max-height: 320px !important;
+  overflow-y: auto !important;
+  border: 1px solid rgba(13, 93, 65, 0.15) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+}
+.sv-bulk-del-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  border-bottom: 1px solid rgba(13, 93, 65, 0.07) !important;
+  font-size: 0.82rem !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease !important;
+}
+.sv-bulk-del-row:last-child {
+  border-bottom: none !important;
+}
+.sv-bulk-del-row:hover {
+  background: rgba(13, 93, 65, 0.03) !important;
+}
+.sv-bulk-del-row.selected {
+  background: rgba(220, 38, 38, 0.05) !important;
+}
+.sv-bulk-del-row input[type="checkbox"] {
+  accent-color: #dc2626 !important;
+  width: 15px !important;
+  height: 15px !important;
+  cursor: pointer !important;
 }

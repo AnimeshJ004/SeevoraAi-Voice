@@ -278,20 +278,37 @@ function parseXlsx(buf) {
         const xml = sBuf.toString('utf8');
         const rows = [];
         const rowMatches = xml.match(/<row[\s\S]*?<\/row>/g) || [];
+        const colLetterToIndex = (letters) => {
+          let res = 0;
+          for (let i = 0; i < letters.length; i++) {
+            res = res * 26 + (letters.charCodeAt(i) - 64);
+          }
+          return Math.max(0, res - 1);
+        };
         for (const row of rowMatches) {
           const cells = [];
           const cMatches = row.match(/<c[\s\S]*?<\/c>|<c[^\/>]*\/>/g) || [];
           for (const c of cMatches) {
+            const rMatch = c.match(/r="([A-Z]+)\d+"/i);
+            const targetCol = rMatch ? colLetterToIndex(rMatch[1].toUpperCase()) : cells.length;
+            while (cells.length < targetCol) {
+              cells.push('');
+            }
             const isShared = /t="s"/i.test(c);
             const valMatch = c.match(/<v>([\s\S]*?)<\/v>/);
             let val = valMatch ? valMatch[1].trim() : '';
             if (isShared && val !== '') {
               const idx = parseInt(val, 10);
-              val = sharedStrings[idx] || val;
+              if (Number.isFinite(idx) && idx >= 0 && idx < sharedStrings.length) {
+                val = sharedStrings[idx] || '';
+              }
+            } else if (!val) {
+              const inlineMatch = c.match(/<t[^>]*>([\s\S]*?)<\/t>/);
+              if (inlineMatch) val = decodeXmlEntities(inlineMatch[1].trim());
             }
-            cells.push(val);
+            cells[targetCol] = val;
           }
-          if (cells.some((v) => v.length > 0)) {
+          if (cells.some((v) => v && v.length > 0)) {
             rows.push('| ' + cells.join(' | ') + ' |');
           }
         }

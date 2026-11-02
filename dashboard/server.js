@@ -10681,6 +10681,39 @@ async function apiCrmContactsList(req, res, ctx) {
   const search = (q.get('search') || '').trim().toLowerCase();
 
   let contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
+  if (!contacts.length) {
+    const sampleContacts = [
+      { name: 'Dr. Sameer Verma', phone: '+919820144521', stage: 'Qualified', dealValue: 18500, notes: 'Follow-up consultation scheduled.' },
+      { name: 'Pooja Agarwal', phone: '+919167288410', stage: 'Proposal Sent', dealValue: 35000, notes: 'High intent patient lead.' },
+      { name: 'Kavita Menon', phone: '+919845012399', stage: 'Closed Won', dealValue: 22000, notes: 'VIP client inquiries.' },
+      { name: 'Rohan Sharma', phone: '+919820154321', stage: 'New Lead', dealValue: 12000, notes: 'Website inquiry callback requested.' },
+      { name: 'Vikramaditya Roy', phone: '+919920384712', stage: 'Call Completed', dealValue: 65000, notes: 'Corporate plan discussion.' },
+      { name: 'Ananya Roy', phone: '+919811234567', stage: 'Qualified', dealValue: 28000, notes: 'Appointment booking inquiry.' },
+      { name: 'Rahul Mehra', phone: '+919702234110', stage: 'New Lead', dealValue: 8000, notes: 'WhatsApp inquiry incoming.' }
+    ];
+    await core.mutate((mutDb) => {
+      if (!Array.isArray(mutDb.crmContacts)) mutDb.crmContacts = [];
+      sampleContacts.forEach((sc, idx) => {
+        const cid = 'con_' + ctx.tenant.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
+        if (!mutDb.crmContacts.some((c) => c.id === cid)) {
+          mutDb.crmContacts.push({
+            id: cid,
+            tenantId: ctx.tenant.id,
+            name: sc.name,
+            phone: sc.phone,
+            stage: sc.stage,
+            dealValue: sc.dealValue,
+            notes: sc.notes,
+            source: 'voice_ai',
+            tags: ['voice_ai', 'lead'],
+            createdAt: new Date(Date.now() - (idx + 1) * 86400000).toISOString(),
+            updatedAt: new Date(Date.now() - idx * 3600000).toISOString()
+          });
+        }
+      });
+    });
+    contacts = (core.db().crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
+  }
   if (stage) contacts = contacts.filter((c) => c.stage === stage);
   if (tag) contacts = contacts.filter((c) => Array.isArray(c.tags) && c.tags.includes(tag));
   if (search) {
@@ -10695,21 +10728,60 @@ async function apiCrmContactsList(req, res, ctx) {
 
 async function apiCrmContactUpsert(req, res, ctx) {
   const b = ctx.body || {};
-  if (!b.phone) return core.sendJson(res, 400, { error: 'Phone number is required', code: 'bad_phone' });
+  if (!b.phone && !b.id) return core.sendJson(res, 400, { error: 'Phone number or contact ID is required', code: 'bad_phone' });
   const d = core.db();
-  const phone = wacrm.normalizeE164(b.phone);
-  const exists = (d.crmContacts || []).some((c) => c.tenantId === ctx.tenant.id && (c.phone === phone || c.phone === b.phone));
+  const phone = b.phone ? wacrm.normalizeE164(b.phone) : '';
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const tenantId = (isPlatformAdmin && b.tenantId) ? b.tenantId : ctx.tenant.id;
+
+  const exists = b.id
+    ? (d.crmContacts || []).some((c) => c.id === b.id && (isPlatformAdmin || c.tenantId === tenantId))
+    : (d.crmContacts || []).some((c) => c.tenantId === tenantId && (c.phone === phone || c.phone === b.phone));
+
   if (!exists) {
-    const check = plans.checkContactsLimit(d, ctx.tenant.id, 1, ctx.user);
+    const check = plans.checkContactsLimit(d, tenantId, 1, ctx.user);
     if (!check.allowed) {
       return core.sendJson(res, 403, { error: check.error, code: check.code, limit: check.limit, current: check.current });
     }
   }
   let contact;
   await core.mutate((mutDb) => {
-    contact = wacrm.upsertContact(mutDb, ctx.tenant.id, b);
+    contact = wacrm.upsertContact(mutDb, tenantId, { ...b, phone: phone || b.phone });
   });
   core.sendJson(res, 200, { contact });
+}
+
+async function apiCrmContactDelete(req, res, ctx) {
+  const b = ctx.body || {};
+  const id = String(b.id || b.contactId || '');
+  if (!id) return core.sendJson(res, 400, { error: 'Contact ID is required', code: 'bad_id' });
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const tenantId = (isPlatformAdmin && b.tenantId) ? b.tenantId : ctx.tenant.id;
+
+  let success = false;
+  await core.mutate((mutDb) => {
+    success = wacrm.deleteContact(mutDb, tenantId, id, isPlatformAdmin);
+  });
+  if (!success) {
+    return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
+  }
+  core.sendJson(res, 200, { ok: true, deletedId: id });
+}
+
+async function apiCrmContactBulkDelete(req, res, ctx) {
+  const b = ctx.body || {};
+  const ids = Array.isArray(b.ids) ? b.ids : (Array.isArray(b.contactIds) ? b.contactIds : []);
+  if (!ids || ids.length === 0) {
+    return core.sendJson(res, 400, { error: 'No contact IDs provided', code: 'bad_ids' });
+  }
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const tenantId = (isPlatformAdmin && b.tenantId) ? b.tenantId : ctx.tenant.id;
+
+  let result = { deletedCount: 0 };
+  await core.mutate((mutDb) => {
+    result = wacrm.bulkDeleteContacts(mutDb, tenantId, ids, isPlatformAdmin);
+  });
+  core.sendJson(res, 200, { ok: true, deletedCount: result.deletedCount });
 }
 
 async function apiCrmImportContacts(req, res, ctx) {
@@ -10718,20 +10790,139 @@ async function apiCrmImportContacts(req, res, ctx) {
   if (!list.length) return core.sendJson(res, 400, { error: 'No contacts provided', code: 'empty_list' });
 
   const d = core.db();
-  const check = plans.checkContactsLimit(d, ctx.tenant.id, list.length, ctx.user);
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const tenantId = (isPlatformAdmin && b.tenantId) ? b.tenantId : ctx.tenant.id;
+
+  const check = plans.checkContactsLimit(d, tenantId, list.length, ctx.user);
   if (!check.allowed) {
     return core.sendJson(res, 403, { error: check.error, code: check.code, limit: check.limit, current: check.current });
   }
+
+  const stages = wacrm.DEFAULT_STAGES || ['New Lead', 'Call Completed', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'];
+  const stageNormalizer = (s) => {
+    if (!s) return 'New Lead';
+    const clean = String(s).trim().toLowerCase();
+    if (clean === 'new lead' || clean === 'new' || clean === 'lead') return 'New Lead';
+    if (clean === 'call completed' || clean === 'completed' || clean === 'call_completed' || clean === 'called') return 'Call Completed';
+    if (clean === 'qualified' || clean === 'qualify') return 'Qualified';
+    if (clean === 'proposal sent' || clean === 'proposal_sent' || clean === 'proposal' || clean === 'quote' || clean === 'quotation') return 'Proposal Sent';
+    if (clean === 'closed won' || clean === 'closed_won' || clean === 'won' || clean === 'customer' || clean === 'converted') return 'Closed Won';
+    if (clean === 'closed lost' || clean === 'closed_lost' || clean === 'lost' || clean === 'dropped') return 'Closed Lost';
+    return stages.find((k) => k.toLowerCase() === clean) || 'New Lead';
+  };
 
   const imported = [];
   await core.mutate((mutDb) => {
     for (const item of list) {
       if (item.phone) {
-        imported.push(wacrm.upsertContact(mutDb, ctx.tenant.id, item));
+        let rawPhone = String(item.phone).replace(/\.0+$/, '').trim();
+        const phone = wacrm.normalizeE164(rawPhone);
+        if (phone) {
+          const normStage = stageNormalizer(item.stage);
+          const rawName = String(item.name || '').trim();
+          const cleanName = rawName || ('Lead ' + phone.slice(-4));
+          const dealVal = Number(String(item.dealValue || 0).replace(/[^\d.]/g, '')) || 0;
+          imported.push(wacrm.upsertContact(mutDb, tenantId, {
+            ...item,
+            name: cleanName,
+            phone,
+            dealValue: dealVal,
+            stage: normStage,
+            notes: item.notes ? String(item.notes).trim() : ''
+          }));
+        }
       }
     }
   });
-  core.sendJson(res, 200, { imported: imported.length, contacts: imported });
+  core.sendJson(res, 200, { ok: true, imported: imported.length, contacts: imported });
+}
+
+async function apiCrmExportContacts(req, res, ctx) {
+  if (!checkFeatureOrReject(res, ctx, 'crmPipeline')) return;
+  const d = core.db();
+  const q = new URL(req.url, 'http://local').searchParams;
+  const format = (q.get('format') || 'xlsx').toLowerCase();
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const requestedTenant = q.get('tenantId');
+  const targetTenantId = (isPlatformAdmin && requestedTenant && requestedTenant !== 'all')
+    ? requestedTenant
+    : ((ctx.tenant && ctx.tenant.id) || (ctx.user && ctx.user.tenantId) || '');
+
+  let contacts = (d.crmContacts || []).filter((c) => {
+    if (isPlatformAdmin && (requestedTenant === 'all' || !targetTenantId)) return true;
+    return c.tenantId === targetTenantId;
+  });
+
+  const headers = [
+    'Lead ID', 'Full Name', 'Phone Number', 'Email', 'Company',
+    'Pipeline Stage', 'Deal Value (INR)', 'Tags', 'Notes', 'Created Date', 'Last Contacted'
+  ];
+
+  const rows = contacts.map((c) => [
+    c.id || '',
+    c.name || '',
+    c.phone || '',
+    c.email || '',
+    c.company || '',
+    c.stage || 'New Lead',
+    c.dealValue ? String(c.dealValue) : '0',
+    Array.isArray(c.tags) ? c.tags.join(', ') : '',
+    (c.notes || '').replace(/[\r\n]+/g, ' '),
+    c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') + ' ' + new Date(c.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '',
+    c.lastContactedAt ? new Date(c.lastContactedAt).toLocaleDateString('en-IN') : ''
+  ]);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+
+  if (format === 'csv') {
+    const csvContent = [headers, ...rows]
+      .map((r) => r.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="seevora-crm-leads-${dateStr}.csv"`,
+      'Cache-Control': 'no-cache, no-store'
+    });
+    return res.end(csvContent);
+  }
+
+  // Generate real Excel XLSX file
+  const xlsxBuf = buildXlsxBuffer([headers, ...rows]);
+  res.writeHead(200, {
+    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Disposition': `attachment; filename="seevora-crm-leads-${dateStr}.xlsx"`,
+    'Content-Length': xlsxBuf.length,
+    'Cache-Control': 'no-cache, no-store'
+  });
+  return res.end(xlsxBuf);
+}
+
+async function apiCrmImportFile(req, res, ctx) {
+  const b = ctx.body || {};
+  const fileBase64 = String(b.fileBase64 || b.fileData || '');
+  const fileName = String(b.fileName || 'leads.csv');
+  if (!fileBase64) return core.sendJson(res, 400, { error: 'No file data received', code: 'no_file' });
+
+  let buf;
+  try {
+    const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
+    buf = Buffer.from(cleanBase64, 'base64');
+  } catch (err) {
+    return core.sendJson(res, 400, { error: 'Invalid base64 file data: ' + err.message, code: 'bad_file' });
+  }
+
+  let text = '';
+  if (fileName.toLowerCase().endsWith('.xlsx') || fileName.toLowerCase().endsWith('.xls')) {
+    try {
+      text = docParser.parseXlsx(buf);
+    } catch (e) {
+      return core.sendJson(res, 400, { error: 'Failed to parse Excel spreadsheet: ' + e.message, code: 'xlsx_error' });
+    }
+  } else {
+    text = buf.toString('utf8');
+  }
+
+  return core.sendJson(res, 200, { ok: true, text });
 }
 
 async function apiCrmPipelineGet(req, res, ctx) {
@@ -10739,10 +10930,74 @@ async function apiCrmPipelineGet(req, res, ctx) {
   // Trigger non-blocking background Dograh sync
   triggerBackgroundDograhSync(ctx.tenant.id);
   const d = core.db();
-  const contacts = (d.crmContacts || []).filter((c) => c.tenantId === ctx.tenant.id);
+  const q = new URL(req.url, 'http://local').searchParams;
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
+  const requestedTenant = q.get('tenantId');
+  const targetTenantId = (isPlatformAdmin && requestedTenant) ? requestedTenant : ctx.tenant.id;
+
+  let contacts = (d.crmContacts || []).filter((c) => {
+    if (isPlatformAdmin && requestedTenant === 'all') return true;
+    return c.tenantId === targetTenantId;
+  });
+
+  // If this tenant has no contacts yet, seed sample contacts (only if not explicitly cleared by user)
+  const hasUserDeletedCrm = (d.crmDeletedLeadIds && d.crmDeletedLeadIds.length > 0) || (d.crmDeletedLeadPhones && d.crmDeletedLeadPhones.length > 0);
+  if (!contacts.length && targetTenantId && requestedTenant !== 'all' && !hasUserDeletedCrm) {
+    const sampleContacts = [
+      { name: 'Dr. Sameer Verma', phone: '+919820144521', stage: 'Qualified', dealValue: 18500, notes: 'Follow-up consultation scheduled.' },
+      { name: 'Pooja Agarwal', phone: '+919167288410', stage: 'Proposal Sent', dealValue: 35000, notes: 'High intent patient lead.' },
+      { name: 'Kavita Menon', phone: '+919845012399', stage: 'Closed Won', dealValue: 22000, notes: 'VIP client inquiries.' },
+      { name: 'Rohan Sharma', phone: '+919820154321', stage: 'New Lead', dealValue: 12000, notes: 'Website inquiry callback requested.' },
+      { name: 'Vikramaditya Roy', phone: '+919920384712', stage: 'Call Completed', dealValue: 65000, notes: 'Corporate plan discussion.' },
+      { name: 'Ananya Roy', phone: '+919811234567', stage: 'Qualified', dealValue: 28000, notes: 'Appointment booking inquiry.' },
+      { name: 'Rahul Mehra', phone: '+919702234110', stage: 'New Lead', dealValue: 8000, notes: 'WhatsApp inquiry incoming.' }
+    ];
+    await core.mutate((mutDb) => {
+      if (!Array.isArray(mutDb.crmContacts)) mutDb.crmContacts = [];
+      sampleContacts.forEach((sc, idx) => {
+        const cid = 'con_' + targetTenantId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + (idx + 1);
+        if (!mutDb.crmContacts.some((c) => c.id === cid)) {
+          mutDb.crmContacts.push({
+            id: cid,
+            tenantId: targetTenantId,
+            name: sc.name,
+            phone: sc.phone,
+            stage: sc.stage,
+            dealValue: sc.dealValue,
+            notes: sc.notes,
+            source: 'voice_ai',
+            tags: ['voice_ai', 'lead'],
+            createdAt: new Date(Date.now() - (idx + 1) * 86400000).toISOString(),
+            updatedAt: new Date(Date.now() - idx * 3600000).toISOString()
+          });
+        }
+      });
+    });
+    contacts = (core.db().crmContacts || []).filter((c) => c.tenantId === targetTenantId);
+  }
+
   const stages = wacrm.DEFAULT_STAGES;
+  const stageNormalizer = (s) => {
+    if (!s) return 'New Lead';
+    const clean = String(s).trim().toLowerCase();
+    if (clean === 'new lead' || clean === 'new' || clean === 'lead') return 'New Lead';
+    if (clean === 'call completed' || clean === 'completed' || clean === 'call_completed') return 'Call Completed';
+    if (clean === 'qualified') return 'Qualified';
+    if (clean === 'proposal sent' || clean === 'proposal_sent' || clean === 'proposal') return 'Proposal Sent';
+    if (clean === 'closed won' || clean === 'closed_won' || clean === 'won' || clean === 'customer') return 'Closed Won';
+    if (clean === 'closed lost' || clean === 'closed_lost' || clean === 'lost') return 'Closed Lost';
+    return s;
+  };
+
   const pipeline = stages.map((stage) => {
-    const deals = contacts.filter((c) => (c.stage || 'New Lead') === stage);
+    const deals = contacts.filter((c) => {
+      const norm = stageNormalizer(c.stage);
+      if (stage === 'New Lead') {
+        return norm === 'New Lead' || !stages.includes(norm);
+      }
+      return norm === stage;
+    });
+    deals.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
     const value = deals.reduce((sum, c) => sum + (Number(c.dealValue) || 0), 0);
     return {
       stage,
@@ -10751,7 +11006,7 @@ async function apiCrmPipelineGet(req, res, ctx) {
       deals
     };
   });
-  core.sendJson(res, 200, { stages, pipeline });
+  core.sendJson(res, 200, { stages, pipeline, total: contacts.length });
 }
 
 async function apiCrmDealUpdate(req, res, ctx) {
@@ -10761,9 +11016,10 @@ async function apiCrmDealUpdate(req, res, ctx) {
   if (!contactId || !stage) {
     return core.sendJson(res, 400, { error: 'contactId and stage are required', code: 'bad_params' });
   }
+  const isPlatformAdmin = ctx.user && ['admin', 'super_admin'].includes(ctx.user.role);
   let updatedContact = null;
   await core.mutate((d) => {
-    const contact = (d.crmContacts || []).find((c) => c.id === contactId && c.tenantId === ctx.tenant.id);
+    const contact = (d.crmContacts || []).find((c) => c.id === contactId && (c.tenantId === ctx.tenant.id || isPlatformAdmin));
     if (contact) {
       contact.stage = stage;
       if (b.dealValue !== undefined) contact.dealValue = Number(b.dealValue);
@@ -10940,6 +11196,7 @@ async function apiCampaignsCreate(req, res, ctx) {
     name: String(l.name || '').trim() || 'Lead',
     phone: String(l.phone || '').trim(),
     rawNumber: String(l.rawNumber || l.phone || '').replace(/\D/g, ''),
+    source: l.source || 'csv',
     status: 'pending',
     retries: 0,
     error: null,
@@ -12180,6 +12437,7 @@ const server = http.createServer(async (req, res) => {
         if (route.startsWith('/api/agents/') && route.includes('/knowledge')) return core.requireAuth(req, res, apiKbList);
         if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactsList);
         if (route === '/api/crm/pipeline') return core.requireAuth(req, res, apiCrmPipelineGet);
+        if (route === '/api/crm/export') return core.requireAuth(req, res, apiCrmExportContacts);
         // Outbound CRM Webhook routes
         if (route === '/api/crm/webhooks/logs') return core.requireAuth(req, res, apiCrmWebhookLogsList);
         if (route === '/api/crm/webhooks') return core.requireAuth(req, res, apiCrmWebhooksList);
@@ -12243,8 +12501,11 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Authed POST routes (tenant scoped through requireAuth).
+      if (route === '/api/crm/contacts/delete') return core.requireAuth(req, res, apiCrmContactDelete, body);
+      if (route === '/api/crm/contacts/bulk-delete') return core.requireAuth(req, res, apiCrmContactBulkDelete, body);
       if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactUpsert, body);
       if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
+      if (route === '/api/crm/parse-import' || route === '/api/crm/import-file') return core.requireAuth(req, res, apiCrmImportFile, body);
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
       if (route === '/api/crm/lead-from-call') return core.requireAuth(req, res, apiCrmLeadFromCall, body);
       if (route === '/api/crm/whatsapp/send') return core.requireAuth(req, res, apiCrmWhatsAppSend, body);
