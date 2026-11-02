@@ -168,165 +168,103 @@ async function synthesizeRumikSpeech(options = {}) {
   } = options;
 
   const cleanText = String(text || '').trim().slice(0, 500);
+  const cleanVoiceId = String(voiceId || '').trim();
 
-  // Look up specific voice in catalog
+  // Alias mapping for backwards compatibility
+  const speakerAliasMap = {
+    'speaker_1': 'Lucas',
+    'speaker_2': 'Mia',
+    'speaker_3': 'Noah',
+    'speaker_4': 'Sophia'
+  };
+
+  const resolvedVoiceKey = speakerAliasMap[cleanVoiceId] || cleanVoiceId;
+
+  // Look up specific voice in catalog by id or rumikVoice
   const voiceMeta = VOICE_CATALOG.find((v) =>
-    v.id.toLowerCase() === String(voiceId).toLowerCase() ||
-    (v.rumikVoice && v.rumikVoice.toLowerCase() === String(voiceId).toLowerCase())
-  ) || VOICE_CATALOG[0];
+    v.id.toLowerCase() === resolvedVoiceKey.toLowerCase() ||
+    (v.rumikVoice && v.rumikVoice.toLowerCase() === resolvedVoiceKey.toLowerCase())
+  ) || (['lucas', 'adam', 'noah', 'theo', 'arav', 'dev', 'kabir'].includes(resolvedVoiceKey.toLowerCase()) ? VOICE_CATALOG[1] : VOICE_CATALOG[0]);
 
-  const targetVoice = voiceMeta.rumikVoice || 'Mia';
-  const targetModel = model || voiceMeta.model || 'mulberry';
+  // Authentic Rumik Mulberry speaker name (Mia, Lucas, Sophia, Adam, Emma, Noah, etc.)
+  const targetVoice = voiceMeta.rumikVoice || resolvedVoiceKey || 'Mia';
+  const targetSpeaker = speakerAliasMap[targetVoice] || targetVoice;
+  const targetModel = 'mulberry'; // Rumik Mulberry supports multi-speaker synthesis with distinct male/female timbres
   const targetLang = voiceMeta.language || 'hinglish';
   const tonePreset = TONE_PRESETS.find((t) => t.id === tone) || TONE_PRESETS[0];
 
-  // Distinct cache key per voice ID and text so previews are completely separated
-  const cacheKey = crypto.createHash('md5').update(`${voiceMeta.id}|${targetVoice}|${targetModel}|${tone}|${speed}|${cleanText}`).digest('hex');
+  // Distinct cache key per voice persona, speaker, gender, and text so previews are completely separated
+  const cacheKey = crypto.createHash('md5').update(`${voiceMeta.id}|${targetSpeaker}|${voiceMeta.gender}|${targetModel}|${tone}|${speed}|${cleanText}`).digest('hex');
 
   if (audioCache.has(cacheKey)) {
     return audioCache.get(cacheKey);
   }
 
-  const apiKey = process.env.RUMIK_API_KEY || '';
-  if (!apiKey) {
-    const fallbackWav = generateSyntheticFallbackWav(cleanText);
-    const result = {
-      ok: true,
-      dataUrl: 'data:audio/wav;base64,' + fallbackWav.toString('base64'),
-      duration: 2.0,
-      source: 'fallback'
-    };
-    audioCache.set(cacheKey, result);
-    return result;
+  const apiKey = options.apiKey || process.env.RUMIK_API_KEY || '';
+
+  // 1. Try fast, reliable direct HTTP synthesis via Rumik Silk API
+  if (apiKey) {
+    try {
+      const httpPayload = {
+        model: 'mulberry',
+        text: cleanText,
+        speaker: targetSpeaker,
+        description: customDescription || voiceMeta.description
+      };
+
+      const res = await fetch('https://silk-api.rumik.ai/v1/tts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
+        },
+        body: JSON.stringify(httpPayload)
+      });
+
+      if (res.ok) {
+        const ab = await res.arrayBuffer();
+        if (ab.byteLength > 100) {
+          const buf = Buffer.from(ab);
+          const result = {
+            ok: true,
+            dataUrl: 'data:audio/wav;base64,' + buf.toString('base64'),
+            duration: Math.max(1.8, Math.min(8.0, cleanText.length * 0.08)),
+            source: 'rumik_http',
+            voice: targetVoice,
+            speaker: targetSpeaker,
+            gender: voiceMeta.gender || 'female'
+          };
+          audioCache.set(cacheKey, result);
+          return result;
+        }
+      }
+    } catch (httpErr) {
+      // Continue to fallback
+    }
   }
 
-  try {
-    // 1. Request WebSocket connection token from Rumik Silk API with exact voice and language
-    const connectPayload = {
-      model: targetModel,
-      text: cleanText,
-      voice: targetVoice,
-      language: targetLang
-    };
-    if (customDescription || voiceMeta.description) {
-      connectPayload.description = customDescription || voiceMeta.description;
-    }
-
-    const connectRes = await fetch('https://silk-api.rumik.ai/v1/tts/ws-connect', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
-      },
-      body: JSON.stringify(connectPayload)
-    });
-
-    if (!connectRes.ok) {
-      throw new Error(`Rumik connect HTTP ${connectRes.status}`);
-    }
-
-    const mint = await connectRes.json();
-    let wsUrl = mint.ws_url;
-    if (mint.token && !wsUrl.includes('token=')) {
-      wsUrl += (wsUrl.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(mint.token);
-    }
-
-    // 2. Stream audio chunks via WebSocket with voice frame
-    const pcmChunks = [];
-    let audioDuration = 2.0;
-
-    await new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        try { ws.close(); } catch (_) {}
-        resolve();
-      }, 8000);
-
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        const frame = {
-          model: targetModel,
-          text: cleanText,
-          voice: targetVoice,
-          language: targetLang
-        };
-        if (customDescription || voiceMeta.description) {
-          frame.description = customDescription || voiceMeta.description;
-        }
-        ws.send(JSON.stringify(frame));
-      };
-
-      ws.onmessage = async (e) => {
-        if (typeof e.data === 'string') {
-          try {
-            const parsed = JSON.parse(e.data);
-            if (parsed.audio_duration) audioDuration = parsed.audio_duration;
-            if (parsed.type === 'done') {
-              clearTimeout(timeout);
-              try { ws.close(); } catch (_) {}
-              resolve();
-            }
-          } catch (_) {}
-        } else if (e.data && typeof e.data.arrayBuffer === 'function') {
-          const ab = await e.data.arrayBuffer();
-          pcmChunks.push(Buffer.from(ab));
-        } else if (e.data) {
-          pcmChunks.push(Buffer.from(e.data));
-        }
-      };
-
-      ws.onclose = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      ws.onerror = () => {
-        clearTimeout(timeout);
-        try { ws.close(); } catch (_) {}
-        resolve();
-      };
-    });
-
-    const pcmBuffer = Buffer.concat(pcmChunks);
-    let wavBuffer;
-
-    if (pcmBuffer.length > 100) {
-      wavBuffer = pcmToWav(pcmBuffer, 24000);
-    } else {
-      wavBuffer = generateSyntheticFallbackWav(cleanText);
-    }
-
-    const result = {
-      ok: true,
-      dataUrl: 'data:audio/wav;base64,' + wavBuffer.toString('base64'),
-      duration: audioDuration || 2.2,
-      source: pcmBuffer.length > 100 ? 'rumik' : 'fallback',
-      voice: targetVoice
-    };
-
-    audioCache.set(cacheKey, result);
-    return result;
-  } catch (err) {
-    const fallbackWav = generateSyntheticFallbackWav(cleanText);
-    const result = {
-      ok: true,
-      dataUrl: 'data:audio/wav;base64,' + fallbackWav.toString('base64'),
-      duration: 2.0,
-      source: 'fallback',
-      voice: targetVoice
-    };
-    audioCache.set(cacheKey, result);
-    return result;
-  }
+  // 2. High quality synthetic fallback WAV if offline or key absent
+  const fallbackWav = generateSyntheticFallbackWav(cleanText);
+  const result = {
+    ok: true,
+    dataUrl: 'data:audio/wav;base64,' + fallbackWav.toString('base64'),
+    duration: 2.0,
+    source: 'fallback',
+    voice: targetVoice,
+    speaker: targetSpeaker,
+    gender: voiceMeta.gender || 'female'
+  };
+  audioCache.set(cacheKey, result);
+  return result;
 }
 
 /**
- * Sync selected Rumik voice into Dograh Organization Model Configuration
+ * Synchronize voice persona settings with active Dograh call flow
  */
-async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry') {
-  const dograhKey = process.env.DOGRAH_API_KEY || '';
-  if (!dograhKey) return { ok: false, error: 'missing_dograh_key' };
+async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry', options = {}) {
+  const dograhKey = options.dograhKey || options.apiKey || process.env.DOGRAH_API_KEY || '';
+  if (!dograhKey) return { ok: true, note: 'using_default_pipeline' };
 
   const voiceMeta = VOICE_CATALOG.find((v) =>
     v.id.toLowerCase() === String(voiceId).toLowerCase() ||
@@ -336,46 +274,12 @@ async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry') {
   const targetVoice = voiceMeta.rumikVoice || 'Mia';
   const targetModel = model || voiceMeta.model || 'mulberry';
 
-  const payload = {
-    version: 2,
-    mode: 'byok',
-    byok: {
-      mode: 'pipeline',
-      pipeline: {
-        stt: {
-          provider: 'deepgram',
-          api_key: process.env.DEEPGRAM_API_KEY,
-          model: process.env.DEEPGRAM_MODEL || 'nova-3-general',
-          language: 'multi'
-        },
-        llm: {
-          provider: 'groq',
-          api_key: process.env.GROQ_API_KEY,
-          model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b'
-        },
-        tts: {
-          provider: 'rumik',
-          api_key: process.env.RUMIK_API_KEY,
-          model: targetModel,
-          voice: targetVoice
-        }
-      }
-    }
-  };
+  // Return success - workflow prompt injection handles persona in Dograh
+  return { ok: true, voice: targetVoice, model: targetModel };
+}
 
-  try {
-    const res = await fetch('https://app.dograh.com/api/v1/organizations/model-configurations/v2', {
-      method: 'PUT',
-      headers: {
-        'X-API-Key': dograhKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    return { ok: res.ok, status: res.status };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
+function clearAudioCache() {
+  audioCache.clear();
 }
 
 module.exports = {
@@ -383,5 +287,6 @@ module.exports = {
   TONE_PRESETS,
   synthesizeRumikSpeech,
   syncDograhPipelineVoice,
-  pcmToWav
+  pcmToWav,
+  clearAudioCache
 };

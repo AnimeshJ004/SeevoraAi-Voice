@@ -479,29 +479,32 @@ async function speakUtterance(text, ttsOrAgent, callbacks) {
   callbacks = callbacks || {};
   stopAllSpeech();
   const tts = (ttsOrAgent && ttsOrAgent.tts) ? ttsOrAgent.tts : (ttsOrAgent || {});
-  const model = tts.model || 'mulberry';
+  const model = 'mulberry';
   const tone = tts.tone || 'neutral';
-  const speaker = tts.speaker || 'speaker_2';
+  const speaker = tts.speaker || (ttsOrAgent && ttsOrAgent.rumikVoice) || 'Mia';
   const f0 = Number.isFinite(tts.f0_up_key) ? tts.f0_up_key : -1;
   let spoken = cleanSpokenText(text);
   if (!spoken) return;
 
   if (typeof callbacks.onStart === 'function') callbacks.onStart();
 
+  const isMale = ['lucas', 'adam', 'noah', 'theo', 'speaker_1', 'speaker_3', 'arav', 'dev', 'kabir'].includes(String(speaker).toLowerCase());
+  const defaultMaleDesc = 'a confident, articulate 30-year-old Indian male executive in Indore, calm and steady authoritative timbre, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+  const defaultFemaleDesc = 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+
   let played = false;
-  // Tier 1 & 2: Server Rumik Silk TTS (mulberry model, always pass description)
+  // Tier 1 & 2: Server Rumik Silk TTS (mulberry multi-speaker engine)
   try {
-    const formatted = (model === 'muga' && tone && tone !== 'neutral') ? `[${tone}] ${spoken.slice(0, 1000)}` : spoken.slice(0, 1000);
-    const ttsDescription = tts.description ||
-      'a warm, articulate 28-year-old Indian female receptionist, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+    const formatted = spoken.slice(0, 1000);
+    const ttsDescription = tts.description || (isMale ? defaultMaleDesc : defaultFemaleDesc);
     const res = await api('/api/tts', {
       method: 'POST',
       timeoutMs: 18000,
       body: {
         text: formatted,
-        model: model || 'mulberry',
-        speaker: speaker || 'speaker_2',
-        f0_up_key: Number.isFinite(f0) ? f0 : -1,
+        model: 'mulberry',
+        speaker: speaker || (isMale ? 'Lucas' : 'Mia'),
+        f0_up_key: Number.isFinite(f0) ? f0 : 0,
         description: ttsDescription
       }
     });
@@ -4482,11 +4485,24 @@ function buildAgentStudioPage(existing, onBack) {
   ));
   toneSeg.id = 'f_tone_seg';
 
-  const speakerSel = el('select', { class: 'select', id: 'f_speaker', style: 'width:100%;padding:9px 14px;font-size:0.88rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;' }, [
-    el('option', { value: 'speaker_2', selected: state.speaker === 'speaker_2' }, 'speaker_2 (Professional Indian Female • Recommended)'),
-    el('option', { value: 'speaker_1', selected: state.speaker === 'speaker_1' }, 'speaker_1 (Warm & Deep Male)'),
-    el('option', { value: 'speaker_3', selected: state.speaker === 'speaker_3' }, 'speaker_3 (Youthful & Energetic Male)'),
-    el('option', { value: 'speaker_4', selected: state.speaker === 'speaker_4' }, 'speaker_4 (Polite Female Assistant)')
+  const speakerSel = el('select', {
+    class: 'select',
+    id: 'f_speaker',
+    style: 'width:100%;padding:9px 14px;font-size:0.88rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;',
+    onchange: (e) => {
+      state.speaker = e.target.value;
+    }
+  }, [
+    el('optgroup', { label: 'Female Voices (Rumik Neural)' }, [
+      el('option', { value: 'Mia', selected: ['mia', 'speaker_2', 'ira'].includes(String(state.speaker).toLowerCase()) }, 'Mia / Ira (Warm Indian Receptionist • Female • Recommended)'),
+      el('option', { value: 'Sophia', selected: ['sophia', 'speaker_4', 'riya'].includes(String(state.speaker).toLowerCase()) }, 'Sophia / Priya (Energetic & Dynamic Sales • Female)'),
+      el('option', { value: 'Emma', selected: ['emma', 'ananya'].includes(String(state.speaker).toLowerCase()) }, 'Emma / Ananya (Polite & Articulate Executive • Female)')
+    ]),
+    el('optgroup', { label: 'Male Voices (Rumik Neural)' }, [
+      el('option', { value: 'Lucas', selected: ['lucas', 'speaker_1', 'arav'].includes(String(state.speaker).toLowerCase()) }, 'Lucas / Aarav (Steady Corporate & Commercial • Male)'),
+      el('option', { value: 'Adam', selected: ['adam', 'dev'].includes(String(state.speaker).toLowerCase()) }, 'Adam / Dev (Deep Supportive Helpdesk • Male)'),
+      el('option', { value: 'Noah', selected: ['noah', 'speaker_3', 'kabir'].includes(String(state.speaker).toLowerCase()) }, 'Noah / Kabir (Youthful & Modern Conversational • Male)')
+    ])
   ]);
 
   const f0Val = el('span', { class: 'rv', id: 'f_f0_val', style: 'font-weight:750;color:#0d5d41;font-size:0.92rem;min-width:32px;display:inline-block;' }, String(state.f0));
@@ -4559,14 +4575,23 @@ function buildAgentStudioPage(existing, onBack) {
     class: 'btn btn-ghost',
     style: 'border-radius:999px;padding:8px 20px;border:1px solid rgba(13,93,65,0.25);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:8px;font-size:0.86rem;',
     onclick: () => {
+      const currentSpeaker = speakerSel.value || state.speaker || 'Mia';
+      const isMale = ['lucas', 'adam', 'noah', 'theo', 'speaker_1', 'speaker_3', 'arav', 'dev', 'kabir'].includes(currentSpeaker.toLowerCase());
+      const defaultDesc = isMale
+        ? 'a confident, articulate 30-year-old Indian male executive in Indore, calm and steady authoritative timbre, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic'
+        : 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+
       const ttsPayload = {
-        model: state.model,
+        model: 'mulberry',
         tone: state.model === 'muga' ? (state.tone || 'excited') : undefined,
-        speaker: state.model === 'mulberry' ? state.speaker : undefined,
+        speaker: currentSpeaker,
         f0_up_key: state.model === 'mulberry' ? state.f0 : 0,
-        description: descI.value.trim() || undefined
+        description: descI.value.trim() || defaultDesc
       };
-      const text = greetI.value.trim() || ('Hi, this is ' + (nameI.value.trim() || 'your AI receptionist') + '. How can I help you today?');
+      const defGreeting = isMale
+        ? ('Hi, this is ' + (nameI.value.trim() || 'your AI receptionist') + '. How can I help you today?')
+        : ('Hi, this is ' + (nameI.value.trim() || 'your AI receptionist') + '. How can I help you today?');
+      const text = greetI.value.trim() || defGreeting;
       playSpeechSnippet(text, ttsPayload, previewVoiceBtn);
     }
   }, [
@@ -4705,16 +4730,18 @@ function buildAgentStudioPage(existing, onBack) {
     submitBtnTop.textContent = existing ? 'Saving...' : 'Deploying...';
     submitBtnBottom.textContent = existing ? 'Saving...' : 'Deploying...';
 
+    const chosenSpeaker = speakerSel.value || state.speaker || 'Mia';
     const payload = {
       name: name,
       persona: persona,
       knowledge: knowledgeI.value.trim(),
       greeting: greetI.value.trim(),
       did: didSel.value || '',
+      rumikVoice: chosenSpeaker,
       tts: {
-        model: state.model,
+        model: 'mulberry',
         tone: state.model === 'muga' ? (state.tone || 'excited') : undefined,
-        speaker: state.model === 'mulberry' ? state.speaker : undefined,
+        speaker: chosenSpeaker,
         f0_up_key: state.model === 'mulberry' ? state.f0 : 0,
         description: descI.value.trim() || undefined
       }
@@ -4841,10 +4868,15 @@ async function previewAgentVoice(a, btn) {
   btn.disabled = true;
   btn.innerHTML = '<span class="boot-spin" style="display:inline-block;margin-right:4px;"></span><span>Loading...</span>';
   try {
-    const voiceId = (a.rumikVoice || (a.tts && a.tts.voice) || 'ira').toLowerCase();
+    const voiceId = (a.rumikVoice || (a.tts && (a.tts.voice || a.tts.speaker)) || 'ira').toLowerCase();
+    const isMale = ['arav', 'dev', 'kabir', 'lucas', 'adam', 'noah', 'theo', 'speaker_1', 'speaker_3'].includes(voiceId);
     const tone = (a.rumikTone || (a.tts && a.tts.tone) || 'happy').toLowerCase();
-    const model = (a.rumikModel || (a.tts && a.tts.model) || 'mulberry').toLowerCase();
-    const text = a.greeting || ("Hi! Thank you for calling! Main " + a.name.split('-')[0].trim() + " bol rahi hoon. How can I help you today?");
+    const model = 'mulberry';
+    const cleanAgentName = a.name.split('–')[0].split('-')[0].trim();
+    const defGreeting = isMale
+      ? ("Hi! Thank you for calling! Main " + cleanAgentName + " bol raha hoon. How can I help you today?")
+      : ("Hi! Thank you for calling! Main " + cleanAgentName + " bol rahi hoon. How can I help you today?");
+    const text = a.greeting || defGreeting;
 
     const res = await api('/api/voice/preview', {
       method: 'POST',
@@ -13221,16 +13253,28 @@ async function viewSettings(root) {
   const head = viewHead('Settings');
   wrap.appendChild(head);
 
-  // Read URL query tab
+  // Read URL query tab or remember last viewed tab
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
-  let currentTab = urlParams.get('tab') || 'general';
-  // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
-  if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
+  let rawTab = urlParams.get('tab') || localStorage.getItem('seevora_settings_tab') || 'general';
+  let initialSection = 'voice';
+
+  if (rawTab === 'vobiz' || rawTab === 'phone') {
+    initialSection = 'phone';
+    rawTab = 'voice-integrations';
+  } else if (rawTab === 'dograh' || rawTab === 'flows') {
+    initialSection = 'flows';
+    rawTab = 'voice-integrations';
+  } else if (rawTab === 'rumik' || rawTab === 'voice' || rawTab === 'voice-integrations') {
+    initialSection = 'voice';
+    rawTab = 'voice-integrations';
+  }
+
+  let currentTab = rawTab;
   if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
-  // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
+  // Unified Settings Tabs: Voice Integrations hosts Rumik Voice, VoBiz Telephony & Dograh AI Flows in one place
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
     { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
@@ -13248,6 +13292,7 @@ async function viewSettings(root) {
     const btn = el('button', {
       type: 'button',
       class: 'admin-tab-btn' + (currentTab === tab.id ? ' active' : ''),
+      'data-tab': tab.id,
       style: currentTab === tab.id
         ? 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;'
         : 'border-radius:999px;padding:8px 20px;background:transparent;color:#5d7468;font-weight:650;border:1px solid transparent;cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;',
@@ -13265,30 +13310,42 @@ async function viewSettings(root) {
   const contentHost = el('div', { class: 'settings-tab-panel', style: 'width:100%;' });
   wrap.appendChild(contentHost);
 
-  function switchTab(tabId) {
-    if (!tabs.some(t => t.id === tabId)) tabId = 'general';
-    currentTab = tabId;
+  function switchTab(tabId, subSection) {
+    let mainTab = tabId;
+    let section = subSection || (mainTab === 'voice-integrations' ? initialSection : 'voice');
+
+    if (tabId === 'rumik' || tabId === 'voice') {
+      mainTab = 'voice-integrations';
+      section = 'voice';
+    } else if (tabId === 'vobiz' || tabId === 'phone') {
+      mainTab = 'voice-integrations';
+      section = 'phone';
+    } else if (tabId === 'dograh' || tabId === 'flows') {
+      mainTab = 'voice-integrations';
+      section = 'flows';
+    }
+
+    if (!tabs.some(t => t.id === mainTab)) mainTab = 'general';
+    currentTab = mainTab;
+
     tabButtons.forEach(item => {
-      const active = item.id === tabId;
+      const active = item.id === mainTab;
       item.btn.className = 'admin-tab-btn' + (active ? ' active' : '');
       item.btn.style.cssText = active
         ? 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;'
         : 'border-radius:999px;padding:8px 20px;background:transparent;color:#5d7468;font-weight:650;border:1px solid transparent;cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;';
     });
 
+    localStorage.setItem('seevora_settings_tab', mainTab);
     contentHost.innerHTML = '';
-    if (tabId === 'general') renderGeneralTab(contentHost);
-    else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
-    else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
-    else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
-    // Legacy aliases (keep functions alive for internal calls)
-    else if (tabId === 'rumik') renderVoiceIntegrationsTab(contentHost, 'voice');
-    else if (tabId === 'vobiz') renderVoiceIntegrationsTab(contentHost, 'phone');
-    else if (tabId === 'dograh') renderVoiceIntegrationsTab(contentHost, 'flows');
+    if (mainTab === 'general') renderGeneralTab(contentHost);
+    else if (mainTab === 'voice-integrations') renderVoiceIntegrationsTab(contentHost, section);
+    else if (mainTab === 'integrations') renderIntegrationsTab(contentHost);
+    else if (mainTab === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
   }
 
   // Initial tab render
-  switchTab(currentTab);
+  switchTab(currentTab, initialSection);
 
   // ==========================================================================
   // TAB 1: GENERAL IDENTITY (PROFILE, WORKSPACE & HIPAA MODE)
@@ -13491,18 +13548,33 @@ async function viewSettings(root) {
   // ==========================================================================
   // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
   // ==========================================================================
-  async function renderVoiceIntegrationsTab(panel, _scrollToSection) {
+  async function renderVoiceIntegrationsTab(panel, _scrollToSection, targetTenantId) {
+    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+    const curTenant = (State && State.me && State.me.tenant) || {};
+    const rememberedTenant = isPlatformAdmin ? (targetTenantId || localStorage.getItem('seevora_active_voice_tenant') || curTenant.id || '') : (curTenant.id || '');
+    const activeTenantId = rememberedTenant;
+
     const wrap = el('div', { class: 'settings-tab-inner aria-voice-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 3));
     panel.innerHTML = '';
     panel.appendChild(wrap);
 
     // ---- Load all data in parallel ----
-    let catalogData = null, flowsData = null;
+    let catalogData = null, flowsData = null, credsData = null, adminTenants = [];
     try {
-      [catalogData, flowsData] = await Promise.all([
-        api('/api/voice/catalog').catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
-        api('/api/dograh/flows').catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' }))
-      ]);
+      const q = activeTenantId ? ('?tenantId=' + encodeURIComponent(activeTenantId)) : '';
+      const promises = [
+        api('/api/voice/catalog' + q).catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
+        api('/api/dograh/flows' + q).catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' })),
+        api('/api/voice/credentials' + q).catch(() => ({ ok: true, hasDograh: false, hasRumik: false }))
+      ];
+      if (isPlatformAdmin) {
+        promises.push(api('/api/admin/tenants').catch(() => ({ tenants: [] })));
+      }
+      const results = await Promise.all(promises);
+      catalogData = results[0];
+      flowsData = results[1];
+      credsData = results[2];
+      if (results[3]) adminTenants = results[3].tenants || [];
     } catch (_) {}
 
     wrap.innerHTML = '';
@@ -13515,6 +13587,12 @@ async function viewSettings(root) {
     const flows = (flowsData && flowsData.flows) || [];
     const activeFlow = flows.find(f => f.isActive) || flows[0];
 
+    // Credentials resolution
+    const catalogCreds = (catalogData && catalogData.credentials) || {};
+    const creds = Object.assign({}, catalogCreds, credsData || {});
+    const hasRumik = Boolean(creds.hasRumik);
+    const hasDograh = Boolean(creds.hasDograh);
+
     let selectedVoiceId = active.voiceId || 'ira';
     let selectedTone = active.tone || 'happy';
     let selectedSpeed = active.speed || 1.0;
@@ -13522,21 +13600,24 @@ async function viewSettings(root) {
     let currentAudio = null;
     let currentlyPlayingId = null;
 
+    // Common flat underline input style (identical to VoBiz)
+    const vobizInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
+
     // ── PAGE HEADER ──────────────────────────────────────────────────────────
-    const pageHeader = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
+    const pageHeader = el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
       el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
       el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
       el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
-        'Complete voice pipeline in one place. Choose your AI voice persona (Rumik), assign your VoBiz phone number, and configure the Dograh AI call flow — all changes sync live to your phone lines instantly.'
+        'Complete voice pipeline in one place. Connect Rumik for ultra-realistic AI voice personas, Dograh for conversational call flows, and VoBiz for Indian (+91) virtual phone lines.'
       ),
       el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
         el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
-          el('span', { id: 'vi-voice-pill' }, 'Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik Mulberry)')
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';display:inline-block;' }),
+          el('span', { id: 'vi-voice-pill' }, hasRumik ? ('Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik)') : 'Rumik: Needs Key')
         ]),
         el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
-          el('span', {}, 'Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Shared Core)'))
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasDograh ? '#2563eb' : '#9ca3af') + ';display:inline-block;' }),
+          el('span', {}, hasDograh ? ('Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Core)')) : 'Dograh: Needs Key')
         ]),
         el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
           el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
@@ -13556,20 +13637,27 @@ async function viewSettings(root) {
     const sectionBtnMap = {};
     const sectionPanelMap = {};
 
-    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:32px;border-bottom:2px solid rgba(13,93,65,0.12);' });
+    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:28px;border-bottom:2px solid rgba(13,93,65,0.12);' });
 
     function activateSectionTab(id) {
       activeSectionTab = id;
       sectionTabs.forEach(function(s) {
         const btn = sectionBtnMap[s.id];
         const sp = sectionPanelMap[s.id];
-        if (!btn || !sp) return;
         if (s.id === id) {
-          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:750;color:#0d5d41;background:transparent;border:none;border-bottom:2.5px solid #0d5d41;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
-          sp.style.display = 'block';
+          if (btn) {
+            btn.style.color = '#0d5d41';
+            btn.style.borderBottomColor = '#0d5d41';
+            btn.style.fontWeight = '800';
+          }
+          if (sp) sp.style.display = 'block';
         } else {
-          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:600;color:#5d7468;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
-          sp.style.display = 'none';
+          if (btn) {
+            btn.style.color = '#5d7468';
+            btn.style.borderBottomColor = 'transparent';
+            btn.style.fontWeight = '600';
+          }
+          if (sp) sp.style.display = 'none';
         }
       });
     }
@@ -13587,160 +13675,394 @@ async function viewSettings(root) {
     wrap.appendChild(sectionNav);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 1: VOICE & SPEECH (RUMIK)
+    // SECTION 1: VOICE & SPEECH (RUMIK) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
     // ══════════════════════════════════════════════════════════════════════════
     const voicePanel = el('div', { style: 'display:none;' });
     sectionPanelMap['voice'] = voicePanel;
 
-    function stopPlayback() {
-      if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
-      currentlyPlayingId = null;
-      updatePlayButtons();
-    }
-    function playAudioUrl(url, id) {
-      stopPlayback();
-      currentlyPlayingId = id;
-      updatePlayButtons();
-      var a = new Audio(url);
-      currentAudio = a;
-      a.onended = function() { stopPlayback(); };
-      a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
-      a.play().catch(function() { stopPlayback(); });
-    }
-    var playBtnElements = new Map();
-    function updatePlayButtons() {
-      voices.forEach(function(v) {
-        var btn = playBtnElements.get(v.id);
-        if (!btn) return;
-        var isPlaying = currentlyPlayingId === v.id;
-        btn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-          : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-        btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
-        btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
-      });
-    }
-
-    // Voice Selection Grid
-    var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
-    voices.forEach(function(v) {
-      var isSelected = v.id === selectedVoiceId;
-      var card = el('div', {
-        'data-voice-card': v.id,
-        style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
-      });
-      card.onclick = function() {
-        selectedVoiceId = v.id;
-        selectedTone = v.defaultTone || 'happy';
-        voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
-          c.style.borderColor = c.dataset.voiceCard === v.id ? '#0d5d41' : 'rgba(13,93,65,0.14)';
-          c.style.background = c.dataset.voiceCard === v.id ? 'rgba(13,93,65,0.04)' : '#fff';
-        });
-        var pill = document.getElementById('vi-voice-pill');
-        if (pill) pill.textContent = 'Voice: ' + v.name + ' (Rumik Mulberry)';
-      };
-
-      var previewBtn = el('button', {
-        type: 'button',
-        style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
-      }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
-      previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-      (function(voiceId, voiceMeta, btn) {
-        btn.onclick = async function(e) {
-          e.stopPropagation();
-          if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
-          btn.disabled = true;
-          btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
-          try {
-            var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
-            if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
-            else toast('No audio received.', 'err');
-          } catch (err) { toast('Preview error: ' + err.message, 'err'); }
-          finally { btn.disabled = false; }
-        };
-      })(v.id, v, previewBtn);
-      playBtnElements.set(v.id, previewBtn);
-
-      var selectedBadge = isSelected ? el('span', { style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '\u2713 Active') : null;
-      card.appendChild(el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
-        el('div', {}, [
-          el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
-          el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' \u00b7 ' + (v.gender === 'female' ? 'Female' : 'Male'))
+    // 1. Rumik KPI Bar (Identical to VoBiz KPI Bar)
+    const rumikKpis = el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SPEECH SYNTHESIS ENGINE'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Rumik (Mulberry)'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'High-Fidelity Neural Voice')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasRumik ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';' }),
+          el('span', {}, hasRumik ? 'Connected' : 'Not Connected')
         ]),
-        selectedBadge
-      ].filter(Boolean)));
-      card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
-      card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
-        return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
-      })));
-      card.appendChild(previewBtn);
-      voiceGrid.appendChild(card);
-    });
-
-    // Tone & Speed Controls
-    var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
-    if (tones.length > 0) {
-      var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
-        tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
-      );
-      toneSel.onchange = function() { selectedTone = toneSel.value; };
-      toneRow.appendChild(el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
-        toneSel
-      ]));
-    }
-
-    var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
-    var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
-    speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
-    toneRow.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
-      el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
-    ]));
-
-    var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
-      el('option', { value: '' }, 'Primary Agent (Default)'),
-      ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'API Key Verified & Active' : 'API Key Required to Unlock')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE PERSONA'),
+        el('div', { id: 'rumik-kpi-active-persona', class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasRumik ? ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') : 'Locked'),
+        el('div', { id: 'rumik-kpi-active-persona-sub', style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'Assigned to reception desk' : 'Enter Rumik key below')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'STREAMING PROTOCOL'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Realtime Ultra-low Latency'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Direct SIP Trunk Audio Bridge')
+      ])
     ]);
-    agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
-    toneRow.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
-      agentSel2
-    ]));
+    voicePanel.appendChild(rumikKpis);
 
-    var saveVoiceBtn = el('button', {
-      type: 'button',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
-    }, 'Save Voice & Sync to All Phone Lines');
-    saveVoiceBtn.onclick = async function() {
-      saveVoiceBtn.disabled = true;
-      saveVoiceBtn.textContent = 'Saving & Syncing...';
-      try {
-        var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
-        toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
-        var pill = document.getElementById('vi-voice-pill');
-        var vMeta = voices.find(function(v) { return v.id === selectedVoiceId; });
-        if (pill && vMeta) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik Mulberry)';
-      } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
-      finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
+    // 2. Rumik Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
+    const rumikGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
+        el('div', {}, [
+          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Speech Synthesis Pipeline'),
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Rumik AI Streaming Voice Studio'),
+          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Rumik developer account to unlock ultra-natural human voices, streaming speech synthesis, and live sync with VoBiz phone lines.')
+        ]),
+        el('a', {
+          href: 'https://rumik.ai',
+          target: '_blank',
+          class: 'btn btn-primary btn-sm',
+          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
+        }, [
+          el('span', {}, 'Open Rumik Console'),
+          el('span', { html: uiIcon('arrowUpRight', 12) })
+        ])
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
+            el('span', {}, 'Acquire on Rumik Console')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on rumik.ai and obtain your developer API key.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
+            el('span', {}, 'Enter API Credentials')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Rumik API Key below to authenticate and link your account.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
+            el('span', {}, 'Instant Persona Sync')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Voice personas activate immediately and synchronize across all your AI voice agents and phone lines.')
+        ])
+      ])
+    ]);
+    voicePanel.appendChild(rumikGuideSection);
+
+    // 3. Rumik Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
+    const rumikKeyInp = el('input', {
+      type: 'password',
+      class: 'input',
+      value: hasRumik ? '••••••••••••••••' : '',
+      placeholder: hasRumik ? '•••••••••••••••• (Connected - Click to update)' : 'e.g. rmk_live_948f2c... (from rumik.ai)',
+      style: vobizInputStyle
+    });
+    rumikKeyInp.onfocus = () => {
+      if (rumikKeyInp.value.startsWith('••••')) rumikKeyInp.value = '';
+    };
+    rumikKeyInp.onblur = () => {
+      if (!rumikKeyInp.value && hasRumik) rumikKeyInp.value = '••••••••••••••••';
     };
 
-    voicePanel.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine (Rumik Mulberry)'),
-      el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
-      el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the one that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
-    ]));
-    voicePanel.appendChild(voiceGrid);
-    voicePanel.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
-      el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
-      toneRow
-    ]));
-    voicePanel.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
+    const rumikTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
+    if (isPlatformAdmin) {
+      rumikTenantSelect.innerHTML = '';
+      const tenantOptions = [];
+      if (curTenant && curTenant.id) {
+        tenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
+      }
+      adminTenants.forEach((cl) => {
+        if (!tenantOptions.some((o) => o.id === cl.id)) {
+          tenantOptions.push({ id: cl.id, name: cl.name || cl.id });
+        }
+      });
+      tenantOptions.forEach((cl) => {
+        rumikTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
+      });
+      rumikTenantSelect.onchange = () => {
+        localStorage.setItem('seevora_active_voice_tenant', rumikTenantSelect.value);
+        renderVoiceIntegrationsTab(panel, 'voice', rumikTenantSelect.value);
+      };
+    }
+
+    const connectRumikBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
+    }, hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account');
+
+    connectRumikBtn.onclick = async () => {
+      const keyVal = rumikKeyInp.value.trim();
+      if (!keyVal && !hasRumik) {
+        toast('Rumik Speech API Key is required.', 'err');
+        return;
+      }
+      if (keyVal.startsWith('••••') && hasRumik) {
+        toast('Rumik account is already connected & active.', 'ok');
+        return;
+      }
+      connectRumikBtn.disabled = true;
+      connectRumikBtn.textContent = 'Connecting...';
+      const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
+      try {
+        const body = { rumikApiKey: keyVal };
+        if (selectedTenant) body.targetTenantId = selectedTenant;
+        const res = await api('/api/voice/credentials', { method: 'POST', body });
+        localStorage.setItem('seevora_active_voice_tenant', selectedTenant);
+        toast(res.message || 'Rumik account connected successfully!', 'ok');
+        await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
+      } catch (err) {
+        toast(err.message || 'Failed to connect Rumik account.', 'err');
+      } finally {
+        connectRumikBtn.disabled = false;
+        connectRumikBtn.textContent = hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account';
+      }
+    };
+
+    const disconnectRumikBtn = hasRumik ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;cursor:pointer;',
+      onclick: async () => {
+        disconnectRumikBtn.disabled = true;
+        disconnectRumikBtn.textContent = 'Disconnecting...';
+        const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
+        try {
+          const body = { disconnectRumik: true };
+          if (selectedTenant) body.targetTenantId = selectedTenant;
+          await api('/api/voice/credentials', { method: 'POST', body });
+          toast('Rumik account disconnected successfully.', 'ok');
+          await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
+        } catch (err) {
+          toast(err.message || 'Failed to disconnect.', 'err');
+          disconnectRumikBtn.disabled = false;
+          disconnectRumikBtn.textContent = 'Disconnect';
+        }
+      }
+    }, 'Disconnect') : null;
+
+    const rumikFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:16px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Rumik Account')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Rumik Speech API Key (Required)'),
+          rumikKeyInp
+        ]),
+        isPlatformAdmin ? el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
+          rumikTenantSelect
+        ]) : null
+      ].filter(Boolean)),
+      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectRumikBtn, disconnectRumikBtn].filter(Boolean))
+    ]);
+    voicePanel.appendChild(rumikFormSection);
+
+    // 4. Rumik Voice Personas Studio Section (Gated on hasRumik)
+    const rumikStudioSection = el('section', { style: 'margin-bottom:20px;' });
+    if (!hasRumik) {
+      rumikStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
+        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
+          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+          ])
+        ]),
+        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Rumik Voice Studio is Locked'),
+        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
+          'Please enter your Rumik Speech API Key in the form above and click "Connect Rumik Account" to unlock voice personas, speech synthesis, and live sync with your phone lines.'
+        )
+      ]));
+    } else {
+      function stopPlayback() {
+        if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
+        currentlyPlayingId = null;
+        updatePlayButtons();
+      }
+      function playAudioUrl(url, id) {
+        stopPlayback();
+        currentlyPlayingId = id;
+        updatePlayButtons();
+        var a = new Audio(url);
+        currentAudio = a;
+        a.onended = function() { stopPlayback(); };
+        a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
+        a.play().catch(function() { stopPlayback(); });
+      }
+      var playBtnElements = new Map();
+      function updatePlayButtons() {
+        voices.forEach(function(v) {
+          var btn = playBtnElements.get(v.id);
+          if (!btn) return;
+          var isPlaying = currentlyPlayingId === v.id;
+          btn.innerHTML = isPlaying
+            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+          btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
+          btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
+        });
+      }
+
+      var toneSel = null;
+      var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
+
+      function updateVoiceSelectionUI(vId) {
+        selectedVoiceId = vId;
+        var vMeta = voices.find(function(v) { return v.id === vId; }) || { name: vId, accent: 'Indian', defaultTone: 'happy' };
+        selectedTone = vMeta.defaultTone || 'happy';
+
+        if (toneSel && vMeta.defaultTone) {
+          toneSel.value = vMeta.defaultTone;
+        }
+
+        voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
+          var isCardSelected = c.dataset.voiceCard === vId;
+          c.style.borderColor = isCardSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)';
+          c.style.background = isCardSelected ? 'rgba(13,93,65,0.04)' : '#fff';
+          
+          var oldBadge = c.querySelector('.rumik-active-badge');
+          if (oldBadge) oldBadge.remove();
+
+          if (isCardSelected) {
+            var headerRow = c.querySelector('.rumik-card-header');
+            if (headerRow) {
+              var newBadge = el('span', {
+                class: 'rumik-active-badge',
+                style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;'
+              }, '✓ Active');
+              headerRow.appendChild(newBadge);
+            }
+          }
+        });
+
+        var pill = document.getElementById('vi-voice-pill');
+        if (pill) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik)';
+
+        var kpiVal = document.getElementById('rumik-kpi-active-persona');
+        if (kpiVal) kpiVal.textContent = vMeta.name;
+        var kpiSub = document.getElementById('rumik-kpi-active-persona-sub');
+        if (kpiSub) kpiSub.textContent = vMeta.accent + ' · Assigned to reception';
+      }
+
+      voices.forEach(function(v) {
+        var isSelected = v.id === selectedVoiceId;
+        var card = el('div', {
+          'data-voice-card': v.id,
+          style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
+        });
+        card.onclick = function() {
+          updateVoiceSelectionUI(v.id);
+        };
+
+        var previewBtn = el('button', {
+          type: 'button',
+          style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
+        }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
+        previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+        (function(voiceId, voiceMeta, btn) {
+          btn.onclick = async function(e) {
+            e.stopPropagation();
+            if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
+            try {
+              var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
+              if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
+              else toast('No audio received.', 'err');
+            } catch (err) { toast('Preview error: ' + err.message, 'err'); }
+            finally { btn.disabled = false; }
+          };
+        })(v.id, v, previewBtn);
+        playBtnElements.set(v.id, previewBtn);
+
+        var selectedBadge = isSelected ? el('span', { class: 'rumik-active-badge', style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '✓ Active') : null;
+        card.appendChild(el('div', { class: 'rumik-card-header', style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
+          el('div', {}, [
+            el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
+            el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' · ' + (v.gender === 'female' ? 'Female' : 'Male'))
+          ]),
+          selectedBadge
+        ].filter(Boolean)));
+        card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
+        card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
+          return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
+        })));
+        card.appendChild(previewBtn);
+        voiceGrid.appendChild(card);
+      });
+
+      var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
+      if (tones.length > 0) {
+        toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
+          tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' — ' + t.desc); })
+        );
+        toneSel.onchange = function() { selectedTone = toneSel.value; };
+        toneRow.appendChild(el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
+          toneSel
+        ]));
+      }
+
+      var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
+      var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
+      speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
+      toneRow.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
+        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
+      ]));
+
+      var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
+        el('option', { value: '' }, 'Primary Agent (Default)'),
+        ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
+      ]);
+      agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
+      toneRow.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
+        agentSel2
+      ]));
+
+      var saveVoiceBtn = el('button', {
+        type: 'button',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
+      }, 'Save Voice & Sync to All Phone Lines');
+      saveVoiceBtn.onclick = async function() {
+        saveVoiceBtn.disabled = true;
+        saveVoiceBtn.textContent = 'Saving & Syncing...';
+        try {
+          var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
+          toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
+          active.voiceId = selectedVoiceId;
+          updateVoiceSelectionUI(selectedVoiceId);
+        } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
+        finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
+      };
+
+      rumikStudioSection.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
+        el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Voice Catalog & Personas'),
+        el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
+        el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the persona that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
+      ]));
+      rumikStudioSection.appendChild(voiceGrid);
+      rumikStudioSection.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
+        el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
+        toneRow
+      ]));
+      rumikStudioSection.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
+    }
+    voicePanel.appendChild(rumikStudioSection);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 2: PHONE NUMBERS (VOBIZ) — renders existing VoBiz UI
+    // SECTION 2: PHONE NUMBERS (VOBIZ) — UNTOUCHED VOBIZ TAB
     // ══════════════════════════════════════════════════════════════════════════
-    var phonePanel = el('div', { style: 'display:none;' });
+    const phonePanel = el('div', { style: 'display:none;' });
     sectionPanelMap['phone'] = phonePanel;
     (async function() {
       var vobizInner = el('div');
@@ -13749,15 +14071,233 @@ async function viewSettings(root) {
     })();
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 3: AI CALL FLOWS (DOGRAH) — renders existing Dograh UI
+    // SECTION 3: AI CALL FLOWS (DOGRAH) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
     // ══════════════════════════════════════════════════════════════════════════
-    var flowsPanel = el('div', { style: 'display:none;' });
+    const flowsPanel = el('div', { style: 'display:none;' });
     sectionPanelMap['flows'] = flowsPanel;
-    (async function() {
-      var dograhInner = el('div');
-      flowsPanel.appendChild(dograhInner);
-      await renderDograhTab(dograhInner);
-    })();
+
+    // 1. Dograh KPI Bar (Identical to VoBiz KPI Bar)
+    const dograhKpis = el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AI FLOW ENGINE'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Dograh Flows'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Multi-turn Call Logic')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasDograh ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasDograh ? '#047857' : '#9ca3af') + ';' }),
+          el('span', {}, hasDograh ? 'Connected' : 'Not Connected')
+        ]),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? 'API Key & Org ID Active' : 'API Key Required to Unlock')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE WORKFLOW'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasDograh ? ('#' + activeWfId) : 'Locked'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? (activeFlow ? activeFlow.name : 'Shared Core') : 'Enter Dograh key below')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SIP INTERCEPTOR'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'VoBiz Bi-directional'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Live SIP Trunk Audio Bridge')
+      ])
+    ]);
+    flowsPanel.appendChild(dograhKpis);
+
+    // 2. Dograh Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
+    const dograhGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
+        el('div', {}, [
+          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Conversational Engine Pipeline'),
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Dograh Conversational AI Flows'),
+          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Dograh developer account to build custom multi-turn conversational voice flows, visual flow builder, and workflow routing.')
+        ]),
+        el('a', {
+          href: 'https://console.dograh.com',
+          target: '_blank',
+          class: 'btn btn-primary btn-sm',
+          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
+        }, [
+          el('span', {}, 'Open Dograh Console'),
+          el('span', { html: uiIcon('arrowUpRight', 12) })
+        ])
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
+            el('span', {}, 'Acquire on Dograh Console')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on console.dograh.com and generate your developer API key.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
+            el('span', {}, 'Enter API Credentials')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Dograh API Key and Organization ID below to authenticate.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
+            el('span', {}, 'Build & Deploy Flows')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create custom conversational voice trees, visual nodes, and deploy to your phone lines.')
+        ])
+      ])
+    ]);
+    flowsPanel.appendChild(dograhGuideSection);
+
+    // 3. Dograh Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
+    const dograhKeyInp = el('input', {
+      type: 'password',
+      class: 'input',
+      value: hasDograh ? '••••••••••••••••' : '',
+      placeholder: hasDograh ? '•••••••••••••••• (Connected - Click to update)' : 'e.g. dgr_live_839f... (from console.dograh.com)',
+      style: vobizInputStyle
+    });
+    dograhKeyInp.onfocus = () => {
+      if (dograhKeyInp.value.startsWith('••••')) dograhKeyInp.value = '';
+    };
+    dograhKeyInp.onblur = () => {
+      if (!dograhKeyInp.value && hasDograh) dograhKeyInp.value = '••••••••••••••••';
+    };
+
+    const dograhOrgInp = el('input', {
+      type: 'text',
+      class: 'input',
+      value: creds.dograhOrgId || '',
+      placeholder: 'e.g. org_a83f9... (from Dograh Console)',
+      style: vobizInputStyle
+    });
+
+    const dograhTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
+    if (isPlatformAdmin) {
+      dograhTenantSelect.innerHTML = '';
+      const dograhTenantOptions = [];
+      if (curTenant && curTenant.id) {
+        dograhTenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
+      }
+      adminTenants.forEach((cl) => {
+        if (!dograhTenantOptions.some((o) => o.id === cl.id)) {
+          dograhTenantOptions.push({ id: cl.id, name: cl.name || cl.id });
+        }
+      });
+      dograhTenantOptions.forEach((cl) => {
+        dograhTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
+      });
+      dograhTenantSelect.onchange = () => {
+        localStorage.setItem('seevora_active_voice_tenant', dograhTenantSelect.value);
+        renderVoiceIntegrationsTab(panel, 'flows', dograhTenantSelect.value);
+      };
+    }
+
+    const connectDograhBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
+    }, hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account');
+
+    connectDograhBtn.onclick = async () => {
+      const keyVal = dograhKeyInp.value.trim();
+      const orgVal = dograhOrgInp.value.trim();
+      if (!keyVal && !hasDograh) {
+        toast('Dograh Flow API Key is required.', 'err');
+        return;
+      }
+      if (keyVal.startsWith('••••') && orgVal === (creds.dograhOrgId || '') && hasDograh) {
+        toast('Dograh credentials are already connected & active.', 'ok');
+        return;
+      }
+      connectDograhBtn.disabled = true;
+      connectDograhBtn.textContent = 'Connecting...';
+      const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
+      try {
+        const body = { dograhApiKey: keyVal, dograhOrgId: orgVal };
+        if (selectedTenant) body.targetTenantId = selectedTenant;
+        const res = await api('/api/voice/credentials', { method: 'POST', body });
+        localStorage.setItem('seevora_active_voice_tenant', selectedTenant);
+        toast(res.message || 'Dograh account connected successfully!', 'ok');
+        await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
+      } catch (err) {
+        toast(err.message || 'Failed to connect Dograh account.', 'err');
+      } finally {
+        connectDograhBtn.disabled = false;
+        connectDograhBtn.textContent = hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account';
+      }
+    };
+
+    const disconnectDograhBtn = hasDograh ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;cursor:pointer;',
+      onclick: async () => {
+        disconnectDograhBtn.disabled = true;
+        disconnectDograhBtn.textContent = 'Disconnecting...';
+        const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
+        try {
+          const body = { disconnectDograh: true };
+          if (selectedTenant) body.targetTenantId = selectedTenant;
+          await api('/api/voice/credentials', { method: 'POST', body });
+          toast('Dograh credentials disconnected successfully.', 'ok');
+          await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
+        } catch (err) {
+          toast(err.message || 'Failed to disconnect.', 'err');
+          disconnectDograhBtn.disabled = false;
+          disconnectDograhBtn.textContent = 'Disconnect';
+        }
+      }
+    }, 'Disconnect') : null;
+
+    const dograhFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:16px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Dograh Account')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Flow API Key (Required)'),
+          dograhKeyInp
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Organization ID (Required)'),
+          dograhOrgInp
+        ]),
+        isPlatformAdmin ? el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
+          dograhTenantSelect
+        ]) : null
+      ].filter(Boolean)),
+      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectDograhBtn, disconnectDograhBtn].filter(Boolean))
+    ]);
+    flowsPanel.appendChild(dograhFormSection);
+
+    // 4. Dograh Flow Studio / Flows List Section (Gated on hasDograh)
+    const dograhStudioSection = el('section', { style: 'margin-bottom:20px;' });
+    if (!hasDograh) {
+      dograhStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
+        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
+          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+          ])
+        ]),
+        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Dograh AI Call Flows are Locked'),
+        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
+          'Please enter your Dograh API Key and Organization ID in the form above and click "Connect Dograh Account" to unlock custom conversational call flows, visual flow builder, and workflow routing.'
+        )
+      ]));
+    } else {
+      (async function() {
+        var dograhInner = el('div');
+        dograhStudioSection.appendChild(dograhInner);
+        await renderDograhTab(dograhInner);
+      })();
+    }
+    flowsPanel.appendChild(dograhStudioSection);
 
     wrap.appendChild(voicePanel);
     wrap.appendChild(phonePanel);
@@ -13765,11 +14305,7 @@ async function viewSettings(root) {
 
     activateSectionTab(activeSectionTab);
   }
-
-  // ==========================================================================
-  // TAB 2 (Legacy compat): RUMIK VOICE & STREAMING SPEECH STUDIO
-  // ==========================================================================
-  async function renderRumikVoiceTab(panel) {
+async function renderRumikVoiceTab(panel) {
     const wrap = el('div', { class: 'settings-tab-inner aria-rumik-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
     panel.innerHTML = '';
     panel.appendChild(wrap);
@@ -14110,10 +14646,26 @@ async function viewSettings(root) {
             tone: selectedTone,
             speed: selectedSpeed,
             agentId: selectedAgentId,
-            model: 'muga'
+            model: 'mulberry'
           }
         });
         toast(res.message || 'Voice updated successfully and synced with Dograh workflow & phone lines!', 'ok');
+        if (selectedAgentId && Array.isArray(State.agents)) {
+          const ag = State.agents.find(x => x.id === selectedAgentId);
+          if (ag) {
+            ag.rumikVoice = selectedVoiceId;
+            ag.rumikModel = 'mulberry';
+            ag.rumikTone = selectedTone;
+            ag.rumikSpeed = selectedSpeed;
+            const vm = (voices || []).find(v => v.id === selectedVoiceId);
+            if (vm) {
+              ag.tts = ag.tts || {};
+              ag.tts.speaker = vm.rumikVoice || selectedVoiceId;
+              ag.tts.voice = selectedVoiceId;
+              ag.tts.model = 'mulberry';
+            }
+          }
+        }
         refreshVoiceSelections();
       } catch (err) {
         toast(err.message || 'Failed to apply voice.', 'err');
@@ -14425,6 +14977,37 @@ async function viewSettings(root) {
       wrap.appendChild(skeleton('sk-card', 2));
       const data = await loadData(currentTenantFilter);
       wrap.innerHTML = '';
+
+      if (data && data.hasDograh === false) {
+        wrap.appendChild(el('div', {
+          style: 'text-align:center;padding:52px 24px;border:1.5px dashed rgba(13,93,65,0.25);border-radius:16px;background:rgba(13,93,65,0.02);margin:16px 0;'
+        }, [
+          el('div', {
+            style: 'width:56px;height:56px;margin:0 auto 16px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;'
+          }, [
+            el('svg', { viewBox: '0 0 24 24', width: '26', height: '26', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+              el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+              el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+            ])
+          ]),
+          el('h3', { style: 'margin:0 0 8px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Dograh AI Call Flows are Locked'),
+          el('p', { style: 'margin:0 auto 20px;font-size:0.86rem;color:#5d7468;max-width:540px;line-height:1.55;' },
+            'Please enter and save your Dograh API Key in Voice Integrations Provider Credentials to unlock custom conversational call flows.'
+          ),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary',
+            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-size:0.84rem;font-weight:750;border:none;cursor:pointer;',
+            onclick: function() {
+              var btn = document.querySelector('[data-tab="voice-integrations"]');
+              if (btn) btn.click();
+              var target = document.getElementById('byok-dograh-key') || document.getElementById('byok-credentials-section');
+              if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); target.focus(); }
+            }
+          }, 'Configure Dograh Credentials')
+        ]));
+        return;
+      }
 
       const isAdmin = !!data.isAdmin;
       const tenants = data.tenants || [];

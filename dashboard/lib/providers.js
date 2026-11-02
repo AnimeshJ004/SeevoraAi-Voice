@@ -35,7 +35,11 @@ const GROQ_HOST = 'api.groq.com';
 const MAX_TEXT = 2000; // Rumik hard cap
 
 const TTS_MODELS = new Set(['muga', 'mulberry']);
-const TTS_SPEAKERS = new Set(['speaker_1', 'speaker_2', 'speaker_3', 'speaker_4']);
+const TTS_SPEAKERS = new Set([
+  'speaker_1', 'speaker_2', 'speaker_3', 'speaker_4',
+  'Mia', 'Lucas', 'Sophia', 'Adam', 'Emma', 'Noah', 'Ava', 'Theo',
+  'ira', 'arav', 'riya', 'dev', 'ananya', 'kabir'
+]);
 const PROVIDER_ID_RE = /^[a-z][a-z0-9_-]{0,63}$/;
 const MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 const PROVIDER_LAYERS = new Set(['stt', 'tts', 'llm', 'telephony']);
@@ -144,18 +148,34 @@ const ttsRumik = {
     if (!text.trim()) throw new ProviderError('text is required', 422, 'no_text');
 
     const payload = { model, text };
-    // Mulberry uses description + speaker + f0_up_key for voice shaping.
-    // A highly detailed human description is the #1 lever for natural-sounding speech.
-    // Read from env so voice character can be tuned without code changes.
-    const defaultDescription = process.env.RUMIK_VOICE_DESCRIPTION
-      || 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+    // Resolve speaker alias or named Rumik voice (Mulberry male & female voices)
+    const speakerAliasMap = {
+      'speaker_1': 'Lucas',
+      'speaker_2': 'Mia',
+      'speaker_3': 'Noah',
+      'speaker_4': 'Sophia',
+      'ira': 'Mia',
+      'arav': 'Lucas',
+      'riya': 'Sophia',
+      'dev': 'Adam',
+      'ananya': 'Emma',
+      'kabir': 'Noah'
+    };
+    const rawSpeaker = String(opts.speaker || process.env.RUMIK_SPEAKER || 'Mia').trim();
+    const resolvedSpeaker = speakerAliasMap[rawSpeaker] || rawSpeaker || 'Mia';
+    payload.speaker = resolvedSpeaker;
+
+    const isMale = ['lucas', 'adam', 'noah', 'theo', 'speaker_1', 'speaker_3', 'arav', 'dev', 'kabir'].includes(rawSpeaker.toLowerCase()) ||
+                   ['lucas', 'adam', 'noah', 'theo'].includes(resolvedSpeaker.toLowerCase());
+
+    const defaultFemaleDesc = 'a warm, articulate 28-year-old Indian female receptionist in Indore, soft resonant voice with a gentle smile, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+    const defaultMaleDesc = 'a confident, articulate 30-year-old Indian male executive in Indore, calm and steady authoritative timbre, relaxed conversational cadence with natural breathing pauses, fluent in English, Hindi, and Hinglish with authentic pronunciation, clear and lifelike, completely human, never robotic';
+
+    const defaultDescription = isMale ? defaultMaleDesc : (process.env.RUMIK_VOICE_DESCRIPTION || defaultFemaleDesc);
     const description = opts.description
       ? String(opts.description).slice(0, 500)
       : defaultDescription;
     payload.description = description;
-    if (opts.speaker && TTS_SPEAKERS.has(opts.speaker)) payload.speaker = opts.speaker;
-    else if (process.env.RUMIK_SPEAKER && TTS_SPEAKERS.has(process.env.RUMIK_SPEAKER)) payload.speaker = process.env.RUMIK_SPEAKER;
-    else payload.speaker = 'speaker_2';
     const f0Raw = opts.f0_up_key !== undefined ? opts.f0_up_key : Number(process.env.RUMIK_F0_UP_KEY || 0);
     if (Number.isFinite(f0Raw)) {
       payload.f0_up_key = Math.max(-12, Math.min(12, Math.round(f0Raw)));

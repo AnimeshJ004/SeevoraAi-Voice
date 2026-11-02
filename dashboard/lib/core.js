@@ -57,6 +57,7 @@ function loadEnv(force = false) {
     }
   }
 }
+loadEnv();
 
 /* ==========================================================================
    2. http helpers
@@ -243,6 +244,22 @@ function migrateDb(parsed) {
     // Sprint-5: Provision a Dograh org slug per tenant (deterministic, idempotent)
     if (!tenant.dograhOrgId) {
       tenant.dograhOrgId = 'org_' + tenant.id.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    }
+    const isHost = tenant.slug === 'admin-demo' || tenant.name === 'Admin Demo' || (out.users || []).some((u) => u.tenantId === tenant.id && u.role === 'super_admin');
+    if (isHost) {
+      if (!tenant.byok) tenant.byok = {};
+      if (!tenant.byok.disconnectedRumik && !tenant.byok.rumikApiKey && process.env.RUMIK_API_KEY) {
+        tenant.byok.rumikApiKey = process.env.RUMIK_API_KEY;
+        tenant.rumikApiKey = process.env.RUMIK_API_KEY;
+      }
+      if (!tenant.byok.disconnectedDograh && !tenant.byok.dograhApiKey && process.env.DOGRAH_API_KEY) {
+        tenant.byok.dograhApiKey = process.env.DOGRAH_API_KEY;
+        tenant.dograhApiKey = process.env.DOGRAH_API_KEY;
+      }
+      if (!tenant.byok.dograhOrgId && (process.env.DOGRAH_TELEPHONY_CONFIG_ID || process.env.DOGRAH_WORKFLOW_ID)) {
+        tenant.byok.dograhOrgId = process.env.DOGRAH_TELEPHONY_CONFIG_ID || '4325';
+        tenant.dograhOrgId = process.env.DOGRAH_TELEPHONY_CONFIG_ID || '4325';
+      }
     }
   }
   for (const user of out.users) {

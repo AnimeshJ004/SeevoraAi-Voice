@@ -42,6 +42,7 @@ const mailer = require('./lib/mailer');
 const integrations = require('./lib/integrations');
 const docParser = require('./lib/docParser');
 const rumikVoice = require('./lib/rumikVoice');
+if (rumikVoice.clearAudioCache) rumikVoice.clearAudioCache();
 
 const PORT = parseInt(process.env.PORT || '8787', 10);
 function isDemoLoginEnabled() {
@@ -868,17 +869,37 @@ async function apiAgentsCreate(req, res, ctx) {
   const preset = b.presetId ? core.db().presets.find((p) => p.id === String(b.presetId) && (p.isSystem || p.tenantId === ctx.tenant.id)) : null;
   if (b.presetId && !preset) return core.sendJson(res, 404, { error: 'preset not found', code: 'not_found' });
   const ttsIn = b.tts || {};
-  const model = ttsIn.model === 'muga' ? 'muga' : providers.tts.model;
-  const speaker = providers.TTS_SPEAKERS.has(ttsIn.speaker) ? ttsIn.speaker : 'speaker_1';
+  const model = 'mulberry';
+  const speakerAliasMap = {
+    'speaker_1': 'Lucas',
+    'speaker_2': 'Mia',
+    'speaker_3': 'Noah',
+    'speaker_4': 'Sophia',
+    'ira': 'Mia',
+    'arav': 'Lucas',
+    'riya': 'Sophia',
+    'dev': 'Adam',
+    'ananya': 'Emma',
+    'kabir': 'Noah'
+  };
+  const rawSpeaker = String(b.rumikVoice || ttsIn.speaker || ttsIn.voice || 'Mia').trim();
+  const speaker = speakerAliasMap[rawSpeaker] || (providers.TTS_SPEAKERS.has(rawSpeaker) ? rawSpeaker : 'Mia');
+  const matchedVoice = rumikVoice.VOICE_CATALOG.find((v) =>
+    v.rumikVoice.toLowerCase() === speaker.toLowerCase() || v.id.toLowerCase() === rawSpeaker.toLowerCase()
+  );
+  const voiceId = matchedVoice ? matchedVoice.id : (rawSpeaker.toLowerCase() === 'lucas' ? 'arav' : 'ira');
   const f0 = Number.isFinite(ttsIn.f0_up_key) ? Math.max(-12, Math.min(12, ttsIn.f0_up_key | 0)) : 0;
-  const description = ttsIn.description ? String(ttsIn.description).slice(0, 500) : '';
+  const description = ttsIn.description ? String(ttsIn.description).slice(0, 500) : (matchedVoice ? matchedVoice.description : '');
 
   const agent = {
     id: core.genId('ag_'),
     tenantId: ctx.tenant.id,
     name: String(b.name || (preset && preset.name) || 'Untitled Agent').slice(0, 80),
     persona: String(b.persona || (preset ? `${preset.name}. Collect: ${preset.fields.join(', ')}. Guardrails: ${preset.guardrails.join('; ')}.` : '')).slice(0, 5000),
-    tts: { provider: providers.tts.id, model, speaker, f0_up_key: f0, description, tone: ttsIn.tone ? String(ttsIn.tone) : undefined },
+    rumikVoice: voiceId,
+    rumikModel: model,
+    rumikTone: ttsIn.tone ? String(ttsIn.tone) : 'happy',
+    tts: { provider: providers.tts.id, model, speaker, voice: voiceId, f0_up_key: f0, description, tone: ttsIn.tone ? String(ttsIn.tone) : undefined },
     greeting: String(b.greeting || (preset && preset.greeting) || '').slice(0, 500),
     presetId: preset ? preset.id : null,
     knowledge: b.knowledge ? String(b.knowledge).slice(0, 10000) : (preset && preset.knowledge ? String(preset.knowledge) : null),
@@ -1063,10 +1084,34 @@ async function apiAgentsUpdate(req, res, ctx) {
     if (Array.isArray(b.guardrails)) a.guardrails = b.guardrails.map(String).slice(0, 30);
     if (Array.isArray(b.sampleTranscript)) a.sampleTranscript = b.sampleTranscript.slice(0, 30);
     if (b.transcriptUnderstanding && typeof b.transcriptUnderstanding === 'object') a.transcriptUnderstanding = b.transcriptUnderstanding;
+    if (b.rumikVoice != null) a.rumikVoice = String(b.rumikVoice).toLowerCase();
     if (b.tts && typeof b.tts === 'object') {
       const t = a.tts || { provider: providers.tts.id };
-      if (b.tts.model != null) t.model = b.tts.model === 'muga' ? 'muga' : providers.tts.model;
-      if (providers.TTS_SPEAKERS.has(b.tts.speaker)) t.speaker = b.tts.speaker;
+      t.model = 'mulberry';
+      if (b.tts.speaker != null) {
+        const raw = String(b.tts.speaker).trim();
+        const speakerAliasMap = {
+          'speaker_1': 'Lucas',
+          'speaker_2': 'Mia',
+          'speaker_3': 'Noah',
+          'speaker_4': 'Sophia',
+          'ira': 'Mia',
+          'arav': 'Lucas',
+          'riya': 'Sophia',
+          'dev': 'Adam',
+          'ananya': 'Emma',
+          'kabir': 'Noah'
+        };
+        const resolvedSpeaker = speakerAliasMap[raw] || raw;
+        t.speaker = resolvedSpeaker;
+        const matchedVoice = rumikVoice.VOICE_CATALOG.find((v) =>
+          v.rumikVoice.toLowerCase() === resolvedSpeaker.toLowerCase() || v.id.toLowerCase() === raw.toLowerCase()
+        );
+        if (matchedVoice) {
+          a.rumikVoice = matchedVoice.id;
+          t.voice = matchedVoice.id;
+        }
+      }
       if (Number.isFinite(b.tts.f0_up_key)) t.f0_up_key = Math.max(-12, Math.min(12, b.tts.f0_up_key | 0));
       if (b.tts.description != null) t.description = String(b.tts.description).slice(0, 500);
       if (b.tts.tone != null) t.tone = String(b.tts.tone);
@@ -6187,11 +6232,20 @@ ESCALATION RULES:
 
   const knowledgeSection = agent.knowledge ? `\n\n# BUSINESS KNOWLEDGE BASE\n${agent.knowledge}` : '';
 
-  // Rumik Tone Tagging for Natural Indian Speech Delivery
+  const vMeta = rumikVoice.VOICE_CATALOG.find((v) =>
+    v.id.toLowerCase() === String(agent.rumikVoice || '').toLowerCase() ||
+    (v.rumikVoice && v.rumikVoice.toLowerCase() === String((agent.tts && agent.tts.speaker) || '').toLowerCase())
+  );
+  const isMale = (vMeta && vMeta.gender === 'male') ||
+    ['arav', 'dev', 'kabir', 'lucas', 'adam', 'noah', 'theo', 'speaker_1', 'speaker_3'].includes(String(agent.rumikVoice || (agent.tts && agent.tts.speaker) || '').toLowerCase());
+  const gender = isMale ? 'male' : 'female';
+  const speakerName = (vMeta && vMeta.rumikVoice) || (isMale ? 'Lucas' : 'Mia');
+
   const toneTag = agent.rumikTone === 'excited' ? '[excited]' : (agent.rumikTone === 'neutral' ? '[neutral]' : (agent.rumikTone === 'empathetic' ? '[happy]' : '[happy]'));
-  const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MUGA VOICE: ${String(agent.rumikVoice || 'ira').toUpperCase()})
-- To produce a warm, natural, human-like voice, ALWAYS prefix your spoken sentences with an emotional tone tag: ${toneTag} or [happy].
-- Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
+  const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MULBERRY VOICE: ${speakerName.toUpperCase()} • ${gender.toUpperCase()})
+- Voice Engine: Rumik Mulberry Neural Speech (${speakerName} - ${gender.toUpperCase()}).
+- Persona Accent & Diction: Native Indian English and conversational Hinglish with natural breath pauses and clear articulation.
+- Pronoun Grammar: You are a ${gender} speaker. In Hindi/Hinglish always say "${isMale ? 'बोल रहा हूँ' : 'बोल रही हूँ'}" (never mix gender forms).
 - Speak with natural, fluid conversational rhythm and clear Indian diction.`;
 
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
@@ -6200,10 +6254,12 @@ ESCALATION RULES:
 - When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.
 - Keep responses strictly to 1 or 2 concise, spoken sentences.`;
 
-  const fullPrompt = `You are ${agent.name}.
+  const fullPrompt = `You are ${agent.name}, a professional ${gender} voice representative.
 
 ${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${toneRules}${speechRules}`;
-  let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
+  let greeting = agent.greeting || (isMale
+    ? `Hi! Thank you for calling! Main ${agent.name.split('-')[0].trim()} bol raha hoon. How can I help you today?`
+    : `Hi! Thank you for calling! Main ${agent.name.split('-')[0].trim()} bol rahi hoon. How can I help you today?`);
   if (!greeting.startsWith('[')) {
     greeting = `${toneTag} ${greeting}`;
   }
@@ -6258,12 +6314,20 @@ function dograhFlowAccess(ctx, flow) {
 // ---- RUMIK VOICE & SPEECH STUDIO (Per-Tenant / Per-Agent) -----------------
 async function apiVoiceCatalog(req, res, ctx) {
   const d = core.db();
-  const tenantId = ctx.tenant.id;
-  const agents = (d.agents || []).filter((a) => a.tenantId === tenantId);
+  const admin = isPlatformAdminCtx(ctx);
+  const q = new URL(req.url, 'http://local').searchParams;
+  const targetTenantId = (admin && q.get('tenantId')) ? q.get('tenantId').trim() : ctx.tenant.id;
+  const agents = (d.agents || []).filter((a) => a.tenantId === targetTenantId);
   const primaryAgent = agents.find((a) => a.isPrimary) || agents[0] || null;
-  const tenant = (d.tenants || []).find((t) => t.id === tenantId) || ctx.tenant;
-  const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === tenantId && f.isActive) ||
-    (d.dograhFlows || []).find((f) => f.tenantId === tenantId) || null;
+  const tenant = (d.tenants || []).find((t) => t.id === targetTenantId) || ctx.tenant;
+  const activeFlow = (d.dograhFlows || []).find((f) => f.tenantId === targetTenantId && f.isActive) ||
+    (d.dograhFlows || []).find((f) => f.tenantId === targetTenantId) || null;
+  const byok = (tenant && tenant.byok) || {};
+  const isHost = isPlatformAdminTenant(tenant, d);
+
+  const hasDograh = Boolean(byok.dograhApiKey || tenant.dograhApiKey || (isHost && !byok.disconnectedDograh && process.env.DOGRAH_API_KEY));
+  const hasRumik = Boolean(byok.rumikApiKey || tenant.rumikApiKey || (isHost && !byok.disconnectedRumik && process.env.RUMIK_API_KEY));
+  const dograhOrgId = byok.dograhOrgId || tenant.dograhOrgId || (isHost ? (process.env.DOGRAH_TELEPHONY_CONFIG_ID || '4325') : '');
 
   const activeVoice = {
     voiceId: (primaryAgent && primaryAgent.rumikVoice) || tenant.defaultVoiceId || 'ira',
@@ -6280,7 +6344,15 @@ async function apiVoiceCatalog(req, res, ctx) {
     tones: rumikVoice.TONE_PRESETS,
     activeVoice,
     agents: agents.map((a) => ({ id: a.id, name: a.name, rumikVoice: a.rumikVoice || 'ira', isPrimary: !!a.isPrimary })),
-    activeWorkflowId: activeFlow ? activeFlow.workflowId : dograhDefaultWorkflowId()
+    activeWorkflowId: activeFlow ? activeFlow.workflowId : dograhDefaultWorkflowId(),
+    credentials: {
+      hasDograh,
+      hasRumik,
+      dograhOrgId: dograhOrgId || '',
+      dograhApiKeyMasked: hasDograh ? '••••••••••••••••' : '',
+      rumikApiKeyMasked: hasRumik ? '••••••••••••••••' : '',
+      isAdmin: admin
+    }
   });
 }
 
@@ -6292,6 +6364,10 @@ async function apiVoicePreview(req, res, ctx) {
   const speed = parseFloat(b.speed) || 1.0;
   const text = String(b.text || '').trim();
   const description = String(b.description || '').trim();
+  const d = core.db();
+  const tenant = (d.tenants || []).find((t) => t.id === ctx.tenant.id) || ctx.tenant;
+  const byok = (tenant && tenant.byok) || {};
+  const apiKey = byok.rumikApiKey || tenant.rumikApiKey || process.env.RUMIK_API_KEY || '';
 
   try {
     const result = await rumikVoice.synthesizeRumikSpeech({
@@ -6300,7 +6376,8 @@ async function apiVoicePreview(req, res, ctx) {
       model,
       tone,
       speed,
-      customDescription: description
+      customDescription: description,
+      apiKey: apiKey || undefined
     });
     core.sendJson(res, 200, {
       ok: true,
@@ -6317,12 +6394,24 @@ async function apiVoicePreview(req, res, ctx) {
 
 async function apiVoiceSave(req, res, ctx) {
   const b = ctx.body || {};
-  const voiceId = String(b.voiceId || 'ira').trim().toLowerCase();
-  const model = String(b.model || 'mulberry').trim().toLowerCase();
+  const rawVoiceId = String(b.voiceId || 'ira').trim().toLowerCase();
+  const model = 'mulberry';
   const tone = String(b.tone || 'happy').trim().toLowerCase();
   const speed = Math.max(0.75, Math.min(1.35, parseFloat(b.speed) || 1.0));
   const description = String(b.description || '').trim();
   const d = core.db();
+  const tenant = (d.tenants || []).find((t) => t.id === ctx.tenant.id) || ctx.tenant;
+  const byok = (tenant && tenant.byok) || {};
+  const admin = isPlatformAdminCtx(ctx);
+  const apiKey = byok.rumikApiKey || tenant.rumikApiKey || process.env.RUMIK_API_KEY || '';
+
+  const vMeta = rumikVoice.VOICE_CATALOG.find((v) =>
+    v.id.toLowerCase() === rawVoiceId ||
+    (v.rumikVoice && v.rumikVoice.toLowerCase() === rawVoiceId)
+  ) || rumikVoice.VOICE_CATALOG[0];
+
+  const voiceId = vMeta.id;
+  const resolvedSpeaker = vMeta.rumikVoice || 'Mia';
 
   let targetAgentId = String(b.agentId || '').trim();
   if (!targetAgentId) {
@@ -6338,10 +6427,16 @@ async function apiVoiceSave(req, res, ctx) {
       if (a) {
         a.voiceProvider = 'rumik';
         a.rumikVoice = voiceId;
-        a.rumikModel = model;
+        a.rumikModel = 'mulberry';
         a.rumikTone = tone;
         a.rumikSpeed = speed;
         if (description) a.voiceDescription = description;
+        a.tts = a.tts || {};
+        a.tts.provider = 'rumik';
+        a.tts.model = 'mulberry';
+        a.tts.speaker = resolvedSpeaker;
+        a.tts.voice = voiceId;
+        a.tts.tone = tone;
         a.updatedAt = new Date().toISOString();
         updatedAgent = { ...a };
       }
@@ -6349,7 +6444,7 @@ async function apiVoiceSave(req, res, ctx) {
     const t = (mutDb.tenants || []).find((x) => x.id === ctx.tenant.id);
     if (t) {
       t.defaultVoiceId = voiceId;
-      t.defaultVoiceModel = model;
+      t.defaultVoiceModel = 'mulberry';
       t.defaultVoiceTone = tone;
       t.updatedAt = new Date().toISOString();
     }
@@ -6389,6 +6484,98 @@ async function apiVoiceSave(req, res, ctx) {
   });
 }
 
+function apiVoiceCredentialsGet(req, res, ctx) {
+  const d = core.db();
+  const admin = isPlatformAdminCtx(ctx);
+  const q = new URL(req.url, 'http://local').searchParams;
+  const targetTenantId = (admin && q.get('tenantId')) ? q.get('tenantId').trim() : ctx.tenant.id;
+  const tenant = (d.tenants || []).find((t) => t.id === targetTenantId) || ctx.tenant;
+  const byok = (tenant && tenant.byok) || {};
+  const isHost = isPlatformAdminTenant(tenant, d);
+
+  const hasDograh = Boolean(byok.dograhApiKey || tenant.dograhApiKey || (isHost && !byok.disconnectedDograh && process.env.DOGRAH_API_KEY));
+  const hasRumik = Boolean(byok.rumikApiKey || tenant.rumikApiKey || (isHost && !byok.disconnectedRumik && process.env.RUMIK_API_KEY));
+  const dograhOrgId = byok.dograhOrgId || tenant.dograhOrgId || (isHost ? (process.env.DOGRAH_TELEPHONY_CONFIG_ID || '4325') : '');
+
+  core.sendJson(res, 200, {
+    ok: true,
+    hasDograh,
+    hasRumik,
+    dograhApiKeyMasked: hasDograh ? '••••••••••••••••' : '',
+    rumikApiKeyMasked: hasRumik ? '••••••••••••••••' : '',
+    dograhOrgId: dograhOrgId || '',
+    isAdmin: admin
+  });
+}
+
+async function apiVoiceCredentialsSave(req, res, ctx) {
+  const b = ctx.body || {};
+  const admin = isPlatformAdminCtx(ctx);
+  const targetTenantId = (admin && b.targetTenantId) ? String(b.targetTenantId).trim() : ctx.tenant.id;
+
+  const dograhApiKey = b.dograhApiKey !== undefined ? String(b.dograhApiKey).trim() : undefined;
+  const dograhOrgId = b.dograhOrgId !== undefined ? String(b.dograhOrgId).trim() : undefined;
+  const rumikApiKey = b.rumikApiKey !== undefined ? String(b.rumikApiKey).trim() : undefined;
+  const disconnectRumik = Boolean(b.disconnectRumik);
+  const disconnectDograh = Boolean(b.disconnectDograh);
+
+  let savedTenant = null;
+  await core.mutate((mutDb) => {
+    const t = (mutDb.tenants || []).find((x) => x.id === targetTenantId);
+    if (t) {
+      if (!t.byok) t.byok = {};
+      if (disconnectRumik || rumikApiKey === '') {
+        delete t.byok.rumikApiKey;
+        delete t.rumikApiKey;
+        t.byok.disconnectedRumik = true;
+      } else if (rumikApiKey !== undefined && !rumikApiKey.startsWith('••••') && rumikApiKey.trim().length > 0) {
+        t.byok.rumikApiKey = rumikApiKey.trim();
+        t.rumikApiKey = rumikApiKey.trim();
+        delete t.byok.disconnectedRumik;
+      }
+
+      if (disconnectDograh || dograhApiKey === '') {
+        delete t.byok.dograhApiKey;
+        delete t.byok.dograhOrgId;
+        delete t.dograhApiKey;
+        delete t.dograhOrgId;
+        t.byok.disconnectedDograh = true;
+      } else {
+        if (dograhApiKey !== undefined && !dograhApiKey.startsWith('••••') && dograhApiKey.trim().length > 0) {
+          t.byok.dograhApiKey = dograhApiKey.trim();
+          t.dograhApiKey = dograhApiKey.trim();
+          delete t.byok.disconnectedDograh;
+        }
+        if (dograhOrgId !== undefined) {
+          t.byok.dograhOrgId = dograhOrgId.trim();
+          t.dograhOrgId = dograhOrgId.trim();
+        }
+      }
+      t.byok.updatedAt = new Date().toISOString();
+      savedTenant = { ...t };
+    }
+  });
+
+  if (!savedTenant) {
+    return core.sendJson(res, 404, { error: 'Workspace not found', code: 'tenant_not_found' });
+  }
+
+  const byok = savedTenant.byok || {};
+  const hasDograh = Boolean(byok.dograhApiKey || savedTenant.dograhApiKey);
+  const hasRumik = Boolean(byok.rumikApiKey || savedTenant.rumikApiKey);
+
+  core.sendJson(res, 200, {
+    ok: true,
+    message: disconnectRumik ? 'Rumik account disconnected.' : (disconnectDograh ? 'Dograh account disconnected.' : 'Credentials connected successfully!'),
+    hasDograh,
+    hasRumik,
+    dograhApiKeyMasked: hasDograh ? '••••••••••••••••' : '',
+    rumikApiKeyMasked: hasRumik ? '••••••••••••••••' : '',
+    dograhOrgId: byok.dograhOrgId || savedTenant.dograhOrgId || '',
+    isAdmin: admin
+  });
+}
+
 async function apiDograhFlowsList(req, res, ctx) {
   if (!checkFeatureOrReject(res, ctx, 'workflows')) return;
   const d = core.db();
@@ -6414,11 +6601,15 @@ async function apiDograhFlowsList(req, res, ctx) {
     voiceId: a.voiceId || a.voice || 'mulberry'
   }));
   const tenants = admin ? (d.tenants || []).map((t) => ({ id: t.id, name: t.name, slug: t.slug })) : [];
+  const targetTenant = (d.tenants || []).find((t) => t.id === targetId) || ctx.tenant;
+  const targetByok = (targetTenant && targetTenant.byok) || {};
+  const hasDograh = Boolean(targetByok.dograhApiKey || (targetTenant && targetTenant.dograhApiKey));
 
   core.sendJson(res, 200, {
     flows: flows.map((f) => publicDograhFlow(f, tenantMap, agentMap)),
     agents,
     tenants,
+    hasDograh,
     selectedTenantId: targetId,
     activeWorkflowId: resolveTenantWorkflowId(targetId || ctx.tenant.id),
     defaultWorkflowId: dograhDefaultWorkflowId(),
@@ -12407,6 +12598,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/dograh/flows') return core.requireAuth(req, res, apiDograhFlowsList);
         if (route === '/api/dograh/remote-workflows') return core.requireRole(req, res, 'admin', apiDograhRemoteWorkflows);
         if (route === '/api/voice/catalog') return core.requireAuth(req, res, apiVoiceCatalog);
+        if (route === '/api/voice/credentials') return core.requireAuth(req, res, apiVoiceCredentialsGet);
         if (route === '/api/privacy') return core.requireAuth(req, res, apiPrivacyGet);
         if (route === '/api/members') return core.requireAuth(req, res, apiMembers);
         if (route === '/api/teams') return core.requireAuth(req, res, apiTeamsList);
@@ -12535,6 +12727,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/voice/session') return core.requireAuth(req, res, apiVoiceSession, body);
       if (route === '/api/voice/preview') return core.requireAuth(req, res, apiVoicePreview, body);
       if (route === '/api/voice/save') return core.requireAuth(req, res, apiVoiceSave, body);
+      if (route === '/api/voice/credentials') return core.requireAuth(req, res, apiVoiceCredentialsSave, body);
       if (route === '/api/demo-links') return core.requireRole(req, res, 'owner', apiDemoLinksCreate, body);
       if (route === '/api/demo-links/revoke') return core.requireRole(req, res, 'owner', apiDemoLinksRevoke, body);
       if (route === '/api/telephony/dial') return core.requireAuth(req, res, apiTelephonyDial, body);
