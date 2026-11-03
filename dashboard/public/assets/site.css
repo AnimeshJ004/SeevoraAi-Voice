@@ -2504,13 +2504,13 @@ h1, h2, h3, h4 {
    ========================================================================== */
 .hero-fullbleed {
   position: relative;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  width: 100%;
   background-image: url('/assets/hero-backdrop.jpg');
   background-size: cover;
   background-position: center top;
   padding: 0 24px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Soft overlay so text is readable but image shows through */
