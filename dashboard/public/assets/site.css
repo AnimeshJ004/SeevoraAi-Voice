@@ -2499,31 +2499,48 @@ h1, h2, h3, h4 {
   font-weight: 600;
 }
 
-/* Hero Backdrop Container with Custom Acoustic Artwork */
-.hero-backdrop-container {
+/* ==========================================================================
+   HERO FULL-BLEED — Full-width hero with visible acoustic background image
+   ========================================================================== */
+.hero-fullbleed {
   position: relative;
-  border-radius: 28px;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background-image: url('/assets/hero-backdrop.jpg');
+  background-size: cover;
+  background-position: center top;
+  padding: 0 24px;
   overflow: hidden;
-  margin-bottom: 32px;
-  background: #ffffff;
-  border: 1px solid rgba(13, 93, 65, 0.14);
-  box-shadow: 0 20px 50px -12px rgba(13, 93, 65, 0.10);
 }
 
-.hero-backdrop-container::before {
+/* Soft overlay so text is readable but image shows through */
+.hero-fullbleed::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.92) 55%, #ffffff 100%),
-    url('/assets/hero-backdrop.jpg');
-  background-size: cover;
-  background-position: center top;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 249, 0.60) 0%,
+    rgba(247, 248, 250, 0.68) 60%,
+    rgba(247, 248, 250, 0.82) 100%
+  );
   pointer-events: none;
   z-index: 0;
 }
 
-.hero-backdrop-container .site-hero {
-  position: relative;
-  z-index: 1;
+/* Noise grain texture on top */
+.hero-fullbleed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
 }
+
+/* Keep old hero-backdrop-container for backward compat (hidden now) */
+.hero-backdrop-container {
+  display: none;
+}
+
