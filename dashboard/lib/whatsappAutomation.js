@@ -103,6 +103,12 @@ function classifyCustomerIntent(text = '') {
  * and records it into the database thread.
  */
 async function sendAutomatedWhatsAppReply({ db, db_mutate, tenantId, toPhone, text, metadata = {} }) {
+  const tenant = (db && Array.isArray(db.tenants)) ? db.tenants.find((t) => t.id === tenantId) : null;
+  if (tenant && tenant.features && tenant.features.whatsappMessaging === false) {
+    logger.info('[WhatsApp Automation] WhatsApp messaging disabled by admin for tenant ' + tenantId + '. Message suppressed.');
+    return null;
+  }
+
   const normalizedPhone = wacrm.normalizeE164(toPhone);
   if (!normalizedPhone || !text) return null;
 

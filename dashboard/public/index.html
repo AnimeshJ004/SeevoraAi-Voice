@@ -1,1044 +1,323 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Seevora AI Voice Receptionist</title>
-  <meta name="description"
-    content="Seevora AI Voice Receptionist. Natural, human-parity conversational voice agents." />
-  <meta name="theme-color" content="#FFFFFF" />
+  <title>Seevora AI Voice - Autonomous Conversational AI Receptionist</title>
+  <meta name="description" content="Seevora AI Voice Receptionist. Human-parity conversational phone calls in English, Hindi, and Hinglish for ~₹2/minute." />
   <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
   <link rel="apple-touch-icon" href="/assets/seevora-logo.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet" />
-
-  <!-- Optional Clerk Prebuilt UI & SDK (loaded gracefully in background) -->
-  <script defer crossorigin="anonymous"
-    src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js"
-    type="text/javascript"></script>
-  <script defer crossorigin="anonymous"
-    data-clerk-publishable-key="pk_test_Y2xlYW4taW1wYWxhLTczMzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-    src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"
-    type="text/javascript"></script>
-
-  <style>
-    :root {
-      --bg: #f7f8fa;
-      --card: #ffffff;
-      --ink: #17191d;
-      --muted: #6c737d;
-      --line: rgba(34, 43, 56, 0.10);
-      --line-2: rgba(34, 43, 56, 0.16);
-      --blue: #7ea9e8;
-      --blue2: #dceaff;
-      --glass: rgba(255, 255, 255, 0.68);
-      --shadow: 0 24px 70px rgba(45, 62, 86, 0.10);
-      --primary: #7ea9e8;
-      --primary-hover: #6897db;
-      --primary-light: #dceaff;
-      --link-hover: #1a5da9;
-      --danger: #ef4444;
-      --danger-bg: #fff1f2;
-      --danger-border: #fecaca;
-      --success: #10b981;
-      --success-bg: #ecfdf5;
-      --success-border: #a7f3d0;
-      --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-heading: 'Manrope', 'DM Sans', sans-serif;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html,
-    body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: var(--font);
-      background-color: var(--bg);
-      color: var(--ink);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      scroll-behavior: smooth;
-    }
-
-    body {
-      display: flex;
-      min-height: 100vh;
-      width: 100vw;
-      position: relative;
-      isolation: isolate;
-    }
-
-    .noise {
-      pointer-events: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      opacity: 0.14;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
-    }
-
-    /* Split-Screen Edge-to-Edge Container */
-    .auth-wrapper {
-      width: 100vw;
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: minmax(440px, 500px) 1fr;
-      background: var(--bg);
-      overflow: hidden;
-      position: relative;
-      z-index: 2;
-    }
-
-    /* Left: Auth Form Column */
-    .auth-column {
-      padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 40px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      background: rgba(255, 255, 255, 0.94);
-      min-height: 100vh;
-      position: relative;
-      z-index: 5;
-      border-right: 1px solid var(--line);
-      box-shadow: 12px 0 40px rgba(45, 62, 86, 0.05);
-      overflow-y: auto;
-    }
-
-    .auth-content-inner {
-      width: 100%;
-      max-width: 400px;
-      margin: auto 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
-
-    /* Brand Header */
-    .brand-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-      max-width: 400px;
-      margin-bottom: 2px;
-    }
-
-    .brand-logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: #FFFFFF;
-      border: 1px solid var(--line);
-      padding: 3px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(45, 62, 86, 0.06);
-    }
-
-    .brand-logo img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-
-    .brand-name {
-      font-family: var(--font-heading);
-      font-size: 21px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-    }
-
-    .brand-subtitle {
-      width: 100%;
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: -8px;
-      margin-bottom: 2px;
-      line-height: 1.4;
-    }
-
-    /* Tab Switcher */
-    .auth-tabs-wrap {
-      display: flex;
-      background: var(--blue2);
-      border-radius: 999px;
-      padding: 4px;
-      width: 100%;
-      max-width: 400px;
-      margin: 0;
-    }
-
-    .auth-tab-btn {
-      flex: 1;
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      text-align: center;
-    }
-
-    .auth-tab-btn:hover {
-      color: var(--link-hover);
-    }
-
-    .auth-tab-btn.active {
-      background: #FFFFFF;
-      color: var(--ink);
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(45, 62, 86, 0.08);
-    }
-
-    /* Alert Banner */
-    .auth-alert-box {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      animation: fadeIn 0.2s ease;
-    }
-
-    .auth-alert-box.error {
-      display: flex;
-      background: var(--danger-bg);
-      border: 1px solid var(--danger-border);
-      color: var(--danger);
-    }
-
-    .auth-alert-box.success {
-      display: flex;
-      background: var(--success-bg);
-      border: 1px solid var(--success-border);
-      color: var(--success);
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-4px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Clerk Mount Zone */
-    #clerk-mount-zone {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 8px;
-      margin: 0;
-    }
-
-    .clerk-slot {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    #clerk-mount-zone .cl-rootBox,
-    #clerk-mount-zone .cl-cardBox,
-    #clerk-mount-zone .cl-signIn-root,
-    #clerk-mount-zone .cl-signUp-root {
-      width: 100% !important;
-      max-width: 400px !important;
-      box-shadow: none !important;
-      border: none !important;
-      margin: 0 !important;
-    }
-
-    #clerk-mount-zone .cl-card {
-      width: 100% !important;
-      max-width: 400px !important;
-      box-shadow: 0 4px 16px rgba(45, 62, 86, 0.06) !important;
-      border: 1px solid var(--line) !important;
-      border-radius: 18px !important;
-      background: #FFFFFF !important;
-      margin: 0 !important;
-      padding: 18px 16px !important;
-    }
-
-    #clerk-mount-zone .cl-formButtonPrimary,
-    #clerk-mount-zone .cl-button[data-variant="solid"],
-    .cl-formButtonPrimary,
-    .cl-button[data-variant="solid"] {
-      background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important;
-      color: #FFFFFF !important;
-      border: 1px solid rgba(255, 255, 255, 0.35) !important;
-      border-radius: 999px !important;
-      box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35) !important;
-      font-family: var(--font) !important;
-      font-weight: 600 !important;
-      transition: transform .25s, box-shadow .25s, background .25s !important;
-    }
-
-    #clerk-mount-zone .cl-formButtonPrimary:hover,
-    .cl-formButtonPrimary:hover {
-      background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45) !important;
-    }
-
-    #clerk-mount-zone .cl-socialButtonsIconButton,
-    #clerk-mount-zone .cl-socialButtonsBlockButton {
-      border: 1px solid var(--line-2) !important;
-      border-radius: 12px !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      transition: all 0.18s ease !important;
-    }
-
-    #clerk-mount-zone .cl-socialButtonsIconButton:hover,
-    #clerk-mount-zone .cl-socialButtonsBlockButton:hover {
-      border-color: var(--blue) !important;
-      box-shadow: 0 4px 12px rgba(126, 169, 232, 0.18) !important;
-      transform: translateY(-1px) !important;
-    }
-
-    #clerk-mount-zone .cl-formFieldInput {
-      border: 1px solid var(--line-2) !important;
-      border-radius: 12px !important;
-      background: #FFFFFF !important;
-      font-family: var(--font) !important;
-      color: var(--ink) !important;
-    }
-
-    #clerk-mount-zone .cl-formFieldInput:focus {
-      border-color: var(--blue) !important;
-      box-shadow: 0 0 0 3px rgba(126, 169, 232, 0.22) !important;
-      outline: none !important;
-    }
-
-    #clerk-mount-zone .cl-footerActionLink,
-    #clerk-mount-zone .cl-identityPreviewEditButton,
-    #clerk-mount-zone .cl-formFieldAction,
-    .cl-footerActionLink {
-      color: var(--link-hover) !important;
-      font-weight: 600 !important;
-    }
-
-    #clerk-mount-zone .cl-footerActionLink:hover,
-    #clerk-mount-zone .cl-identityPreviewEditButton:hover,
-    .cl-footerActionLink:hover {
-      color: #11427c !important;
-    }
-
-    #clerk-mount-zone .cl-headerTitle {
-      color: var(--ink) !important;
-      font-family: var(--font-heading) !important;
-      font-weight: 700 !important;
-    }
-
-    #clerk-mount-zone .cl-headerSubtitle {
-      color: var(--muted) !important;
-      font-family: var(--font) !important;
-    }
-
-    #clerk-mount-zone .cl-dividerLine {
-      background: var(--line) !important;
-    }
-
-    #clerk-mount-zone .cl-dividerText {
-      color: var(--muted) !important;
-      font-family: var(--font) !important;
-    }
-
-    #clerk-mount-zone .cl-badge,
-    .cl-badge {
-      background: var(--blue2) !important;
-      color: var(--link-hover) !important;
-      border: 1px solid rgba(126, 169, 232, 0.3) !important;
-    }
-
-    #clerk-mount-zone a,
-    #clerk-mount-zone button[data-variant="link"] {
-      color: var(--link-hover) !important;
-    }
-
-    /* Native Auth Form */
-    .auth-form-panel {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      width: 100%;
-    }
-
-    .form-label {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--ink-soft);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-
-    .input-icon {
-      position: absolute;
-      left: 13px;
-      color: var(--muted);
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .auth-input {
-      width: 100%;
-      height: 42px;
-      padding: 0 40px 0 38px;
-      border-radius: 10px;
-      border: 1.5px solid var(--line-2);
-      background: #FFFFFF;
-      font-family: inherit;
-      font-size: 13.5px;
-      color: var(--ink);
-      transition: all 0.18s ease;
-      outline: none;
-    }
-
-    .auth-input:focus {
-      border-color: var(--blue);
-      background: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(126, 169, 232, 0.22);
-    }
-
-    .auth-input::placeholder {
-      color: var(--ink-faint);
-    }
-
-    .btn-toggle-pass {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: color 0.15s;
-    }
-
-    .btn-toggle-pass:hover {
-      color: var(--ink);
-    }
-
-    .btn-submit-primary,
-    .primary {
-      width: 100%;
-      height: 44px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      background: linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%);
-      color: #FFFFFF;
-      font-family: inherit;
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 14px rgba(126, 169, 232, 0.35);
-      transition: transform .25s, box-shadow .25s, background .25s;
-      margin-top: 2px;
-    }
-
-    .btn-submit-primary:hover,
-    .primary:hover {
-      background: linear-gradient(135deg, #4e82cf 0%, #72a0e4 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(126, 169, 232, 0.45);
-    }
-
-    .btn-submit-primary:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .mini-spinner {
-      width: 15px;
-      height: 15px;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      border-top-color: #FFFFFF;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    /* Quick Demo Section */
-    .demo-access-wrap {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      margin-top: 2px;
-    }
-
-    .demo-divider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      max-width: 400px;
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 700;
-    }
-
-    .demo-line {
-      flex: 1;
-      height: 1px;
-      background: var(--line);
-    }
-
-    .demo-buttons-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .btn-demo-sub {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 9px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: #FFFFFF;
-      color: var(--ink);
-      font-family: inherit;
-      font-size: 12.5px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.18s ease;
-      box-shadow: 0 1px 3px rgba(45, 62, 86, 0.05);
-    }
-
-    .btn-demo-sub:hover {
-      background: #f7f8fa !important;
-      border-color: var(--blue) !important;
-      color: var(--link-hover) !important;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(126, 169, 232, 0.16);
-    }
-
-    .demo-hint {
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-      line-height: 1.4;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Right: Visual Showcase Column with Seevora Voice Logo in Bottom Left Corner */
-    .showcase-column {
-      position: relative;
-      background-image: url('/assets/receptionist.jpg');
-      background-size: cover;
-      background-position: center center;
-      background-repeat: no-repeat;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: flex-start;
-      padding: clamp(32px, 5vw, 56px);
-      min-height: 100vh;
-      overflow: hidden;
-    }
-
-    .showcase-column::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(23, 25, 29, 0.06) 0%, rgba(23, 25, 29, 0.68) 100%);
-      pointer-events: none;
-    }
-
-    .showcase-logo-corner {
-      position: relative;
-      z-index: 5;
-      display: flex;
-      align-items: center;
-    }
-
-    .showcase-brand-mark {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px 22px 12px 14px;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.80);
-      border-radius: 999px;
-      box-shadow: 0 16px 40px rgba(16, 21, 29, 0.22);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-
-    .showcase-brand-mark:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 22px 50px rgba(16, 21, 29, 0.30);
-    }
-
-    .showcase-brand-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #FFFFFF;
-      box-shadow: 0 2px 8px rgba(45, 62, 86, 0.12);
-      flex-shrink: 0;
-      background: #FFFFFF;
-    }
-
-    .showcase-brand-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .showcase-brand-name {
-      font-family: var(--font-heading);
-      font-size: 19px;
-      font-weight: 800;
-      color: #17191d;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-    }
-
-    .showcase-brand-accent {
-      background: linear-gradient(100deg, #4d78b3, #7ea9e8);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-left: 2px;
-    }
-
-    .showcase-brand-desc {
-      font-family: var(--font);
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #5d6877;
-      letter-spacing: 0.01em;
-    }
-
-    /* Responsive */
-    @media (max-width: 960px) {
-      .auth-wrapper {
-        grid-template-columns: 1fr;
-      }
-
-      .showcase-column {
-        display: none;
-      }
-
-      .auth-column {
-        max-width: 520px;
-        margin: 0 auto;
-        padding: 40px 24px;
-        border-right: none;
-        box-shadow: none;
-      }
-    }
-  </style>
+  <meta name="theme-color" content="#f7f8fa" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <script src="/assets/site.js" defer></script>
 </head>
-
 <body>
   <div class="noise" aria-hidden="true"></div>
-  <main class="auth-wrapper">
-    <!-- Left Column: Unified Clerk SSO & Direct Login -->
-    <section class="auth-column" aria-label="Authentication">
-      <div class="auth-content-inner">
-        <!-- Seevora Brand Row -->
-        <div class="brand-row">
-          <div class="brand-logo">
-            <img src="/assets/seevora-logo.png" alt="SeevoraVoice Logo" width="34" height="34" />
-          </div>
-          <span class="brand-name">SeevoraVoice</span>
-        </div>
-        <p class="brand-subtitle">Autonomous Conversational AI Receptionist & Front-Desk Agent</p>
 
-        <!-- Quick Switch Tabs -->
-        <div class="auth-tabs-wrap" role="tablist">
-          <button id="tabBtnSignIn" class="auth-tab-btn active" type="button" role="tab" aria-selected="true">Sign
-            In</button>
-          <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create
-            Account</button>
-        </div>
+  <!-- Shared Site Navigation Header -->
+  <header class="site-nav">
+    <div class="site-nav-inner">
+      <a href="/" class="site-brand">
+        <img src="/assets/seevora-logo.png" alt="Seevora" class="site-brand-logo" />
+        <span class="site-brand-name">Seevora<span>Voice</span></span>
+        <span class="site-brand-badge">AI Receptionist</span>
+      </a>
 
-        <!-- Alert Notification Box -->
-        <div id="authAlertBox" class="auth-alert-box" role="alert">
-          <svg id="authAlertIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></svg>
-          <span id="authAlertText"></span>
-        </div>
+      <ul class="site-nav-links">
+        <li><a href="/" class="site-nav-link active">Home</a></li>
+        <li><a href="/features.html" class="site-nav-link">Features</a></li>
+        <li><a href="/pricing.html" class="site-nav-link">Pricing</a></li>
+        <li><a href="/contact.html" class="site-nav-link">Contact Us</a></li>
+        <li><a href="/privacy.html" class="site-nav-link">Privacy</a></li>
+        <li><a href="/terms.html" class="site-nav-link">Terms</a></li>
+      </ul>
 
-        <!-- 1. Clerk SSO & Social Sign-In (PROMINENT AT TOP) -->
-        <div id="clerk-mount-zone">
-          <div id="clerk-sign-in-slot" class="clerk-slot"></div>
-          <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
-        </div>
-
-        <!-- 2. Quick Demo Access (Active when ENABLE_DEMO_LOGIN is true) -->
-        <div id="demoAccessWrap" class="demo-access-wrap" style="display: none; margin-top: 14px;">
-          <div class="demo-divider-row">
-            <div class="demo-line"></div>
-            <span>Demo Access</span>
-            <div class="demo-line"></div>
-          </div>
-          <div class="demo-buttons-row">
-            <button id="btnDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
-            <button id="btnDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
-          </div>
-          <div class="demo-hint">Instant access for workspace evaluation and testing</div>
-        </div>
-
+      <div class="site-nav-actions">
+        <a href="/login.html" class="btn-ghost link-auth-signin">Sign In</a>
+        <a href="/login.html" class="btn-primary btn-auth-entry">Get Started Free</a>
       </div>
-    </section>
 
-    <!-- Right Column: Visual Showcase with Seevora Voice Logo in Bottom Left Corner -->
-    <aside class="showcase-column" aria-label="Seevora AI Overview">
-      <div class="showcase-logo-corner">
-        <div class="showcase-brand-mark">
-          <img src="/assets/seevora-logo.png" alt="Seevora Voice Logo" width="44" height="44"
-            class="showcase-brand-icon" />
-          <div class="showcase-brand-meta">
-            <span class="showcase-brand-name">Seevora<span class="showcase-brand-accent">Voice</span></span>
-            <span class="showcase-brand-desc">Autonomous Conversational AI Receptionist</span>
+      <button id="siteNavToggle" class="site-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="siteMobileDrawer" class="site-mobile-drawer">
+      <a href="/" class="site-mobile-link active">Home</a>
+      <a href="/features.html" class="site-mobile-link">Features</a>
+      <a href="/pricing.html" class="site-mobile-link">Pricing</a>
+      <a href="/contact.html" class="site-mobile-link">Contact Us</a>
+      <a href="/privacy.html" class="site-mobile-link">Privacy Policy</a>
+      <a href="/terms.html" class="site-mobile-link">Terms of Service</a>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+        <a href="/login.html" class="btn-secondary link-auth-signin" style="width:100%;text-align:center;">Sign In</a>
+        <a href="/login.html" class="btn-primary btn-auth-entry" style="width:100%;text-align:center;">Get Started Free</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="site-container" style="padding-top:20px;">
+    <div class="site-hero">
+      <span class="badge-pill">⚡ Sub-Second AI Telephony &middot; Dedicated Indian Numbers (+91)</span>
+      <h1>Your 24/7 AI Voice Receptionist. Real Phone Calls for <span class="highlight">~₹2 a Minute</span>.</h1>
+      <p class="site-hero-sub">
+        Never miss another customer call. Seevora answers in under 800ms, speaks fluent English, Hindi, and Hinglish with zero robotic delay, schedules bookings on Cal.com, and extracts qualified leads straight into your CRM.
+      </p>
+      
+      <div class="site-hero-actions">
+        <a href="/login.html" class="btn-primary btn-auth-entry" style="padding:13px 28px;font-size:15px;">Launch Your Agent Free &rarr;</a>
+        <a href="tel:+918071582519" class="btn-secondary" style="padding:13px 24px;font-size:15px;">Call Live Demo (+91 80715 82519)</a>
+      </div>
+
+      <div class="site-trust-row">
+        <div class="site-trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Under 800ms Latency</span>
+        </div>
+        <div class="site-trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Natural Indian Hinglish</span>
+        </div>
+        <div class="site-trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>₹2/min vs ₹18/min</span>
+        </div>
+        <div class="site-trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Instant Cal.com Booking</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Live Receptionist Simulation Card -->
+    <div class="simulator-card">
+      <div class="sim-header">
+        <div class="sim-caller-info">
+          <div class="sim-avatar">R</div>
+          <div class="sim-details">
+            <h4>Ria &mdash; Seevora AI Receptionist</h4>
+            <span>Serving Northstar Dental & Clinic Group (+91 80715 82519)</span>
+          </div>
+        </div>
+        <div class="sim-live-badge">
+          <span class="sim-live-dot"></span>
+          Call in Progress
+        </div>
+      </div>
+
+      <div class="sim-bubble-row">
+        <div class="sim-bubble agent">
+          <strong>Ria (AI Receptionist):</strong><br />
+          "Namaste! Northstar Dental Clinic me call karne ke liye dhanyawad. Mera naam Ria hai. Mai aapki kya madad kar sakti hoon?"
+        </div>
+
+        <div class="sim-bubble caller">
+          <strong>Caller (Vikramaditya):</strong><br />
+          "Hello Ria, mujhe kal root canal consultation ke liye doctor appointment schedule karni hai."
+        </div>
+
+        <div class="sim-bubble agent">
+          <strong>Ria (AI Receptionist):</strong><br />
+          "Bilkul Vikramaditya ji. Kal Dr. Sharma ke paas subah 11:30 AM aur dopahar 3:00 PM ke slots open hain. Kaunsa time aapke liye convenient rahega?"
+        </div>
+
+        <div class="sim-bubble caller">
+          <strong>Caller (Vikramaditya):</strong><br />
+          "11:30 AM wala slot confirm kar dijiye."
+        </div>
+
+        <div class="sim-bubble agent">
+          <strong>Ria (AI Receptionist):</strong><br />
+          "Great! Kal subah 11:30 AM ka consultation lock ho gaya hai. Confirmation SMS aur location details aapke phone par bhej di gayi hain. Have a great day!"
+        </div>
+      </div>
+
+      <div class="sim-stats-bar">
+        <div class="sim-stat-item">
+          <div class="sim-stat-label">Response Time</div>
+          <div class="sim-stat-val" style="color:#0d5d41;">0.78s</div>
+        </div>
+        <div class="sim-stat-item">
+          <div class="sim-stat-label">Language Mode</div>
+          <div class="sim-stat-val">Hindi / Hinglish</div>
+        </div>
+        <div class="sim-stat-item">
+          <div class="sim-stat-label">Action Outcome</div>
+          <div class="sim-stat-val" style="color:#059669;">Cal.com Booked ✔</div>
+        </div>
+        <div class="sim-stat-item">
+          <div class="sim-stat-label">Measured Cost</div>
+          <div class="sim-stat-val">₹1.80 / min</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Core Pillars Bento Grid -->
+    <div style="margin-top:70px;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 32px;">
+        <span class="badge-pill">Built for Business Results</span>
+        <h2 style="font-size:30px;margin-top:10px;margin-bottom:8px;">Why Indian Businesses Choose Seevora</h2>
+        <p style="font-size:15px;color:var(--muted);">
+          Traditional voice bots sound robotic, lag by 3-4 seconds, and cost 10x more. Seevora fixes all three flaws simultaneously.
+        </p>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card">
+          <div class="bento-icon-wrap">⚡</div>
+          <div class="bento-title">Sub-Second Conversational Turn-Taking</div>
+          <div class="bento-desc">
+            Deepgram Nova-3 speech recognition meets Groq LPU inference. Callers talk naturally with mid-sentence interruptions (barge-in) and zero awkward waiting.
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon-wrap">🎙️</div>
+          <div class="bento-title">Rumik Silk Muga Voice Engine</div>
+          <div class="bento-desc">
+            Expressive Indian female voice persona ("Ira") with natural inflection, native Hindi phoneme pronunciation, and tailored vocal directions.
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon-wrap">💰</div>
+          <div class="bento-title">~₹2 / Minute Transparent Pricing</div>
+          <div class="bento-desc">
+            Stop paying ₹15 to ₹22 per minute on ElevenLabs + Twilio. Seevora delivers full human parity at ~₹2/min with instant UPI wallet recharges.
           </div>
         </div>
       </div>
-    </aside>
+    </div>
+
+    <!-- Preset Library Showcase -->
+    <div class="site-card" style="margin-top:60px;">
+      <div style="text-align:center;max-width:700px;margin:0 auto 36px;">
+        <span class="badge-pill">Ready-To-Deploy Personas</span>
+        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">8 Pre-Trained Receptionist Blueprints</h2>
+        <p style="font-size:14.5px;color:var(--muted);">
+          Launch a battle-tested agent in one click. Customize instructions, business FAQs, and phone routing from the Studio.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px;">
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">🦷</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Dental & Medical Intake</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Patient triage, dental symptom intake, Cal.com slot booking, and emergency dentist dispatch.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">🏡</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Real Estate Lead Qualifier</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Buyer budget qualification, BHK preferences, site-visit scheduling, and WhatsApp brochure dispatch.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">⚖️</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Legal & Injury Intake</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Accident date validation, liability qualification, attorney calendar locking, and zero-recording privacy.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">❄️</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">HVAC & Field Dispatch</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Emergency cooling/heating triage, technician dispatch booking, address capture, and job routing.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">🍽️</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Restaurant Reservations</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Party size verification, table availability, dietary allergy notes, and confirmation WhatsApp SMS.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-size:22px;margin-bottom:8px;">🎧</div>
+          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">24/7 Front-Desk Support</h4>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Hours, location, pricing FAQs, order tracking, and warm handoff to human staff when requested.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Call to Action -->
+    <div style="background:var(--primary);color:#ffffff;border-radius:24px;padding:50px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
+      <h2 style="font-size:clamp(26px, 4vw, 36px);color:#ffffff;margin-bottom:12px;">Stop Losing Revenue to Missed Calls</h2>
+      <p style="font-size:16px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.6;">
+        Set up your first AI receptionist in 5 minutes. Sign up today and get ₹10 in free test call credits instantly.
+      </p>
+      <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+        <a href="/login.html" class="btn-secondary" style="background:#ffffff;color:var(--primary)!important;border:none;padding:12px 28px;font-size:15px;">Create Free Account &rarr;</a>
+        <a href="/contact.html" class="btn-primary" style="background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.4);padding:12px 24px;font-size:15px;">Schedule Demo</a>
+      </div>
+    </div>
   </main>
 
+  <!-- Shared Site Footer -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="/assets/seevora-logo.png" alt="Seevora" width="32" height="32" style="border-radius:8px;" />
+          <span style="font-family:var(--font-heading);font-weight:800;font-size:18px;">Seevora<span style="color:var(--primary);">Voice</span></span>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);max-width:320px;line-height:1.55;">
+          Autonomous, human-parity conversational voice agents answering inbound and placing outbound calls for ~₹2/minute.
+        </p>
+        <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--primary);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.25);"></span>
+          All Systems Operational
+        </div>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Product</h4>
+        <ul class="footer-links-list">
+          <li><a href="/features.html">Features</a></li>
+          <li><a href="/pricing.html">Pricing Plans</a></li>
+          <li><a href="/demo.html">Web Voice Dialer</a></li>
+          <li><a href="/app.html">Voice Studio Console</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Solutions</h4>
+        <ul class="footer-links-list">
+          <li><a href="/features.html#dental">Dental & Medical Clinics</a></li>
+          <li><a href="/features.html#realestate">Real Estate Lead Qual</a></li>
+          <li><a href="/features.html#hvac">HVAC & Field Dispatch</a></li>
+          <li><a href="/features.html#support">24/7 Front-Desk Support</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Company & Legal</h4>
+        <ul class="footer-links-list">
+          <li><a href="/contact.html">Contact Us</a></li>
+          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/terms.html">Terms of Service</a></li>
+          <li><a href="/data-deletion.html">Data Deletion</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>&copy; 2026 Seevora Pvt Ltd. All rights reserved.</div>
+      <div>Deepgram Nova-3 &middot; Groq &middot; Rumik Silk &middot; Vobiz Telephony</div>
+    </div>
+  </footer>
+
   <script>
-    (function () {
+    // Automatic logout parameter clearing
+    (function() {
       const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
       if (isLoggedOut) {
         document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
         document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
         try { localStorage.clear(); sessionStorage.clear(); } catch (_) { }
         window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (document.cookie && document.cookie.includes('rxv_sess=')) {
-        // Fast-path: if already logged in via session cookie, verify and redirect to dashboard
-        fetch('/api/me')
-          .then((r) => r.ok ? r.json() : null)
-          .then((me) => {
-            if (me && me.user) {
-              window.location.replace('/app.html');
-            }
-          })
-          .catch(() => { });
-      }
-
-      // UI Elements
-      const tabSignIn = document.getElementById('tabBtnSignIn');
-      const tabSignUp = document.getElementById('tabBtnSignUp');
-      const alertBox = document.getElementById('authAlertBox');
-      const alertText = document.getElementById('authAlertText');
-      const alertIcon = document.getElementById('authAlertIcon');
-      const clerkMountZone = document.getElementById('clerk-mount-zone');
-      const signInSlot = document.getElementById('clerk-sign-in-slot');
-      const signUpSlot = document.getElementById('clerk-sign-up-slot');
-      let signUpMounted = false;
-      let isSyncingOAuth = false;
-
-      function showAlert(msg, kind) {
-        kind = kind || 'error';
-        if (!msg) {
-          alertBox.style.display = 'none';
-          alertBox.className = 'auth-alert-box';
-          return;
-        }
-        alertBox.className = 'auth-alert-box ' + kind;
-        alertText.textContent = msg;
-        if (kind === 'error') {
-          alertIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
-        } else {
-          alertIcon.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
-        }
-        alertBox.style.display = 'flex';
-      }
-
-      function showSignIn() {
-        if (tabSignIn) {
-          tabSignIn.classList.add('active');
-          tabSignIn.setAttribute('aria-selected', 'true');
-        }
-        if (tabSignUp) {
-          tabSignUp.classList.remove('active');
-          tabSignUp.setAttribute('aria-selected', 'false');
-        }
-        if (signUpSlot) signUpSlot.style.display = 'none';
-        if (signInSlot) signInSlot.style.display = 'flex';
-        showAlert('');
-      }
-
-      function showSignUp() {
-        if (tabSignUp) {
-          tabSignUp.classList.add('active');
-          tabSignUp.setAttribute('aria-selected', 'true');
-        }
-        if (tabSignIn) {
-          tabSignIn.classList.remove('active');
-          tabSignIn.setAttribute('aria-selected', 'false');
-        }
-        if (signInSlot) signInSlot.style.display = 'none';
-        if (signUpSlot) {
-          signUpSlot.style.display = 'flex';
-          if (!signUpMounted && window.Clerk && window.Clerk.loaded) {
-            signUpMounted = true;
-            window.Clerk.mountSignUp(signUpSlot, {
-              forceRedirectUrl: '/app.html',
-              fallbackRedirectUrl: '/app.html',
-              signInUrl: '/#sign-in',
-            });
-          }
-        }
-        showAlert('');
-      }
-
-      if (tabSignIn) tabSignIn.addEventListener('click', (e) => { e.preventDefault(); window.location.hash = '#sign-in'; showSignIn(); });
-      if (tabSignUp) tabSignUp.addEventListener('click', (e) => { e.preventDefault(); window.location.hash = '#sign-up'; showSignUp(); });
-
-      // Listen for hash changes so Clerk's internal "Sign up" and "Sign in" links switch views
-      window.addEventListener('hashchange', () => {
-        const h = (window.location.hash || '').toLowerCase();
-        if (h.includes('sign-up') || h.includes('signup')) {
-          showSignUp();
-        } else {
-          showSignIn();
-        }
-      });
-
-      // Check initial URL hash / path
-      const h = (window.location.hash || '').toLowerCase();
-      const p = (window.location.pathname || '').toLowerCase();
-      if (h.includes('sign-up') || h.includes('signup') || p.includes('sign-up') || p.includes('signup')) {
-        showSignUp();
-      } else {
-        showSignIn();
-      }
-
-      // 4. Safe OAuth Session Synchronization (Prevents Loop and establishes server cookie)
-      async function handleClerkSession() {
-        if (!window.Clerk || !window.Clerk.user || isLoggedOut || isSyncingOAuth) return;
-        isSyncingOAuth = true;
-        showAlert('Signing in with Google / Clerk SSO...', 'success');
-
-        try {
-          let token = null;
-          if (window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
-            token = await window.Clerk.session.getToken();
-          }
-
-          const headers = {};
-          if (token) headers['Authorization'] = 'Bearer ' + token;
-
-          const cu = window.Clerk.user;
-          const fullName = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.fullName || cu.username || '';
-          const emailAddr = (cu.primaryEmailAddress && cu.primaryEmailAddress.emailAddress) || (cu.emailAddresses && cu.emailAddresses[0] && cu.emailAddresses[0].emailAddress) || '';
-          const isOnboarded = (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) || (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) || (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true');
-
-          if (fullName) headers['X-Clerk-User-Name'] = encodeURIComponent(fullName);
-          if (emailAddr) headers['X-Clerk-User-Email'] = encodeURIComponent(emailAddr);
-          if (isOnboarded) headers['X-Clerk-Onboarded'] = '1';
-
-          // Exchange Clerk session token for server cookie rxv_sess
-          const res = await fetch('/api/me', { headers, credentials: 'include' });
-          if (res.ok) {
-            showAlert('Authentication successful! Launching workspace...', 'success');
-            setTimeout(() => {
-              window.location.replace('/app.html');
-            }, 250);
-          } else {
-            isSyncingOAuth = false;
-            const err = await res.json().catch(() => ({}));
-            showAlert(err.error || 'Session could not be synchronized with server. Please try signing in again.', 'error');
-          }
-        } catch (e) {
-          isSyncingOAuth = false;
-          showAlert('Network error while connecting to workspace.', 'error');
-        }
-      }
-
-      // 5. Mount Clerk Prominently at Top
-      async function loadClerkSafely() {
-        if (!window.Clerk) return;
-        try {
-          await window.Clerk.load({
-            ui: { ClerkUI: window.__internal_ClerkUICtor },
-            appearance: {
-              variables: {
-                colorPrimary: '#7ea9e8',
-                colorBackground: '#ffffff',
-                colorText: '#17191d',
-                colorNeutral: '#6c737d',
-                borderRadius: '14px',
-              },
-              elements: {
-                formButtonPrimary: {
-                  background: 'linear-gradient(135deg, #5b8cd6 0%, #7ea9e8 100%) !important',
-                  borderRadius: '99px !important',
-                  boxShadow: '0 4px 14px rgba(126, 169, 232, 0.35) !important',
-                },
-                footerActionLink: {
-                  color: '#1a5da9 !important',
-                  fontWeight: '600 !important',
-                },
-              },
-            },
-          });
-
-          // Check if user is already signed in via OAuth
-          if (!isLoggedOut && window.Clerk.user) {
-            handleClerkSession();
-            return;
-          }
-
-          if (typeof window.Clerk.addListener === 'function') {
-            window.Clerk.addListener(({ user }) => {
-              if (user && !isLoggedOut) {
-                handleClerkSession();
-              }
-            });
-          }
-
-          // Mount Clerk into visible top slot
-          if (signInSlot) {
-            window.Clerk.mountSignIn(signInSlot, {
-              forceRedirectUrl: '/app.html',
-              fallbackRedirectUrl: '/app.html',
-              signUpUrl: '/#sign-up',
-            });
-          }
-        } catch (clerkErr) {
-          console.error('Clerk SSO initialization error:', clerkErr.message);
-          showAlert('Clerk authentication service is temporarily unavailable. Please check your network connection.', 'error');
-        }
-      }
-
-      // Check if demo login is enabled via server env
-      fetch('/api/billing/config')
-        .then((r) => r.ok ? r.json() : null)
-        .then((cfg) => {
-          if (cfg && cfg.auth && cfg.auth.demoLoginEnabled) {
-            const wrap = document.getElementById('demoAccessWrap');
-            if (wrap) wrap.style.display = 'flex';
-          }
-        })
-        .catch(() => { });
-
-      async function doQuickLogin(email, password, btnElement) {
-        if (!btnElement) return;
-        const origText = btnElement.textContent;
-        btnElement.disabled = true;
-        btnElement.textContent = 'Logging in...';
-        showAlert('Signing in with demo credentials...', 'success');
-        try {
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-            credentials: 'include'
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.error || 'Demo login failed');
-          showAlert('Login successful. Loading workspace...', 'success');
-          setTimeout(() => {
-            window.location.replace('/app.html');
-          }, 250);
-        } catch (err) {
-          showAlert(err.message || 'Demo login failed.', 'error');
-          btnElement.disabled = false;
-          btnElement.textContent = origText;
-        }
-      }
-
-      const btnAdmin = document.getElementById('btnDemoAdmin');
-      if (btnAdmin) {
-        btnAdmin.addEventListener('click', () => doQuickLogin('admin@demo.com', 'admin123', btnAdmin));
-      }
-      const btnClient = document.getElementById('btnDemoClient');
-      if (btnClient) {
-        btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
-      }
-
-
-
-      // Initialize Clerk
-      if (document.readyState === 'complete') {
-        loadClerkSafely();
-      } else {
-        window.addEventListener('load', loadClerkSafely);
       }
     })();
   </script>
 </body>
-
 </html>
