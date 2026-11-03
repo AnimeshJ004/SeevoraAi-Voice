@@ -15,28 +15,30 @@
   <div class="noise" aria-hidden="true"></div>
 
   <!-- Shared Site Navigation Header -->
+    <!-- Shared Site Navigation Header -->
   <header class="site-nav">
     <div class="site-nav-inner">
       <a href="/" class="site-brand">
-        <img src="/assets/seevora-logo.png" alt="Seevora" class="site-brand-logo" />
+        <img src="/assets/seevora-logo.png" alt="Seevora Logo" class="site-brand-logo" />
         <span class="site-brand-name">Seevora<span>Voice</span></span>
-        <span class="site-brand-badge">AI Receptionist</span>
+        <span class="badge-pill site-brand-badge">Autonomous AI</span>
       </a>
 
-      <ul class="site-nav-links">
-        <li><a href="/" class="site-nav-link">Home</a></li>
-        <li><a href="/features.html" class="site-nav-link active">Features</a></li>
-        <li><a href="/pricing.html" class="site-nav-link">Pricing</a></li>
-        <li><a href="/contact.html" class="site-nav-link">Contact Us</a></li>
-        <li><a href="/privacy.html" class="site-nav-link">Privacy</a></li>
-        <li><a href="/terms.html" class="site-nav-link">Terms</a></li>
-      </ul>
+      <!-- Desktop Links -->
+      <nav class="site-nav-links">
+        <a href="/" class="site-nav-link">Home</a>
+        <a href="/features.html" class="site-nav-link active">Features</a>
+        <a href="/pricing.html" class="site-nav-link">Pricing</a>
+        <a href="/contact.html" class="site-nav-link">Contact Us</a>
+      </nav>
 
+      <!-- Auth Actions -->
       <div class="site-nav-actions">
         <a href="/login.html" class="btn-ghost link-auth-signin">Sign In</a>
-        <a href="/login.html" class="btn-primary btn-auth-entry">Get Started Free</a>
+        <a href="/login.html" class="btn-primary btn-auth-entry">Deploy Free &rarr;</a>
       </div>
 
+      <!-- Mobile Toggle Button -->
       <button id="siteNavToggle" class="site-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" type="button">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
@@ -74,6 +76,24 @@
     <!-- Hero Showcase Visual Banner -->
     <div class="hero-visual-card">
       <img src="/assets/receptionist.jpg" alt="Production Voice Receptionist Architecture" class="hero-bg-img" />
+
+      <!-- Floating Live Intelligence Pills -->
+      <div class="hero-float-pill pill-top-left">
+        <span class="sim-live-dot"></span>
+        <div>
+          <strong style="color:var(--ink);">Inbound Call: +91 80715 82519</strong>
+          <div style="font-size:11px;color:var(--muted);">Production Telecom &middot; Connected (0.2s)</div>
+        </div>
+      </div>
+
+      <div class="hero-float-pill pill-top-right">
+        <span style="font-size:16px;">⚡</span>
+        <div>
+          <strong style="color:var(--primary);">280ms First-Token Latency</strong>
+          <div style="font-size:11px;color:var(--muted);">Groq LPU &middot; Deepgram Nova-3 Stream</div>
+        </div>
+      </div>
+
       <div class="hero-floating-badge">
         <div style="display:flex;align-items:center;gap:12px;">
           <div class="badge-brand-box">
@@ -160,12 +180,21 @@
         </div>
         <div class="img-rounded-frame" style="position:relative;">
           <img src="/assets/microphone.jpg" alt="Acoustic Studio Microphone" class="img-cover" style="height:260px;" />
-          <div style="position:absolute;bottom:14px;left:14px;right:14px;background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;border:1px solid rgba(13,93,65,0.15);box-shadow:0 4px 14px rgba(0,0,0,0.10);">
-            <img src="/assets/face/face_49.png" alt="Ira Persona" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #0d5d41;" />
-            <div>
-              <div style="font-size:13px;font-weight:800;color:var(--ink);">Voice Persona: Ira</div>
-              <div style="font-size:11.5px;color:var(--muted);">Streaming Muga synthesis &middot; 24kHz studio grade</div>
+          <div style="position:absolute;bottom:14px;left:14px;right:14px;background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(13,93,65,0.15);box-shadow:0 4px 14px rgba(0,0,0,0.10);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img src="/assets/face/face_49.png" alt="Ira Persona" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #0d5d41;" />
+              <div>
+                <div style="font-size:13px;font-weight:800;color:var(--ink);">Voice Persona: Ira</div>
+                <div style="font-size:11.5px;color:var(--muted);">Streaming Muga synthesis &middot; 24kHz studio grade</div>
+              </div>
             </div>
+            <span class="audio-equalizer" style="display:inline-flex;gap:3px;align-items:flex-end;height:16px;">
+              <span class="audio-bar" style="width:3px;background:var(--primary);border-radius:1px;animation:equalize 0.8s infinite ease-in-out;"></span>
+              <span class="audio-bar" style="width:3px;background:var(--primary);border-radius:1px;animation:equalize 0.8s infinite ease-in-out 0.2s;"></span>
+              <span class="audio-bar" style="width:3px;background:var(--primary);border-radius:1px;animation:equalize 0.8s infinite ease-in-out 0.4s;"></span>
+              <span class="audio-bar" style="width:3px;background:var(--primary);border-radius:1px;animation:equalize 0.8s infinite ease-in-out 0.1s;"></span>
+              <span class="audio-bar" style="width:3px;background:var(--primary);border-radius:1px;animation:equalize 0.8s infinite ease-in-out 0.3s;"></span>
+            </span>
           </div>
         </div>
       </div>
