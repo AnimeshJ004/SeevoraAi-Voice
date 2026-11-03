@@ -27,6 +27,7 @@
     // 2. Mark active navigation links
     const currentPath = window.location.pathname.toLowerCase();
     document.querySelectorAll('.site-nav-link, .site-mobile-link').forEach(function(link) {
+      link.classList.remove('active');
       const href = (link.getAttribute('href') || '').toLowerCase();
       if ((href === '/' && (currentPath === '/' || currentPath === '/index.html' || currentPath === '/home.html')) ||
           (href !== '/' && currentPath.includes(href.replace('.html', '')))) {

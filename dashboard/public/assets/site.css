@@ -167,7 +167,7 @@ h1, h2, h3, h4 {
 .site-nav-links {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   list-style: none;
 }
 
