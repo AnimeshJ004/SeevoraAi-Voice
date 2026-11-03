@@ -6225,6 +6225,17 @@ ESCALATION RULES:
 - Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
 - Speak with natural, fluid conversational rhythm and clear Indian diction.`;
 
+  const complaintHandlingRules = `\n\n# COMPLAINT & ISSUE HANDLING PROTOCOL (CRITICAL)
+When a caller sounds unhappy, upset, angry, or uses words like complaint, problem, issue, wrong, bad service, or similar:
+1. ACKNOWLEDGE with empathy first: "Main samajhti hoon, mujhe bahut afsos hai ki aapko yeh experience hua." (I understand, I am so sorry you had this experience.)
+2. LISTEN fully - let the caller explain their complete issue without interrupting.
+3. ATTEMPT RESOLUTION - if you can resolve it (schedule callback, confirm refund initiation, escalate to team, book a correction appointment), DO SO immediately.
+4. DETERMINE STATUS - at end of call, assess: did you resolve the issue? Yes = "resolved". No/needs follow-up = "unresolved". Partial = "pending".
+5. LOG THE COMPLAINT - After the call, log via API: POST /api/crm/complaint with:
+   { contactId: <contact_id>, description: "<caller's exact complaint in 1-2 sentences>", status: "<resolved|unresolved|pending>" }
+6. If the caller is very angry or demands a human: follow ESCALATION PROTOCOL above.
+NEVER dismiss a complaint. ALWAYS empathize, log it, and attempt resolution.`;
+
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
 - NEVER write or say "24/7" or "24*7" or "/". Always say "twenty-four seven" or "chaubees ghante".
 - NEVER say raw mathematical symbols, asterisks, or markdown characters.
@@ -6233,7 +6244,7 @@ ESCALATION RULES:
 
   const fullPrompt = `You are ${agent.name}.
 
-${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${toneRules}${speechRules}`;
+${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${complaintHandlingRules}${toneRules}${speechRules}`;
   let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
   if (!greeting.startsWith('[')) {
     greeting = `${toneTag} ${greeting}`;
@@ -11136,7 +11147,12 @@ async function apiCrmPipelineGet(req, res, ctx) {
       deals
     };
   });
-  core.sendJson(res, 200, { stages, pipeline, total: contacts.length });
+  const appointmentsCount = (d.bookings || []).filter((b) => {
+    if (isPlatformAdmin && requestedTenant === 'all') return true;
+    return b.tenantId === targetTenantId;
+  }).length;
+  const complaintsCount = contacts.filter((c) => c.complaint && c.complaint.status === 'unresolved').length;
+  core.sendJson(res, 200, { stages, pipeline, total: contacts.length, appointmentsCount, complaintsCount });
 }
 
 async function apiCrmDealUpdate(req, res, ctx) {
@@ -11159,6 +11175,59 @@ async function apiCrmDealUpdate(req, res, ctx) {
   });
   if (!updatedContact) return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
   core.sendJson(res, 200, { contact: updatedContact });
+}
+
+// POST /api/crm/complaint - log or update complaint/issue for a contact (called by voice agent or dashboard)
+async function apiCrmComplaint(req, res, ctx) {
+  const b = ctx.body || {};
+  const contactId = String(b.contactId || b.contact_id || '');
+  const phone = b.phone ? wacrm.normalizeE164(b.phone) : '';
+  const description = String(b.description || b.issue_description || b.complaint_description || '').trim();
+  const rawStatus = String(b.status || b.issue_status || b.complaint_status || 'unresolved').toLowerCase().trim();
+  const status = ['resolved', 'unresolved', 'pending'].includes(rawStatus) ? rawStatus : 'unresolved';
+
+  if (!contactId && !phone) {
+    return core.sendJson(res, 400, { error: 'contactId or phone is required', code: 'bad_params' });
+  }
+  if (!description) {
+    return core.sendJson(res, 400, { error: 'complaint description is required', code: 'bad_description' });
+  }
+
+  const d = core.db();
+  const tenantId = ctx.tenant.id;
+  let contact = null;
+  if (contactId) {
+    contact = (d.crmContacts || []).find(c => c.id === contactId && c.tenantId === tenantId);
+  }
+  if (!contact && phone) {
+    contact = (d.crmContacts || []).find(c => c.tenantId === tenantId && c.phone === phone);
+  }
+  if (!contact) {
+    return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
+  }
+
+  const now = new Date().toISOString();
+  await core.mutate((mutDb) => {
+    const c = (mutDb.crmContacts || []).find(x => x.id === contact.id);
+    if (c) {
+      c.complaint = {
+        description,
+        status,
+        loggedAt: (c.complaint && c.complaint.loggedAt) || now,
+        resolvedAt: status === 'resolved' ? now : (c.complaint && c.complaint.resolvedAt) || null,
+        updatedAt: now,
+        source: b.source || 'dashboard'
+      };
+      // Add complaint tag
+      if (!Array.isArray(c.tags)) c.tags = [];
+      if (!c.tags.includes('complaint')) c.tags.push('complaint');
+      // Remove complaint tag if resolved and user opts in
+      c.updatedAt = now;
+    }
+  });
+
+  const updated = (core.db().crmContacts || []).find(c => c.id === contact.id);
+  core.sendJson(res, 200, { ok: true, complaint: updated && updated.complaint, contactId: contact.id });
 }
 
 // POST /api/crm/lead-from-call - log live browser/testing voice call into CRM leads
@@ -11991,6 +12060,7 @@ async function apiBookingReserve(req, res, ctx) {
     source: String(b.source || b.bookingType || 'api').slice(0, 80),
     metadata: typeof b.metadata === 'object' ? b.metadata : {},
     createdBy: ctx.user.id,
+    contactId: b.contactId || null,
   }
   );
 
@@ -12719,6 +12789,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/crm/contacts/delete') return core.requireAuth(req, res, apiCrmContactDelete, body);
       if (route === '/api/crm/contacts/bulk-delete') return core.requireAuth(req, res, apiCrmContactBulkDelete, body);
       if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactUpsert, body);
+      if (route === '/api/crm/complaint') return core.requireAuth(req, res, apiCrmComplaint, body);
       if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
       if (route === '/api/crm/parse-import' || route === '/api/crm/import-file') return core.requireAuth(req, res, apiCrmImportFile, body);
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);

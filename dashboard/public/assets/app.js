@@ -6529,7 +6529,7 @@ async function viewTalk(root, customAgent) {
   let sttLang = 'en-IN';
   const langSel = el('select', {
     class: 'select',
-    style: 'width:auto;font-size:0.8rem;padding:4px 8px;',
+    style: 'width:auto;font-size:0.82rem;padding:5px 14px 5px 12px;border-radius:999px;border:1.5px solid rgba(13,93,65,0.25);color:#0d5d41;background:var(--bg-2,#f4f8f6);font-weight:600;cursor:pointer;outline:none;',
     title: 'Select microphone language for speech-to-text',
     onchange: (e) => {
       sttLang = e.target.value;
@@ -6548,7 +6548,7 @@ async function viewTalk(root, customAgent) {
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
   const statusText = el('span', {}, 'Ready');
   const statusPill = el('div', { class: 'conversation-status idle', role: 'status' }, [statusDot, statusText]);
-  const timingText = el('div', { class: 'conversation-timing', 'aria-live': 'polite' }, 'Voice Synthesizer • Natural Audio Stream • Ready');
+  const timingText = el('div', { class: 'conversation-timing', 'aria-live': 'polite' }, '');
 
   function setPhase(phase, label) {
     statusPill.className = 'conversation-status ' + phase;
@@ -7167,7 +7167,7 @@ async function viewTalk(root, customAgent) {
 
   const controlsRow = el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:10px;margin-bottom:14px' }, [
     el('div', { class: 'flex items-center gap-2' }, [sessionBtn, interruptBtn, clearBtn, saveLeadBtn]),
-    el('div', { class: 'flex items-center gap-2' }, [langSel, statusPill, timingText])
+    el('div', { class: 'flex items-center gap-2' }, [langSel])
   ]);
 
   const textRow = el('div', { class: 'flex gap-2', style: 'margin-bottom:14px' }, [textInput, sendBtn]);
@@ -12025,6 +12025,12 @@ async function viewAdmin(root) {
 
   tabDefs.forEach((tab) => {
     const badge = el('span', { class: 'admin-tab-badge', id: tab.badgeId }, tab.badgeVal);
+    if (tab.id === 'complaints' && Number(tab.badgeVal) > 0) {
+      badge.style.background = '#dc2626';
+      badge.style.color = '#ffffff';
+      badge.style.border = 'none';
+      badge.style.fontWeight = '750';
+    }
     const btn = el('button', {
       class: 'admin-tab-btn' + (tab.id === activeTab ? ' active' : ''),
       'data-tab': tab.id,
@@ -13279,14 +13285,14 @@ async function viewSettings(root) {
   let currentTab = urlParams.get('tab') || 'general';
   // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
   if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
-  if (!['general', 'security', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  if (currentTab === 'security') currentTab = 'general';
+  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
-    { id: 'security', label: 'Password & Security', icon: 'shield' },
     { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
@@ -13332,7 +13338,6 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
-    else if (tabId === 'security') renderSecurityTab(contentHost);
     else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
@@ -16077,7 +16082,9 @@ async function viewSettings(root) {
           toast(res.message || 'Connection test successful.', res.ok ? 'ok' : 'err');
           if (res.ok) { panel.innerHTML = ''; renderIntegrationsTab(panel); }
         } catch (e) {
-          toast('Test failed: ' + e.message, 'err');
+          let errText = (e && e.message) || 'Connection test failed';
+          errText = errText.replace(/^(Test failed:\s*)+/i, '');
+          toast(errText, 'err');
         } finally {
           testBtn.disabled = false;
           testBtn.textContent = 'Test Live Connection';
@@ -16643,6 +16650,13 @@ function buildContactsSubNav(activeTab, onSwitch, counts) {
       badgeVal: counts.appointments != null ? String(counts.appointments) : '0'
     },
     {
+      id: 'complaints',
+      label: 'Issues & Complaints',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      badgeId: 'tab-badge-complaints',
+      badgeVal: counts.complaints != null ? String(counts.complaints) : '0'
+    },
+    {
       id: 'visitors',
       label: 'Visitors',
       iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -16706,7 +16720,39 @@ async function viewCrmPipeline(root) {
   root.appendChild(subNavContainer);
   root.appendChild(tabContentHost);
 
-  let cachedSubNavCounts = { pipeline: 'Live', all: 0, appointments: 0, visitors: 'Live' };
+  const APPOINTMENTS_STORAGE_KEY = 'seevora_appointments_count_cache';
+  function readStoredAppointmentsCount() {
+    try {
+      const v = localStorage.getItem(APPOINTMENTS_STORAGE_KEY);
+      if (v !== null && !isNaN(parseInt(v, 10))) return parseInt(v, 10);
+    } catch (_) {}
+    return null;
+  }
+  function writeStoredAppointmentsCount(count) {
+    try {
+      localStorage.setItem(APPOINTMENTS_STORAGE_KEY, String(count));
+    } catch (_) {}
+  }
+
+  const initialApptCount = readStoredAppointmentsCount();
+  let cachedSubNavCounts = {
+    pipeline: 'Live',
+    all: 0,
+    appointments: initialApptCount != null ? initialApptCount : 0,
+    complaints: 0,
+    visitors: 'Live'
+  };
+
+  async function refreshAppointmentsCount() {
+    try {
+      const res = await api('/api/booking/list');
+      if (res && Array.isArray(res.bookings)) {
+        cachedSubNavCounts.appointments = res.bookings.length;
+        writeStoredAppointmentsCount(res.bookings.length);
+        refreshSubNavBadges();
+      }
+    } catch (_) {}
+  }
 
   function refreshSubNavBadges() {
     const elP = document.getElementById('tab-badge-pipeline');
@@ -16715,6 +16761,20 @@ async function viewCrmPipeline(root) {
     if (elA && cachedSubNavCounts.all != null) elA.textContent = String(cachedSubNavCounts.all);
     const elAppt = document.getElementById('tab-badge-appointments');
     if (elAppt && cachedSubNavCounts.appointments != null) elAppt.textContent = String(cachedSubNavCounts.appointments);
+    const elC = document.getElementById('tab-badge-complaints');
+    if (elC && cachedSubNavCounts.complaints != null) {
+      elC.textContent = String(cachedSubNavCounts.complaints);
+      if (Number(cachedSubNavCounts.complaints) > 0) {
+        elC.style.background = '#dc2626';
+        elC.style.color = '#ffffff';
+        elC.style.border = 'none';
+        elC.style.fontWeight = '750';
+      } else {
+        elC.style.background = '';
+        elC.style.color = '';
+        elC.style.border = '';
+      }
+    }
     const elV = document.getElementById('tab-badge-visitors');
     if (elV && cachedSubNavCounts.visitors != null) elV.textContent = String(cachedSubNavCounts.visitors);
   }
@@ -16731,6 +16791,8 @@ async function viewCrmPipeline(root) {
       renderAllContactsTab(tabContentHost);
     } else if (tabId === 'appointments') {
       renderAppointmentsTab(tabContentHost);
+    } else if (tabId === 'complaints') {
+      renderComplaintsSectionTab(tabContentHost);
     } else if (tabId === 'visitors') {
       renderVisitorsTab(tabContentHost);
     }
@@ -16779,15 +16841,24 @@ async function viewCrmPipeline(root) {
     try {
       const res = await api('/api/booking/list');
       const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+      cachedSubNavCounts.appointments = bookings.length;
+      writeStoredAppointmentsCount(bookings.length);
+      refreshSubNavBadges();
       host.innerHTML = '';
       if (!bookings.length) {
         host.appendChild(el('div', { style: 'text-align:center;padding:40px 16px;' }, [
-          
           el('p', { style: 'font-weight:600;color:var(--ink);margin:0 0 6px 0;' }, 'No Appointments Scheduled'),
           el('p', { class: 'muted', style: 'font-size:0.85rem;margin:0;' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or manual intake will appear here.')
         ]));
         return;
       }
+      var summaryBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:12px 16px;background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;'
+      }, [
+        el('span', { style: 'font-weight:700;color:var(--ink);font-size:0.92rem;' }, 'Scheduled Appointments'),
+        el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.82rem;' }, bookings.length + (bookings.length === 1 ? ' Booking' : ' Bookings'))
+      ]);
+      host.appendChild(summaryBar);
       const list = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
       bookings.forEach(function(b) {
         list.appendChild(el('div', {
@@ -16850,6 +16921,417 @@ async function viewCrmPipeline(root) {
     }
   }
 
+  function createComplaintMetricCard(title, count, desc, color, bg) {
+    return el('div', {
+      style: 'background:#fff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);'
+    }, [
+      el('div', { style: 'font-size:0.75rem;font-weight:750;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, title),
+      el('div', { style: 'font-size:1.8rem;font-weight:800;color:' + color + ';margin:4px 0;' }, String(count)),
+      el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, desc)
+    ]);
+  }
+
+  function openNewComplaintModal(onSuccess) {
+    const modalHost = el('div', { class: 'modal-overlay', style: 'display:flex;align-items:center;justify-content:center;z-index:9999;' });
+    const modalBox = el('div', {
+      class: 'modal card card-pad',
+      style: 'max-width:520px;width:90%;background:#fff;border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,0.18);position:relative;padding:24px;'
+    });
+
+    const closeBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'position:absolute;top:16px;right:16px;border-radius:50%;width:32px;height:32px;padding:0;cursor:pointer;',
+      onclick: () => modalHost.remove()
+    }, '✕');
+
+    const title = el('h3', { style: 'margin:0 0 6px 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Log Customer Issue / Complaint');
+    const subtitle = el('p', { class: 'muted', style: 'margin:0 0 18px 0;font-size:0.82rem;' }, 'Record an issue reported by a patient or gym member for follow-up.');
+
+    const nameInput = el('input', {
+      type: 'text',
+      placeholder: 'Customer / Patient Name',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;'
+    });
+
+    const phoneInput = el('input', {
+      type: 'text',
+      placeholder: 'Phone Number (e.g. +91 98765 43210)',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;'
+    });
+
+    const descInput = el('textarea', {
+      rows: 3,
+      placeholder: 'Describe the complaint or service issue in detail...',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:10px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;resize:vertical;font-family:inherit;'
+    });
+
+    const statusSel = el('select', {
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:20px;outline:none;background:#fff;font-weight:600;'
+    }, [
+      el('option', { value: 'unresolved' }, 'Unresolved (Requires Action)'),
+      el('option', { value: 'pending' }, 'Pending Follow-up'),
+      el('option', { value: 'resolved' }, 'Resolved on Intake')
+    ]);
+
+    const submitBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'width:100%;border-radius:999px;font-size:0.88rem;font-weight:750;padding:10px;background:#0d5d41;color:#fff;border:none;cursor:pointer;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+      onclick: async () => {
+        const phone = phoneInput.value.trim();
+        const desc = descInput.value.trim();
+        const name = nameInput.value.trim();
+        const status = statusSel.value;
+        if (!phone) { toast('Please enter a phone number.', 'warn'); return; }
+        if (!desc) { toast('Please enter the issue description.', 'warn'); return; }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        try {
+          // Upsert contact with complaint
+          const upRes = await api('/api/crm/contacts', {
+            method: 'POST',
+            body: JSON.stringify({
+              phone,
+              name: name || undefined,
+              tags: ['complaint'],
+              complaint: {
+                description: desc,
+                status,
+                source: 'dashboard',
+                loggedAt: new Date().toISOString(),
+                resolvedAt: status === 'resolved' ? new Date().toISOString() : null
+              }
+            })
+          });
+          if (upRes && upRes.contact) {
+            toast('Customer issue logged successfully.', 'ok');
+            modalHost.remove();
+            if (typeof onSuccess === 'function') onSuccess();
+          } else {
+            toast('Failed to save issue.', 'err');
+          }
+        } catch (e) {
+          toast('Error: ' + e.message, 'err');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Issue';
+        }
+      }
+    }, 'Save Issue');
+
+    modalBox.appendChild(closeBtn);
+    modalBox.appendChild(title);
+    modalBox.appendChild(subtitle);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Client Name'));
+    modalBox.appendChild(nameInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Phone Number *'));
+    modalBox.appendChild(phoneInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Issue / Complaint Description *'));
+    modalBox.appendChild(descInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Initial Status'));
+    modalBox.appendChild(statusSel);
+    modalBox.appendChild(submitBtn);
+
+    modalHost.appendChild(modalBox);
+    document.body.appendChild(modalHost);
+  }
+
+  async function renderComplaintsSectionTab(host) {
+    host.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading customer issues & complaints...</div>';
+    try {
+      const res = await api('/api/crm/pipeline' + (currentTenantFilter ? ('?tenantId=' + encodeURIComponent(currentTenantFilter)) : ''));
+      const allDeals = [];
+      if (res && Array.isArray(res.pipeline)) {
+        res.pipeline.forEach(st => {
+          if (Array.isArray(st.deals)) {
+            st.deals.forEach(d => allDeals.push(d));
+          }
+        });
+      }
+
+      // Filter contacts that have a complaint or complaint tag
+      const allIssues = allDeals.filter(d => d.complaint || (d.tags && d.tags.includes('complaint')));
+
+      const unresolvedCount = allIssues.filter(d => (d.complaint && d.complaint.status === 'unresolved') || (!d.complaint && d.tags && d.tags.includes('complaint'))).length;
+      const pendingCount = allIssues.filter(d => d.complaint && d.complaint.status === 'pending').length;
+      const resolvedCount = allIssues.filter(d => d.complaint && d.complaint.status === 'resolved').length;
+      const totalCount = allIssues.length;
+
+      cachedSubNavCounts.complaints = unresolvedCount;
+      refreshSubNavBadges();
+
+      host.innerHTML = '';
+
+      // 1. Top Section: Title & Actions
+      const topBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:12px;'
+      }, [
+        el('div', {}, [
+          el('h3', { style: 'margin:0 0 4px 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Customer Complaints & Issue Tracking'),
+          el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' }, 'Automated grievance detection from AI Voice calls & manual staff intake for clinics, gyms, and service teams.')
+        ]),
+        el('div', { style: 'display:flex;gap:8px;' }, [
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+            style: 'border-radius:999px;font-size:0.82rem;font-weight:750;padding:6px 18px;background:#0d5d41;color:#fff;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+            onclick: () => openNewComplaintModal(() => renderComplaintsSectionTab(host))
+          }, '+ Log New Issue')
+        ])
+      ]);
+      host.appendChild(topBar);
+
+      // 2. Metrics Cards Row
+      const metricsRow = el('div', {
+        style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:20px;'
+      }, [
+        createComplaintMetricCard('Total Logged', totalCount, 'All issues tracked', '#14221c', 'rgba(13,93,65,0.06)'),
+        createComplaintMetricCard('Unresolved', unresolvedCount, 'Requires immediate action', '#dc2626', 'rgba(220,38,38,0.08)'),
+        createComplaintMetricCard('Pending Follow-up', pendingCount, 'Staff callback or review', '#b45309', 'rgba(180,83,9,0.08)'),
+        createComplaintMetricCard('Resolved', resolvedCount, 'Closed & satisfied', '#1a7a4a', 'rgba(26,122,74,0.08)')
+      ]);
+      host.appendChild(metricsRow);
+
+      // 3. Search and Filter Bar
+      let activeFilter = 'all';
+      let searchQuery = '';
+
+      const controlsBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;'
+      });
+
+      const filterGroup = el('div', {
+        style: 'display:inline-flex;gap:4px;padding:3px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.08);border-radius:999px;'
+      });
+
+      const filterChips = [
+        { id: 'all', label: 'All Issues (' + totalCount + ')' },
+        { id: 'unresolved', label: 'Unresolved (' + unresolvedCount + ')' },
+        { id: 'pending', label: 'Pending (' + pendingCount + ')' },
+        { id: 'resolved', label: 'Resolved (' + resolvedCount + ')' }
+      ];
+
+      const chipBtns = {};
+      filterChips.forEach(fc => {
+        const btn = el('button', {
+          type: 'button',
+          class: 'btn btn-sm',
+          style: (fc.id === activeFilter ? 'background:#0d5d41;color:#fff;font-weight:750;box-shadow:0 2px 6px rgba(13,93,65,0.20);' : 'background:transparent;color:#5d7468;font-weight:600;') + 'border-radius:999px;border:none;padding:5px 14px;font-size:0.8rem;cursor:pointer;',
+          onclick: () => {
+            activeFilter = fc.id;
+            Object.keys(chipBtns).forEach(k => {
+              const b = chipBtns[k];
+              if (k === activeFilter) {
+                b.style.background = '#0d5d41';
+                b.style.color = '#fff';
+                b.style.fontWeight = '750';
+                b.style.boxShadow = '0 2px 6px rgba(13,93,65,0.20)';
+              } else {
+                b.style.background = 'transparent';
+                b.style.color = '#5d7468';
+                b.style.fontWeight = '600';
+                b.style.boxShadow = 'none';
+              }
+            });
+            renderTicketsList();
+          }
+        }, fc.label);
+        chipBtns[fc.id] = btn;
+        filterGroup.appendChild(btn);
+      });
+      controlsBar.appendChild(filterGroup);
+
+      const searchBox = el('input', {
+        type: 'text',
+        placeholder: 'Search by client name, phone, or issue description...',
+        style: 'border:1.5px solid rgba(13,93,65,0.20);border-radius:999px;padding:6px 16px;font-size:0.82rem;width:280px;max-width:100%;outline:none;background:#fff;color:#14221c;',
+        oninput: (e) => {
+          searchQuery = e.target.value.toLowerCase().trim();
+          renderTicketsList();
+        }
+      });
+      controlsBar.appendChild(searchBox);
+      host.appendChild(controlsBar);
+
+      // 4. Tickets Container
+      const ticketsContainer = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
+      host.appendChild(ticketsContainer);
+
+      function renderTicketsList() {
+        ticketsContainer.innerHTML = '';
+
+        let filtered = allIssues.filter(d => {
+          const c = d.complaint || {};
+          const st = c.status || 'unresolved';
+          if (activeFilter !== 'all' && st !== activeFilter) return false;
+          if (searchQuery) {
+            const nameMatch = d.name && d.name.toLowerCase().includes(searchQuery);
+            const phoneMatch = d.phone && d.phone.includes(searchQuery);
+            const descMatch = c.description && c.description.toLowerCase().includes(searchQuery);
+            const notesMatch = d.notes && d.notes.toLowerCase().includes(searchQuery);
+            if (!nameMatch && !phoneMatch && !descMatch && !notesMatch) return false;
+          }
+          return true;
+        });
+
+        if (!filtered.length) {
+          ticketsContainer.appendChild(el('div', {
+            style: 'text-align:center;padding:48px 20px;background:rgba(13,93,65,0.02);border:1px dashed rgba(13,93,65,0.18);border-radius:16px;'
+          }, [
+            el('div', {
+              style: 'width:44px;height:44px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;display:flex;align-items:center;justify-content:center;margin:0 auto 12px auto;'
+            }, [uiIcon('alert-circle', 20)]),
+            el('div', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;margin-bottom:4px;' }, 'No Issues Found'),
+            el('div', { style: 'font-size:0.84rem;color:#5d7468;' }, activeFilter === 'all'
+              ? 'No customer complaints logged yet. Any grievances detected during Voice AI calls will automatically appear here.'
+              : 'No issues match the selected "' + activeFilter + '" filter.')
+          ]));
+          return;
+        }
+
+        filtered.forEach(d => {
+          const c = d.complaint || {};
+          const currentStatus = c.status || 'unresolved';
+          const cleanPhone = (d.phone || '').replace(/\D/g, '');
+
+          const card = el('div', {
+            class: 'card',
+            style: 'background:#fff;border:1px solid ' + (currentStatus === 'unresolved' ? 'rgba(220,38,38,0.25)' : 'rgba(13,93,65,0.12)') + ';border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:all 0.15s ease;',
+            onclick: () => openContactInspectionDrawer(d)
+          });
+
+          const cardHeader = el('div', {
+            style: 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;'
+          });
+
+          const clientInfo = el('div', { style: 'display:flex;align-items:center;gap:12px;min-width:0;' }, [
+            el('div', {
+              style: 'width:38px;height:38px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:800;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+            }, typeof initials === 'function' ? initials(d.name || d.phone) : (d.name ? d.name.slice(0, 2).toUpperCase() : 'LE')),
+            el('div', { style: 'min-width:0;' }, [
+              el('div', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;' }, d.name || 'Unnamed Client'),
+              el('div', { style: 'font-size:0.8rem;color:#5d7468;margin-top:2px;display:flex;align-items:center;gap:8px;' }, [
+                el('span', {}, d.phone || ''),
+                d.company ? el('span', {}, '· ' + d.company) : ''
+              ])
+            ])
+          ]);
+
+          const actionGroup = el('div', {
+            style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;',
+            onclick: (e) => e.stopPropagation()
+          });
+
+          const callBtn = el('button', {
+            type: 'button',
+            class: 'btn btn-ghost btn-sm',
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:4px 10px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
+            title: 'Call Client with Voice AI',
+            onclick: (e) => {
+              e.stopPropagation();
+              if (typeof openMakeCallModal === 'function') openMakeCallModal(d.phone, d.name || '', callBtn);
+            }
+          }, [
+            el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('phone', 12)]),
+            el('span', {}, 'Call')
+          ]);
+
+          const waBtn = el('button', {
+            type: 'button',
+            class: 'btn btn-ghost btn-sm',
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:4px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
+            title: 'Open WhatsApp Chat',
+            onclick: (e) => {
+              e.stopPropagation();
+              if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
+              else toast('No valid phone number for WhatsApp.', 'warn');
+            }
+          }, [
+            el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),
+            el('span', {}, 'WhatsApp')
+          ]);
+
+          const statusSelect = el('select', {
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:750;padding:4px 12px;cursor:pointer;outline:none;' +
+              (currentStatus === 'resolved'
+                ? 'background:#e8f7ee;color:#1a7a4a;border:1.5px solid rgba(26,122,74,0.3);'
+                : currentStatus === 'pending'
+                  ? 'background:#fff7e6;color:#b45309;border:1.5px solid rgba(180,83,9,0.3);'
+                  : 'background:#fef2f2;color:#dc2626;border:1.5px solid rgba(220,38,38,0.3);'),
+            onchange: async (e) => {
+              const newSt = e.target.value;
+              try {
+                const res = await api('/api/crm/complaint', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    contactId: d.id,
+                    description: c.description || d.notes || 'Client complaint',
+                    status: newSt,
+                    source: 'dashboard'
+                  })
+                });
+                if (res && res.ok) {
+                  d.complaint = res.complaint;
+                  toast('Issue status updated to ' + newSt + '.', 'ok');
+                  renderComplaintsSectionTab(host);
+                }
+              } catch (err) {
+                toast('Failed to update status: ' + err.message, 'err');
+              }
+            }
+          }, [
+            el('option', { value: 'unresolved', selected: currentStatus === 'unresolved' }, 'Unresolved'),
+            el('option', { value: 'pending', selected: currentStatus === 'pending' }, 'Pending Action'),
+            el('option', { value: 'resolved', selected: currentStatus === 'resolved' }, 'Resolved')
+          ]);
+
+          actionGroup.appendChild(callBtn);
+          actionGroup.appendChild(waBtn);
+          actionGroup.appendChild(statusSelect);
+
+          cardHeader.appendChild(clientInfo);
+          cardHeader.appendChild(actionGroup);
+          card.appendChild(cardHeader);
+
+          // Body: Issue description
+          const issueBody = el('div', {
+            style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);border-radius:10px;padding:12px 14px;font-size:0.86rem;color:#14221c;line-height:1.5;'
+          }, [
+            el('div', { style: 'font-weight:700;font-size:0.75rem;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;' }, 'Reported Issue:'),
+            el('div', {}, c.description || d.notes || 'Complaint logged during voice consultation.')
+          ]);
+          card.appendChild(issueBody);
+
+          // Footer: Timestamps + Source pill
+          const cardFooter = el('div', {
+            style: 'display:flex;justify-content:space-between;align-items:center;font-size:0.76rem;color:#5d7468;flex-wrap:wrap;gap:8px;'
+          }, [
+            el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+              c.loggedAt ? el('span', {}, 'Logged: ' + new Date(c.loggedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })) : '',
+              c.resolvedAt ? el('span', { style: 'color:#1a7a4a;font-weight:600;' }, 'Resolved: ' + new Date(c.resolvedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })) : ''
+            ]),
+            el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
+              el('span', {
+                class: 'pill',
+                style: 'font-size:0.7rem;font-weight:600;background:rgba(13,93,65,0.05);color:#0d5d41;border:1px solid rgba(13,93,65,0.12);'
+              }, c.source ? ('Source: ' + c.source.replace(/_/g, ' ')) : 'Source: Voice AI')
+            ])
+          ]);
+          card.appendChild(cardFooter);
+
+          ticketsContainer.appendChild(card);
+        });
+      }
+
+      renderTicketsList();
+
+    } catch (err) {
+      host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load complaints: ' + err.message + '</div>';
+    }
+  }
+
   function renderPipelineTab(host) {
     // The existing pipeline board renders into this host
     host.appendChild(pipelineContentContainer);
@@ -16857,6 +17339,7 @@ async function viewCrmPipeline(root) {
 
   const pipelineContentContainer = el('div', {});
   switchContactsTab('pipeline');
+  refreshAppointmentsCount();
 
   const PIPELINE_STORAGE_KEY = 'seevora_crm_pipeline_cache';
   let currentTenantFilter = '';
@@ -17644,6 +18127,25 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
             card.appendChild(tagsRow);
           }
 
+          // Complaint badge (if contact has an open complaint)
+          if (deal.complaint && deal.complaint.status) {
+            const cs = deal.complaint.status;
+            const badgeColor = cs === 'resolved'
+              ? 'background:#e8f7ee;color:#1a7a4a;border:1px solid rgba(26,122,74,0.25);'
+              : cs === 'pending'
+                ? 'background:#fff7e6;color:#b45309;border:1px solid rgba(180,83,9,0.25);'
+                : 'background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.25);';
+            const badgeLabel = cs === 'resolved' ? 'Issue Resolved' : cs === 'pending' ? 'Issue Pending' : 'Issue Open';
+            const complaintBadge = el('div', {
+              style: 'margin-top:6px;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;' + badgeColor,
+              title: deal.complaint.description || 'Customer complaint logged'
+            }, [
+              el('span', { style: 'width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block;' }),
+              el('span', {}, badgeLabel)
+            ]);
+            card.appendChild(complaintBadge);
+          }
+
           // Divider
           card.appendChild(el('div', { class: 'wacrm-deal-divider' }));
 
@@ -17697,7 +18199,21 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     try {
       const ts = '_t=' + Date.now();
       const q = tenantFilter ? ('?tenantId=' + encodeURIComponent(tenantFilter) + '&' + ts) : ('?' + ts);
-      const res = await api('/api/crm/pipeline' + q);
+      const [res, bkRes] = await Promise.all([
+        api('/api/crm/pipeline' + q),
+        api('/api/booking/list').catch(() => null)
+      ]);
+      if (bkRes && Array.isArray(bkRes.bookings)) {
+        cachedSubNavCounts.appointments = bkRes.bookings.length;
+        writeStoredAppointmentsCount(bkRes.bookings.length);
+      } else if (res && typeof res.appointmentsCount === 'number') {
+        cachedSubNavCounts.appointments = res.appointmentsCount;
+        writeStoredAppointmentsCount(res.appointmentsCount);
+      }
+      if (res && typeof res.complaintsCount === 'number') {
+        cachedSubNavCounts.complaints = res.complaintsCount;
+        refreshSubNavBadges();
+      }
       const stages = (res && Array.isArray(res.pipeline)) ? res.pipeline : [];
       writeStoredPipeline(res);
       renderStages(stages);
@@ -17899,9 +18415,20 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       el('span', {}, 'Notes & Settings')
     ]);
 
+    const complaintsTabBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
+      onclick: () => switchDrawerTab('complaints')
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('alert-circle', 12)]),
+      el('span', {}, deal.complaint ? 'Complaint (' + (deal.complaint.status || 'open') + ')' : 'Complaints')
+    ]);
+
     tabNav.appendChild(apptTabBtn);
     tabNav.appendChild(timelineTabBtn);
     tabNav.appendChild(detailsTabBtn);
+    tabNav.appendChild(complaintsTabBtn);
     container.appendChild(tabNav);
 
     // 3. Tab Content Area
@@ -17916,7 +18443,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
         btn.style.fontWeight = '650';
         btn.style.boxShadow = 'none';
       });
-      const activeBtn = tab === 'appointments' ? apptTabBtn : tab === 'timeline' ? timelineTabBtn : detailsTabBtn;
+      const activeBtn = tab === 'appointments' ? apptTabBtn : tab === 'timeline' ? timelineTabBtn : tab === 'complaints' ? complaintsTabBtn : detailsTabBtn;
       activeBtn.style.background = '#0d5d41';
       activeBtn.style.color = '#ffffff';
       activeBtn.style.border = 'none';
@@ -17929,7 +18456,122 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
         renderTimelineTab(tabContent);
       } else if (tab === 'details') {
         renderDetailsTab(tabContent);
+      } else if (tab === 'complaints') {
+        renderComplaintsTab(tabContent);
       }
+    }
+
+    function renderComplaintsTab(panel) {
+      panel.innerHTML = '';
+      const c = deal.complaint;
+      const now = new Date().toISOString();
+
+      // Header
+      const hdr = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;' }, [
+        el('span', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, 'Customer Complaints & Issues')
+      ]);
+      panel.appendChild(hdr);
+
+      // Current complaint section
+      const complaintCard = el('div', { style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.10);border-radius:14px;padding:18px;margin-bottom:16px;' });
+
+      const statusOpts = [
+        { value: 'unresolved', label: 'Unresolved', color: '#dc2626' },
+        { value: 'pending', label: 'Pending', color: '#b45309' },
+        { value: 'resolved', label: 'Resolved', color: '#1a7a4a' }
+      ];
+
+      const descArea = el('textarea', {
+        rows: 3,
+        placeholder: 'Describe the complaint or issue reported by the customer...',
+        style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:10px 12px;font-size:0.84rem;color:#14221c;background:#fff;resize:vertical;font-family:inherit;outline:none;margin-bottom:12px;'
+      });
+      if (c && c.description) descArea.value = c.description;
+
+      const statusSel = el('select', {
+        style: 'border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;padding:6px 12px;font-size:0.84rem;color:#14221c;background:#fff;font-weight:600;cursor:pointer;outline:none;width:auto;margin-bottom:12px;'
+      }, statusOpts.map(o => {
+        const opt = el('option', { value: o.value }, o.label);
+        if (c && c.status === o.value) opt.selected = true;
+        else if (!c && o.value === 'unresolved') opt.selected = true;
+        return opt;
+      }));
+
+      const saveBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-primary btn-sm',
+        style: 'border-radius:999px;font-size:0.82rem;font-weight:750;padding:6px 18px;background:#0d5d41;color:#fff;border:none;cursor:pointer;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+        onclick: async () => {
+          const desc = descArea.value.trim();
+          const st = statusSel.value;
+          if (!desc) { toast('Please enter a complaint description.', 'warn'); return; }
+          saveBtn.textContent = 'Saving...';
+          saveBtn.disabled = true;
+          try {
+            const r = await api('/api/crm/complaint', {
+              method: 'POST',
+              body: JSON.stringify({ contactId: deal.id, description: desc, status: st, source: 'dashboard' })
+            });
+            if (r && r.ok) {
+              deal.complaint = r.complaint;
+              toast('Complaint saved.', 'ok');
+              renderComplaintsTab(panel);
+            } else {
+              toast('Failed to save complaint.', 'err');
+            }
+          } catch (e) {
+            toast('Error: ' + e.message, 'err');
+          } finally {
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+          }
+        }
+      }, 'Save Complaint');
+
+      // Meta info if existing complaint
+      if (c) {
+        const cs = c.status || 'unresolved';
+        const badgeColor = cs === 'resolved'
+          ? 'background:#e8f7ee;color:#1a7a4a;border:1px solid rgba(26,122,74,0.25);'
+          : cs === 'pending'
+            ? 'background:#fff7e6;color:#b45309;border:1px solid rgba(180,83,9,0.25);'
+            : 'background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.25);';
+        const statusBadge = el('span', {
+          style: 'display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:999px;font-size:0.76rem;font-weight:700;' + badgeColor
+        }, [
+          el('span', { style: 'width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;' }),
+          el('span', {}, cs.charAt(0).toUpperCase() + cs.slice(1))
+        ]);
+        const metaRow = el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;' }, [
+          statusBadge,
+          c.loggedAt ? el('span', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Logged: ' + c.loggedAt.slice(0, 10)) : '',
+          c.resolvedAt ? el('span', { style: 'font-size:0.76rem;color:#1a7a4a;' }, 'Resolved: ' + c.resolvedAt.slice(0, 10)) : '',
+          c.source ? el('span', { style: 'font-size:0.72rem;color:#5d7468;background:rgba(13,93,65,0.06);padding:2px 8px;border-radius:999px;' }, 'via ' + c.source.replace(/_/g, ' ')) : ''
+        ]);
+        complaintCard.appendChild(metaRow);
+      } else {
+        const emptyNote = el('div', { style: 'text-align:center;padding:18px 0 10px;color:#5d7468;font-size:0.84rem;' }, 'No complaint logged for this contact yet. Log one below or it will be auto-detected from voice calls.');
+        complaintCard.appendChild(emptyNote);
+      }
+
+      const formLabel = el('div', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;' }, c ? 'Update Complaint' : 'Log New Complaint');
+      complaintCard.appendChild(formLabel);
+      complaintCard.appendChild(descArea);
+      const statusRow = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        el('label', { style: 'font-size:0.82rem;color:#5d7468;font-weight:600;' }, 'Status:'),
+        statusSel,
+        saveBtn
+      ]);
+      complaintCard.appendChild(statusRow);
+      panel.appendChild(complaintCard);
+
+      // Auto-detection info
+      panel.appendChild(el('div', {
+        style: 'padding:12px 16px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.08);border-radius:10px;font-size:0.8rem;color:#5d7468;line-height:1.6;'
+      }, [
+        el('strong', { style: 'color:#0d5d41;display:block;margin-bottom:4px;' }, 'Auto-Detection Active'),
+        el('span', {}, 'The AI Voice Agent automatically detects complaints during calls, logs the issue description, and sets the status (Resolved / Unresolved / Pending) based on how the call ended. You can also update the status manually above.')
+      ]));
     }
 
     async function renderAppointmentsTab(panel) {
@@ -17937,6 +18579,8 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       try {
         const res = await api('/api/booking/list?phone=' + encodeURIComponent(phone) + '&contactId=' + encodeURIComponent(deal.id));
         const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+        const apptSpan = apptTabBtn.querySelector('span:last-child');
+        if (apptSpan) apptSpan.textContent = 'Appointments (' + bookings.length + ')';
 
         panel.innerHTML = '';
         const topActions = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
@@ -18146,6 +18790,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
             }
           });
           toast('Appointment scheduled successfully!', 'ok');
+          refreshAppointmentsCount();
           if (typeof onSaved === 'function') onSaved();
         }
       });

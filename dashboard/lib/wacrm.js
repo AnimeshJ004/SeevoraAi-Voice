@@ -442,7 +442,48 @@ function extractLeadDataFromCall(callDetails = {}) {
     }
   }
 
-  // 7. Stage / Disposition
+  // 7. Complaint / Issue Detection
+  const complaintKeywords = [
+    'complaint', 'unhappy', 'dissatisfied', 'bad service', 'wrong', 'issue', 'problem',
+    'not working', 'broke', 'broken', 'damage', 'refund', 'overcharged', 'charged extra',
+    'late', 'delay', 'never came', 'did not come', 'cancelled', 'rude', 'unprofessional',
+    'pathetic', 'worst', 'terrible', 'horrible', 'angry', 'frustrated', 'upset',
+    'shikayat', 'problem hai', 'theek nahi', 'galat', 'bura', 'wapas karo', 'paise wapas',
+    'dikkat', 'pareshani', 'naraaz', 'gussa'
+  ];
+  const resolveKeywords = [
+    'resolved', 'fixed', 'sorted', 'done', 'taken care', 'will be resolved', 'we will fix',
+    'apology accepted', 'satisfied now', 'thank you for resolving', 'issue solved',
+    'refund processed', 'replacement sent', 'solution provided', 'ho gaya', 'theek ho gaya',
+    'solve kar diya', 'fix kar diya', 'wapas kar diya', 'sorry bol diya', 'samajh gaya'
+  ];
+
+  const complaintSource = (transcript + ' ' + summary).toLowerCase();
+  const isComplaint = gathered.is_complaint === true ||
+    gathered.complaint_detected === true ||
+    complaintKeywords.some(k => complaintSource.includes(k));
+
+  let complaintDescription = gathered.complaint_description || gathered.issue_description || gathered.complaint || '';
+  let complaintStatus = gathered.complaint_status || gathered.issue_status || '';
+  let complaintResolved = gathered.complaint_resolved || gathered.issue_resolved || false;
+
+  if (isComplaint && !complaintDescription && summary) {
+    complaintDescription = summary.slice(0, 500);
+  }
+  if (isComplaint && !complaintDescription && transcript) {
+    const callerLines = transcript.match(/(?:Caller|User):\\s*([^\\r\\n]+)/gi) || [];
+    complaintDescription = callerLines.slice(0, 3).map(l => l.replace(/^(?:Caller|User):\\s*/i, '')).join(' ').slice(0, 500);
+  }
+
+  if (!complaintStatus) {
+    if (complaintResolved || resolveKeywords.some(k => complaintSource.includes(k))) {
+      complaintStatus = 'resolved';
+    } else if (isComplaint) {
+      complaintStatus = 'unresolved';
+    }
+  }
+
+  // 8. Stage / Disposition
   let stage = callDetails.stage || gathered.stage;
   const disposition = String(callDetails.disposition || gathered.call_disposition || gathered.disposition || '').toLowerCase();
   if (!stage) {
@@ -478,11 +519,15 @@ function extractLeadDataFromCall(callDetails = {}) {
     appointment,
     structuredNotes,
     disposition: disposition || 'completed',
+    isComplaint,
+    complaintDescription: complaintDescription || '',
+    complaintStatus: complaintStatus || '',
     tags: [
       'voice-lead',
       `disposition:${disposition || 'completed'}`,
       appointment ? 'appointment-booked' : null,
-      dealValue > 0 ? 'budget-qualified' : null
+      dealValue > 0 ? 'budget-qualified' : null,
+      isComplaint ? 'complaint' : null
     ].filter(Boolean)
   };
 }
@@ -538,7 +583,8 @@ function upsertContact(db, tenantId, contactData) {
       customFields: contactData.customFields || {},
       lastContactedAt: now,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      complaint: contactData.complaint || null
     };
     db.crmContacts.unshift(contact);
   } else {
@@ -571,6 +617,15 @@ function upsertContact(db, tenantId, contactData) {
     }
     if (Array.isArray(contactData.tags)) {
       contact.tags = [...new Set([...(contact.tags || []), ...contactData.tags])];
+    }
+    // Update complaint if provided
+    if (contactData.complaint !== undefined) {
+      if (contactData.complaint === null) {
+        contact.complaint = null;
+      } else {
+        const existing = contact.complaint || {};
+        contact.complaint = Object.assign({}, existing, contactData.complaint);
+      }
     }
     contact.lastContactedAt = now;
     contact.updatedAt = now;
@@ -687,7 +742,14 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
     dealValue: (callDetails.dealValue !== undefined) ? Number(callDetails.dealValue) : (extracted.dealValue || 0),
     stage,
     tags: ['ai-voice-call', ...(extracted.tags || []), `disposition:${disposition}`],
-    notes: `[Voice Call ${now.slice(0, 10)}] ${extracted.structuredNotes || summary}`
+    notes: `[Voice Call ${now.slice(0, 10)}] ${extracted.structuredNotes || summary}`,
+    complaint: extracted.isComplaint ? {
+      description: extracted.complaintDescription || summary,
+      status: extracted.complaintStatus || 'unresolved',
+      loggedAt: now,
+      resolvedAt: extracted.complaintStatus === 'resolved' ? now : null,
+      source: 'voice_ai'
+    } : (callDetails.complaint || undefined)
   });
 
   // 2. Append call summary and Q&A into the WhatsApp timeline as a system event
