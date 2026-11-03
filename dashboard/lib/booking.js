@@ -212,7 +212,7 @@ function getAvailableSlots(db, tenantId, agentId, { days = 7, startDate } = {}) 
 
 async function reserveSlot(db_mutate, db_read, tenantId, agentId, {
   startTime, callerName, callerPhone, callerEmail,
-  notes, source, metadata, createdBy,
+  notes, source, metadata, createdBy, contactId,
 }) {
   const start = new Date(startTime);
   if (isNaN(start.getTime())) {
@@ -283,6 +283,7 @@ async function reserveSlot(db_mutate, db_read, tenantId, agentId, {
     booking = {
       id: genBookingId(),
       tenantId,
+      contactId: contactId || null,
       agentId: agentId || null,
       scheduleId: schedule.id,
       startTime: startIso,
@@ -343,6 +344,7 @@ function publicBooking(b) {
   return {
     id: b.id,
     tenantId: b.tenantId,
+    contactId: b.contactId || null,
     agentId: b.agentId,
     startTime: b.startTime,
     endTime: b.endTime,
@@ -366,8 +368,15 @@ function listBookings(db, tenantId, agentId, { page = 1, pageSize = 50, status, 
   if (status) bookings = bookings.filter((b) => b.status === status);
   if (from)   bookings = bookings.filter((b) => b.startTime >= from);
   if (to)     bookings = bookings.filter((b) => b.startTime <= to);
-  if (contactId) bookings = bookings.filter((b) => b.contactId === contactId);
-  if (phone) {
+  if (contactId && phone) {
+    const clean = String(phone).replace(/\D/g, '').slice(-10);
+    bookings = bookings.filter((b) =>
+      (b.contactId && b.contactId === contactId) ||
+      (clean && String(b.callerPhone || '').replace(/\D/g, '').slice(-10) === clean)
+    );
+  } else if (contactId) {
+    bookings = bookings.filter((b) => b.contactId === contactId);
+  } else if (phone) {
     const clean = String(phone).replace(/\D/g, '').slice(-10);
     bookings = bookings.filter((b) => String(b.callerPhone || '').replace(/\D/g, '').slice(-10) === clean);
   }

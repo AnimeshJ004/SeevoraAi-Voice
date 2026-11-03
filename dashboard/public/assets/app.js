@@ -221,6 +221,61 @@ function modal(opts, maybeBody) {
 /* ===========================================================================
    SMALL UTILITIES
    =========================================================================== */
+function formatFriendlyLeadNote(text) {
+  if (!text || typeof text !== 'string') return '';
+  let str = text.trim();
+
+  // If there are multiple call entries, extract the first/most relevant entry
+  const entries = str.split(/(?=\[Voice Call|\n\n)/i).map(x => x.trim()).filter(Boolean);
+  if (entries.length > 0) {
+    str = entries[0];
+  }
+
+  // Strip technical headers and prefixes
+  str = str.replace(/^\[Voice Call [^\]]+\]\s*/i, '').replace(/^Inquiry:\s*/i, '').trim();
+
+  // Transform technical "Visited nodes" patterns
+  str = str.replace(/(?:Inquiry:\s*)?Visited nodes:\s*([^\r\n•]+)(?:\s*•\s*Appointment\s*\/\s*Booking:\s*([^\r\n]+))?/gi, (match, nodesPart, apptPart) => {
+    const combined = (nodesPart + ' ' + (apptPart || '')).toLowerCase();
+    if (apptPart && /requested|confirmed|booked/i.test(apptPart)) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('appointment') || combined.includes('booking')) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('complaint') || combined.includes('issue') || combined.includes('problem')) {
+      return 'Customer Complaint & Support';
+    }
+    if (combined.includes('pricing') || combined.includes('package') || combined.includes('cost') || combined.includes('fee')) {
+      return 'Pricing & Service Consultation';
+    }
+    if (combined.includes('service')) {
+      return 'Services Consultation';
+    }
+    if (combined.includes('pipeline_error') || combined.includes('error')) {
+      return 'Call disconnected early';
+    }
+    if (combined.includes('user_hangup') || combined.includes('hangup')) {
+      if (combined.includes('intent') || combined.includes('discover')) {
+        return 'General Inquiry · Caller ended call';
+      }
+      return 'Brief Call · Caller hung up during greeting';
+    }
+    return 'Voice Consultation Completed';
+  });
+
+  // Clean remaining technical tags
+  str = str.replace(/\((?:user_hangup|pipeline_error|normal_hangup|completed)\)/gi, '');
+  str = str.replace(/pipeline_error/gi, 'call disconnected early');
+  str = str.replace(/user_hangup/gi, 'caller ended call');
+  str = str.replace(/\bStart\s*\/\s*Greeting\b/gi, 'Greeting');
+  str = str.replace(/\bDiscover Intent\b/gi, 'Service Inquiry');
+  str = str.replace(/\s*->\s*/g, ' · ');
+  str = str.replace(/\s+/g, ' ').trim();
+
+  return str || null;
+}
+
 function initials(name) {
   const words = String(name || '?')
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -815,7 +870,6 @@ function getVisibleRoutes() {
       { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: tFeats.crmPipeline === false },
       { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
       { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
-      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
@@ -956,6 +1010,7 @@ function uiIcon(name, size) {
   elSvg.setAttribute('stroke-linejoin', 'round');
   elSvg.setAttribute('class', 'ui-svg-icon');
   elSvg.innerHTML = paths[name] || paths.sparkle;
+  elSvg.toString = function() { return this.outerHTML || ''; };
   return elSvg;
 }
 
@@ -1596,6 +1651,10 @@ function renderShell() {
     class: 'side-collapse-btn', title: 'Toggle Sidebar Width', type: 'button',
     onclick: (e) => { e.stopPropagation(); $('.shell').classList.toggle('side-collapsed'); }
   }, [el('span', {}, '◨')]);
+  const mobileCloseBtn = el('button', {
+    class: 'side-mobile-close-btn', title: 'Close Navigation', type: 'button',
+    onclick: (e) => { e.stopPropagation(); $('.shell').classList.remove('nav-open'); }
+  }, [el('span', {}, '✕')]);
   const sideBrand = el('div', {
     class: 'side-brand',
     style: 'cursor:pointer;',
@@ -1607,7 +1666,7 @@ function renderShell() {
       }
     }
   }, [
-    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle])
+    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle, mobileCloseBtn])
   ]);
 
   const side = el('aside', { class: 'side' }, [
@@ -1634,7 +1693,11 @@ function renderShell() {
 
   const top = el('header', { class: 'top' }, [
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
-      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
+      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
+      el('div', { class: 'top-mobile-brand' }, [
+        el('img', { src: '/assets/seevora-logo.png', alt: 'Seevora', width: '26', height: '26', style: 'border-radius:6px;object-fit:contain;' }),
+        el('span', { class: 'top-mobile-brand-title' }, 'SEEVORA')
+      ])
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
@@ -2311,7 +2374,7 @@ async function viewOverview(root) {
 
 const defaultMockCalls = [
   { name: 'Dr. Sharma Clinic Triage (+91 98765 43210)', meta: 'Today, 4:18 PM', tag: 'Appointment Booked', dur: '+3m 24s', out: false, av: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80' },
-  { name: 'Rajesh Verma - Lead (+91 81205 90466)', meta: 'Today, 3:45 PM', tag: 'Qualified Lead', dur: '+2m 48s', out: false, av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
+  { name: 'Rajesh Verma - Lead (+91 98765 43210)', meta: 'Today, 3:45 PM', tag: 'Qualified Lead', dur: '+2m 48s', out: false, av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
   { name: 'CarePlus Diagnostic (+91 89822 00895)', meta: 'Today, 2:30 PM', tag: 'Prescription Triage', dur: '+1m 52s', out: false, av: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80' },
   { name: 'Anita Deshmukh - HVAC (+91 94250 12345)', meta: 'Today, 1:15 PM', tag: 'Service Dispatched', dur: '+4m 10s', out: false, av: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=80&q=80' },
   { name: 'Metropolis Lab Query (+91 98260 54321)', meta: 'Today, 11:40 AM', tag: 'Inquiry Handled', dur: '+1m 35s', out: false, av: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80' },
@@ -4275,46 +4338,32 @@ function renderAgentsListPage(wrap) {
   ]);
 
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [
-    syncDograhBtn,
     createAgentBtn
   ]));
   wrap.appendChild(head);
 
-  // 2. Flat KPI Metrics Row (4 Columns, zero cards, transparent background)
-  const statsRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid recordings-kpi-grid', style: 'margin-bottom:20px;' }, [
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'TOTAL AGENTS'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-total' }, '--'),
-      el('div', { class: 'agency-metric-sub' }, 'Configured neural personas')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'ACTIVE ON LIVE LINE'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-active', style: 'color:#047857;' }, '--'),
-      el('div', { class: 'agency-metric-sub' }, 'Answering incoming calls')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'SHARED DID LINE'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-did', style: 'font-size:1.45rem;color:#0d5d41;' }, '+91 80715 82519'),
-      el('div', { class: 'agency-metric-sub' }, 'VoBiz Bangalore carrier route')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'TELEPHONY ORCHESTRATOR'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-engine', style: 'font-size:1.45rem;' }, 'Dograh #13027'),
-      el('div', { class: 'agency-metric-sub' }, 'Live SIP & speech pipeline')
-    ])
-  ]);
-  wrap.appendChild(statsRow);
+
 
   // 3. Filter Toolbar (Minimalist Scandinavian, zero cards)
   const toolbar = el('div', {
     style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;margin-bottom:18px;border-bottom:1px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
   });
 
-  const searchInput = el('input', {
-    class: 'input aria-search-input',
-    placeholder: 'Filter agents by name, persona, voice timbre, phone...',
-    style: 'max-width:320px;border-radius:999px;font-size:0.84rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);background:transparent;'
+  const searchIcon = el('span', {
+    class: 'admin-search-icon',
+    html: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
   });
+
+  const searchInput = el('input', {
+    class: 'admin-search-input',
+    placeholder: 'Filter agents by name, persona, voice timbre, phone...',
+    type: 'text'
+  });
+
+  const searchWrap = el('div', { class: 'admin-search-wrap', style: 'max-width:380px;' }, [
+    searchIcon,
+    searchInput
+  ]);
 
   // Filter tabs: All, Active on Line, Standby (Enabled), Disabled
   let currentFilter = 'all';
@@ -4339,7 +4388,7 @@ function renderAgentsListPage(wrap) {
     paintAgents(searchInput.value, currentFilter);
   };
 
-  toolbar.appendChild(searchInput);
+  toolbar.appendChild(searchWrap);
   toolbar.appendChild(filterTabs);
   wrap.appendChild(toolbar);
 
@@ -4449,16 +4498,18 @@ function buildAgentStudioPage(existing, onBack) {
   const descI = el('input', { class: 'input', id: 'f_desc', type: 'text', value: (tts.description || ''), placeholder: 'e.g. calm, friendly Indian English accent with polite cadence', style: 'width:100%;font-size:0.88rem;padding:9px 14px;border:1px solid rgba(13,93,65,0.22);border-radius:8px;' });
 
   // DID Dropdown
-  const didSel = el('select', { class: 'select', id: 'f_did', style: 'width:100%;padding:9px 14px;font-size:0.90rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;' }, [
-    el('option', { value: '' }, 'No dedicated number (Inherits Shared Line)')
-  ]);
   const didsList = dids();
-  didsList.forEach((num) => {
-    didSel.appendChild(el('option', { value: num }, num + ' (Active Carrier Line)'));
+  const didOptions = [
+    { value: '', label: 'No dedicated number (Inherits Shared Line)' },
+    ...didsList.map((num) => ({ value: num, label: num + ' (Active Carrier Line)' }))
+  ];
+  const didSel = createThemedDropdown({
+    value: (e.telephony && e.telephony.did) || '',
+    options: didOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
   });
-  if (e.telephony && e.telephony.did) {
-    didSel.value = e.telephony.did;
-  }
 
   // Voice controls
   const modelSeg = el('div', { class: 'admin-tab-nav', style: 'margin:0;padding:0;border:none;' }, VOICE_MODELS.map((m) =>
@@ -4488,12 +4539,21 @@ function buildAgentStudioPage(existing, onBack) {
   ));
   toneSeg.id = 'f_tone_seg';
 
-  const speakerSel = el('select', { class: 'select', id: 'f_speaker', style: 'width:100%;padding:9px 14px;font-size:0.88rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;' }, [
-    el('option', { value: 'speaker_2', selected: state.speaker === 'speaker_2' }, 'speaker_2 (Professional Indian Female • Recommended)'),
-    el('option', { value: 'speaker_1', selected: state.speaker === 'speaker_1' }, 'speaker_1 (Warm & Deep Male)'),
-    el('option', { value: 'speaker_3', selected: state.speaker === 'speaker_3' }, 'speaker_3 (Youthful & Energetic Male)'),
-    el('option', { value: 'speaker_4', selected: state.speaker === 'speaker_4' }, 'speaker_4 (Polite Female Assistant)')
-  ]);
+  const speakerSel = createThemedDropdown({
+    value: state.speaker || 'speaker_2',
+    options: [
+      { value: 'speaker_2', label: 'speaker_2 (Professional Indian Female • Recommended)' },
+      { value: 'speaker_1', label: 'speaker_1 (Warm & Deep Male)' },
+      { value: 'speaker_3', label: 'speaker_3 (Youthful & Energetic Male)' },
+      { value: 'speaker_4', label: 'speaker_4 (Polite Female Assistant)' }
+    ],
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;',
+    onChange: (val) => {
+      state.speaker = val;
+    }
+  });
 
   const f0Val = el('span', { class: 'rv', id: 'f_f0_val', style: 'font-weight:750;color:#0d5d41;font-size:0.92rem;min-width:32px;display:inline-block;' }, String(state.f0));
   const f0Range = el('input', {
@@ -4889,15 +4949,15 @@ function agentCard(a) {
   const tts = a.tts || {};
   const vId = (a.rumikVoice || tts.voice || '').toLowerCase();
   const voiceNames = {
-    ira: 'Ira (Mia · Female)',
-    riya: 'Priya (Sophia · Female)',
-    arav: 'Aarav (Lucas · Male)',
-    ananya: 'Ananya (Emma · Female)',
-    dev: 'Dev (Adam · Male)',
-    kabir: 'Kabir (Noah · Male)'
+    ira: 'Ira (Warm Female)',
+    riya: 'Priya (Empathetic Female)',
+    arav: 'Aarav (Professional Male)',
+    ananya: 'Ananya (Executive Female)',
+    dev: 'Dev (Calm Male)',
+    kabir: 'Kabir (Energetic Male)'
   };
-  const voiceLabel = voiceNames[vId] || (tts.model === 'muga' ? ('Muga • ' + (tts.tone || 'neutral')) : ('Mulberry • ' + (tts.speaker || 'speaker_2')));
-  const voiceLine = 'Rumik: ' + voiceLabel;
+  const voiceLabel = voiceNames[vId] || (tts.tone ? ('Tone: ' + tts.tone) : 'Neural Indian Voice');
+  const voiceLine = 'Voice: ' + voiceLabel;
   const did = a.telephony && a.telephony.did ? a.telephony.did : '+91 80715 82519';
 
   // Test in Browser button
@@ -4930,22 +4990,28 @@ function agentCard(a) {
     el('span', {}, 'Edit')
   ]);
 
-  // Set Active on Line button (if enabled and not primary)
-  const activeBtn = (!a.isPrimary && isEnabled) ? el('button', {
-    type: 'button',
-    class: 'btn btn-ghost btn-sm',
-    style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.06);color:#0d5d41;font-weight:700;font-size:0.80rem;',
-    onclick: async () => {
-      try {
-        await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
-        toast(a.name.split('-')[0].trim() + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
-        await ensureAgents(true);
-        paintAgents();
-      } catch (err) {
-        toast(err.message || 'Could not activate agent on line', 'err');
+  // Set Active on Line button (or Active Line badge for consistent button alignment)
+  const activeBtn = a.isPrimary
+    ? el('span', {
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 13px;border:1.5px solid rgba(16,185,129,0.30);background:rgba(16,185,129,0.12);color:#047857;font-weight:750;font-size:0.80rem;cursor:default;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;',
+      title: 'This agent is currently active and answering calls on your shared live line (+91 80715 82519)'
+    }, '● Active on Line')
+    : (isEnabled ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.06);color:#0d5d41;font-weight:700;font-size:0.80rem;white-space:nowrap;',
+      onclick: async () => {
+        try {
+          await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
+          toast(a.name.split('-')[0].trim() + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
+          await ensureAgents(true);
+          paintAgents();
+        } catch (err) {
+          toast(err.message || 'Could not activate agent on line', 'err');
+        }
       }
-    }
-  }, 'Set Active on Line') : null;
+    }, 'Set Active on Line') : null);
 
   // Enable / Disable Toggle button
   const toggleBtn = !isEnabled
@@ -5023,7 +5089,8 @@ function agentCard(a) {
   const bodyWrap = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;' });
 
   // Role Badge (Receptionist, Customer Care, Sales, VIP Billing, Tech Support)
-  const roleLabel = a.role || (a.name.includes('Receptionist') ? 'Front Desk Receptionist' : (a.name.includes('Customer') ? 'Customer Care' : (a.name.includes('Sales') ? 'Sales Specialist' : (a.name.includes('Billing') ? 'VIP Billing' : (a.name.includes('Technical') ? 'Technical Support' : 'AI Voice Agent')))));
+  let roleLabel = a.role || 'AI Voice Agent';
+  if (roleLabel.includes('VIP')) roleLabel = 'VIP Billing Specialist';
   const rolePill = el('span', {
     style: 'font-size:0.72rem;font-weight:750;padding:2px 9px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;letter-spacing:0.02em;border:1px solid rgba(13,93,65,0.18);'
   }, roleLabel);
@@ -5035,15 +5102,19 @@ function agentCard(a) {
       ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
       : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, 'Enabled · Standby'));
 
-  // Title & Badges line
-  const titleLine = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
-    el('b', { style: 'font-size:1.02rem;color:#14221c;letter-spacing:-0.01em;' }, a.name),
+  // Title on its own line
+  const nameLine = el('div', { style: 'margin-bottom:2px;' }, [
+    el('b', { style: 'font-size:1.04rem;color:#14221c;letter-spacing:-0.01em;' }, a.name)
+  ]);
+  bodyWrap.appendChild(nameLine);
+
+  // Badges line directly underneath title (ek k neeche ek)
+  const badgesLine = el('div', { style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;' }, [
     rolePill,
     statusBadge,
-    el('span', { style: 'font-size:0.74rem;font-family:var(--mono);color:#5d7468;' }, did),
     el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, voiceLine)
   ]);
-  bodyWrap.appendChild(titleLine);
+  bodyWrap.appendChild(badgesLine);
 
   // Greeting quote if exists
   if (a.greeting) {
@@ -5060,34 +5131,26 @@ function agentCard(a) {
   }, a.persona || 'No persona instructions set.'));
 
   // Assigned Employee / Teams Handoff
-  const staffLine = el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:0.74rem;color:#5d7468;padding-top:2px;' });
   const hasStaff = Array.isArray(a.assignedEmployees) && a.assignedEmployees.length > 0;
   if (hasStaff) {
+    const staffLine = el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:0.74rem;color:#5d7468;padding-top:2px;' });
     staffLine.appendChild(el('span', { style: 'color:#0d5d41;font-weight:700;' }, 'Staff Handoff:'));
     staffLine.appendChild(el('span', {}, a.assignedEmployees.map((emp) => emp.name + (emp.phone ? ' (' + emp.phone + ')' : '')).join(', ')));
-  } else {
-    staffLine.appendChild(el('span', {}, 'No human staff assigned for call handoff ·'));
-    staffLine.appendChild(el('a', { href: '#teams', style: 'color:#0d5d41;font-weight:700;text-decoration:none;' }, 'Assign in Teams ↗'));
+    bodyWrap.appendChild(staffLine);
   }
-  bodyWrap.appendChild(staffLine);
 
   leftSection.appendChild(bodyWrap);
   row.appendChild(leftSection);
 
   // Right Section (Actions)
   const actionsWrap = el('div', {
-    style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;'
+    style: 'display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0;padding-top:4px;'
   }, [
     talkMicBtn,
     previewBtn,
     editBtn,
     activeBtn,
     toggleBtn,
-    (a.sampleTranscript && a.sampleTranscript.length) ? el('button', {
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:6px 12px;font-size:0.78rem;color:#0d5d41;',
-      onclick: () => showTranscriptModal(a)
-    }, 'Transcript') : null,
     deleteBtn
   ].filter(Boolean));
 
@@ -6508,28 +6571,30 @@ async function viewTalk(root, customAgent) {
 
   // Status & Metrics Row
   let sttLang = 'en-IN';
-  const langSel = el('select', {
-    class: 'select',
-    style: 'width:auto;font-size:0.8rem;padding:4px 8px;',
-    title: 'Select microphone language for speech-to-text',
-    onchange: (e) => {
-      sttLang = e.target.value;
-      toast(`Microphone language set to: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+  const langSel = createThemedDropdown({
+    value: sttLang,
+    options: [
+      { value: 'en-IN', label: 'English / Hinglish (India)' },
+      { value: 'hi', label: 'Hindi (हिन्दी)' },
+      { value: 'en', label: 'English (General)' }
+    ],
+    searchable: false,
+    align: 'right',
+    className: 'sv-stt-lang-dropdown',
+    onChange: (val, opt) => {
+      sttLang = val;
+      toast('Microphone language set to: ' + (opt ? opt.label : val), 'info');
       if (isListening) {
         stopVoiceListening();
         startVoiceListening();
       }
     }
-  }, [
-    el('option', { value: 'en-IN', selected: true }, 'English / Hinglish (India)'),
-    el('option', { value: 'hi' }, 'Hindi (हिन्दी)'),
-    el('option', { value: 'en' }, 'English (General)')
-  ]);
+  });
 
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
   const statusText = el('span', {}, 'Ready');
   const statusPill = el('div', { class: 'conversation-status idle', role: 'status' }, [statusDot, statusText]);
-  const timingText = el('div', { class: 'conversation-timing', 'aria-live': 'polite' }, 'Voice Synthesizer • Natural Audio Stream • Ready');
+  const timingText = el('div', { class: 'conversation-timing', 'aria-live': 'polite' }, '');
 
   function setPhase(phase, label) {
     statusPill.className = 'conversation-status ' + phase;
@@ -7148,7 +7213,7 @@ async function viewTalk(root, customAgent) {
 
   const controlsRow = el('div', { class: 'flex items-center justify-between', style: 'flex-wrap:wrap;gap:10px;margin-bottom:14px' }, [
     el('div', { class: 'flex items-center gap-2' }, [sessionBtn, interruptBtn, clearBtn, saveLeadBtn]),
-    el('div', { class: 'flex items-center gap-2' }, [langSel, statusPill, timingText])
+    el('div', { class: 'flex items-center gap-2' }, [langSel])
   ]);
 
   const textRow = el('div', { class: 'flex gap-2', style: 'margin-bottom:14px' }, [textInput, sendBtn]);
@@ -10203,71 +10268,6 @@ async function viewInvoices(root) {
   renderCurrent();
 }
 
-async function viewIntegrations(root) {
-  root.appendChild(viewHead('Integrations', 'Bring client conversations and ad research into the operating system without pretending setup is complete.'));
-  const host = el('div', { class: 'integration-grid' }, skeleton('sk-card', 2)); root.appendChild(host);
-  try {
-    const out = await api('/api/integrations');
-    State.integrations = out.integrations || []; State.loaded.integrations = true;
-    host.innerHTML = '';
-    State.integrations.forEach((item) => host.appendChild(integrationCard(item)));
-  } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad error-state' }, e.message)); }
-}
-
-function integrationCard(item) {
-  const requested = item.status === 'requested';
-  const mark = item.id === 'whatsapp-business' ? 'WA' : 'META';
-  const button = el('button', { class: 'btn ' + (requested ? 'btn-ghost' : 'btn-primary'), disabled: requested ? 'disabled' : null }, requested ? 'Setup requested' : 'Request setup');
-  button.onclick = async () => {
-    button.disabled = true; button.textContent = 'Recording request...';
-    try { const out = await api('/api/integrations/request', { method: 'POST', body: { integrationId: item.id } }); toast(out.note, 'ok'); onRoute(); }
-    catch (e) { button.disabled = false; button.textContent = 'Request setup'; toast(e.message, 'err'); }
-  };
-  return el('article', { class: 'card integration-card' }, [
-    el('div', { class: 'integration-head' }, [el('span', { class: 'integration-mark' }, mark), el('span', { class: 'status-badge ' + (requested ? 'status-requested' : 'status-setup') }, requested ? 'requested' : 'setup required')]),
-    el('span', { class: 'section-kicker' }, item.category), el('h3', {}, item.name), el('p', {}, item.description),
-    el('div', { class: 'integration-columns' }, [
-      el('div', {}, [el('h4', {}, 'What you will see'), el('ul', {}, (item.capabilities || []).map((value) => el('li', {}, value)))]),
-      el('div', {}, [el('h4', {}, 'Required to connect'), el('ul', {}, (item.setup || []).map((value) => el('li', {}, value)))])
-    ]),
-    el('div', { class: 'integration-foot' }, [button, el('small', {}, 'No external service is contacted by this request.')])
-  ]);
-}
-
-async function viewAgencyPrompt(root) {
-  root.appendChild(viewHead('Agency prompt', 'One persistent operating instruction for this workspace. Per-agent personas remain separate.'));
-  const host = el('div', { class: 'prompt-layout' }, [el('section', { class: 'card prompt-editor' }, skeleton('sk-card', 1)), el('aside', { class: 'card prompt-guide' }, skeleton('sk-card', 1))]);
-  root.appendChild(host);
-  try {
-    const out = await api('/api/agency/prompt'); State.agencyPrompt = out; State.loaded.agencyPrompt = true;
-    paintAgencyPrompt(host, out);
-  } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad error-state' }, e.message)); }
-}
-
-function paintAgencyPrompt(host, data) {
-  const text = el('textarea', { class: 'agency-prompt-text', maxlength: '12000', placeholder: 'Define how Agency OS should reason about client priorities, reporting, delivery quality, and escalation...' });
-  text.value = data.prompt || '';
-  const count = el('span', { class: 'prompt-count' }, text.value.length.toLocaleString('en-IN') + ' / 12,000');
-  text.oninput = () => { count.textContent = text.value.length.toLocaleString('en-IN') + ' / 12,000'; };
-  const save = el('button', { class: 'btn btn-primary' }, 'Save operating prompt');
-  save.onclick = async () => {
-    save.disabled = true; save.textContent = 'Saving...';
-    try { const out = await api('/api/agency/prompt', { method: 'POST', body: { prompt: text.value } }); toast('Agency prompt saved as version ' + out.version + '.', 'ok'); paintAgencyPrompt(host, out); }
-    catch (e) { toast(e.message, 'err'); save.disabled = false; save.textContent = 'Save operating prompt'; }
-  };
-  const editor = el('section', { class: 'card prompt-editor' }, [
-    el('div', { class: 'prompt-meta' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Persistent context'), el('h3', {}, 'Agency operating prompt')]), el('span', { class: 'status-badge status-active' }, 'Version ' + (data.version || 0))]),
-    text,
-    el('div', { class: 'prompt-editor-foot' }, [el('div', {}, [count, el('small', {}, data.updatedAt ? 'Updated ' + new Date(data.updatedAt).toLocaleString('en-IN') + (data.updatedBy ? ' by ' + data.updatedBy : '') : 'Not saved yet')]), save])
-  ]);
-  const guide = el('aside', { class: 'card prompt-guide' }, [
-    el('span', { class: 'section-kicker' }, 'Prompt contract'), el('h3', {}, 'What belongs here'),
-    el('ul', {}, ['Agency priorities and escalation rules', 'Reporting cadence and decision principles', 'Delivery quality standards', 'How to treat client money and access'].map((value) => el('li', {}, value))),
-    el('div', { class: 'prompt-boundary' }, [el('strong', {}, 'Boundary'), el('p', {}, 'This text does not authorize external messages, calls, payments, or tool actions. Those still require their normal confirmation gates.')])
-  ]);
-  host.innerHTML = ''; host.appendChild(editor); host.appendChild(guide);
-}
-
 let currentBillingInterval = 'monthly';
 
 // ============================================================================
@@ -10845,26 +10845,6 @@ async function viewSupport(root) {
   root.innerHTML = '';
   root.classList.add('aria-clients-view', 'aria-support-view');
 
-  // Feature Lock Check: ensure at least one agent exists for support
-  if (!hasTenantAgent('support')) {
-    root.appendChild(viewHead('Support & Help Desk'));
-    const skeletonContent = el('div', { style: 'padding:16px;' }, [
-      el('div', { class: 'settings-kpi-bar', style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0;margin-bottom:20px;border:1px solid var(--line-2);border-radius:12px;opacity:0.5;' }, [
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'OPEN TICKETS'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'RESOLVED'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'SLA'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '< 2 Hours')]),
-        el('div', { style: 'padding:16px 20px;' }, [el('div', { style: 'font-weight:700;' }, 'DESK'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, 'In-App')])
-      ])
-    ]);
-    renderFeatureLock(root, skeletonContent, {
-      title: 'Customer Care Agent Required',
-      description: 'Create a Customer Care AI agent to unlock the Support Help Desk, ticket management, and automated response workflows.',
-      buttonText: '+ Create Customer Care Agent to Unlock',
-      agentType: 'support'
-    });
-    return;
-  }
-
   const wrap = el('div', { class: 'aria-support-view aria-clients-view', style: 'width:100%;' });
   root.appendChild(wrap);
 
@@ -11055,11 +11035,11 @@ function ticketCard(t, admin) {
 
   const toggleBtn = el('button', {
     type: 'button',
-    class: 'btn btn-ghost btn-sm',
-    style: 'font-size:12px;padding:6px 12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
+    class: 'btn btn-ghost btn-sm ticket-toggle-btn',
+    style: 'font-size:12px;padding:6px 14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.04);color:#0d5d41;cursor:pointer;flex-shrink:0;'
   }, [
     el('span', { class: 'ticket-toggle-label' }, 'View & Reply (' + msgCount + ')'),
-    el('span', { class: 'ticket-toggle-icon', html: uiIcon('chevron-down', 13) })
+    el('span', { class: 'ticket-toggle-icon', style: 'display:inline-flex;align-items:center;' }, [uiIcon('chevron-down', 13)])
   ]);
 
   // Main row strip: 5 columns aligned with .admin-ticket-row grid
@@ -11208,7 +11188,10 @@ function ticketCard(t, admin) {
     const label = toggleBtn.querySelector('.ticket-toggle-label');
     const icon = toggleBtn.querySelector('.ticket-toggle-icon');
     if (label) label.textContent = isExpanded ? 'Close Thread' : 'View & Reply (' + msgCount + ')';
-    if (icon) icon.innerHTML = isExpanded ? uiIcon('chevron-up', 13) : uiIcon('chevron-down', 13);
+    if (icon) {
+      icon.innerHTML = '';
+      icon.appendChild(uiIcon(isExpanded ? 'chevron-up' : 'chevron-down', 13));
+    }
   }
 
   toggleBtn.onclick = (e) => {
@@ -12003,6 +11986,12 @@ async function viewAdmin(root) {
 
   tabDefs.forEach((tab) => {
     const badge = el('span', { class: 'admin-tab-badge', id: tab.badgeId }, tab.badgeVal);
+    if (tab.id === 'complaints' && Number(tab.badgeVal) > 0) {
+      badge.style.background = '#dc2626';
+      badge.style.color = '#ffffff';
+      badge.style.border = 'none';
+      badge.style.fontWeight = '750';
+    }
     const btn = el('button', {
       class: 'admin-tab-btn' + (tab.id === activeTab ? ' active' : ''),
       'data-tab': tab.id,
@@ -12764,11 +12753,6 @@ async function viewTeams(root) {
   if (canManageTeam) {
     head.appendChild(el('div', { class: 'view-actions flex gap-2 items-center' }, [
       el('button', {
-        class: 'btn btn-ghost',
-        style: 'border:1px solid rgba(13,93,65,0.28);color:#0d5d41;font-weight:700;border-radius:999px;padding:9px 18px;',
-        onclick: () => goto('agents')
-      }, '+ Create / Manage AI Agents'),
-      el('button', {
         class: 'btn btn-primary',
         id: 'btnAddTeamMember',
         style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 20px;',
@@ -12815,85 +12799,9 @@ async function viewTeams(root) {
     const totalHandoffs = teamState.handoffLogs.length;
     const fmtSharedNum = teamState.sharedNumber.replace(/^(\+91)(\d{5})(\d{5})$/, '$1 $2 $3');
 
-    const kpiGrid = el('div', {
-      style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:22px;'
-    }, [
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'TEAM MEMBERS'),
-        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(activeEmployees.length)),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Active workspace staff & owners')
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'SHARED BUSINESS LINE'),
-        el('div', { style: 'font-size:22px;font-weight:800;color:#0d5d41;margin:8px 0 4px;font-family:Manrope,sans-serif;' }, fmtSharedNum),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'All agents & handoffs use this number')
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'ACTIVE LINE AGENT'),
-        el('div', { style: 'font-size:18px;font-weight:800;color:#14221c;margin:8px 0 4px;font-family:Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' },
-          teamState.activeAgent ? teamState.activeAgent.name : 'No Agent Created'
-        ),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#0b6b47;' },
-          assignedAgentsCount + ' of ' + teamState.agents.length + ' agent(s) assigned to staff'
-        )
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'CALL ESCALATIONS (STUCK → HUMAN)'),
-        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(totalHandoffs)),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Calls routed to assigned employee phone')
-      ])
-    ]);
-    contentWrap.appendChild(kpiGrid);
 
-    const agentSwitchSelect = el('select', {
-      class: 'input',
-      style: 'min-width:260px;height:40px;padding:6px 14px;border-radius:999px;border:1.5px solid rgba(13,93,65,0.3);font-weight:700;color:#14221c;background:#fff;cursor:pointer;'
-    }, teamState.agents.length
-      ? teamState.agents.map((a) => el('option', { value: a.id, selected: !!(teamState.activeAgent && teamState.activeAgent.id === a.id) },
-        a.name + (a.isPrimary ? ' (● Active on Line)' : '')
-      ))
-      : [el('option', { value: '' }, 'No agents created yet')]
-    );
 
-    const switchBtn = el('button', {
-      class: 'btn btn-primary btn-sm',
-      style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 18px;',
-      onclick: async () => {
-        if (!agentSwitchSelect.value) return;
-        switchBtn.disabled = true;
-        switchBtn.textContent = 'Syncing Line...';
-        try {
-          await api('/api/agents/activate', { method: 'POST', body: { agentId: agentSwitchSelect.value } });
-          toast('Switched active agent on ' + fmtSharedNum + ' & synced live!', 'ok');
-          await reloadTeams();
-        } catch (err) {
-          toast(err.message || 'Failed to switch active agent', 'err');
-        } finally {
-          switchBtn.disabled = false;
-          switchBtn.textContent = 'Activate on Same Number';
-        }
-      }
-    }, 'Activate on Same Number');
 
-    const sharedLineBanner = el('div', {
-      class: 'card card-pad',
-      style: 'background:linear-gradient(135deg, rgba(13,93,65,0.06) 0%, rgba(227,241,233,0.45) 100%);border:1px solid rgba(13,93,65,0.18);border-radius:16px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;'
-    }, [
-      el('div', { style: 'max-width:620px;' }, [
-        el('div', { style: 'display:flex;align-items:center;gap:8px;margin-bottom:4px;' }, [
-          el('span', { style: 'width:9px;height:9px;border-radius:50%;background:#0d5d41;display:inline-block;' }),
-          el('strong', { style: 'font-size:0.95rem;color:#14221c;' }, 'Same-Number Multi-Agent Routing (' + fmtSharedNum + ')')
-        ]),
-        el('div', { style: 'font-size:0.84rem;color:#2c4238;line-height:1.45;' },
-          'All your custom AI agents operate on your single business number. Select which agent answers incoming calls below, or choose any agent when dialing outbound calls. If the AI agent gets stuck or the caller asks for a human, the call escalates to the employee assigned to that agent.'
-        )
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-        agentSwitchSelect,
-        switchBtn
-      ])
-    ]);
-    contentWrap.appendChild(sharedLineBanner);
 
     const membersCard = el('div', {
       class: 'card card-pad',
@@ -12903,12 +12811,7 @@ async function viewTeams(root) {
         el('div', {}, [
           el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'Employee Directory & Agent Routing'),
           el('h3', { style: 'margin:2px 0 0 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Workspace Employees & Assigned AI Agents')
-        ]),
-        canManageTeam ? el('button', {
-          class: 'btn btn-primary btn-sm',
-          style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:7px 16px;',
-          onclick: () => openTeamMemberModal(null, teamState, reloadTeams)
-        }, '+ Add Employee') : null
+        ])
       ]),
       el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
         el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
@@ -12916,7 +12819,7 @@ async function viewTeams(root) {
             el('th', {}, 'Employee / Member'),
             el('th', {}, 'Department & Role'),
             el('th', {}, 'Assigned AI Agent(s)'),
-            el('th', {}, 'Escalation Phone (If AI Stuck)'),
+            el('th', {}, 'Live Handoff Phone'),
             el('th', {}, 'Handoffs'),
             el('th', {}, 'Status'),
             el('th', { style: 'text-align:right;' }, 'Actions')
@@ -12951,7 +12854,7 @@ async function viewTeams(root) {
                     el('div', { style: 'font-weight:700;color:#14221c;font-size:0.85rem;' }, m.phone),
                     el('span', {
                       style: 'font-size:0.72rem;font-weight:700;color:' + (m.escalationEnabled !== false ? '#0b6b47' : '#b45309') + ';'
-                    }, m.escalationEnabled !== false ? '✓ Auto-Transfer When AI Stuck' : '⏸ Escalation Paused')
+                    }, m.escalationEnabled !== false ? '✓ Live Transfer Enabled' : '⏸ Escalation Paused')
                   ])
                   : el('span', { style: 'font-size:0.78rem;color:#b45309;font-weight:600;' }, 'Add phone for call transfer')
               ]),
@@ -12974,12 +12877,12 @@ async function viewTeams(root) {
                     style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
                     onclick: () => openAssignAgentModal(m, teamState, reloadTeams)
                   }, 'Assign Agent') : null,
-                  el('button', {
+                  (m.phone && m.phone.trim()) ? el('button', {
                     class: 'btn btn-ghost btn-sm',
                     style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
-                    title: 'Simulate or trigger live call transfer when AI agent gets stuck',
+                    title: 'Simulate or test live call transfer to this employee phone',
                     onclick: () => openTestHandoffModal(m, teamState, reloadTeams)
-                  }, 'Test Handoff'),
+                  }, 'Test Handoff') : null,
                   canManageTeam ? el('button', {
                     class: 'btn btn-ghost btn-sm',
                     style: 'padding:5px 10px;font-size:0.76rem;',
@@ -13014,14 +12917,14 @@ async function viewTeams(root) {
     }, [
       el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;' }, [
         el('div', {}, [
-          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'AI-to-Employee Call Transfer Log'),
-          el('h3', { style: 'margin:2px 0 0 0;font-size:1.1rem;font-weight:800;color:#14221c;' }, 'Recent Human Escalations (When AI Got Stuck)')
+          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'Live Call Escalation Log'),
+          el('h3', { style: 'margin:2px 0 0 0;font-size:1.1rem;font-weight:800;color:#14221c;' }, 'Recent Call Handoffs & Human Escalation History')
         ]),
         el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.09);color:#0d5d41;font-weight:700;' }, teamState.handoffLogs.length + ' Events')
       ]),
       teamState.handoffLogs.length === 0
         ? el('div', { style: 'padding:18px 0;color:#2c4238;font-size:0.88rem;' },
-          'No calls have required human escalation yet. When an AI agent cannot resolve a caller query or the caller asks for a person, the call is transferred to the assigned employee and logged here.'
+          'No calls have required live transfer yet. When a caller requests a human staff member or specialized escalation, the call is transferred to the assigned employee and logged here.'
         )
         : el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
           el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
@@ -13064,14 +12967,35 @@ function openTeamMemberModal(existing, teamState, onDone) {
   const nameI = el('input', { class: 'input', value: m.name || '', placeholder: 'e.g. Rahul Sharma' });
   const emailI = el('input', { class: 'input', type: 'email', value: m.email || '', placeholder: 'e.g. rahul@company.com' });
   const phoneI = el('input', { class: 'input', type: 'tel', value: (m.phone || '').replace(/^\+91/, ''), placeholder: '10-digit mobile for call transfer (e.g. 9876543210)' });
-  const deptS = el('select', { class: 'select' }, ['Sales', 'Support', 'Reception', 'Billing', 'Technical', 'Operations', 'Management', 'General'].map((d) =>
-    el('option', { value: d, selected: (m.department || 'Sales') === d }, d)
-  ));
-  const roleS = el('select', { class: 'select' }, [
-    { v: 'employee', l: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
-    { v: 'manager', l: 'Team Manager (Can Manage All Agents & Employees)' },
-    { v: 'owner', l: 'Workspace Co-Owner (Full Client Access)' }
-  ].map((r) => el('option', { value: r.v, selected: (m.role || 'employee') === r.v }, r.l)));
+  const deptOptions = [
+    { value: 'General', label: 'General' },
+    { value: 'Sales', label: 'Sales' },
+    { value: 'Support', label: 'Support' },
+    { value: 'Reception', label: 'Reception' },
+    { value: 'Billing', label: 'Billing' },
+    { value: 'Technical', label: 'Technical' },
+    { value: 'Operations', label: 'Operations' },
+    { value: 'Management', label: 'Management' }
+  ];
+  const deptS = createThemedDropdown({
+    value: m.department || 'General',
+    options: deptOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
+  });
+  const roleOptions = [
+    { value: 'employee', label: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
+    { value: 'manager', label: 'Team Manager (Can Manage All Agents & Employees)' },
+    { value: 'owner', label: 'Workspace Co-Owner (Full Client Access)' }
+  ];
+  const roleS = createThemedDropdown({
+    value: m.role || 'employee',
+    options: roleOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
+  });
   const passI = el('input', { class: 'input', type: 'password', placeholder: isEdit ? 'Leave blank to keep existing password' : 'Minimum 8 characters (e.g. Welcome@123)' });
   const escCheck = el('input', { type: 'checkbox', checked: m.escalationEnabled !== false });
 
@@ -13090,7 +13014,7 @@ function openTeamMemberModal(existing, teamState, onDone) {
   const body = el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
     field('Employee Full Name', nameI),
     field('Employee Login Email', emailI),
-    field('Employee Mobile Number (+91) — For Live Call Transfer When AI Stuck', phoneI),
+    field('Employee Mobile Number (+91) - For Live Call Transfer When AI Stuck', phoneI),
     field('Department', deptS),
     field('Access Role', roleS),
     field(isEdit ? 'Reset Login Password (Optional)' : 'Temporary Login Password', passI),
@@ -13112,11 +13036,16 @@ function openTeamMemberModal(existing, teamState, onDone) {
     confirmText: isEdit ? 'Save Changes' : '+ Add Employee & Assign Agent',
     confirmKind: 'primary',
     onConfirm: async () => {
+      const name = nameI.value.trim();
+      const email = emailI.value.trim();
+      if (!name) throw new Error('Please enter employee full name.');
+      if (!email) throw new Error('Please enter a valid employee login email.');
+
       const selectedAgentIds = agentChecks.filter((x) => x.cb.checked).map((x) => x.cb.value);
       const payload = {
         id: m.id,
-        name: nameI.value.trim(),
-        email: emailI.value.trim(),
+        name,
+        email,
         phone: phoneI.value.trim(),
         department: deptS.value,
         role: roleS.value,
@@ -13126,8 +13055,8 @@ function openTeamMemberModal(existing, teamState, onDone) {
       if (passI.value.trim()) payload.password = passI.value.trim();
       else if (!isEdit) payload.password = 'Welcome@123';
 
-      await api(isEdit ? '/api/teams/update' : '/api/teams/create', { method: 'POST', body: payload });
-      toast(isEdit ? 'Updated team member & synced agent routing!' : 'Employee added & agent assigned!', 'ok');
+      const res = await api(isEdit ? '/api/teams/update' : '/api/teams/create', { method: 'POST', body: payload });
+      toast(isEdit ? 'Updated team member & synced agent routing!' : (res && res.updated ? 'Employee profile updated & synced!' : 'Employee added & agent assigned!'), 'ok');
       if (onDone) await onDone();
     }
   });
@@ -13252,14 +13181,14 @@ async function viewSettings(root) {
   let currentTab = urlParams.get('tab') || 'general';
   // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
   if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
-  if (!['general', 'security', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  if (currentTab === 'security') currentTab = 'general';
+  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
-    { id: 'security', label: 'Password & Security', icon: 'shield' },
     { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
@@ -13305,7 +13234,6 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
-    else if (tabId === 'security') renderSecurityTab(contentHost);
     else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
@@ -13318,6 +13246,9 @@ async function viewSettings(root) {
   // Initial tab render
   switchTab(currentTab);
 
+  // ==========================================================================
+  // TAB 1: GENERAL IDENTITY (PROFILE, WORKSPACE & HIPAA MODE)
+  // ==========================================================================
 
   // ==========================================================================
   // PASSWORD MANAGEMENT COMPONENT (Change / Create Password)
@@ -13385,7 +13316,7 @@ async function viewSettings(root) {
         input.type = isVisible ? 'text' : 'password';
         eyeBtn.innerHTML = isVisible
           ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-          : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+          : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
       };
       const wrapper = el('div', { style: 'position:relative;width:100%;' }, [input, eyeBtn]);
       return { wrapper, input };
@@ -13548,10 +13479,10 @@ async function viewSettings(root) {
     wrap.appendChild(createPasswordSection(true));
   }
 
-  // ==========================================================================
-  // TAB 1: GENERAL IDENTITY (PROFILE, WORKSPACE & HIPAA MODE)
-  // ==========================================================================
   function renderGeneralTab(panel) {
+    const u = (State && State.me && State.me.user) || {};
+    const t = (State && State.me && State.me.tenant) || {};
+    const isAdm = ['super_admin', 'admin', 'owner'].includes(u.role || '');
     const wrap = el('div', { class: 'settings-tab-inner', style: 'width:100%;' });
     panel.appendChild(wrap);
 
@@ -13561,38 +13492,76 @@ async function viewSettings(root) {
     }, [
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'WORKSPACE NAME'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, t.name || 'Demo Workspace'),
+        el('div', { class: 'kpi-value', id: 'kpi-ws-name', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, t.name || 'Demo Workspace'),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'ID: ' + (t.id || 'default'))
       ]),
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT ROLE'),
         el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, isAdm ? 'Administrator' : 'Client Member'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, u.email || 'Verified Account')
+        el('div', { id: 'kpi-user-email', style: 'font-size:0.72rem;color:#5d7468;' }, u.email || 'Verified Account')
       ]),
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'TIMEZONE & LOCALE'),
+        el('div', { class: 'kpi-value', id: 'kpi-tz-val', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, (u.timezone ? u.timezone.split('/')[1] || u.timezone : 'IST (UTC+5:30)')),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Language: ' + (u.language || 'English (IN)'))
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'DATA RETENTION'),
         el('div', { class: 'kpi-value', id: 'gen-retention-val', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, 'Standard Active'),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Audio & Transcripts stored')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'BRAND ACCENT'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;display:flex;align-items:center;gap:8px;' }, [
-          el('span', { style: 'display:inline-block;width:14px;height:14px;border-radius:4px;background:' + ((t.branding && t.branding.color) || '#0d5d41') + ';' }),
-          el('span', {}, (t.branding && t.branding.color) || '#0d5d41')
-        ]),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Custom interface accent')
       ])
     ]);
     wrap.appendChild(kpis);
 
-    // SECTION 1: User Profile & Account
+    // ========================================================================
+    // SECTION 1: Personal User Profile & Account Identity
+    // ========================================================================
     const userNameInput = el('input', { class: 'input', id: 'prof_name', type: 'text', value: u.name || '', placeholder: 'Your Full Name' });
     const userEmailInput = el('input', { class: 'input', id: 'prof_email', type: 'email', value: u.email || '', placeholder: 'name@company.com' });
-    const saveProfileBtn = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Profile');
+    const userPhoneInput = el('input', { class: 'input', id: 'prof_phone', type: 'tel', value: u.phone || '', placeholder: '+91 98765 43210' });
+    const userDesignationInput = el('input', { class: 'input', id: 'prof_designation', type: 'text', value: u.designation || '', placeholder: 'e.g. Managing Director / Operations Lead' });
+
+    const tzSelect = createThemedDropdown({
+      value: u.timezone || 'Asia/Kolkata',
+      options: [
+        { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST, UTC+5:30) - India Standard Time' },
+        { value: 'Asia/Dubai', label: 'Asia/Dubai (GST, UTC+4:00) - Gulf Standard Time' },
+        { value: 'Europe/London', label: 'Europe/London (GMT/BST, UTC+0/1) - UK Time' },
+        { value: 'America/New_York', label: 'America/New_York (EST, UTC-5:00) - US Eastern' },
+        { value: 'America/Los_Angeles', label: 'America/Los_Angeles (PST, UTC-8:00) - US Pacific' },
+        { value: 'Asia/Singapore', label: 'Asia/Singapore (SGT, UTC+8:00) - Singapore Time' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
+
+    const langSelect = createThemedDropdown({
+      value: u.language || 'en-IN',
+      options: [
+        { value: 'en-IN', label: 'English (India) - Default' },
+        { value: 'hi-IN', label: 'Hindi (हिंदी)' },
+        { value: 'hinglish', label: 'Hinglish (Conversational)' },
+        { value: 'en-US', label: 'English (United States)' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
+
+    const saveProfileBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;'
+    }, 'Save Personal Profile');
 
     saveProfileBtn.addEventListener('click', async () => {
       const newName = userNameInput.value.trim();
       const newEmail = userEmailInput.value.trim().toLowerCase();
+      const newPhone = userPhoneInput.value.trim();
+      const newDesignation = userDesignationInput.value.trim();
+      const newTimezone = tzSelect.value;
+      const newLanguage = langSelect.value;
+
       if (!newName && !newEmail) {
         toast('Name or email is required.', 'err');
         return;
@@ -13600,41 +13569,70 @@ async function viewSettings(root) {
       saveProfileBtn.disabled = true;
       saveProfileBtn.textContent = 'Saving...';
       try {
-        const res = await api('/api/user/profile', { method: 'POST', body: { name: newName, email: newEmail } });
+        const res = await api('/api/user/profile', {
+          method: 'POST',
+          body: {
+            name: newName,
+            email: newEmail,
+            phone: newPhone,
+            designation: newDesignation,
+            timezone: newTimezone,
+            language: newLanguage
+          }
+        });
         if (res && res.user) {
           Object.assign(State.me.user, res.user);
-          toast('Profile updated successfully.', 'ok');
+          toast('Personal profile updated successfully.', 'ok');
           const tn = $('.tenant-chip .tn');
           if (tn) tn.textContent = res.user.name || res.user.email;
           const av = $('.tenant-chip .av');
           if (av) av.textContent = initials(res.user.name || res.user.email);
+          const profCardName = $('#prof-display-name');
+          if (profCardName) profCardName.textContent = res.user.name || 'User Account';
+          const profCardEmail = $('#prof-display-email');
+          if (profCardEmail) profCardEmail.textContent = res.user.email || '';
+          const profCardPhone = $('#prof-display-phone');
+          if (profCardPhone) profCardPhone.textContent = res.user.phone ? ('📞 ' + res.user.phone) : '';
+          const tzKpi = $('#kpi-tz-val');
+          if (tzKpi) tzKpi.textContent = res.user.timezone ? res.user.timezone.split('/')[1] || res.user.timezone : 'IST';
         }
       } catch (err) {
         toast(err.message || 'Failed to update profile.', 'err');
       } finally {
         saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = 'Save Profile';
+        saveProfileBtn.textContent = 'Save Personal Profile';
       }
     });
 
     const profileSection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;' }, [
         el('div', {}, [
           el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Identity'),
-          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'User Profile & Account')
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'User Profile & Personal Identity')
         ]),
-        isAdm
-          ? el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Administrator')
-          : null
-      ].filter(Boolean)),
-      el('div', { style: 'display:flex;align-items:center;gap:14px;margin-bottom:22px;padding:12px 16px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.10);border-radius:12px;max-width:540px;' }, [
-        el('div', { class: 'av', style: 'width:44px;height:44px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;' }, initials(u.name || u.email || 'User')),
-        el('div', { style: 'flex:1;' }, [
-          el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, u.name || 'User Account'),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;' }, u.email || 'No email attached')
+        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+          isAdm
+            ? el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Administrator')
+            : el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Workspace Member'),
+          el('span', { class: 'pill badge-green', style: 'font-size:0.74rem;padding:3px 10px;border-radius:999px;' }, 'Active')
         ])
       ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:680px;margin-bottom:20px;' }, [
+      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Your personal profile details, notification phone number, localization timezone, and language preferences.'),
+
+      // User Profile Header Card with Avatar
+      el('div', { style: 'display:flex;align-items:center;gap:16px;margin-bottom:22px;padding:14px 18px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.10);border-radius:14px;max-width:680px;' }, [
+        el('div', { class: 'av', style: 'width:48px;height:48px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;box-shadow:0 2px 6px rgba(13,93,65,0.25);' }, initials(u.name || u.email || 'User')),
+        el('div', { style: 'flex:1;' }, [
+          el('div', { id: 'prof-display-name', style: 'font-weight:800;font-size:1rem;color:#14221c;' }, u.name || 'User Account'),
+          el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:2px;flex-wrap:wrap;' }, [
+            el('span', { id: 'prof-display-email', class: 'muted', style: 'font-size:0.82rem;color:#5d7468;' }, u.email || 'No email attached'),
+            u.phone ? el('span', { id: 'prof-display-phone', style: 'font-size:0.80rem;color:#0d5d41;font-weight:600;' }, '📞 ' + u.phone) : ''
+          ])
+        ])
+      ]),
+
+      // 6-Field Responsive Form Grid
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;max-width:680px;margin-bottom:24px;' }, [
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Full Name'),
           userNameInput
@@ -13642,14 +13640,31 @@ async function viewSettings(root) {
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Email Address'),
           userEmailInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Mobile / Phone Number (For Escalations & SMS)'),
+          userPhoneInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Job Title / Designation'),
+          userDesignationInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Preferred Timezone'),
+          tzSelect
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dashboard & Report Language'),
+          langSelect
         ])
       ]),
+
       el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
         saveProfileBtn,
         el('button', {
           type: 'button',
           class: 'btn btn-ghost',
-          style: 'border-radius:999px;padding:9px 20px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;',
+          style: 'border-radius:999px;padding:9px 20px;border:1.5px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;',
           onclick: doLogout
         }, 'Sign out')
       ])
@@ -13657,59 +13672,160 @@ async function viewSettings(root) {
     wrap.appendChild(profileSection);
     wrap.appendChild(createPasswordSection(false));
 
-    // SECTION 2: Workspace & Brand Identity
-    const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
+    // ========================================================================
+    // SECTION 2: Business & Corporate Identity (Company Profile)
+    // ========================================================================
+    const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '', placeholder: 'e.g. CarePlus Health & Diagnostic' });
+    const tenantIndustrySelect = createThemedDropdown({
+      value: t.industry || 'Healthcare & Diagnostic',
+      options: [
+        { value: 'Healthcare & Diagnostic', label: 'Healthcare & Diagnostic Clinics' },
+        { value: 'Real Estate & Housing', label: 'Real Estate & Property Development' },
+        { value: 'Automotive & Dealerships', label: 'Automotive & Dealerships' },
+        { value: 'Legal & Corporate Advisory', label: 'Legal & Corporate Advisory' },
+        { value: 'Financial Services & Insurance', label: 'Financial Services & Insurance' },
+        { value: 'Hospitality & Travel', label: 'Hospitality, Travel & Resorts' },
+        { value: 'Education & Coaching', label: 'Education, Universities & Coaching' },
+        { value: 'SaaS & Technology', label: 'SaaS, AI & Technology' },
+        { value: 'Retail & E-Commerce', label: 'Retail, Direct Sales & E-Commerce' },
+        { value: 'Professional Services', label: 'Professional & Agency Services' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
+
+    const tenantWebsiteInput = el('input', { class: 'input', id: 'set_website', type: 'url', value: t.website || '', placeholder: 'https://www.example.com' });
+    const tenantSupportEmailInput = el('input', { class: 'input', id: 'set_support_email', type: 'email', value: t.supportEmail || '', placeholder: 'support@example.com' });
+    const tenantSupportPhoneInput = el('input', { class: 'input', id: 'set_support_phone', type: 'tel', value: t.supportPhone || (t.telephony && t.telephony.did) || '', placeholder: '+91 80715 82519' });
+    const tenantGstinInput = el('input', { class: 'input', id: 'set_gstin', type: 'text', value: t.gstin || '', placeholder: 'e.g. 23AAAAA0000A1Z5' });
+    const tenantAddressInput = el('input', { class: 'input', id: 'set_address', type: 'text', value: t.address || '', placeholder: 'Street address, Suite / Floor, City, PIN' });
+
+    const tenantDescInput = el('textarea', {
+      class: 'input',
+      id: 'set_description',
+      style: 'width:100%;min-height:75px;font-size:0.85rem;line-height:1.45;padding:10px 14px;border-radius:10px;resize:vertical;',
+      placeholder: 'Briefly explain what your business offers. For example: "We are a multi-specialty diagnostic and imaging center offering MRI, CT, and blood tests in Indore." The AI Voice Agent will cite this during live caller conversations.'
+    });
+    tenantDescInput.value = t.description || '';
+
     const colorVal = (t.branding && t.branding.color) || '#0d5d41';
     const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal, style: 'width:42px;height:42px;border:1px solid rgba(13,93,65,0.2);border-radius:8px;padding:2px;cursor:pointer;background:transparent;' });
     const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:140px;font-family:var(--mono);' });
     colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
     colorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorI.value = colorHex.value; });
 
-    const saveTenantBtn = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Workspace');
+    const saveTenantBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;'
+    }, 'Save Business Profile');
+
     saveTenantBtn.addEventListener('click', async () => {
       saveTenantBtn.disabled = true;
       saveTenantBtn.textContent = 'Saving...';
       try {
-        await api('/api/tenant/update', { method: 'POST', body: { name: tenantNameInput.value.trim(), color: colorI.value } });
-        State.me.tenant.name = tenantNameInput.value.trim();
-        State.me.tenant.branding = Object.assign({}, State.me.tenant.branding, { color: colorI.value });
+        const payload = {
+          name: tenantNameInput.value.trim(),
+          color: colorI.value,
+          industry: tenantIndustrySelect.value,
+          website: tenantWebsiteInput.value.trim(),
+          supportEmail: tenantSupportEmailInput.value.trim().toLowerCase(),
+          supportPhone: tenantSupportPhoneInput.value.trim(),
+          gstin: tenantGstinInput.value.trim(),
+          address: tenantAddressInput.value.trim(),
+          description: tenantDescInput.value.trim()
+        };
+        const res = await api('/api/tenant/update', { method: 'POST', body: payload });
+        if (res && res.tenant) {
+          Object.assign(State.me.tenant, res.tenant);
+        } else {
+          State.me.tenant.name = payload.name;
+          State.me.tenant.branding = Object.assign({}, State.me.tenant.branding, { color: payload.color });
+          State.me.tenant.industry = payload.industry;
+          State.me.tenant.website = payload.website;
+          State.me.tenant.supportEmail = payload.supportEmail;
+          State.me.tenant.supportPhone = payload.supportPhone;
+          State.me.tenant.gstin = payload.gstin;
+          State.me.tenant.address = payload.address;
+          State.me.tenant.description = payload.description;
+        }
         const tn = $('.tenant-chip .tn'); if (tn) { tn.textContent = State.me.tenant.name; tn.title = State.me.tenant.name; }
         const av = $('.tenant-chip .av'); if (av) av.textContent = initials(State.me.tenant.name);
-        toast('Workspace settings saved.', 'ok');
+        const kpiWs = $('#kpi-ws-name'); if (kpiWs) kpiWs.textContent = State.me.tenant.name;
+        toast('Business profile & workspace settings saved.', 'ok');
       } catch (ex) {
         toast(ex.status === 404 ? 'Tenant settings endpoint not available.' : (ex.message || 'Save failed.'), 'err');
       } finally {
         saveTenantBtn.disabled = false;
-        saveTenantBtn.textContent = 'Save Workspace';
+        saveTenantBtn.textContent = 'Save Business Profile';
       }
     });
 
     const tenantSection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
       el('div', { style: 'margin-bottom:6px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Branding'),
-        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Workspace & Brand Identity')
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Branding & AI Persona Knowledge'),
+        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Business Identity & Company Profile')
       ]),
-      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Customize your business workspace name and brand accent color displayed across client interfaces and reports.'),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:680px;margin-bottom:20px;' }, [
+      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Company information, industry context, and public contact handles. Your AI Voice Receptionist automatically uses these details to greet callers and answer inquiries about your company.'),
+
+      // 2-Column Grid of Inputs
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;max-width:680px;margin-bottom:18px;' }, [
         el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Workspace / Business Name'),
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Company / Legal Business Name'),
           tenantNameInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Industry / Domain'),
+          tenantIndustrySelect
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Official Website URL'),
+          tenantWebsiteInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Customer Support / Inbound Email'),
+          tenantSupportEmailInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Helpline / Inbound Phone Number'),
+          tenantSupportPhoneInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'GSTIN / Business Registration ID'),
+          tenantGstinInput
+        ]),
+        el('div', { style: 'grid-column: 1 / -1;' }, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Operational Office Address'),
+          tenantAddressInput
+        ]),
+        el('div', { style: 'grid-column: 1 / -1;' }, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Company Overview & What We Do (AI Voice Persona Knowledge)'),
+          tenantDescInput,
+          el('span', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;margin-top:4px;display:block;' }, 'Your AI Voice Receptionist automatically uses this summary when callers ask "What does your company do?" or ask about available services.')
         ]),
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Brand Accent Color'),
           el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [colorI, colorHex])
         ])
       ]),
-      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [saveTenantBtn])
+      el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:8px;' }, [saveTenantBtn])
     ]);
     wrap.appendChild(tenantSection);
 
-    // SECTION 3: Privacy & HIPAA Mode
-    const privacySelect = el('select', { class: 'select aria-select', id: 'privacy_mode', style: 'max-width:380px;' }, [
-      el('option', { value: 'standard' }, 'Standard retention (Recordings & transcripts kept)'),
-      el('option', { value: 'metadata_only' }, 'Privacy mode (Metadata only, logs stripped)'),
-      el('option', { value: 'no_recording' }, 'HIPAA mode (No recording or transcript retention)')
-    ]);
+    // ========================================================================
+    // SECTION 3: Compliance & HIPAA Retention
+    // ========================================================================
+    const privacySelect = createThemedDropdown({
+      value: 'standard',
+      options: [
+        { value: 'standard', label: 'Standard retention (Recordings & transcripts kept)' },
+        { value: 'metadata_only', label: 'Privacy mode (Metadata only, logs stripped)' },
+        { value: 'no_recording', label: 'HIPAA mode (No recording or transcript retention)' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'max-width:440px;flex:1;'
+    });
     const privacySave = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Privacy Mode');
     privacySave.onclick = async () => {
       privacySave.disabled = true;
@@ -13747,7 +13863,7 @@ async function viewSettings(root) {
     }).catch(() => { });
   }
 
-  // ==========================================================================
+    // ==========================================================================
   // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
   // ==========================================================================
   async function renderVoiceIntegrationsTab(panel, _scrollToSection) {
@@ -13781,36 +13897,12 @@ async function viewSettings(root) {
     let currentAudio = null;
     let currentlyPlayingId = null;
 
-    // ── PAGE HEADER ──────────────────────────────────────────────────────────
-    const pageHeader = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
-      el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
-      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
-        'Complete voice pipeline in one place. Choose your AI voice persona (Rumik), assign your VoBiz phone number, and configure the Dograh AI call flow — all changes sync live to your phone lines instantly.'
-      ),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
-          el('span', { id: 'vi-voice-pill' }, 'Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik Mulberry)')
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
-          el('span', {}, 'Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Shared Core)'))
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
-          el('span', {}, 'VoBiz SIP Carrier: Ready')
-        ])
-      ])
-    ]);
-    wrap.appendChild(pageHeader);
-
     // ── SECTION TAB BAR ───────────────────────────────────────────────────────
     let activeSectionTab = _scrollToSection || 'voice';
     const sectionTabs = [
-      { id: 'voice', label: 'Voice & Speech (Rumik)' },
-      { id: 'phone', label: 'Phone Numbers (VoBiz)' },
-      { id: 'flows', label: 'AI Call Flows (Dograh)' }
+      { id: 'voice', label: 'Voice & Speech' },
+      { id: 'phone', label: 'Phone Numbers' },
+      { id: 'flows', label: 'AI Call Flows' }
     ];
     const sectionBtnMap = {};
     const sectionPanelMap = {};
@@ -13939,10 +14031,20 @@ async function viewSettings(root) {
     // Tone & Speed Controls
     var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
     if (tones.length > 0) {
-      var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
-        tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
-      );
-      toneSel.onchange = function() { selectedTone = toneSel.value; };
+      var toneOptions = tones.map(function(t) {
+        return {
+          value: t.id,
+          label: t.label + (t.desc ? ' - ' + t.desc : '')
+        };
+      });
+      var toneSel = createThemedDropdown({
+        value: selectedTone,
+        options: toneOptions,
+        searchable: false,
+        className: 'w-full',
+        style: 'width:100%;',
+        onChange: function(val) { selectedTone = val; }
+      });
       toneRow.appendChild(el('div', {}, [
         el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
         toneSel
@@ -13957,11 +14059,23 @@ async function viewSettings(root) {
       el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
     ]));
 
-    var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
-      el('option', { value: '' }, 'Primary Agent (Default)'),
-      ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
-    ]);
-    agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
+    var agentOptions = [
+      { value: '', label: 'Primary Agent (Default)' },
+      ...agentsCatalog.map(function(a) {
+        return {
+          value: a.id,
+          label: a.name + (a.isPrimary ? ' (Primary)' : '')
+        };
+      })
+    ];
+    var agentSel2 = createThemedDropdown({
+      value: selectedAgentId,
+      options: agentOptions,
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;',
+      onChange: function(val) { selectedAgentId = val; }
+    });
     toneRow.appendChild(el('div', {}, [
       el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
       agentSel2
@@ -14026,367 +14140,8 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-  // TAB 2 (Legacy compat): RUMIK VOICE & STREAMING SPEECH STUDIO
   // ==========================================================================
-  async function renderRumikVoiceTab(panel) {
-    const wrap = el('div', { class: 'settings-tab-inner aria-rumik-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
-    panel.innerHTML = '';
-    panel.appendChild(wrap);
-
-    let catalogData = null;
-    try {
-      catalogData = await api('/api/voice/catalog');
-    } catch (e) {
-      wrap.innerHTML = '';
-      wrap.appendChild(el('div', { style: 'color:#dc2626;padding:24px 0;' }, 'Failed to load voice catalog. Please refresh.'));
-      return;
-    }
-
-    const voices = (catalogData && catalogData.voices) || [];
-    const tones = (catalogData && catalogData.tones) || [];
-    const active = (catalogData && catalogData.activeVoice) || {};
-    const agents = (catalogData && catalogData.agents) || [];
-    const activeWfId = (catalogData && catalogData.activeWorkflowId) || '13027';
-
-    let selectedVoiceId = active.voiceId || 'ira';
-    let selectedTone = active.tone || 'happy';
-    let selectedSpeed = active.speed || 1.0;
-    let selectedAgentId = active.agentId || (agents[0] && agents[0].id) || '';
-    let currentAudio = null;
-    let currentlyPlayingId = null;
-
-    wrap.innerHTML = '';
-
-    // Section 1: Header & Live Ecosystem Status
-    const headerSection = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine'),
-      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Rumik Voice & Realtime Speech Studio'),
-      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:760px;line-height:1.5;' },
-        'Listen to and choose the natural voice for your AI receptionist. When you select a voice, it automatically binds to your Dograh flow and VoBiz phone numbers so every caller hears your chosen voice instantly.'
-      ),
-      // Live Pipeline Connectivity Pills (Zero Boxes, pure minimal Scandinavian indicators)
-      el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
-          el('span', { id: 'rumik-active-voice-pill' }, `Active Voice: ${voices.find(v => v.id === selectedVoiceId)?.name || 'Ira'} (Rumik Mulberry)`)
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
-          el('span', {}, `Dograh Pipeline: Synced (#${activeWfId})`)
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
-          el('span', {}, 'VoBiz DID Carrier Line: Ready')
-        ])
-      ])
-    ]);
-    wrap.appendChild(headerSection);
-
-    // Audio Player Helper
-    function stopPlayback() {
-      if (currentAudio) {
-        try {
-          currentAudio.pause();
-          currentAudio.currentTime = 0;
-        } catch (_) { }
-        currentAudio = null;
-      }
-      currentlyPlayingId = null;
-      updatePlayButtons();
-    }
-
-    function playAudioUrl(url, id, onEnd) {
-      stopPlayback();
-      currentlyPlayingId = id;
-      updatePlayButtons();
-      const a = new Audio(url);
-      currentAudio = a;
-      a.onended = () => {
-        stopPlayback();
-        if (onEnd) onEnd();
-      };
-      a.onerror = () => {
-        stopPlayback();
-        toast('Unable to play audio sample.', 'err');
-      };
-      a.play().catch(() => {
-        stopPlayback();
-      });
-    }
-
-    const playBtnElements = new Map();
-    function updatePlayButtons() {
-      voices.forEach((v) => {
-        const btn = playBtnElements.get(v.id);
-        if (!btn) return;
-        const isPlaying = currentlyPlayingId === v.id;
-        btn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Listen Sample';
-        btn.style.background = isPlaying ? '#dc2626' : 'transparent';
-        btn.style.color = isPlaying ? '#ffffff' : '#0d5d41';
-        btn.style.borderColor = isPlaying ? '#dc2626' : '#0d5d41';
-      });
-      const customBtn = playBtnElements.get('custom');
-      if (customBtn) {
-        const isPlaying = currentlyPlayingId === 'custom';
-        customBtn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Audio'
-          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Custom Text';
-        customBtn.style.background = isPlaying ? '#dc2626' : '#0d5d41';
-        customBtn.style.color = '#ffffff';
-      }
-    }
-
-    // Section 2: Voice Catalog List (Strictly Flat Underline Scandinavian Rows)
-    const voiceListHeader = el('div', { style: 'margin-bottom:12px;' }, [
-      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:2px;' }, 'Available Indian Voices'),
-      el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Select Voice Identity')
-    ]);
-    wrap.appendChild(voiceListHeader);
-
-    const voicesContainer = el('div', { style: 'margin-bottom:32px;display:flex;flex-direction:column;gap:8px;' });
-
-    voices.forEach((v) => {
-      const isSelected = v.id === selectedVoiceId;
-      const row = el('div', {
-        class: 'rumik-voice-row',
-        style: `display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(13,93,65,0.09);border-left:${isSelected ? '3px solid #0d5d41' : '3px solid transparent'};background:${isSelected ? 'rgba(13,93,65,0.035)' : 'transparent'};transition:all 0.18s ease;cursor:pointer;flex-wrap:wrap;gap:14px;`,
-        onclick: () => {
-          selectedVoiceId = v.id;
-          refreshVoiceSelections();
-        }
-      });
-
-      // Left info
-      const avatarEl = el('div', {
-        class: 'rumik-voice-avatar',
-        style: `width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isSelected ? '#0d5d41' : 'rgba(13,93,65,0.09)'};color:${isSelected ? '#ffffff' : '#0d5d41'};font-size:0.90rem;font-weight:800;flex-shrink:0;transition:all 0.18s ease;`
-      }, v.name.slice(0, 1));
-
-      const leftInfo = el('div', { style: 'display:flex;align-items:center;gap:14px;flex:1;min-width:280px;' }, [
-        avatarEl,
-        el('div', { style: 'flex:1;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
-            el('span', { style: 'font-size:1.02rem;font-weight:850;color:#14221c;' }, v.name),
-            el('span', { style: 'font-size:0.68rem;font-weight:800;letter-spacing:0.04em;padding:2px 8px;border-radius:999px;background:rgba(93,116,104,0.12);color:#334d40;' }, v.gender === 'female' ? 'Female' : 'Male'),
-            el('span', { style: 'font-size:0.74rem;color:#5d7468;font-weight:600;' }, v.accent)
-          ]),
-          el('div', { style: 'font-size:0.80rem;color:#5d7468;margin-top:3px;' },
-            el('strong', { style: 'color:#0d5d41;' }, 'Best for: '),
-            el('span', {}, v.recommendedFor)
-          )
-        ])
-      ]);
-
-      // Right action buttons
-      const playBtn = el('button', {
-        type: 'button',
-        class: 'btn-sample-play',
-        style: 'background:transparent;color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
-        onclick: async (e) => {
-          e.stopPropagation();
-          if (currentlyPlayingId === v.id) {
-            stopPlayback();
-            return;
-          }
-          playBtn.textContent = 'Loading...';
-          try {
-            const previewRes = await api('/api/voice/preview', {
-              method: 'POST',
-              body: { voiceId: v.id, tone: selectedTone, text: v.sampleGreeting }
-            });
-            if (previewRes && previewRes.dataUrl) {
-              playAudioUrl(previewRes.dataUrl, v.id);
-            }
-          } catch (err) {
-            toast(err.message || 'Failed to generate voice preview', 'err');
-            stopPlayback();
-          }
-        }
-      });
-      playBtnElements.set(v.id, playBtn);
-
-      const selectBtn = el('button', {
-        type: 'button',
-        class: 'btn-voice-select',
-        style: isSelected
-          ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
-          : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;',
-        onclick: (e) => {
-          e.stopPropagation();
-          selectedVoiceId = v.id;
-          refreshVoiceSelections();
-        }
-      }, isSelected ? '✓ Active Voice' : 'Select Voice');
-
-      const actions = el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [playBtn, selectBtn]);
-      row.appendChild(leftInfo);
-      row.appendChild(actions);
-      voicesContainer.appendChild(row);
-    });
-
-    wrap.appendChild(voicesContainer);
-    updatePlayButtons();
-
-    function refreshVoiceSelections() {
-      const activeVoiceObj = voices.find(v => v.id === selectedVoiceId);
-      const pill = $('#rumik-active-voice-pill');
-      if (pill) pill.textContent = `Active Voice: ${activeVoiceObj?.name || 'Ira'} (Rumik Mulberry)`;
-
-      const rows = wrap.querySelectorAll('.rumik-voice-row');
-      rows.forEach((r, idx) => {
-        const v = voices[idx];
-        if (!v) return;
-        const isSel = v.id === selectedVoiceId;
-        r.style.background = isSel ? 'rgba(13,93,65,0.035)' : 'transparent';
-        r.style.borderLeft = isSel ? '3px solid #0d5d41' : '3px solid transparent';
-        r.style.borderBottom = '1px solid rgba(13,93,65,0.09)';
-
-        const avatar = r.querySelector('.rumik-voice-avatar');
-        if (avatar) {
-          avatar.style.background = isSel ? '#0d5d41' : 'rgba(13,93,65,0.09)';
-          avatar.style.color = isSel ? '#ffffff' : '#0d5d41';
-        }
-        const selBtn = r.querySelector('.btn-voice-select');
-        if (selBtn) {
-          selBtn.textContent = isSel ? '✓ Active Voice' : 'Select Voice';
-          selBtn.style.cssText = isSel
-            ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
-            : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;';
-        }
-      });
-    }
-
-    // Section 3: Speech Delivery & Tone Tuning (Flat Underline Inputs - Zero Boxes)
-    const flatInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
-    const flatLabelStyle = 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;';
-
-    const controlsSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'margin-bottom:16px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Tone & Agent Assignment'),
-        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Speech Energy & Behavior Configuration')
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px 28px;max-width:860px;margin-bottom:24px;' }, [
-        // Assign to Agent
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Assign Voice to Agent'),
-          el('select', {
-            id: 'rumik-agent-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedAgentId = e.target.value; }
-          }, agents.map(a => el('option', { value: a.id, selected: a.id === selectedAgentId }, `${a.name}${a.isPrimary ? ' (Primary Agent)' : ''}`)))
-        ]),
-        // Tone Presets
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Emotion & Energy Tone'),
-          el('select', {
-            id: 'rumik-tone-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedTone = e.target.value; }
-          }, tones.map(t => el('option', { value: t.id, selected: t.id === selectedTone }, `${t.label} (${t.emotionTag})`)))
-        ]),
-        // Speech Rate / Speed
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Speech Delivery Rate'),
-          el('select', {
-            id: 'rumik-speed-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedSpeed = parseFloat(e.target.value); }
-          }, [
-            el('option', { value: '0.9' }, '0.90x (Deliberate & Relaxed)'),
-            el('option', { value: '1.0', selected: selectedSpeed === 1.0 }, '1.00x (Standard Conversational)'),
-            el('option', { value: '1.1' }, '1.10x (Brisk & Energetic)'),
-            el('option', { value: '1.2' }, '1.20x (Fast Delivery)')
-          ])
-        ])
-      ]),
-
-      // Custom Phrase Interactive Tester (Flat Underline)
-      el('div', { style: 'max-width:860px;margin-top:16px;' }, [
-        el('label', { style: flatLabelStyle }, 'Test Custom Business Greeting in Selected Voice'),
-        el('div', { style: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;' }, [
-          el('input', {
-            id: 'rumik-custom-text',
-            class: 'input',
-            style: 'flex:1;min-width:280px;' + flatInputStyle,
-            placeholder: 'e.g. Namaste! Welcome to Apollo Dental Clinic. Main aapki appointment book karne mein madad kar sakti hoon.'
-          }),
-          (() => {
-            const customTestBtn = el('button', {
-              type: 'button',
-              style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;'
-            });
-            playBtnElements.set('custom', customTestBtn);
-            customTestBtn.onclick = async () => {
-              if (currentlyPlayingId === 'custom') {
-                stopPlayback();
-                return;
-              }
-              const customVal = $('#rumik-custom-text')?.value.trim();
-              const textToSpeak = customVal || 'Namaste! Welcome to our clinic. Main aapki kya sahayata kar sakti hoon?';
-              customTestBtn.textContent = 'Generating...';
-              try {
-                const res = await api('/api/voice/preview', {
-                  method: 'POST',
-                  body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, text: textToSpeak }
-                });
-                if (res && res.dataUrl) {
-                  playAudioUrl(res.dataUrl, 'custom');
-                }
-              } catch (err) {
-                toast(err.message || 'Failed to preview custom audio', 'err');
-                stopPlayback();
-              }
-            };
-            return customTestBtn;
-          })()
-        ]),
-        el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:6px;' }, 'Enter your exact business name to hear how your callers will experience the greeting.')
-      ])
-    ]);
-    wrap.appendChild(controlsSection);
-    updatePlayButtons();
-
-    // Section 4: Save & Apply Button
-    const saveBtn = el('button', {
-      type: 'button',
-      class: 'btn btn-primary',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:10px 28px;font-weight:750;border:none;cursor:pointer;'
-    }, 'Apply Voice & Sync to Dograh Flow');
-
-    saveBtn.onclick = async () => {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving & Synchronizing Flow...';
-      try {
-        const res = await api('/api/voice/save', {
-          method: 'POST',
-          body: {
-            voiceId: selectedVoiceId,
-            tone: selectedTone,
-            speed: selectedSpeed,
-            agentId: selectedAgentId,
-            model: 'muga'
-          }
-        });
-        toast(res.message || 'Voice updated successfully and synced with Dograh workflow & phone lines!', 'ok');
-        refreshVoiceSelections();
-      } catch (err) {
-        toast(err.message || 'Failed to apply voice.', 'err');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Apply Voice & Sync to Dograh Flow';
-      }
-    };
-
-    wrap.appendChild(el('div', { style: 'margin-top:20px;' }, [saveBtn]));
-  }
-
-  // ==========================================================================
-  // TAB 3: VOBIZ NUMBERS (TELEPHONY LINES & ASSIGNMENTS)
+  // VOBIZ TELEPHONY & CARRIER INTEGRATIONS
   // ==========================================================================
   async function renderVoBizTab(panel) {
     const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
@@ -15854,7 +15609,9 @@ async function viewSettings(root) {
           toast(res.message || 'Connection test successful.', res.ok ? 'ok' : 'err');
           if (res.ok) { panel.innerHTML = ''; renderIntegrationsTab(panel); }
         } catch (e) {
-          toast('Test failed: ' + e.message, 'err');
+          let errText = (e && e.message) || 'Connection test failed';
+          errText = errText.replace(/^(Test failed:\s*)+/i, '');
+          toast(errText, 'err');
         } finally {
           testBtn.disabled = false;
           testBtn.textContent = 'Test Live Connection';
@@ -16395,21 +16152,60 @@ function renderFeatureLock(container, lockedContent, opts) {
    CONTACTS SUB-NAVIGATION TABS (All, Pipeline, Appointments, Visitors)
    =========================================================================== */
 
-function buildContactsSubNav(activeTab, onSwitch) {
+function buildContactsSubNav(activeTab, onSwitch, counts) {
+  counts = counts || {};
   const tabs = [
-    { id: 'pipeline', label: 'Pipeline' },
-    { id: 'all', label: 'All Contacts' },
-    { id: 'appointments', label: 'Appointments' },
-    { id: 'visitors', label: 'Visitors' }
+    {
+      id: 'pipeline',
+      label: 'Pipeline',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>',
+      badgeId: 'tab-badge-pipeline',
+      badgeVal: counts.pipeline != null ? String(counts.pipeline) : 'Live'
+    },
+    {
+      id: 'all',
+      label: 'All Contacts',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      badgeId: 'tab-badge-contacts',
+      badgeVal: counts.all != null ? String(counts.all) : '0'
+    },
+    {
+      id: 'appointments',
+      label: 'Appointments',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      badgeId: 'tab-badge-appointments',
+      badgeVal: counts.appointments != null ? String(counts.appointments) : '0'
+    },
+    {
+      id: 'complaints',
+      label: 'Issues & Complaints',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      badgeId: 'tab-badge-complaints',
+      badgeVal: counts.complaints != null ? String(counts.complaints) : '0'
+    },
+    {
+      id: 'visitors',
+      label: 'Visitors',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+      badgeId: 'tab-badge-visitors',
+      badgeVal: counts.visitors != null ? String(counts.visitors) : 'Live'
+    }
   ];
 
-  const nav = el('div', { class: 'sv-contacts-subnav' });
+  const nav = el('div', { class: 'admin-tab-nav sv-contacts-subnav' });
   tabs.forEach(function(tab) {
+    const isActive = activeTab === tab.id;
+    const badge = el('span', { class: 'admin-tab-badge', id: tab.badgeId }, tab.badgeVal);
     const btn = el('button', {
       type: 'button',
-      class: 'sv-contacts-subnav-btn' + (activeTab === tab.id ? ' active' : ''),
+      class: 'admin-tab-btn sv-contacts-subnav-btn' + (isActive ? ' active' : ''),
+      'data-tab': tab.id,
       onclick: function() { onSwitch(tab.id); }
-    }, (tab.icon ? (tab.icon + ' ') : '') + tab.label);
+    }, [
+      el('span', { html: tab.iconHtml }),
+      el('span', {}, tab.label),
+      badge
+    ]);
     nav.appendChild(btn);
   });
   return nav;
@@ -16451,10 +16247,69 @@ async function viewCrmPipeline(root) {
   root.appendChild(subNavContainer);
   root.appendChild(tabContentHost);
 
+  const APPOINTMENTS_STORAGE_KEY = 'seevora_appointments_count_cache';
+  function readStoredAppointmentsCount() {
+    try {
+      const v = localStorage.getItem(APPOINTMENTS_STORAGE_KEY);
+      if (v !== null && !isNaN(parseInt(v, 10))) return parseInt(v, 10);
+    } catch (_) {}
+    return null;
+  }
+  function writeStoredAppointmentsCount(count) {
+    try {
+      localStorage.setItem(APPOINTMENTS_STORAGE_KEY, String(count));
+    } catch (_) {}
+  }
+
+  const initialApptCount = readStoredAppointmentsCount();
+  let cachedSubNavCounts = {
+    pipeline: 'Live',
+    all: 0,
+    appointments: initialApptCount != null ? initialApptCount : 0,
+    complaints: 0,
+    visitors: 'Live'
+  };
+
+  async function refreshAppointmentsCount() {
+    try {
+      const res = await api('/api/booking/list');
+      if (res && Array.isArray(res.bookings)) {
+        cachedSubNavCounts.appointments = res.bookings.length;
+        writeStoredAppointmentsCount(res.bookings.length);
+        refreshSubNavBadges();
+      }
+    } catch (_) {}
+  }
+
+  function refreshSubNavBadges() {
+    const elP = document.getElementById('tab-badge-pipeline');
+    if (elP && cachedSubNavCounts.pipeline != null) elP.textContent = String(cachedSubNavCounts.pipeline);
+    const elA = document.getElementById('tab-badge-contacts');
+    if (elA && cachedSubNavCounts.all != null) elA.textContent = String(cachedSubNavCounts.all);
+    const elAppt = document.getElementById('tab-badge-appointments');
+    if (elAppt && cachedSubNavCounts.appointments != null) elAppt.textContent = String(cachedSubNavCounts.appointments);
+    const elC = document.getElementById('tab-badge-complaints');
+    if (elC && cachedSubNavCounts.complaints != null) {
+      elC.textContent = String(cachedSubNavCounts.complaints);
+      if (Number(cachedSubNavCounts.complaints) > 0) {
+        elC.style.background = '#dc2626';
+        elC.style.color = '#ffffff';
+        elC.style.border = 'none';
+        elC.style.fontWeight = '750';
+      } else {
+        elC.style.background = '';
+        elC.style.color = '';
+        elC.style.border = '';
+      }
+    }
+    const elV = document.getElementById('tab-badge-visitors');
+    if (elV && cachedSubNavCounts.visitors != null) elV.textContent = String(cachedSubNavCounts.visitors);
+  }
+
   function switchContactsTab(tabId) {
     activeContactsTab = tabId;
     subNavContainer.innerHTML = '';
-    subNavContainer.appendChild(buildContactsSubNav(tabId, switchContactsTab));
+    subNavContainer.appendChild(buildContactsSubNav(tabId, switchContactsTab, cachedSubNavCounts));
 
     tabContentHost.innerHTML = '';
     if (tabId === 'pipeline') {
@@ -16463,6 +16318,8 @@ async function viewCrmPipeline(root) {
       renderAllContactsTab(tabContentHost);
     } else if (tabId === 'appointments') {
       renderAppointmentsTab(tabContentHost);
+    } else if (tabId === 'complaints') {
+      renderComplaintsSectionTab(tabContentHost);
     } else if (tabId === 'visitors') {
       renderVisitorsTab(tabContentHost);
     }
@@ -16511,15 +16368,24 @@ async function viewCrmPipeline(root) {
     try {
       const res = await api('/api/booking/list');
       const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+      cachedSubNavCounts.appointments = bookings.length;
+      writeStoredAppointmentsCount(bookings.length);
+      refreshSubNavBadges();
       host.innerHTML = '';
       if (!bookings.length) {
         host.appendChild(el('div', { style: 'text-align:center;padding:40px 16px;' }, [
-          
           el('p', { style: 'font-weight:600;color:var(--ink);margin:0 0 6px 0;' }, 'No Appointments Scheduled'),
           el('p', { class: 'muted', style: 'font-size:0.85rem;margin:0;' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or manual intake will appear here.')
         ]));
         return;
       }
+      var summaryBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:12px 16px;background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;'
+      }, [
+        el('span', { style: 'font-weight:700;color:var(--ink);font-size:0.92rem;' }, 'Scheduled Appointments'),
+        el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.82rem;' }, bookings.length + (bookings.length === 1 ? ' Booking' : ' Bookings'))
+      ]);
+      host.appendChild(summaryBar);
       const list = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
       bookings.forEach(function(b) {
         list.appendChild(el('div', {
@@ -16573,12 +16439,423 @@ async function viewCrmPipeline(root) {
             ]),
             el('span', { class: 'pill', style: 'font-size:0.72rem;' }, d.stage || 'New Lead')
           ]),
-          d.notes ? el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:6px;' }, d.notes) : ''
+          d.notes ? el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:6px;' }, formatFriendlyLeadNote(d.notes) || d.notes) : ''
         ]));
       });
       host.appendChild(list);
     } catch (err) {
       host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load visitors: ' + err.message + '</div>';
+    }
+  }
+
+  function createComplaintMetricCard(title, count, desc, color, bg) {
+    return el('div', {
+      style: 'background:#fff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);'
+    }, [
+      el('div', { style: 'font-size:0.75rem;font-weight:750;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, title),
+      el('div', { style: 'font-size:1.8rem;font-weight:800;color:' + color + ';margin:4px 0;' }, String(count)),
+      el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, desc)
+    ]);
+  }
+
+  function openNewComplaintModal(onSuccess) {
+    const modalHost = el('div', { class: 'modal-overlay', style: 'display:flex;align-items:center;justify-content:center;z-index:9999;' });
+    const modalBox = el('div', {
+      class: 'modal card card-pad',
+      style: 'max-width:520px;width:90%;background:#fff;border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,0.18);position:relative;padding:24px;'
+    });
+
+    const closeBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'position:absolute;top:16px;right:16px;border-radius:50%;width:32px;height:32px;padding:0;cursor:pointer;',
+      onclick: () => modalHost.remove()
+    }, '✕');
+
+    const title = el('h3', { style: 'margin:0 0 6px 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Log Customer Issue / Complaint');
+    const subtitle = el('p', { class: 'muted', style: 'margin:0 0 18px 0;font-size:0.82rem;' }, 'Record an issue reported by a patient or gym member for follow-up.');
+
+    const nameInput = el('input', {
+      type: 'text',
+      placeholder: 'Customer / Patient Name',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;'
+    });
+
+    const phoneInput = el('input', {
+      type: 'text',
+      placeholder: 'Phone Number (e.g. +91 98765 43210)',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;'
+    });
+
+    const descInput = el('textarea', {
+      rows: 3,
+      placeholder: 'Describe the complaint or service issue in detail...',
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:10px 14px;font-size:0.86rem;margin-bottom:12px;outline:none;resize:vertical;font-family:inherit;'
+    });
+
+    const statusSel = el('select', {
+      style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:9px 14px;font-size:0.86rem;margin-bottom:20px;outline:none;background:#fff;font-weight:600;'
+    }, [
+      el('option', { value: 'unresolved' }, 'Unresolved (Requires Action)'),
+      el('option', { value: 'pending' }, 'Pending Follow-up'),
+      el('option', { value: 'resolved' }, 'Resolved on Intake')
+    ]);
+
+    const submitBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'width:100%;border-radius:999px;font-size:0.88rem;font-weight:750;padding:10px;background:#0d5d41;color:#fff;border:none;cursor:pointer;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+      onclick: async () => {
+        const phone = phoneInput.value.trim();
+        const desc = descInput.value.trim();
+        const name = nameInput.value.trim();
+        const status = statusSel.value;
+        if (!phone) { toast('Please enter a phone number.', 'warn'); return; }
+        if (!desc) { toast('Please enter the issue description.', 'warn'); return; }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        try {
+          // Upsert contact with complaint
+          const upRes = await api('/api/crm/contacts', {
+            method: 'POST',
+            body: JSON.stringify({
+              phone,
+              name: name || undefined,
+              tags: ['complaint'],
+              complaint: {
+                description: desc,
+                status,
+                source: 'dashboard',
+                loggedAt: new Date().toISOString(),
+                resolvedAt: status === 'resolved' ? new Date().toISOString() : null
+              }
+            })
+          });
+          if (upRes && upRes.contact) {
+            toast('Customer issue logged successfully.', 'ok');
+            modalHost.remove();
+            if (typeof onSuccess === 'function') onSuccess();
+          } else {
+            toast('Failed to save issue.', 'err');
+          }
+        } catch (e) {
+          toast('Error: ' + e.message, 'err');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Issue';
+        }
+      }
+    }, 'Save Issue');
+
+    modalBox.appendChild(closeBtn);
+    modalBox.appendChild(title);
+    modalBox.appendChild(subtitle);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Client Name'));
+    modalBox.appendChild(nameInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Phone Number *'));
+    modalBox.appendChild(phoneInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Issue / Complaint Description *'));
+    modalBox.appendChild(descInput);
+    modalBox.appendChild(el('label', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;display:block;margin-bottom:4px;' }, 'Initial Status'));
+    modalBox.appendChild(statusSel);
+    modalBox.appendChild(submitBtn);
+
+    modalHost.appendChild(modalBox);
+    document.body.appendChild(modalHost);
+  }
+
+  async function renderComplaintsSectionTab(host) {
+    host.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading customer issues & complaints...</div>';
+    try {
+      const res = await api('/api/crm/pipeline' + (currentTenantFilter ? ('?tenantId=' + encodeURIComponent(currentTenantFilter)) : ''));
+      const allDeals = [];
+      if (res && Array.isArray(res.pipeline)) {
+        res.pipeline.forEach(st => {
+          if (Array.isArray(st.deals)) {
+            st.deals.forEach(d => allDeals.push(d));
+          }
+        });
+      }
+
+      // Filter contacts that have a complaint or complaint tag
+      const allIssues = allDeals.filter(d => d.complaint || (d.tags && d.tags.includes('complaint')));
+
+      const unresolvedCount = allIssues.filter(d => (d.complaint && d.complaint.status === 'unresolved') || (!d.complaint && d.tags && d.tags.includes('complaint'))).length;
+      const pendingCount = allIssues.filter(d => d.complaint && d.complaint.status === 'pending').length;
+      const resolvedCount = allIssues.filter(d => d.complaint && d.complaint.status === 'resolved').length;
+      const totalCount = allIssues.length;
+
+      cachedSubNavCounts.complaints = unresolvedCount;
+      refreshSubNavBadges();
+
+      host.innerHTML = '';
+
+      // 1. Top Section: Title & Actions
+      const topBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:12px;'
+      }, [
+        el('div', {}, [
+          el('h3', { style: 'margin:0 0 4px 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Customer Complaints & Issue Tracking'),
+          el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;' }, 'Automated grievance detection from AI Voice calls & manual staff intake for clinics, gyms, and service teams.')
+        ]),
+        el('div', { style: 'display:flex;gap:8px;' }, [
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+            style: 'border-radius:999px;font-size:0.82rem;font-weight:750;padding:6px 18px;background:#0d5d41;color:#fff;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+            onclick: () => openNewComplaintModal(() => renderComplaintsSectionTab(host))
+          }, '+ Log New Issue')
+        ])
+      ]);
+      host.appendChild(topBar);
+
+      // 2. Metrics Cards Row
+      const metricsRow = el('div', {
+        style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:20px;'
+      }, [
+        createComplaintMetricCard('Total Logged', totalCount, 'All issues tracked', '#14221c', 'rgba(13,93,65,0.06)'),
+        createComplaintMetricCard('Unresolved', unresolvedCount, 'Requires immediate action', '#dc2626', 'rgba(220,38,38,0.08)'),
+        createComplaintMetricCard('Pending Follow-up', pendingCount, 'Staff callback or review', '#b45309', 'rgba(180,83,9,0.08)'),
+        createComplaintMetricCard('Resolved', resolvedCount, 'Closed & satisfied', '#1a7a4a', 'rgba(26,122,74,0.08)')
+      ]);
+      host.appendChild(metricsRow);
+
+      // 3. Search and Filter Bar
+      let activeFilter = 'all';
+      let searchQuery = '';
+
+      const controlsBar = el('div', {
+        style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;'
+      });
+
+      const filterGroup = el('div', {
+        style: 'display:inline-flex;gap:4px;padding:3px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.08);border-radius:999px;'
+      });
+
+      const filterChips = [
+        { id: 'all', label: 'All Issues (' + totalCount + ')' },
+        { id: 'unresolved', label: 'Unresolved (' + unresolvedCount + ')' },
+        { id: 'pending', label: 'Pending (' + pendingCount + ')' },
+        { id: 'resolved', label: 'Resolved (' + resolvedCount + ')' }
+      ];
+
+      const chipBtns = {};
+      filterChips.forEach(fc => {
+        const btn = el('button', {
+          type: 'button',
+          class: 'btn btn-sm',
+          style: (fc.id === activeFilter ? 'background:#0d5d41;color:#fff;font-weight:750;box-shadow:0 2px 6px rgba(13,93,65,0.20);' : 'background:transparent;color:#5d7468;font-weight:600;') + 'border-radius:999px;border:none;padding:5px 14px;font-size:0.8rem;cursor:pointer;',
+          onclick: () => {
+            activeFilter = fc.id;
+            Object.keys(chipBtns).forEach(k => {
+              const b = chipBtns[k];
+              if (k === activeFilter) {
+                b.style.background = '#0d5d41';
+                b.style.color = '#fff';
+                b.style.fontWeight = '750';
+                b.style.boxShadow = '0 2px 6px rgba(13,93,65,0.20)';
+              } else {
+                b.style.background = 'transparent';
+                b.style.color = '#5d7468';
+                b.style.fontWeight = '600';
+                b.style.boxShadow = 'none';
+              }
+            });
+            renderTicketsList();
+          }
+        }, fc.label);
+        chipBtns[fc.id] = btn;
+        filterGroup.appendChild(btn);
+      });
+      controlsBar.appendChild(filterGroup);
+
+      const searchBox = el('input', {
+        type: 'text',
+        placeholder: 'Search by client name, phone, or issue description...',
+        style: 'border:1.5px solid rgba(13,93,65,0.20);border-radius:999px;padding:6px 16px;font-size:0.82rem;width:280px;max-width:100%;outline:none;background:#fff;color:#14221c;',
+        oninput: (e) => {
+          searchQuery = e.target.value.toLowerCase().trim();
+          renderTicketsList();
+        }
+      });
+      controlsBar.appendChild(searchBox);
+      host.appendChild(controlsBar);
+
+      // 4. Tickets Container
+      const ticketsContainer = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
+      host.appendChild(ticketsContainer);
+
+      function renderTicketsList() {
+        ticketsContainer.innerHTML = '';
+
+        let filtered = allIssues.filter(d => {
+          const c = d.complaint || {};
+          const st = c.status || 'unresolved';
+          if (activeFilter !== 'all' && st !== activeFilter) return false;
+          if (searchQuery) {
+            const nameMatch = d.name && d.name.toLowerCase().includes(searchQuery);
+            const phoneMatch = d.phone && d.phone.includes(searchQuery);
+            const descMatch = c.description && c.description.toLowerCase().includes(searchQuery);
+            const notesMatch = d.notes && d.notes.toLowerCase().includes(searchQuery);
+            if (!nameMatch && !phoneMatch && !descMatch && !notesMatch) return false;
+          }
+          return true;
+        });
+
+        if (!filtered.length) {
+          ticketsContainer.appendChild(el('div', {
+            style: 'text-align:center;padding:48px 20px;background:rgba(13,93,65,0.02);border:1px dashed rgba(13,93,65,0.18);border-radius:16px;'
+          }, [
+            el('div', {
+              style: 'width:44px;height:44px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;display:flex;align-items:center;justify-content:center;margin:0 auto 12px auto;'
+            }, [uiIcon('alert-circle', 20)]),
+            el('div', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;margin-bottom:4px;' }, 'No Issues Found'),
+            el('div', { style: 'font-size:0.84rem;color:#5d7468;' }, activeFilter === 'all'
+              ? 'No customer complaints logged yet. Any grievances detected during Voice AI calls will automatically appear here.'
+              : 'No issues match the selected "' + activeFilter + '" filter.')
+          ]));
+          return;
+        }
+
+        filtered.forEach(d => {
+          const c = d.complaint || {};
+          const currentStatus = c.status || 'unresolved';
+          const cleanPhone = (d.phone || '').replace(/\D/g, '');
+
+          const card = el('div', {
+            class: 'card',
+            style: 'background:#fff;border:1px solid ' + (currentStatus === 'unresolved' ? 'rgba(220,38,38,0.25)' : 'rgba(13,93,65,0.12)') + ';border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:all 0.15s ease;',
+            onclick: () => openContactInspectionDrawer(d)
+          });
+
+          const cardHeader = el('div', {
+            style: 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;'
+          });
+
+          const clientInfo = el('div', { style: 'display:flex;align-items:center;gap:12px;min-width:0;' }, [
+            el('div', {
+              style: 'width:38px;height:38px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:800;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+            }, typeof initials === 'function' ? initials(d.name || d.phone) : (d.name ? d.name.slice(0, 2).toUpperCase() : 'LE')),
+            el('div', { style: 'min-width:0;' }, [
+              el('div', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;' }, d.name || 'Unnamed Client'),
+              el('div', { style: 'font-size:0.8rem;color:#5d7468;margin-top:2px;display:flex;align-items:center;gap:8px;' }, [
+                el('span', {}, d.phone || ''),
+                d.company ? el('span', {}, '· ' + d.company) : ''
+              ])
+            ])
+          ]);
+
+          const actionGroup = el('div', {
+            style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;',
+            onclick: (e) => e.stopPropagation()
+          });
+
+          const callBtn = el('button', {
+            type: 'button',
+            class: 'btn btn-ghost btn-sm',
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:4px 10px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
+            title: 'Call Client with Voice AI',
+            onclick: (e) => {
+              e.stopPropagation();
+              if (typeof openMakeCallModal === 'function') openMakeCallModal(d.phone, d.name || '', callBtn);
+            }
+          }, [
+            el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('phone', 12)]),
+            el('span', {}, 'Call')
+          ]);
+
+          const waBtn = el('button', {
+            type: 'button',
+            class: 'btn btn-ghost btn-sm',
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:4px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
+            title: 'Open WhatsApp Chat',
+            onclick: (e) => {
+              e.stopPropagation();
+              if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
+              else toast('No valid phone number for WhatsApp.', 'warn');
+            }
+          }, [
+            el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),
+            el('span', {}, 'WhatsApp')
+          ]);
+
+          const statusSelect = el('select', {
+            style: 'border-radius:999px;font-size:0.75rem;font-weight:750;padding:4px 12px;cursor:pointer;outline:none;' +
+              (currentStatus === 'resolved'
+                ? 'background:#e8f7ee;color:#1a7a4a;border:1.5px solid rgba(26,122,74,0.3);'
+                : currentStatus === 'pending'
+                  ? 'background:#fff7e6;color:#b45309;border:1.5px solid rgba(180,83,9,0.3);'
+                  : 'background:#fef2f2;color:#dc2626;border:1.5px solid rgba(220,38,38,0.3);'),
+            onchange: async (e) => {
+              const newSt = e.target.value;
+              try {
+                const res = await api('/api/crm/complaint', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    contactId: d.id,
+                    description: c.description || d.notes || 'Client complaint',
+                    status: newSt,
+                    source: 'dashboard'
+                  })
+                });
+                if (res && res.ok) {
+                  d.complaint = res.complaint;
+                  toast('Issue status updated to ' + newSt + '.', 'ok');
+                  renderComplaintsSectionTab(host);
+                }
+              } catch (err) {
+                toast('Failed to update status: ' + err.message, 'err');
+              }
+            }
+          }, [
+            el('option', { value: 'unresolved', selected: currentStatus === 'unresolved' }, 'Unresolved'),
+            el('option', { value: 'pending', selected: currentStatus === 'pending' }, 'Pending Action'),
+            el('option', { value: 'resolved', selected: currentStatus === 'resolved' }, 'Resolved')
+          ]);
+
+          actionGroup.appendChild(callBtn);
+          actionGroup.appendChild(waBtn);
+          actionGroup.appendChild(statusSelect);
+
+          cardHeader.appendChild(clientInfo);
+          cardHeader.appendChild(actionGroup);
+          card.appendChild(cardHeader);
+
+          // Body: Issue description
+          const issueBody = el('div', {
+            style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);border-radius:10px;padding:12px 14px;font-size:0.86rem;color:#14221c;line-height:1.5;'
+          }, [
+            el('div', { style: 'font-weight:700;font-size:0.75rem;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;' }, 'Reported Issue:'),
+            el('div', {}, c.description || d.notes || 'Complaint logged during voice consultation.')
+          ]);
+          card.appendChild(issueBody);
+
+          // Footer: Timestamps + Source pill
+          const cardFooter = el('div', {
+            style: 'display:flex;justify-content:space-between;align-items:center;font-size:0.76rem;color:#5d7468;flex-wrap:wrap;gap:8px;'
+          }, [
+            el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+              c.loggedAt ? el('span', {}, 'Logged: ' + new Date(c.loggedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })) : '',
+              c.resolvedAt ? el('span', { style: 'color:#1a7a4a;font-weight:600;' }, 'Resolved: ' + new Date(c.resolvedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })) : ''
+            ]),
+            el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
+              el('span', {
+                class: 'pill',
+                style: 'font-size:0.7rem;font-weight:600;background:rgba(13,93,65,0.05);color:#0d5d41;border:1px solid rgba(13,93,65,0.12);'
+              }, c.source ? ('Source: ' + c.source.replace(/_/g, ' ')) : 'Source: Voice AI')
+            ])
+          ]);
+          card.appendChild(cardFooter);
+
+          ticketsContainer.appendChild(card);
+        });
+      }
+
+      renderTicketsList();
+
+    } catch (err) {
+      host.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load complaints: ' + err.message + '</div>';
     }
   }
 
@@ -16589,6 +16866,7 @@ async function viewCrmPipeline(root) {
 
   const pipelineContentContainer = el('div', {});
   switchContactsTab('pipeline');
+  refreshAppointmentsCount();
 
   const PIPELINE_STORAGE_KEY = 'seevora_crm_pipeline_cache';
   let currentTenantFilter = '';
@@ -17226,7 +17504,14 @@ async function viewCrmPipeline(root) {
 
     const leftControls = [
     el('button', { class: 'btn btn-primary', style: 'border-radius:999px;font-weight:700;', onclick: openAddLeadModal }, '+ Add New Lead'),
-    el('button', { class: 'btn btn-ghost', style: 'border-radius:999px;font-weight:600;', onclick: () => goto('campaigns') }, 'Go to Outbound Calls')
+    el('button', {
+      class: 'btn btn-ghost',
+      style: 'border:1.5px solid rgba(13,93,65,0.24);color:#0d5d41;background:#ffffff;padding:7px 16px;border-radius:999px;font-size:0.82rem;font-weight:650;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(13,93,65,0.05);cursor:pointer;',
+      onclick: () => goto('campaigns')
+    }, [
+      el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' }),
+      el('span', {}, 'Go to Outbound Calls')
+    ])
   ];
 const topBar = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:16px;flex-wrap:wrap;gap:12px' }, [
     el('div', { class: 'flex gap-2 items-center', style: 'flex-wrap:wrap;' }, leftControls),
@@ -17235,7 +17520,10 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       exportBtn,
       bulkDeleteBtn,
       syncLeadBtn,
-      el('span', { class: 'pill', style: 'font-size:0.75rem' }, 'Live CRM Leads')
+      el('span', { class: 'admin-tab-badge', style: 'font-size:0.75rem;padding:4px 10px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;border-radius:999px;display:inline-flex;align-items:center;gap:6px;' }, [
+        el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block;' }),
+        'Live CRM Leads'
+      ])
     ])
   ]);
   pipelineContentContainer.appendChild(topBar);
@@ -17266,6 +17554,17 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
   function renderStages(stages) {
     latestRenderedStages = stages || defaultStages;
+    let totalDeals = 0;
+    let visitorsCount = 0;
+    (stages || defaultStages).forEach(function(st) {
+      const c = (st.deals ? st.deals.length : (st.count || 0));
+      totalDeals += c;
+      if (st.stage === 'New Lead') visitorsCount += c;
+    });
+    cachedSubNavCounts.pipeline = totalDeals || 'Live';
+    cachedSubNavCounts.all = totalDeals;
+    cachedSubNavCounts.visitors = visitorsCount || 'Live';
+    refreshSubNavBadges();
     board.innerHTML = '';
     (stages || defaultStages).forEach((st) => {
       const col = el('div', { class: 'wacrm-pipeline-col' }, [
@@ -17283,8 +17582,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
           // Clean notes: strip "[Voice Call YYYY-MM-DD] Inquiry:" prefix
           const noteClean = (() => {
             if (!deal.notes) return null;
-            let s = deal.notes.replace(/^\[Voice Call [^\]]+\]\s*/i, '').replace(/^Inquiry:\s*/i, '').trim();
-            return s || null;
+            return formatFriendlyLeadNote(deal.notes);
           })();
 
           const card = el('div', { class: 'wacrm-deal-card' });
@@ -17355,6 +17653,25 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
             card.appendChild(tagsRow);
           }
 
+          // Complaint badge (if contact has an open complaint)
+          if (deal.complaint && deal.complaint.status) {
+            const cs = deal.complaint.status;
+            const badgeColor = cs === 'resolved'
+              ? 'background:#e8f7ee;color:#1a7a4a;border:1px solid rgba(26,122,74,0.25);'
+              : cs === 'pending'
+                ? 'background:#fff7e6;color:#b45309;border:1px solid rgba(180,83,9,0.25);'
+                : 'background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.25);';
+            const badgeLabel = cs === 'resolved' ? 'Issue Resolved' : cs === 'pending' ? 'Issue Pending' : 'Issue Open';
+            const complaintBadge = el('div', {
+              style: 'margin-top:6px;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;' + badgeColor,
+              title: deal.complaint.description || 'Customer complaint logged'
+            }, [
+              el('span', { style: 'width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block;' }),
+              el('span', {}, badgeLabel)
+            ]);
+            card.appendChild(complaintBadge);
+          }
+
           // Divider
           card.appendChild(el('div', { class: 'wacrm-deal-divider' }));
 
@@ -17408,7 +17725,21 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     try {
       const ts = '_t=' + Date.now();
       const q = tenantFilter ? ('?tenantId=' + encodeURIComponent(tenantFilter) + '&' + ts) : ('?' + ts);
-      const res = await api('/api/crm/pipeline' + q);
+      const [res, bkRes] = await Promise.all([
+        api('/api/crm/pipeline' + q),
+        api('/api/booking/list').catch(() => null)
+      ]);
+      if (bkRes && Array.isArray(bkRes.bookings)) {
+        cachedSubNavCounts.appointments = bkRes.bookings.length;
+        writeStoredAppointmentsCount(bkRes.bookings.length);
+      } else if (res && typeof res.appointmentsCount === 'number') {
+        cachedSubNavCounts.appointments = res.appointmentsCount;
+        writeStoredAppointmentsCount(res.appointmentsCount);
+      }
+      if (res && typeof res.complaintsCount === 'number') {
+        cachedSubNavCounts.complaints = res.complaintsCount;
+        refreshSubNavBadges();
+      }
       const stages = (res && Array.isArray(res.pipeline)) ? res.pipeline : [];
       writeStoredPipeline(res);
       renderStages(stages);
@@ -17454,115 +17785,336 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
   }
 
 
-  /* ---- Dedicated Contact Inspection Drawer with Appointments Sub-Section ---- */
+    /* ---- Dedicated Contact Inspection Drawer with Appointments Sub-Section ---- */
   async function openContactInspectionDrawer(deal) {
     if (!deal) return;
     const phone = deal.phone || '';
     const cleanPhone = phone.replace(/\D/g, '');
+    const name = deal.name || ('Contact ' + (cleanPhone ? cleanPhone.slice(-4) : ''));
+    const initialText = typeof initials === 'function' ? initials(name) : (name.slice(0, 2).toUpperCase());
 
-    const container = el('div', { class: 'sv-contact-drawer-container', style: 'display:flex;flex-direction:column;gap:16px;' });
+    const container = el('div', { class: 'sv-contact-drawer-container', style: 'display:flex;flex-direction:column;gap:18px;' });
 
-    // 1. Top Contact Header Card
-    const headerCard = el('div', {
-      class: 'card',
-      style: 'background:var(--bg-2, #f5f7fa);border:1px solid var(--line-2, rgba(34,43,56,0.1));border-radius:14px;padding:16px;'
+    // Format phone nicely: +91 79743 15518
+    let displayPhone = phone;
+    if (phone.startsWith('+91') && phone.length === 13) {
+      displayPhone = '+91 ' + phone.slice(3, 8) + ' ' + phone.slice(8);
+    } else if (phone.length === 10) {
+      displayPhone = '+91 ' + phone.slice(0, 5) + ' ' + phone.slice(5);
+    }
+
+    // 1. Top Contact Header Area (Zero Heavy Boxes, Clean Scandinavian Sage Layout)
+    const initialsBox = el('div', {
+      style: 'width:48px;height:48px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:800;font-size:1.15rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(13,93,65,0.10);flex-shrink:0;'
+    }, initialText);
+
+    // Stage Pill
+    const stageVal = deal.stage || 'New Lead';
+    const stagePill = el('span', {
+      class: 'pill badge-gold',
+      style: 'font-weight:750;font-size:0.75rem;padding:3px 12px;border-radius:999px;display:inline-flex;align-items:center;'
+    }, stageVal);
+
+    // Call Action Button
+    const quickCallBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:3px 10px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
+      title: 'Call Contact with Voice AI',
+      onclick: (e) => {
+        e.stopPropagation();
+        if (typeof openMakeCallModal === 'function') openMakeCallModal(phone, deal.name || '', quickCallBtn);
+      }
     }, [
-      el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;' }, [
-        el('div', {}, [
-          el('h3', { style: 'margin:0 0 4px 0;font-size:1.15rem;font-weight:700;color:var(--ink);' }, deal.name || ('Contact ' + phone.slice(-4))),
-          el('div', { style: 'font-size:0.85rem;color:var(--ink-dim, #5d7468);display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;gap:4px;' }, [iconCallSvg(13), phone]),
-            deal.email ? el('span', {}, deal.email) : '',
-            deal.company ? el('span', { class: 'pill', style: 'font-size:0.75rem;padding:2px 8px;' }, deal.company) : ''
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('phone', 12)]),
+      el('span', {}, 'Call')
+    ]);
+
+    // WhatsApp Action Button
+    const quickWaBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:3px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
+      title: 'Open WhatsApp Chat',
+      onclick: (e) => {
+        e.stopPropagation();
+        if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
+        else toast('No valid phone number for WhatsApp.', 'warn');
+      }
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),
+      el('span', {}, 'WhatsApp')
+    ]);
+
+    // Clean curated tags (remove noise/duplicates like 'ai-voice-call' + 'voice-call')
+    const rawTags = Array.isArray(deal.tags) ? deal.tags : [];
+    const seenTags = new Set();
+    const curatedTags = [];
+    rawTags.forEach((t) => {
+      const clean = String(t).trim();
+      if (!clean) return;
+      if (['ai-voice-call', 'voice-call'].includes(clean) && seenTags.has('voice-lead')) return;
+      if (seenTags.has(clean)) return;
+      seenTags.add(clean);
+      curatedTags.push(clean);
+    });
+
+    const headerArea = el('div', {
+      style: 'padding-bottom:16px;border-bottom:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;gap:12px;'
+    }, [
+      // Top row: Avatar + Identity + Stage + Value
+      el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:14px;min-width:0;flex:1;' }, [
+          initialsBox,
+          el('div', { style: 'min-width:0;' }, [
+            el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+              el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:800;color:#14221c;letter-spacing:-0.02em;' }, name),
+              stagePill,
+              deal.dealValue ? el('span', { style: 'font-weight:800;color:#0d5d41;font-size:1rem;' }, '₹' + fmtInr(deal.dealValue)) : ''
+            ]),
+            el('div', { style: 'margin-top:6px;display:flex;align-items:center;gap:12px;font-size:0.84rem;color:#5d7468;flex-wrap:wrap;' }, [
+              phone ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#14221c;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('phone', 13)]),
+                el('span', {}, displayPhone)
+              ]) : '',
+              quickCallBtn,
+              cleanPhone ? quickWaBtn : '',
+              deal.email ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;color:#5d7468;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('send', 12)]),
+                el('span', {}, deal.email)
+              ]) : '',
+              deal.company ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;color:#5d7468;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('building', 12)]),
+                el('span', {}, deal.company)
+              ]) : ''
+            ])
           ])
-        ]),
-        el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;' }, [
-          el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.8rem;padding:3px 10px;' }, deal.stage || 'New Lead'),
-          deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--brand, #0d5d41);font-size:0.95rem;' }, '₹' + fmtInr(deal.dealValue)) : ''
         ])
       ]),
-      el('div', { style: 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;' }, [
+
+      // Capabilities & Tags Strip
+      el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;' }, [
         (deal.communicationPreference && deal.communicationPreference.prefersWhatsApp)
-          ? el('span', { class: 'pill', style: 'background:rgba(37,211,102,0.15);color:#0d5d41;border:1px solid rgba(37,211,102,0.3);font-size:0.75rem;font-weight:600;' }, '💬 Prefers WhatsApp (Calls Paused)')
-          : el('span', { class: 'pill', style: 'background:rgba(14,143,99,0.12);color:#0E8F63;border:1px solid rgba(14,143,99,0.25);font-size:0.75rem;font-weight:600;' }, '📞 Voice AI Auto-Dial Eligible'),
-        el('span', { class: 'pill', style: 'font-size:0.75rem;background:var(--bg);border:1px solid var(--line-2);' }, 'Type: ' + (deal.type || 'Lead')),
-        ...(deal.tags || []).map((t) => el('span', { class: 'pill', style: 'font-size:0.75rem;background:rgba(0,0,0,0.04);' }, t))
+          ? el('span', { class: 'pill', style: 'background:rgba(37,211,102,0.12);color:#0d5d41;border:1px solid rgba(37,211,102,0.25);font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;' }, '💬 Prefers WhatsApp (Calls Paused)')
+          : el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.18);font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;' }, '📞 Voice AI Auto-Dial Eligible'),
+        el('span', { class: 'pill', style: 'font-size:0.72rem;font-weight:600;background:rgba(13,93,65,0.03);color:#5d7468;border:1px solid rgba(13,93,65,0.10);' }, 'Type: ' + (deal.type || 'Lead')),
+        ...curatedTags.map((t) => el('span', {
+          class: 'pill',
+          style: 'font-size:0.72rem;font-weight:600;background:rgba(13,93,65,0.04);color:#0d5d41;border:1px solid rgba(13,93,65,0.12);border-radius:999px;'
+        }, t.replace(/_/g, ' ')))
       ])
     ]);
-    container.appendChild(headerCard);
+    container.appendChild(headerArea);
 
-    // 2. Navigation Tabs
+    // 2. Navigation Tabs (Pill style matching Scandinavian Sage theme)
     const tabNav = el('div', {
-      style: 'display:flex;gap:8px;border-bottom:1.5px solid var(--line-2, rgba(34,43,56,0.1));padding-bottom:8px;margin-top:4px;'
+      style: 'display:inline-flex;gap:4px;padding:3px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.08);border-radius:999px;width:fit-content;'
     });
 
     const apptTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;background:#0d5d41;color:#ffffff;border:none;cursor:pointer;',
+      class: 'btn btn-sm sv-drawer-tab-btn active',
+      style: 'border-radius:999px;font-weight:750;padding:6px 16px;background:#0d5d41;color:#ffffff;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('appointments')
-    }, 'Appointments');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('clock', 12)]),
+      el('span', {}, 'Appointments')
+    ]);
 
     const timelineTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm btn-ghost',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('timeline')
-    }, 'Voice & WhatsApp History');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('headset', 12)]),
+      el('span', {}, 'Voice & WhatsApp History')
+    ]);
 
     const detailsTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm btn-ghost',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('details')
-    }, 'Notes & Settings');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('building', 12)]),
+      el('span', {}, 'Notes & Settings')
+    ]);
+
+    const complaintsTabBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
+      onclick: () => switchDrawerTab('complaints')
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('alert-circle', 12)]),
+      el('span', {}, deal.complaint ? 'Complaint (' + (deal.complaint.status || 'open') + ')' : 'Complaints')
+    ]);
 
     tabNav.appendChild(apptTabBtn);
     tabNav.appendChild(timelineTabBtn);
     tabNav.appendChild(detailsTabBtn);
+    tabNav.appendChild(complaintsTabBtn);
     container.appendChild(tabNav);
 
     // 3. Tab Content Area
-    const tabContent = el('div', { class: 'sv-drawer-tab-content', style: 'min-height:240px;' });
+    const tabContent = el('div', { class: 'sv-drawer-tab-content', style: 'min-height:220px;' });
     container.appendChild(tabContent);
 
     function switchDrawerTab(tab) {
       [apptTabBtn, timelineTabBtn, detailsTabBtn].forEach((btn) => {
         btn.style.background = 'transparent';
-        btn.style.color = 'var(--ink)';
-        btn.style.border = '1px solid var(--line-2)';
+        btn.style.color = '#5d7468';
+        btn.style.border = '1px solid transparent';
+        btn.style.fontWeight = '650';
+        btn.style.boxShadow = 'none';
       });
+      const activeBtn = tab === 'appointments' ? apptTabBtn : tab === 'timeline' ? timelineTabBtn : tab === 'complaints' ? complaintsTabBtn : detailsTabBtn;
+      activeBtn.style.background = '#0d5d41';
+      activeBtn.style.color = '#ffffff';
+      activeBtn.style.border = 'none';
+      activeBtn.style.fontWeight = '750';
+      activeBtn.style.boxShadow = '0 2px 6px rgba(13,93,65,0.20)';
+
       if (tab === 'appointments') {
-        apptTabBtn.style.background = '#0d5d41';
-        apptTabBtn.style.color = '#ffffff';
-        apptTabBtn.style.border = 'none';
         renderAppointmentsTab(tabContent);
       } else if (tab === 'timeline') {
-        timelineTabBtn.style.background = '#0d5d41';
-        timelineTabBtn.style.color = '#ffffff';
-        timelineTabBtn.style.border = 'none';
         renderTimelineTab(tabContent);
       } else if (tab === 'details') {
-        detailsTabBtn.style.background = '#0d5d41';
-        detailsTabBtn.style.color = '#ffffff';
-        detailsTabBtn.style.border = 'none';
         renderDetailsTab(tabContent);
+      } else if (tab === 'complaints') {
+        renderComplaintsTab(tabContent);
       }
     }
 
+    function renderComplaintsTab(panel) {
+      panel.innerHTML = '';
+      const c = deal.complaint;
+      const now = new Date().toISOString();
+
+      // Header
+      const hdr = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;' }, [
+        el('span', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, 'Customer Complaints & Issues')
+      ]);
+      panel.appendChild(hdr);
+
+      // Current complaint section
+      const complaintCard = el('div', { style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.10);border-radius:14px;padding:18px;margin-bottom:16px;' });
+
+      const statusOpts = [
+        { value: 'unresolved', label: 'Unresolved', color: '#dc2626' },
+        { value: 'pending', label: 'Pending', color: '#b45309' },
+        { value: 'resolved', label: 'Resolved', color: '#1a7a4a' }
+      ];
+
+      const descArea = el('textarea', {
+        rows: 3,
+        placeholder: 'Describe the complaint or issue reported by the customer...',
+        style: 'width:100%;box-sizing:border-box;border:1.5px solid rgba(13,93,65,0.18);border-radius:10px;padding:10px 12px;font-size:0.84rem;color:#14221c;background:#fff;resize:vertical;font-family:inherit;outline:none;margin-bottom:12px;'
+      });
+      if (c && c.description) descArea.value = c.description;
+
+      const statusSel = el('select', {
+        style: 'border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;padding:6px 12px;font-size:0.84rem;color:#14221c;background:#fff;font-weight:600;cursor:pointer;outline:none;width:auto;margin-bottom:12px;'
+      }, statusOpts.map(o => {
+        const opt = el('option', { value: o.value }, o.label);
+        if (c && c.status === o.value) opt.selected = true;
+        else if (!c && o.value === 'unresolved') opt.selected = true;
+        return opt;
+      }));
+
+      const saveBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-primary btn-sm',
+        style: 'border-radius:999px;font-size:0.82rem;font-weight:750;padding:6px 18px;background:#0d5d41;color:#fff;border:none;cursor:pointer;box-shadow:0 2px 6px rgba(13,93,65,0.20);',
+        onclick: async () => {
+          const desc = descArea.value.trim();
+          const st = statusSel.value;
+          if (!desc) { toast('Please enter a complaint description.', 'warn'); return; }
+          saveBtn.textContent = 'Saving...';
+          saveBtn.disabled = true;
+          try {
+            const r = await api('/api/crm/complaint', {
+              method: 'POST',
+              body: JSON.stringify({ contactId: deal.id, description: desc, status: st, source: 'dashboard' })
+            });
+            if (r && r.ok) {
+              deal.complaint = r.complaint;
+              toast('Complaint saved.', 'ok');
+              renderComplaintsTab(panel);
+            } else {
+              toast('Failed to save complaint.', 'err');
+            }
+          } catch (e) {
+            toast('Error: ' + e.message, 'err');
+          } finally {
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+          }
+        }
+      }, 'Save Complaint');
+
+      // Meta info if existing complaint
+      if (c) {
+        const cs = c.status || 'unresolved';
+        const badgeColor = cs === 'resolved'
+          ? 'background:#e8f7ee;color:#1a7a4a;border:1px solid rgba(26,122,74,0.25);'
+          : cs === 'pending'
+            ? 'background:#fff7e6;color:#b45309;border:1px solid rgba(180,83,9,0.25);'
+            : 'background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.25);';
+        const statusBadge = el('span', {
+          style: 'display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:999px;font-size:0.76rem;font-weight:700;' + badgeColor
+        }, [
+          el('span', { style: 'width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;' }),
+          el('span', {}, cs.charAt(0).toUpperCase() + cs.slice(1))
+        ]);
+        const metaRow = el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;' }, [
+          statusBadge,
+          c.loggedAt ? el('span', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Logged: ' + c.loggedAt.slice(0, 10)) : '',
+          c.resolvedAt ? el('span', { style: 'font-size:0.76rem;color:#1a7a4a;' }, 'Resolved: ' + c.resolvedAt.slice(0, 10)) : '',
+          c.source ? el('span', { style: 'font-size:0.72rem;color:#5d7468;background:rgba(13,93,65,0.06);padding:2px 8px;border-radius:999px;' }, 'via ' + c.source.replace(/_/g, ' ')) : ''
+        ]);
+        complaintCard.appendChild(metaRow);
+      } else {
+        const emptyNote = el('div', { style: 'text-align:center;padding:18px 0 10px;color:#5d7468;font-size:0.84rem;' }, 'No complaint logged for this contact yet. Log one below or it will be auto-detected from voice calls.');
+        complaintCard.appendChild(emptyNote);
+      }
+
+      const formLabel = el('div', { style: 'font-size:0.78rem;font-weight:700;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;' }, c ? 'Update Complaint' : 'Log New Complaint');
+      complaintCard.appendChild(formLabel);
+      complaintCard.appendChild(descArea);
+      const statusRow = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        el('label', { style: 'font-size:0.82rem;color:#5d7468;font-weight:600;' }, 'Status:'),
+        statusSel,
+        saveBtn
+      ]);
+      complaintCard.appendChild(statusRow);
+      panel.appendChild(complaintCard);
+
+      // Auto-detection info
+      panel.appendChild(el('div', {
+        style: 'padding:12px 16px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.08);border-radius:10px;font-size:0.8rem;color:#5d7468;line-height:1.6;'
+      }, [
+        el('strong', { style: 'color:#0d5d41;display:block;margin-bottom:4px;' }, 'Auto-Detection Active'),
+        el('span', {}, 'The AI Voice Agent automatically detects complaints during calls, logs the issue description, and sets the status (Resolved / Unresolved / Pending) based on how the call ended. You can also update the status manually above.')
+      ]));
+    }
+
     async function renderAppointmentsTab(panel) {
-      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading appointments...</div>';
+      panel.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading appointments...</div>';
       try {
         const res = await api('/api/booking/list?phone=' + encodeURIComponent(phone) + '&contactId=' + encodeURIComponent(deal.id));
         const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
+        const apptSpan = apptTabBtn.querySelector('span:last-child');
+        if (apptSpan) apptSpan.textContent = 'Appointments (' + bookings.length + ')';
 
         panel.innerHTML = '';
         const topActions = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
-          el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, `Scheduled Appointments (${bookings.length})`),
+          el('span', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, 'Scheduled Appointments (' + bookings.length + ')'),
           el('button', {
             type: 'button',
             class: 'btn btn-primary btn-sm',
-            style: 'border-radius:999px;font-size:0.8rem;padding:4px 14px;background:#0d5d41;color:#fff;border:none;cursor:pointer;',
+            style: 'border-radius:999px;font-size:0.8rem;font-weight:750;padding:5px 16px;background:#0d5d41;color:#fff;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;',
             onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
           }, '+ Book Appointment')
         ]);
@@ -17570,17 +18122,19 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         if (!bookings.length) {
           panel.appendChild(el('div', {
-            style: 'text-align:center;padding:32px 16px;background:var(--bg-2);border-radius:12px;border:1px dashed var(--line-2);'
+            style: 'text-align:center;padding:36px 20px;background:rgba(13,93,65,0.02);border-radius:16px;border:1px dashed rgba(13,93,65,0.18);'
           }, [
-            
-            el('p', { style: 'margin:0 0 10px 0;font-weight:600;color:var(--ink);font-size:0.92rem;' }, 'No Appointments Scheduled'),
-            el('p', { style: 'margin:0 0 14px 0;font-size:0.82rem;color:var(--ink-dim);' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or direct intake appear here.'),
+            el('div', {
+              style: 'width:42px;height:42px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;display:flex;align-items:center;justify-content:center;margin:0 auto 12px auto;'
+            }, [uiIcon('clock', 18)]),
+            el('div', { style: 'margin:0 0 4px 0;font-weight:750;color:#14221c;font-size:0.95rem;' }, 'No Appointments Scheduled'),
+            el('div', { style: 'margin:0 0 16px 0;font-size:0.82rem;color:#5d7468;' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or direct intake appear here.'),
             el('button', {
               type: 'button',
               class: 'btn btn-secondary btn-sm',
-              style: 'border-radius:999px;',
+              style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;',
               onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
-            }, 'Schedule First Appointment')
+            }, '+ Schedule First Appointment')
           ]));
           return;
         }
@@ -17589,36 +18143,35 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
         bookings.forEach((b) => {
           const isConfirmed = b.status === 'confirmed';
           const card = el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;'
+            style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
             el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
-              el('span', { style: 'font-weight:700;color:var(--ink);font-size:0.95rem;' },
+              el('span', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;' },
                 new Date(b.startTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })),
               el('span', {
                 class: 'pill ' + (isConfirmed ? 'badge-gold' : ''),
-                style: 'font-size:0.75rem;font-weight:700;'
+                style: 'font-size:0.75rem;font-weight:750;'
               }, (b.status || 'confirmed').toUpperCase())
             ]),
-            el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);display:flex;gap:12px;align-items:center;' }, [
-              el('span', {}, `Duration: ${b.durationMin || 30} mins`),
-              el('span', {}, `Source: ${b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual')}`),
-              b.confirmationCode ? el('span', { class: 'pill', style: 'font-size:0.7rem;padding:1px 6px;' }, 'Code: ' + b.confirmationCode) : ''
+            el('div', { style: 'font-size:0.82rem;color:#5d7468;display:flex;gap:12px;align-items:center;flex-wrap:wrap;' }, [
+              el('span', {}, 'Duration: ' + (b.durationMin || 30) + ' mins'),
+              el('span', {}, 'Source: ' + (b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual'))),
+              b.confirmationCode ? el('span', { class: 'pill', style: 'font-size:0.7rem;padding:1px 6px;background:rgba(13,93,65,0.05);color:#0d5d41;' }, 'Code: ' + b.confirmationCode) : ''
             ]),
             b.notes ? el('div', {
-              style: 'font-size:0.82rem;background:var(--bg);padding:8px 10px;border-radius:8px;margin-top:4px;color:var(--ink);'
+              style: 'font-size:0.82rem;background:rgba(13,93,65,0.03);padding:8px 12px;border-radius:8px;margin-top:4px;color:#14221c;'
             }, b.notes) : ''
           ]);
           apptList.appendChild(card);
         });
         panel.appendChild(apptList);
       } catch (err) {
-        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load appointments: ${err.message}</div>`;
+        panel.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load appointments: ' + err.message + '</div>';
       }
     }
 
     async function renderTimelineTab(panel) {
-      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading conversation history...</div>';
+      panel.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading conversation history...</div>';
       try {
         const recsRes = await api('/api/recordings').catch(() => ({ recordings: [] }));
         const calls = (recsRes.recordings || []).filter((r) => {
@@ -17628,35 +18181,46 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         panel.innerHTML = '';
         if (!calls.length && !deal.notes) {
-          panel.innerHTML = '<div class="muted" style="text-align:center;padding:24px;">No call recordings or logs logged for this contact yet.</div>';
+          panel.innerHTML = '<div class="muted" style="text-align:center;padding:32px 16px;color:#5d7468;font-size:0.85rem;">No call recordings or notes logged for this contact yet.</div>';
           return;
         }
 
         const timelineList = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
         if (deal.notes) {
           timelineList.appendChild(el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);font-size:0.85rem;'
+            style: 'background:#ffffff;padding:14px 16px;border-radius:14px;border:1px solid rgba(13,93,65,0.12);font-size:0.85rem;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
-            el('div', { style: 'font-weight:600;margin-bottom:4px;color:var(--ink);' }, 'Contact Notes & Summary:'),
-            el('div', { style: 'white-space:pre-wrap;color:var(--ink-dim);line-height:1.45;' }, deal.notes)
+            el('div', { style: 'font-weight:750;margin-bottom:4px;color:#14221c;display:flex;align-items:center;gap:6px;' }, [
+              el('span', { style: 'color:#0d5d41;' }, [uiIcon('sparkle', 13)]),
+              'Contact Notes & Context:'
+            ]),
+            el('div', { style: 'white-space:pre-wrap;color:#5d7468;line-height:1.5;' }, deal.notes)
           ]));
         }
 
         calls.forEach((c) => {
+          const isOutbound = c.direction === 'outbound';
           const item = el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;'
+            style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
             el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
-              el('span', { style: 'font-weight:600;color:var(--ink);font-size:0.9rem;' },
-                `Voice Call (${c.direction === 'outbound' ? 'Outbound AI' : 'Inbound'}) · ${c.durationSeconds || 0}s`),
-              el('span', { style: 'font-size:0.75rem;color:var(--ink-dim);' }, (c.startedAt || '').slice(0, 16).replace('T', ' '))
+              el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+                el('span', {
+                  class: 'pill',
+                  style: isOutbound ? 'background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:750;' : 'background:rgba(59,130,246,0.10);color:#2563eb;font-weight:750;'
+                }, isOutbound ? 'Outbound Voice AI' : 'Inbound Call'),
+                el('span', { style: 'font-weight:700;color:#14221c;font-size:0.88rem;' }, (c.durationSeconds || 0) + 's duration')
+              ]),
+              el('span', { style: 'font-size:0.75rem;color:#5d7468;' }, (c.startedAt || '').slice(0, 16).replace('T', ' '))
             ]),
-            c.summary ? el('div', { style: 'font-size:0.83rem;color:var(--ink);line-height:1.4;' }, `AI Summary: ${c.summary}`) : '',
-            c.transcript ? el('details', { style: 'font-size:0.8rem;margin-top:4px;' }, [
-              el('summary', { style: 'cursor:pointer;color:var(--brand);font-weight:600;' }, 'View Full Transcript'),
-              el('pre', { style: 'background:var(--bg);padding:8px;border-radius:8px;white-space:pre-wrap;font-size:0.78rem;max-height:160px;overflow-y:auto;margin-top:6px;' }, c.transcript)
+            c.summary ? el('div', {
+              style: 'font-size:0.84rem;color:#14221c;line-height:1.45;background:rgba(13,93,65,0.03);border-left:3px solid #0d5d41;padding:8px 12px;border-radius:0 8px 8px 0;'
+            }, 'AI Call Summary: ' + c.summary) : '',
+            c.transcript ? el('details', { style: 'font-size:0.8rem;margin-top:2px;' }, [
+              el('summary', { style: 'cursor:pointer;color:#0d5d41;font-weight:700;user-select:none;' }, 'View Full Conversation Transcript'),
+              el('pre', {
+                style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);padding:10px 12px;border-radius:10px;white-space:pre-wrap;font-size:0.78rem;color:#14221c;max-height:180px;overflow-y:auto;margin-top:6px;line-height:1.5;'
+              }, c.transcript)
             ]) : ''
           ]);
           timelineList.appendChild(item);
@@ -17664,40 +18228,47 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         panel.appendChild(timelineList);
       } catch (err) {
-        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load conversation history: ${err.message}</div>`;
+        panel.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load conversation history: ' + err.message + '</div>';
       }
     }
 
     function renderDetailsTab(panel) {
       panel.innerHTML = '';
-      const form = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
-        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:10px;' }, [
+      const form = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' }, [
+        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px;' }, [
           el('div', { class: 'form-group' }, [
-            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Pipeline Stage'),
+            el('label', { style: 'font-size:0.8rem;font-weight:700;color:#5d7468;margin-bottom:4px;display:block;' }, 'Pipeline Stage'),
             createStageSelect(deal.id, deal.stage, () => loadPipeline(currentTenantFilter))
           ]),
           el('div', { class: 'form-group' }, [
-            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Deal Value (INR)'),
-            el('input', { class: 'input', value: '₹' + fmtInr(deal.dealValue || 0), disabled: true })
+            el('label', { style: 'font-size:0.8rem;font-weight:700;color:#5d7468;margin-bottom:4px;display:block;' }, 'Deal Value (INR)'),
+            el('input', { class: 'input', value: '₹' + fmtInr(deal.dealValue || 0), disabled: true, style: 'font-weight:700;color:#14221c;' })
           ])
         ]),
-        el('div', { class: 'card', style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);' }, [
-          el('div', { style: 'font-weight:600;font-size:0.88rem;margin-bottom:6px;' }, 'Customer Communication Preferences'),
-          el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);line-height:1.5;' }, [
-            el('div', {}, `• WhatsApp Messaging: ${(deal.communicationPreference && deal.communicationPreference.prefersWhatsApp) ? 'Preferred by customer' : 'Default'}`),
-            el('div', {}, `• Phone / Voice Calling: ${(deal.communicationPreference && deal.communicationPreference.doNotCall) ? 'Paused / Do Not Call' : 'Active and Enabled'}`),
-            el('div', {}, `• Call Attempts Made: ${(deal.communicationPreference && deal.communicationPreference.voiceCallAttempts) || 0}`)
+        el('div', {
+          style: 'background:#ffffff;padding:14px 16px;border-radius:14px;border:1px solid rgba(13,93,65,0.12);box-shadow:0 1px 3px rgba(13,93,65,0.04);'
+        }, [
+          el('div', { style: 'font-weight:750;font-size:0.88rem;color:#14221c;margin-bottom:8px;display:flex;align-items:center;gap:6px;' }, [
+            el('span', { style: 'color:#0d5d41;' }, [uiIcon('shield', 13)]),
+            'Customer Communication Preferences'
+          ]),
+          el('div', { style: 'font-size:0.82rem;color:#5d7468;line-height:1.6;' }, [
+            el('div', {}, '• WhatsApp Messaging: ' + ((deal.communicationPreference && deal.communicationPreference.prefersWhatsApp) ? 'Preferred by customer (Auto-calls paused)' : 'Standard Active')),
+            el('div', {}, '• Phone / Voice Calling: ' + ((deal.communicationPreference && deal.communicationPreference.doNotCall) ? 'Paused / Do Not Call' : 'Active & Voice AI Auto-Dial Eligible')),
+            el('div', {}, '• Total Voice Call Attempts: ' + (((deal.communicationPreference && deal.communicationPreference.voiceCallAttempts) || 0) + ' calls'))
           ])
         ]),
-        el('div', { style: 'display:flex;gap:10px;margin-top:8px;' }, [
+        el('div', { style: 'display:flex;gap:10px;margin-top:6px;' }, [
           el('button', {
             type: 'button',
             class: 'btn btn-secondary btn-sm',
+            style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;',
             onclick: () => { openEditLeadModal(deal); }
           }, 'Edit Contact Details'),
           el('button', {
             type: 'button',
             class: 'btn btn-danger btn-sm',
+            style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(239,68,68,0.08);color:#dc2626;border:1px solid rgba(239,68,68,0.25);cursor:pointer;',
             onclick: () => { openDeleteLeadModal(deal); }
           }, 'Delete Contact')
         ])
@@ -17709,7 +18280,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       const dateInp = el('input', { class: 'input', type: 'datetime-local' });
       const nowPlusDay = new Date(Date.now() + 24 * 3600000);
       const pad = (n) => String(n).padStart(2, '0');
-      dateInp.value = `${nowPlusDay.getFullYear()}-${pad(nowPlusDay.getMonth() + 1)}-${pad(nowPlusDay.getDate())}T10:00`;
+      dateInp.value = nowPlusDay.getFullYear() + '-' + pad(nowPlusDay.getMonth() + 1) + '-' + pad(nowPlusDay.getDate()) + 'T10:00';
 
       const durationSel = el('select', { class: 'input' }, [
         el('option', { value: '15' }, '15 minutes'),
@@ -17745,6 +18316,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
             }
           });
           toast('Appointment scheduled successfully!', 'ok');
+          refreshAppointmentsCount();
           if (typeof onSaved === 'function') onSaved();
         }
       });
@@ -17753,9 +18325,10 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     switchDrawerTab('appointments');
 
     modal({
-      title: 'Contact Inspection: ' + (deal.name || deal.phone),
+      title: 'Contact Inspection',
       className: 'sv-contact-inspection-modal',
       body: container,
+      cancelText: false,
       confirmText: 'Close',
       onConfirm: async () => {}
     });
@@ -18551,7 +19124,6 @@ async function viewAssistant(wrap) {
     if (isChatRecording) stopChatVoiceRecording();
     else startChatVoiceRecording();
   };
-
   const sendBtn = el('button', {
     class: 'chat-send-btn',
     title: 'Send message',
@@ -18573,6 +19145,7 @@ async function viewAssistant(wrap) {
   textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (isChatRecording) stopChatVoiceRecording();
       submitCurrent();
     }
   });

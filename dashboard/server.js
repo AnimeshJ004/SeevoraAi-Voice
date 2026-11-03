@@ -449,6 +449,9 @@ function publicUser(u) {
     email: u.email,
     name: u.name || 'Team Member',
     phone: u.phone || '',
+    designation: u.designation || u.title || '',
+    timezone: u.timezone || 'Asia/Kolkata',
+    language: u.language || 'en-IN',
     department: u.department || (['admin', 'super_admin', 'owner', 'client'].includes(u.role) ? 'Management' : 'General'),
     role: u.role,
     status: u.status || 'active',
@@ -495,6 +498,13 @@ function publicTenant(t) {
     campaignFrozen: !!t.campaignFrozen,
     campaignFreezeReason: t.campaignFreezeReason || null,
     kyc: t.kyc || null,
+    industry: t.industry || '',
+    website: t.website || '',
+    supportEmail: t.supportEmail || '',
+    supportPhone: t.supportPhone || '',
+    address: t.address || '',
+    description: t.description || '',
+    gstin: t.gstin || '',
     limits: usageAndLimits.limits,
     features: usageAndLimits.features,
     usage: usageAndLimits.usage,
@@ -6215,6 +6225,17 @@ ESCALATION RULES:
 - Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
 - Speak with natural, fluid conversational rhythm and clear Indian diction.`;
 
+  const complaintHandlingRules = `\n\n# COMPLAINT & ISSUE HANDLING PROTOCOL (CRITICAL)
+When a caller sounds unhappy, upset, angry, or uses words like complaint, problem, issue, wrong, bad service, or similar:
+1. ACKNOWLEDGE with empathy first: "Main samajhti hoon, mujhe bahut afsos hai ki aapko yeh experience hua." (I understand, I am so sorry you had this experience.)
+2. LISTEN fully - let the caller explain their complete issue without interrupting.
+3. ATTEMPT RESOLUTION - if you can resolve it (schedule callback, confirm refund initiation, escalate to team, book a correction appointment), DO SO immediately.
+4. DETERMINE STATUS - at end of call, assess: did you resolve the issue? Yes = "resolved". No/needs follow-up = "unresolved". Partial = "pending".
+5. LOG THE COMPLAINT - After the call, log via API: POST /api/crm/complaint with:
+   { contactId: <contact_id>, description: "<caller's exact complaint in 1-2 sentences>", status: "<resolved|unresolved|pending>" }
+6. If the caller is very angry or demands a human: follow ESCALATION PROTOCOL above.
+NEVER dismiss a complaint. ALWAYS empathize, log it, and attempt resolution.`;
+
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
 - NEVER write or say "24/7" or "24*7" or "/". Always say "twenty-four seven" or "chaubees ghante".
 - NEVER say raw mathematical symbols, asterisks, or markdown characters.
@@ -6223,7 +6244,7 @@ ESCALATION RULES:
 
   const fullPrompt = `You are ${agent.name}.
 
-${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${toneRules}${speechRules}`;
+${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${complaintHandlingRules}${toneRules}${speechRules}`;
   let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
   if (!greeting.startsWith('[')) {
     greeting = `${toneTag} ${greeting}`;
@@ -7645,58 +7666,82 @@ async function apiTeamsCreate(req, res, ctx) {
   const phone = rawPhone ? (rawPhone.startsWith('+') ? rawPhone : (rawPhone.length === 10 ? '+91' + rawPhone : '+' + rawPhone)) : '';
   const department = String(b.department || 'General').trim().slice(0, 60);
   const role = ['employee', 'manager', 'client', 'owner'].includes(b.role) ? b.role : 'employee';
-  const password = String(b.password || 'TeamMember@123').trim();
+  const password = String(b.password || 'Welcome@123').trim();
   const escalationEnabled = b.escalationEnabled !== false;
   const assignedAgentIds = Array.isArray(b.assignedAgentIds) ? b.assignedAgentIds.map(String) : [];
 
-  if (!name) return core.sendJson(res, 422, { error: 'Employee name is required', code: 'bad_name' });
-  if (!email || !EMAIL_RE.test(email)) return core.sendJson(res, 422, { error: 'Valid employee email is required', code: 'bad_email' });
-  if (password.length < 8) return core.sendJson(res, 422, { error: 'Password must be at least 8 characters', code: 'bad_password' });
+  if (!name) return core.sendJson(res, 422, { error: 'Employee full name is required', code: 'bad_name' });
+  if (!email || !EMAIL_RE.test(email)) return core.sendJson(res, 422, { error: 'Valid employee login email is required', code: 'bad_email' });
+
+  const tenantId = (['super_admin', 'admin'].includes(ctx.user.role) && b.tenantId) ? String(b.tenantId) : ctx.tenant.id;
 
   const d = core.db();
-  const existing = d.users.find((u) => u.email && u.email.toLowerCase() === email && u.status !== 'deleted');
-  if (existing && existing.tenantId !== ctx.tenant.id) {
-    return core.sendJson(res, 409, { error: 'This email is already registered to another workspace', code: 'email_taken' });
-  }
-  if (existing && existing.tenantId === ctx.tenant.id) {
-    return core.sendJson(res, 409, { error: 'A team member with this email already exists in your workspace', code: 'duplicate_member' });
-  }
+  const existingInTenant = (d.users || []).find(
+    (u) => u.email && u.email.toLowerCase() === email && u.tenantId === tenantId
+  );
 
   const now = new Date().toISOString();
-  const validAgentIds = d.agents
-    .filter((a) => a.tenantId === ctx.tenant.id && assignedAgentIds.includes(a.id))
+  const validAgentIds = (d.agents || [])
+    .filter((a) => a.tenantId === tenantId && assignedAgentIds.includes(a.id))
     .map((a) => a.id);
 
-  const newMember = {
-    id: core.genId('u_'),
-    tenantId: ctx.tenant.id,
-    name,
-    email,
-    phone,
-    department,
-    role,
-    status: 'active',
-    passHash: core.hashPassword(password),
-    assignedAgentIds: validAgentIds,
-    escalationEnabled,
-    handoffCount: 0,
-    lastHandoffAt: null,
-    onboardingCompleted: true,
-    createdAt: now,
-  };
+  let resultMember;
 
-  await core.mutate((dd) => {
-    dd.users.push(newMember);
-    addAudit(dd, ctx, 'team.member.created', 'user', newMember.id, { name, email, department, role, assignedAgentIds: validAgentIds });
-  });
+  if (existingInTenant) {
+    // If user already exists in this workspace, update their employee profile, reactivate, and assign agents
+    await core.mutate((dd) => {
+      const u = (dd.users || []).find((x) => x.id === existingInTenant.id);
+      if (!u) return;
+      u.name = name;
+      if (phone) u.phone = phone;
+      u.department = department;
+      u.role = role;
+      u.status = 'active';
+      u.assignedAgentIds = validAgentIds;
+      u.escalationEnabled = escalationEnabled;
+      if (password && password.length >= 8) {
+        u.passHash = core.hashPassword(password);
+      }
+      u.updatedAt = now;
+      resultMember = u;
+      addAudit(dd, ctx, 'team.member.updated', 'user', u.id, { name, email, department, role, assignedAgentIds: validAgentIds });
+    });
+  } else {
+    // Create new member in current workspace
+    const newMember = {
+      id: core.genId('u_'),
+      tenantId,
+      name,
+      email,
+      phone,
+      department,
+      role,
+      status: 'active',
+      passHash: core.hashPassword(password.length >= 8 ? password : 'Welcome@123'),
+      assignedAgentIds: validAgentIds,
+      escalationEnabled,
+      handoffCount: 0,
+      lastHandoffAt: null,
+      onboardingCompleted: true,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  // Sync primary agent on shared number if assigned to this employee
-  const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validAgentIds.includes(a.id)));
-  if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
+    await core.mutate((dd) => {
+      if (!Array.isArray(dd.users)) dd.users = [];
+      dd.users.push(newMember);
+      resultMember = newMember;
+      addAudit(dd, ctx, 'team.member.created', 'user', newMember.id, { name, email, department, role, assignedAgentIds: validAgentIds });
+    });
   }
 
-  core.sendJson(res, 201, { ok: true, member: publicUser(newMember) });
+  // Sync primary agent on shared number if assigned to this employee
+  const activeAgent = (core.db().agents || []).find((a) => a.tenantId === tenantId && (a.isPrimary || validAgentIds.includes(a.id)));
+  if (activeAgent) {
+    pushAgentToDograhWorkflow(activeAgent, tenantId).catch(() => { });
+  }
+
+  core.sendJson(res, existingInTenant ? 200 : 201, { ok: true, member: publicUser(resultMember), updated: !!existingInTenant });
 }
 
 async function apiTeamsUpdate(req, res, ctx) {
@@ -7873,7 +7918,7 @@ async function apiTeamsEscalate(req, res, ctx) {
    ========================================================================== */
 const KNOWN_CALLER_DIRECTORY = {
   '9876543210': { name: 'Dr. Sunita Sharma', source: 'CRM Directory' },
-  '8120590466': { name: 'Rajesh Verma', source: 'CRM Lead' },
+  '9876543211': { name: 'Rajesh Verma', source: 'CRM Lead' },
   '8982200895': { name: 'CarePlus Diagnostic', source: 'Verified Client' },
   '9425012345': { name: 'Anita Deshmukh', source: 'Service CRM' },
   '9826054321': { name: 'Metropolis Lab Desk', source: 'Partner Directory' },
@@ -8209,7 +8254,7 @@ async function apiLiveCallAction(req, res, ctx) {
     const sampleScenarios = [
       {
         callerName: b.callerName || (contacts[0] && contacts[0].name) || 'Rajesh Verma',
-        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+918120590466',
+        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+919876543211',
         direction: b.direction || 'inbound',
         department: 'Sales & Lead Qualification',
         scriptTurns: [
@@ -8823,6 +8868,10 @@ async function apiUserProfileUpdate(req, res, ctx) {
   const b = ctx.body || {};
   const name = String(b.name || '').trim().slice(0, 80);
   const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
+  const phone = String(b.phone || '').trim().slice(0, 40);
+  const designation = String(b.designation || b.title || '').trim().slice(0, 100);
+  const timezone = String(b.timezone || 'Asia/Kolkata').trim().slice(0, 60);
+  const language = String(b.language || 'en-IN').trim().slice(0, 30);
 
   if (!name && !email) {
     return core.sendJson(res, 422, { error: 'Name or email is required', code: 'bad_input' });
@@ -8839,9 +8888,13 @@ async function apiUserProfileUpdate(req, res, ctx) {
         user.email = email;
       }
     }
+    if (phone !== undefined) user.phone = phone;
+    if (designation !== undefined) user.designation = designation;
+    if (timezone !== undefined) user.timezone = timezone;
+    if (language !== undefined) user.language = language;
     user.updatedAt = new Date().toISOString();
     updatedUser = user;
-    addAudit(store, ctx, 'user.profile.updated', 'user', user.id, { name: user.name, email: user.email });
+    addAudit(store, ctx, 'user.profile.updated', 'user', user.id, { name: user.name, email: user.email, phone: user.phone });
   });
 
   if (!updatedUser) {
@@ -8854,13 +8907,31 @@ async function apiUserProfileUpdate(req, res, ctx) {
 async function apiTenantUpdate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
-  const name = String(b.name || '').trim().slice(0, 80);
-  const color = String(b.color || '').trim();
-  if (!name || !/^#[0-9a-fA-F]{6}$/.test(color)) return core.sendJson(res, 422, { error: 'valid tenant name and color required', code: 'bad_tenant' });
+  const name = String(b.name || '').trim().slice(0, 120);
+  const color = String(b.color || '#0d5d41').trim();
+  const industry = String(b.industry || '').trim().slice(0, 100);
+  const website = String(b.website || '').trim().slice(0, 150);
+  const supportEmail = String(b.supportEmail || '').trim().toLowerCase().slice(0, 120);
+  const supportPhone = String(b.supportPhone || '').trim().slice(0, 40);
+  const address = String(b.address || '').trim().slice(0, 300);
+  const description = String(b.description || '').trim().slice(0, 1000);
+  const gstin = String(b.gstin || '').trim().slice(0, 30);
+
+  if (!name) return core.sendJson(res, 422, { error: 'valid tenant name required', code: 'bad_tenant' });
   let tenant;
   await core.mutate((store) => {
     tenant = store.tenants.find((row) => row.id === ctx.tenant.id);
-    tenant.name = name; tenant.branding = { ...(tenant.branding || {}), color };
+    if (!tenant) return;
+    tenant.name = name;
+    tenant.branding = { ...(tenant.branding || {}), color: (/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#0d5d41') };
+    if (b.industry !== undefined) tenant.industry = industry;
+    if (b.website !== undefined) tenant.website = website;
+    if (b.supportEmail !== undefined) tenant.supportEmail = supportEmail;
+    if (b.supportPhone !== undefined) tenant.supportPhone = supportPhone;
+    if (b.address !== undefined) tenant.address = address;
+    if (b.description !== undefined) tenant.description = description;
+    if (b.gstin !== undefined) tenant.gstin = gstin;
+    tenant.updatedAt = new Date().toISOString();
     addAudit(store, ctx, 'tenant.settings.updated', 'tenant', tenant.id);
   });
   core.sendJson(res, 200, { tenant: publicTenant(tenant) });
@@ -10281,8 +10352,26 @@ function normalizeRun(run, tenantId) {
   }
 
   let summary = String(run.summary || run.call_summary || '');
-  if (!summary && run.gathered_context && Array.isArray(run.gathered_context.nodes_visited)) {
-    summary = `Visited nodes: ${run.gathered_context.nodes_visited.join(' -> ')}${run.gathered_context.call_disposition ? ` (${run.gathered_context.call_disposition})` : ''}`;
+  if (!summary && run.gathered_context) {
+    const nodes = Array.isArray(run.gathered_context.nodes_visited) ? run.gathered_context.nodes_visited : [];
+    const disp = run.gathered_context.call_disposition || status || '';
+    const nodesStr = nodes.join(' ').toLowerCase();
+
+    if (run.gathered_context.appointment || run.gathered_context.booking_time || nodesStr.includes('appointment') || nodesStr.includes('booking')) {
+      summary = 'Appointment Booking Request';
+    } else if (nodesStr.includes('service') || nodesStr.includes('pricing') || nodesStr.includes('package')) {
+      summary = 'Services & Pricing Consultation';
+    } else if (nodesStr.includes('support') || nodesStr.includes('complaint') || nodesStr.includes('issue')) {
+      summary = 'Customer Support & Assistance';
+    } else if (disp === 'user_hangup' && (nodesStr.includes('greeting') || nodes.length <= 1 || duration < 20)) {
+      summary = 'Brief call · Caller disconnected after greeting';
+    } else if (disp === 'pipeline_error' || disp === 'failed') {
+      summary = 'Call disconnected early';
+    } else if (nodesStr.includes('discover intent') || nodesStr.includes('intent')) {
+      summary = 'General Service Inquiry';
+    } else {
+      summary = 'Voice Consultation Completed';
+    }
   }
 
   const purchasedDefault = process.env.VOBIZ_NUMBER || '+918071582519';
@@ -11076,7 +11165,12 @@ async function apiCrmPipelineGet(req, res, ctx) {
       deals
     };
   });
-  core.sendJson(res, 200, { stages, pipeline, total: contacts.length });
+  const appointmentsCount = (d.bookings || []).filter((b) => {
+    if (isPlatformAdmin && requestedTenant === 'all') return true;
+    return b.tenantId === targetTenantId;
+  }).length;
+  const complaintsCount = contacts.filter((c) => c.complaint && c.complaint.status === 'unresolved').length;
+  core.sendJson(res, 200, { stages, pipeline, total: contacts.length, appointmentsCount, complaintsCount });
 }
 
 async function apiCrmDealUpdate(req, res, ctx) {
@@ -11099,6 +11193,59 @@ async function apiCrmDealUpdate(req, res, ctx) {
   });
   if (!updatedContact) return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
   core.sendJson(res, 200, { contact: updatedContact });
+}
+
+// POST /api/crm/complaint - log or update complaint/issue for a contact (called by voice agent or dashboard)
+async function apiCrmComplaint(req, res, ctx) {
+  const b = ctx.body || {};
+  const contactId = String(b.contactId || b.contact_id || '');
+  const phone = b.phone ? wacrm.normalizeE164(b.phone) : '';
+  const description = String(b.description || b.issue_description || b.complaint_description || '').trim();
+  const rawStatus = String(b.status || b.issue_status || b.complaint_status || 'unresolved').toLowerCase().trim();
+  const status = ['resolved', 'unresolved', 'pending'].includes(rawStatus) ? rawStatus : 'unresolved';
+
+  if (!contactId && !phone) {
+    return core.sendJson(res, 400, { error: 'contactId or phone is required', code: 'bad_params' });
+  }
+  if (!description) {
+    return core.sendJson(res, 400, { error: 'complaint description is required', code: 'bad_description' });
+  }
+
+  const d = core.db();
+  const tenantId = ctx.tenant.id;
+  let contact = null;
+  if (contactId) {
+    contact = (d.crmContacts || []).find(c => c.id === contactId && c.tenantId === tenantId);
+  }
+  if (!contact && phone) {
+    contact = (d.crmContacts || []).find(c => c.tenantId === tenantId && c.phone === phone);
+  }
+  if (!contact) {
+    return core.sendJson(res, 404, { error: 'Contact not found', code: 'not_found' });
+  }
+
+  const now = new Date().toISOString();
+  await core.mutate((mutDb) => {
+    const c = (mutDb.crmContacts || []).find(x => x.id === contact.id);
+    if (c) {
+      c.complaint = {
+        description,
+        status,
+        loggedAt: (c.complaint && c.complaint.loggedAt) || now,
+        resolvedAt: status === 'resolved' ? now : (c.complaint && c.complaint.resolvedAt) || null,
+        updatedAt: now,
+        source: b.source || 'dashboard'
+      };
+      // Add complaint tag
+      if (!Array.isArray(c.tags)) c.tags = [];
+      if (!c.tags.includes('complaint')) c.tags.push('complaint');
+      // Remove complaint tag if resolved and user opts in
+      c.updatedAt = now;
+    }
+  });
+
+  const updated = (core.db().crmContacts || []).find(c => c.id === contact.id);
+  core.sendJson(res, 200, { ok: true, complaint: updated && updated.complaint, contactId: contact.id });
 }
 
 // POST /api/crm/lead-from-call - log live browser/testing voice call into CRM leads
@@ -11931,6 +12078,7 @@ async function apiBookingReserve(req, res, ctx) {
     source: String(b.source || b.bookingType || 'api').slice(0, 80),
     metadata: typeof b.metadata === 'object' ? b.metadata : {},
     createdBy: ctx.user.id,
+    contactId: b.contactId || null,
   }
   );
 
@@ -12659,6 +12807,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/crm/contacts/delete') return core.requireAuth(req, res, apiCrmContactDelete, body);
       if (route === '/api/crm/contacts/bulk-delete') return core.requireAuth(req, res, apiCrmContactBulkDelete, body);
       if (route === '/api/crm/contacts') return core.requireAuth(req, res, apiCrmContactUpsert, body);
+      if (route === '/api/crm/complaint') return core.requireAuth(req, res, apiCrmComplaint, body);
       if (route === '/api/crm/import') return core.requireAuth(req, res, apiCrmImportContacts, body);
       if (route === '/api/crm/parse-import' || route === '/api/crm/import-file') return core.requireAuth(req, res, apiCrmImportFile, body);
       if (route === '/api/crm/pipeline/deal') return core.requireAuth(req, res, apiCrmDealUpdate, body);
@@ -12786,7 +12935,25 @@ const server = http.createServer(async (req, res) => {
       req.url = '/demo.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/sign-in' || route === '/sign-up' || route === '/login' || route === '/signup')) {
-      req.url = '/index.html';
+      req.url = '/login.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/home' || route === '/home.html')) {
+      req.url = '/home.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/features') {
+      req.url = '/features.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/pricing') {
+      req.url = '/pricing.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/contact' || route === '/contact-us')) {
+      req.url = '/contact.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/privacy') {
+      req.url = '/privacy.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/terms' || route === '/terms-and-conditions' || route === '/terms-of-service')) {
+      req.url = '/terms.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/recordings' || route === '/recordings/' || route === '/recordings.html')) {
       res.writeHead(302, { Location: '/app.html#/recordings', 'Cache-Control': 'no-store' });

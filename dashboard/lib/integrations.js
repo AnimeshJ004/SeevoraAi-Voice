@@ -417,15 +417,38 @@ async function dispatchEmail(config, leadPayload) {
 // ---------------------------------------------------------------------------
 
 async function dispatchWhatsApp(config, leadPayload) {
-  if (!config) return { ok: false, error: 'WhatsApp config missing' };
-  if (!leadPayload.phone) return { ok: false, error: 'No recipient phone number' };
+  if (!config) return { ok: false, error: 'WhatsApp configuration is missing.' };
+
+  const metaToken   = (config.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '').trim();
+  const metaPhoneId = (config.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim();
+
+  // If client has not provided Meta Cloud API credentials:
+  if (!metaToken && !metaPhoneId) {
+    return {
+      ok: false,
+      error: 'WhatsApp setup incomplete: Please enter your Meta System User Permanent Access Token and WhatsApp Phone Number ID above, then click Save Settings.'
+    };
+  }
+  if (!metaToken) {
+    return {
+      ok: false,
+      error: 'Missing Access Token: Please paste your Meta Permanent Access Token starting with EAAG...'
+    };
+  }
+  if (!metaPhoneId) {
+    return {
+      ok: false,
+      error: 'Missing Phone Number ID: Please enter your 15-digit Meta WhatsApp Phone Number ID (from Meta Developer Portal > WhatsApp > API Setup).'
+    };
+  }
+
+  if (!leadPayload.phone) return { ok: false, error: 'No recipient phone number provided for WhatsApp test.' };
 
   const recipientDigits = (leadPayload.phone || '').replace(/\D/g, '').slice(-10);
-  if (recipientDigits.length < 10) return { ok: false, error: 'Invalid recipient phone number' };
+  if (recipientDigits.length < 10) return { ok: false, error: 'Invalid recipient phone number for WhatsApp test.' };
   const recipientIntl = '91' + recipientDigits;
 
   const companyName = config.companyName || 'Seevora AI Voice';
-  const senderDigits = (config.senderNumber || '8071582519').replace(/\D/g, '').slice(-10);
 
   const message = [
     '*' + companyName + ' — AI Voice Update*',
@@ -440,11 +463,7 @@ async function dispatchWhatsApp(config, leadPayload) {
     '_Sent by ' + companyName + ' AI Receptionist_',
   ].filter((l) => l !== '').join('\n');
 
-  // Try Meta Cloud API first
-  const metaToken   = config.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
-  const metaPhoneId = config.metaPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
-
-  if (metaToken && metaPhoneId) {
+  try {
     const result = await httpsPost('https://graph.facebook.com/v19.0/' + metaPhoneId + '/messages', {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -452,24 +471,42 @@ async function dispatchWhatsApp(config, leadPayload) {
       type: 'text',
       text: { preview_url: false, body: message },
     }, { Authorization: 'Bearer ' + metaToken });
-    return result.ok ? { ok: true, via: 'meta_cloud' } : { ok: false, error: 'Meta API HTTP ' + result.status + ': ' + result.body.slice(0, 200) };
-  }
 
-  // Fallback: VoBiz WhatsApp Gateway
-  const vobizId    = config.vobizAuthId    || process.env.VOBIZ_AUTH_ID    || '';
-  const vobizToken = config.vobizAuthToken || process.env.VOBIZ_AUTH_TOKEN || '';
-  if (vobizId && vobizToken) {
-    const authHeader = 'Basic ' + Buffer.from(vobizId + ':' + vobizToken).toString('base64');
-    const result = await httpsPost('https://api.vobiz.ai/api/v1/Account/' + encodeURIComponent(vobizId) + '/Message/', {
-      src: '+91' + senderDigits,
-      dst: '+' + recipientIntl,
-      text: message,
-      channel: 'whatsapp',
-    }, { Authorization: authHeader, 'X-Auth-ID': vobizId, 'X-Auth-Token': vobizToken });
-    return result.ok ? { ok: true, via: 'vobiz' } : { ok: false, error: 'VoBiz HTTP ' + result.status + ': ' + result.body.slice(0, 200) };
-  }
+    if (result.ok) {
+      return { ok: true, via: 'meta_cloud' };
+    }
 
-  return { ok: false, error: 'WhatsApp: neither Meta Cloud API credentials nor VoBiz credentials configured' };
+    // Parse Meta API Error payload for human-readable explanations
+    let friendlyError = '';
+    try {
+      const parsed = JSON.parse(result.body);
+      const metaErr = parsed && parsed.error;
+      if (metaErr) {
+        const code = metaErr.code;
+        const msg = metaErr.message || '';
+        if (code === 190) {
+          friendlyError = 'Meta Token Expired or Invalid: Please generate a fresh Permanent System User Token in Meta Business Manager.';
+        } else if (code === 100) {
+          friendlyError = 'Invalid Meta Phone Number ID: Make sure you entered the Phone Number ID from Meta API Setup, not the WABA Account ID.';
+        } else if (code === 200 || code === 299) {
+          friendlyError = 'Meta Permission Denied: Ensure your System User has the "whatsapp_business_messaging" permission.';
+        } else if (code === 131030) {
+          friendlyError = 'Meta 24-Hour Policy: Outside the 24-hour window, Meta requires an approved message template.';
+        } else if (code === 131000) {
+          friendlyError = 'Meta Message Send Failed: The recipient phone number may not be registered on WhatsApp.';
+        } else if (msg) {
+          friendlyError = 'Meta API: ' + msg;
+        }
+      }
+    } catch (_) {}
+
+    if (!friendlyError) {
+      friendlyError = 'Meta Cloud API error (HTTP ' + result.status + '): ' + result.body.slice(0, 160);
+    }
+    return { ok: false, error: friendlyError };
+  } catch (netErr) {
+    return { ok: false, error: 'Could not connect to Meta Graph API: ' + netErr.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -553,7 +590,8 @@ async function testIntegration(db, mutate, tenantId, channel) {
     ok: result.ok,
     message: result.ok
       ? channel + ' integration test successful.'
-      : 'Test failed: ' + (result.error || 'unknown error'),
+      : (result.error || 'Connection test failed'),
+    error: result.ok ? null : (result.error || 'Connection test failed'),
   };
 }
 
