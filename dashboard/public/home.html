@@ -188,8 +188,31 @@
 
       <div class="bento-grid">
         <div class="bento-card">
-          <div class="feature-img-box">
-            <img src="/assets/microphone.jpg" alt="Sub-second conversational turn-taking" />
+          <div class="bento-visual-box latency-stream-box">
+            <div class="stream-top-bar">
+              <span class="stream-pill"><span class="sim-live-dot"></span> Streaming STT</span>
+              <span class="stream-tech-tag">Deepgram + Groq</span>
+            </div>
+            <div class="waveform-stream-display">
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+            </div>
+            <div class="stream-bottom-stats">
+              <span>First Token: <strong class="stream-stat-highlight">280ms</strong></span>
+              <span>Barge-in: <strong class="stream-stat-highlight">Active ✔</strong></span>
+              <span>Total: <strong class="stream-stat-highlight">0.74s</strong></span>
+            </div>
           </div>
           <div class="bento-icon-wrap">⚡</div>
           <div class="bento-title">Sub-Second Turn-Taking</div>
@@ -199,15 +222,42 @@
         </div>
 
         <div class="bento-card">
-          <div class="feature-img-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%);">
-            <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.94);padding:10px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.12);">
-              <img src="/assets/face/face_49.png" alt="Ira Persona" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #0d5d41;" />
-              <div>
-                <div style="font-size:12.5px;font-weight:800;color:#14221c;">Ira (Rumik Muga)</div>
-                <div style="font-size:11px;color:#5d7468;display:flex;align-items:center;gap:4px;">
-                  <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Native Hinglish Voice
+          <div class="bento-visual-box persona-audio-box">
+            <div class="persona-profile-row">
+              <div class="persona-avatar-wrap">
+                <div class="persona-avatar-aura"></div>
+                <img src="/assets/face/face_49.png" alt="Ira Persona" />
+              </div>
+              <div class="persona-meta-wrap">
+                <div class="persona-title-row">
+                  <span class="persona-name-text">Ira</span>
+                  <span class="p-tag" style="background:#059669;color:#ffffff;border:none;">Silk Muga</span>
+                </div>
+                <div class="persona-sub-text">
+                  <span class="sim-live-dot" style="width:6px;height:6px;"></span> Conversational Hinglish Voice
                 </div>
               </div>
+            </div>
+            <div class="persona-audio-track">
+              <button type="button" class="play-bubble-btn" aria-label="Audio Wave Activity">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </button>
+              <div class="audio-track-wave">
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+              </div>
+            </div>
+            <div class="persona-chip-tags">
+              <span class="p-tag">Native Accents</span>
+              <span class="p-tag">24kHz Silk Audio</span>
+              <span class="p-tag">Zero Monotone</span>
             </div>
           </div>
           <div class="bento-icon-wrap">🎙️</div>
@@ -218,8 +268,38 @@
         </div>
 
         <div class="bento-card">
-          <div class="feature-img-box">
-            <img src="/assets/thumbnails/thumb_v1_1rupee_ai_voice_agent.png" alt="Transparent ₹2 per minute voice pricing" />
+          <div class="bento-visual-box pricing-roi-box">
+            <div class="roi-top-bar">
+              <span style="font-size:11px;font-weight:750;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;">Cost per Minute</span>
+              <span class="roi-badge-save">90% Cost Cut</span>
+            </div>
+            <div class="cost-comparison-bars">
+              <div class="cost-bar-row">
+                <div class="cost-bar-meta">
+                  <span>Legacy (Twilio + 11Labs)</span>
+                  <span style="color:#f87171;font-weight:700;">₹18.50 / min</span>
+                </div>
+                <div class="cost-progress-track">
+                  <div class="cost-progress-fill-competitor"></div>
+                </div>
+              </div>
+              <div class="cost-bar-row">
+                <div class="cost-bar-meta">
+                  <span style="color:#ffffff;font-weight:700;">Seevora AI Voice</span>
+                  <span style="color:#34d399;font-weight:800;">₹1.80 / min</span>
+                </div>
+                <div class="cost-progress-track">
+                  <div class="cost-progress-fill-seevora"></div>
+                </div>
+              </div>
+            </div>
+            <div class="cost-bottom-features">
+              <span>Instant UPI Top-up</span>
+              <span>&middot;</span>
+              <span>No Expiry</span>
+              <span>&middot;</span>
+              <span>Paise Billing</span>
+            </div>
           </div>
           <div class="bento-icon-wrap">💰</div>
           <div class="bento-title">~₹2 / Minute Pricing</div>
