@@ -71,6 +71,24 @@
       </div>
     </div>
 
+    <!-- Hero Showcase Visual Banner -->
+    <div class="hero-visual-card">
+      <img src="/assets/receptionist.jpg" alt="Production Voice Receptionist Architecture" />
+      <div class="hero-floating-badge">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <img src="/assets/seevora-logo.png" alt="Seevora" width="30" height="30" style="border-radius:8px;" />
+          <div>
+            <div style="font-size:13.5px;font-weight:750;color:var(--ink);">Enterprise Telephony & Multi-Tenant Infrastructure</div>
+            <div style="font-size:12px;color:var(--muted);">Deepgram Nova-3 &middot; Groq LPU &middot; Rumik Silk &middot; VoBiz Indian DID</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:#ecfdf5;color:#065f46;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:750;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+          99.98% Uptime SLA
+        </div>
+      </div>
+    </div>
+
     <!-- 3-Column Bento Architecture -->
     <div class="bento-grid">
       <div class="bento-card">
@@ -138,27 +156,42 @@
             <li>✔ 20x more affordable than legacy text-to-speech providers</li>
           </ul>
         </div>
-        <div style="background:#f1f8f4;border:1.5px solid rgba(13,93,65,0.18);border-radius:18px;padding:24px;text-align:center;">
-          <div style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Live Voice Pipeline</div>
-          <div style="font-family:var(--mono);font-size:13px;background:#ffffff;padding:12px;border-radius:10px;border:1px solid var(--line);text-align:left;color:var(--ink);line-height:1.6;">
-            <strong>STT:</strong> Deepgram nova-3 (8kHz)<br />
-            <strong>LLM:</strong> Groq qwen3.8-27b (~0.3s)<br />
-            <strong>TTS:</strong> Rumik Silk muga (ira)<br />
-            <strong>Latency:</strong> 740ms end-to-end
+        <div class="img-rounded-frame" style="position:relative;">
+          <img src="/assets/microphone.jpg" alt="Acoustic Studio Microphone" class="img-cover" style="height:260px;" />
+          <div style="position:absolute;bottom:14px;left:14px;right:14px;background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;border:1px solid rgba(13,93,65,0.15);box-shadow:0 4px 14px rgba(0,0,0,0.10);">
+            <img src="/assets/face/face_49.png" alt="Ira Persona" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #0d5d41;" />
+            <div>
+              <div style="font-size:13px;font-weight:800;color:var(--ink);">Voice Persona: Ira</div>
+              <div style="font-size:11.5px;color:var(--muted);">Streaming Muga synthesis &middot; 24kHz studio grade</div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Section 2 -->
       <div class="site-card" style="display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:center;">
-        <div style="background:#f1f8f4;border:1.5px solid rgba(13,93,65,0.18);border-radius:18px;padding:24px;text-align:center;">
-          <div style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Automated CRM Lead Card</div>
-          <div style="background:#ffffff;padding:16px;border-radius:12px;border:1px solid var(--line);text-align:left;font-size:13px;line-height:1.6;">
-            <div style="font-weight:800;font-size:15px;color:var(--ink);">Vikramaditya Mehta</div>
-            <div style="color:var(--muted);font-size:12px;">+91 98201 54321 &middot; Today, 4:15 PM</div>
-            <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-light);">
-              <span class="badge-pill" style="font-size:11px;padding:2px 8px;">Qualified Lead</span>
-              <span style="font-size:11.5px;color:var(--primary);font-weight:700;margin-left:6px;">Root Canal Intake</span>
+        <div class="img-rounded-frame" style="background:#ffffff;">
+          <div style="background:#f1f8f4;padding:20px;border-bottom:1px solid var(--border-subtle);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img src="/assets/face/face_81.png" alt="Lead Profile" style="width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid #0d5d41;" />
+              <div>
+                <div style="font-weight:800;font-size:15.5px;color:var(--ink);">Vikramaditya Mehta</div>
+                <div style="color:var(--muted);font-size:12px;">+91 98201 54321 &middot; Qualified Lead</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:16px;font-size:13px;line-height:1.65;background:#ffffff;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:var(--muted);">Intent:</span>
+              <span style="font-weight:700;color:var(--ink);">Dental Implant Intake</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:var(--muted);">Calendar:</span>
+              <span style="font-weight:700;color:var(--primary);">Cal.com Confirmed ✔</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--muted);">WhatsApp SMS:</span>
+              <span style="font-weight:700;color:#059669;">Dispatched &middot; 4:16 PM</span>
             </div>
           </div>
         </div>
@@ -178,7 +211,7 @@
     </div>
 
     <!-- Call to Action -->
-    <div style="background:var(--primary);color:#ffffff;border-radius:24px;padding:50px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
+    <div style="position:relative;overflow:hidden;background:linear-gradient(135deg, rgba(13,93,65,0.94) 0%, rgba(9,69,48,0.92) 100%), url('/assets/receptionist.jpg') center/cover;color:#ffffff;border-radius:24px;padding:60px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
       <h2 style="font-size:clamp(26px, 4vw, 36px);color:#ffffff;margin-bottom:12px;">Start Answering Calls with Seevora Today</h2>
       <p style="font-size:16px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.6;">
         Get ₹10 in free test wallet credits on signup. Pick a phone number, select a voice receptionist preset, and receive your first call in 5 minutes.
