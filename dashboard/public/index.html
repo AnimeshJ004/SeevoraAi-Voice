@@ -3,40 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Seevora AI Voice - Autonomous Conversational AI Receptionist</title>
-  <meta name="description" content="Seevora AI Voice Receptionist. Human-parity conversational phone calls in English, Hindi, and Hinglish for ~₹2/minute." />
+  <title>Seevora AI Voice &mdash; Autonomous AI Receptionist & Phone Agent</title>
+  <meta name="description" content="Autonomous, human-parity conversational voice agents answering inbound and placing outbound calls for ~₹2/minute. Real phone numbers, under 800ms latency, fluent Indian Hinglish." />
   <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
   <link rel="apple-touch-icon" href="/assets/seevora-logo.png" />
-  <meta name="theme-color" content="#f7f8fa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/site.css" />
-  <script src="/assets/site.js" defer></script>
+  <script defer src="/assets/site.js"></script>
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
 
   <!-- Shared Site Navigation Header -->
   <header class="site-nav">
     <div class="site-nav-inner">
       <a href="/" class="site-brand">
-        <img src="/assets/seevora-logo.png" alt="Seevora" class="site-brand-logo" />
+        <img src="/assets/seevora-logo.png" alt="Seevora Logo" class="site-brand-logo" />
         <span class="site-brand-name">Seevora<span>Voice</span></span>
-        <span class="site-brand-badge">AI Receptionist</span>
+        <span class="badge-pill site-brand-badge">Autonomous AI</span>
       </a>
 
-      <ul class="site-nav-links">
-        <li><a href="/" class="site-nav-link active">Home</a></li>
-        <li><a href="/features.html" class="site-nav-link">Features</a></li>
-        <li><a href="/pricing.html" class="site-nav-link">Pricing</a></li>
-        <li><a href="/contact.html" class="site-nav-link">Contact Us</a></li>
-        <li><a href="/privacy.html" class="site-nav-link">Privacy</a></li>
-        <li><a href="/terms.html" class="site-nav-link">Terms</a></li>
-      </ul>
+      <!-- Desktop Links -->
+      <nav class="site-nav-links">
+        <a href="/" class="site-nav-link active">Home</a>
+        <a href="/features.html" class="site-nav-link">Features</a>
+        <a href="/pricing.html" class="site-nav-link">Pricing</a>
+        <a href="/contact.html" class="site-nav-link">Contact Us</a>
+      </nav>
 
+      <!-- Auth Actions -->
       <div class="site-nav-actions">
         <a href="/login.html" class="btn-ghost link-auth-signin">Sign In</a>
-        <a href="/login.html" class="btn-primary btn-auth-entry">Get Started Free</a>
+        <a href="/login.html" class="btn-primary btn-auth-entry">Deploy Free &rarr;</a>
       </div>
 
+      <!-- Mobile Toggle Button -->
       <button id="siteNavToggle" class="site-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" type="button">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
@@ -57,43 +59,140 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- Main Container -->
   <main class="site-container" style="padding-top:20px;">
-    <div class="site-hero">
-      <span class="badge-pill">⚡ Sub-Second AI Telephony &middot; Dedicated Indian Numbers (+91)</span>
-      <h1>Your 24/7 AI Voice Receptionist. Real Phone Calls for <span class="highlight">~₹2 a Minute</span>.</h1>
-      <p class="site-hero-sub">
-        Never miss another customer call. Seevora answers in under 800ms, speaks fluent English, Hindi, and Hinglish with zero robotic delay, schedules bookings on Cal.com, and extracts qualified leads straight into your CRM.
-      </p>
-      
-      <div class="site-hero-actions">
-        <a href="/login.html" class="btn-primary btn-auth-entry" style="padding:13px 28px;font-size:15px;">Launch Your Agent Free &rarr;</a>
-        <a href="tel:+918071582519" class="btn-secondary" style="padding:13px 24px;font-size:15px;">Call Live Demo (+91 80715 82519)</a>
+    
+    <!-- 1. High-Impact Two-Column Hero Split -->
+    <section class="hero-split-container">
+      <div class="hero-content">
+        <span class="badge-pill">⚡ Sub-Second AI Telephony &middot; Indian DIDs (+91)</span>
+        <h1>Your 24/7 AI Voice Receptionist. Real Calls for <span class="highlight">~₹2 a Minute</span>.</h1>
+        <p class="site-hero-sub">
+          Never miss another revenue call. Seevora answers in under 800ms, speaks fluent English, Hindi, and Hinglish with zero robotic delay, schedules bookings on Cal.com, and extracts qualified leads straight into your CRM.
+        </p>
+        
+        <div class="site-hero-actions">
+          <a href="/login.html" class="btn-primary btn-auth-entry" style="padding:13px 28px;font-size:15px;">Launch Agent Free &rarr;</a>
+          <a href="tel:+918071582519" class="btn-secondary" style="padding:13px 22px;font-size:15px;">📞 Call Demo: +91 80715 82519</a>
+        </div>
+
+        <div class="site-trust-row" style="justify-content:flex-start;margin-bottom:20px;">
+          <div class="site-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Under 800ms Latency</span>
+          </div>
+          <div class="site-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Fluent Hinglish</span>
+          </div>
+          <div class="site-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>₹2/min vs ₹18/min</span>
+          </div>
+        </div>
+
+        <!-- Social Proof Avatar Stack -->
+        <div class="hero-social-proof">
+          <div class="avatar-stack">
+            <img src="/assets/face/face_49.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_70.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_81.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_92.png" alt="Client" class="avatar-stack-item" />
+          </div>
+          <div class="social-proof-meta">
+            <div class="social-proof-stars">★★★★★</div>
+            <div class="social-proof-text">Trusted by <strong>1,200+ Indian Businesses & Clinics</strong></div>
+          </div>
+        </div>
       </div>
 
-      <div class="site-trust-row">
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Under 800ms Latency</span>
+      <!-- Right Column: Interactive Live Receptionist Simulation Card -->
+      <div class="simulator-card float-card" style="margin:0;">
+        <div class="sim-header">
+          <div class="sim-caller-info">
+            <div class="sim-avatar" style="padding:0;overflow:hidden;border:2px solid #0d5d41;">
+              <img src="/assets/face/face_49.png" alt="Ria AI Receptionist" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+            </div>
+            <div class="sim-details">
+              <h4>Ria &mdash; Seevora AI Receptionist</h4>
+              <span>Serving Northstar Dental & Clinic Group (+91 80715 82519)</span>
+            </div>
+          </div>
+          <div class="sim-live-badge">
+            <span class="sim-live-dot"></span>
+            Call in Progress
+          </div>
         </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Natural Indian Hinglish</span>
+
+        <div class="sim-bubble-row">
+          <div class="sim-bubble agent">
+            <strong>Ria (AI Receptionist):</strong><br />
+            "Namaste! Northstar Dental Clinic me call karne ke liye dhanyawad. Mera naam Ria hai. Mai aapki kya madad kar sakti hoon?"
+          </div>
+
+          <div class="sim-bubble caller">
+            <strong>Caller (Vikramaditya):</strong><br />
+            "Hello Ria, mujhe kal root canal consultation ke liye doctor appointment schedule karni hai."
+          </div>
+
+          <div class="sim-bubble agent">
+            <strong>Ria (AI Receptionist):</strong><br />
+            "Bilkul Vikramaditya ji. Kal Dr. Sharma ke paas subah 11:30 AM aur dopahar 3:00 PM ke slots open hain. Kaunsa time aapke liye convenient rahega?"
+          </div>
+
+          <div class="sim-bubble caller">
+            <strong>Caller (Vikramaditya):</strong><br />
+            "11:30 AM wala slot confirm kar dijiye."
+          </div>
+
+          <div class="sim-bubble agent">
+            <strong>Ria (AI Receptionist):</strong><br />
+            "Great! Kal subah 11:30 AM ka consultation lock ho gaya hai. Confirmation SMS aur location details aapke phone par bhej di gayi hain. Have a great day!"
+          </div>
         </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>₹2/min vs ₹18/min</span>
-        </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Instant Cal.com Booking</span>
+
+        <div class="sim-stats-bar">
+          <div class="sim-stat-item">
+            <div class="sim-stat-label">Response Time</div>
+            <div class="sim-stat-val" style="color:#0d5d41;">0.78s</div>
+          </div>
+          <div class="sim-stat-item">
+            <div class="sim-stat-label">Language Mode</div>
+            <div class="sim-stat-val">Hindi / Hinglish</div>
+          </div>
+          <div class="sim-stat-item">
+            <div class="sim-stat-label">Action Outcome</div>
+            <div class="sim-stat-val" style="color:#059669;">Cal.com Booked ✔</div>
+          </div>
+          <div class="sim-stat-item">
+            <div class="sim-stat-label">Measured Cost</div>
+            <div class="sim-stat-val">₹1.80 / min</div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Hero Showcase Visual Banner -->
+    <!-- 2. Hero Showcase Visual Banner with Floating Telemetry Pills -->
     <div class="hero-visual-card">
       <img src="/assets/receptionist.jpg" alt="Seevora AI Voice Front-Desk Receptionist" class="hero-bg-img" />
+      
+      <!-- Floating Live Intelligence Pills -->
+      <div class="hero-float-pill pill-top-left">
+        <span class="sim-live-dot"></span>
+        <div>
+          <strong style="color:var(--ink);">Inbound Call: +91 80715 82519</strong>
+          <div style="font-size:11px;color:var(--muted);">Northstar Dental &middot; Connected (0.2s)</div>
+        </div>
+      </div>
+
+      <div class="hero-float-pill pill-top-right">
+        <span style="font-size:16px;">⚡</span>
+        <div>
+          <strong style="color:var(--primary);">280ms First-Token Latency</strong>
+          <div style="font-size:11px;color:var(--muted);">Groq LPU &middot; Deepgram Nova-3 Stream</div>
+        </div>
+      </div>
+
       <div class="hero-floating-badge">
         <div style="display:flex;align-items:center;gap:12px;">
           <div class="badge-brand-box">
@@ -111,72 +210,92 @@
       </div>
     </div>
 
-    <!-- Interactive Live Receptionist Simulation Card -->
-    <div class="simulator-card">
-      <div class="sim-header">
-        <div class="sim-caller-info">
-          <div class="sim-avatar" style="padding:0;overflow:hidden;border:2px solid #0d5d41;">
-          <img src="/assets/face/face_49.png" alt="Ria AI Receptionist" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
-        </div>
-          <div class="sim-details">
-            <h4>Ria &mdash; Seevora AI Receptionist</h4>
-            <span>Serving Northstar Dental & Clinic Group (+91 80715 82519)</span>
+    <!-- 3. Integration & Technology Ecosystem Strip -->
+    <div class="ecosystem-strip">
+      <span style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-right:8px;">Powered By:</span>
+      <div class="eco-item">⚡ <span>Deepgram Nova-3</span></div>
+      <div class="eco-item">🚀 <span>Groq LPUs</span></div>
+      <div class="eco-item">🎙️ <span>Rumik Silk Muga</span></div>
+      <div class="eco-item">📱 <span>VoBiz +91 Telecom</span></div>
+      <div class="eco-item">📅 <span>Cal.com Scheduling</span></div>
+      <div class="eco-item">💬 <span>WhatsApp Business</span></div>
+      <div class="eco-item">📊 <span>CRM Webhooks</span></div>
+    </div>
+
+    <!-- 4. Interactive Voice Personas Showcase -->
+    <div style="margin-top:50px;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 28px;">
+        <span class="badge-pill">Natural Vocal Nuance</span>
+        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">Listen to Our Production Voice Personas</h2>
+        <p style="font-size:15px;color:var(--muted);">
+          Each voice persona is fine-tuned for native Hindi and Indian English pronunciations with human-level cadence.
+        </p>
+      </div>
+
+      <div class="persona-selector-grid">
+        <div class="persona-select-card active">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_49.png" alt="Ria" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Ria</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Front-Desk & Intake</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Warm, patient, and welcoming. Ideal for clinics, dental practices, and front offices.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>English / Hinglish</span>
+            <span class="sim-live-dot"></span>
           </div>
         </div>
-        <div class="sim-live-badge">
-          <span class="sim-live-dot"></span>
-          Call in Progress
-        </div>
-      </div>
 
-      <div class="sim-bubble-row">
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Namaste! Northstar Dental Clinic me call karne ke liye dhanyawad. Mera naam Ria hai. Mai aapki kya madad kar sakti hoon?"
-        </div>
-
-        <div class="sim-bubble caller">
-          <strong>Caller (Vikramaditya):</strong><br />
-          "Hello Ria, mujhe kal root canal consultation ke liye doctor appointment schedule karni hai."
-        </div>
-
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Bilkul Vikramaditya ji. Kal Dr. Sharma ke paas subah 11:30 AM aur dopahar 3:00 PM ke slots open hain. Kaunsa time aapke liye convenient rahega?"
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_81.png" alt="Aryan" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Aryan</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">High-Ticket Sales</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Assertive, confident, and persuasive. Built for real estate buyer qualification and B2B SaaS leads.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Fluent Hinglish</span>
+            <span class="sim-live-dot"></span>
+          </div>
         </div>
 
-        <div class="sim-bubble caller">
-          <strong>Caller (Vikramaditya):</strong><br />
-          "11:30 AM wala slot confirm kar dijiye."
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_71.png" alt="Ananya" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Ananya</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Hospitality & Bookings</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Upbeat and attentive. Perfect for restaurant table reservations, salon appointments, and hotels.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Hindi / English</span>
+            <span class="sim-live-dot"></span>
+          </div>
         </div>
 
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Great! Kal subah 11:30 AM ka consultation lock ho gaya hai. Confirmation SMS aur location details aapke phone par bhej di gayi hain. Have a great day!"
-        </div>
-      </div>
-
-      <div class="sim-stats-bar">
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Response Time</div>
-          <div class="sim-stat-val" style="color:#0d5d41;">0.78s</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Language Mode</div>
-          <div class="sim-stat-val">Hindi / Hinglish</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Action Outcome</div>
-          <div class="sim-stat-val" style="color:#059669;">Cal.com Booked ✔</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Measured Cost</div>
-          <div class="sim-stat-val">₹1.80 / min</div>
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_50.png" alt="Vikram" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Vikram</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Support & Auto Service</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Calm, technical, and methodical. Designed for vehicle service booking, insurance, and warranty intake.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Conversational</span>
+            <span class="sim-live-dot"></span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 3 Core Pillars Bento Grid -->
+    <!-- 5. 3 Core Animated Bento Tech Cards -->
     <div style="margin-top:70px;">
       <div style="text-align:center;max-width:680px;margin:0 auto 32px;">
         <span class="badge-pill">Built for Business Results</span>
@@ -310,7 +429,7 @@
       </div>
     </div>
 
-    <!-- Preset Library Showcase -->
+    <!-- 6. Preset Library Showcase with Photo Avatars -->
     <div class="site-card" style="margin-top:60px;">
       <div style="text-align:center;max-width:700px;margin:0 auto 36px;">
         <span class="badge-pill">Ready-To-Deploy Personas</span>
@@ -411,7 +530,7 @@
       </div>
     </div>
 
-    <!-- Real Customer Testimonials with Photo Avatars -->
+    <!-- 7. Verified Customer Testimonials with Photo Avatars -->
     <div style="margin-top:64px;">
       <div style="text-align:center;max-width:680px;margin:0 auto 28px;">
         <span class="badge-pill">Proven Production Impact</span>
@@ -466,7 +585,7 @@
       </div>
     </div>
 
-    <!-- Final Call to Action -->
+    <!-- 8. Final Call to Action with Visual Background Overlay -->
     <div style="position:relative;overflow:hidden;background:linear-gradient(135deg, rgba(13,93,65,0.94) 0%, rgba(9,69,48,0.92) 100%), url('/assets/receptionist.jpg') center/cover;color:#ffffff;border-radius:24px;padding:60px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
       <h2 style="font-size:clamp(26px, 4vw, 36px);color:#ffffff;margin-bottom:12px;">Stop Losing Revenue to Missed Calls</h2>
       <p style="font-size:16px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.6;">
