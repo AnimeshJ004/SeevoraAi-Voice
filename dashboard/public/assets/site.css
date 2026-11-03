@@ -2498,3 +2498,32 @@ h1, h2, h3, h4 {
   color: var(--muted);
   font-weight: 600;
 }
+
+/* Hero Backdrop Container with Custom Acoustic Artwork */
+.hero-backdrop-container {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  background: #ffffff;
+  border: 1px solid rgba(13, 93, 65, 0.14);
+  box-shadow: 0 20px 50px -12px rgba(13, 93, 65, 0.10);
+}
+
+.hero-backdrop-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.92) 55%, #ffffff 100%),
+    url('/assets/hero-backdrop.jpg');
+  background-size: cover;
+  background-position: center top;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-backdrop-container .site-hero {
+  position: relative;
+  z-index: 1;
+}
