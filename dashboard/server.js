@@ -457,7 +457,8 @@ function publicUser(u) {
     handoffCount: Number(u.handoffCount || 0),
     lastHandoffAt: u.lastHandoffAt || null,
     createdAt: u.createdAt,
-    onboardingCompleted: isCompleted
+    onboardingCompleted: isCompleted,
+    hasPassword: !!u.passHash
   };
 }
 
@@ -8768,6 +8769,55 @@ async function apiAgencyPromptSave(req, res, ctx) {
   core.sendJson(res, 200, { prompt: row.text, version: row.version, updatedAt: row.updatedAt, updatedBy: ctx.user.name || ctx.user.email });
 }
 
+async function apiUserPasswordUpdate(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const b = ctx.body || {};
+  const currentPassword = String(b.currentPassword || '');
+  const newPassword = String(b.newPassword || '');
+
+  if (!newPassword || newPassword.length < 8) {
+    return core.sendJson(res, 422, { error: 'New password must be at least 8 characters long.', code: 'weak_password' });
+  }
+
+  const d = core.db();
+  const user = (d.users || []).find((u) => u.id === ctx.user.id);
+  if (!user) {
+    return core.sendJson(res, 404, { error: 'User not found', code: 'not_found' });
+  }
+
+  const hasExistingPassword = Boolean(user.passHash);
+  if (hasExistingPassword) {
+    if (!currentPassword) {
+      return core.sendJson(res, 400, { error: 'current password is incorrect', code: 'bad_current_password' });
+    }
+    const isOk = core.verifyPassword(currentPassword, user.passHash);
+    if (!isOk) {
+      return core.sendJson(res, 400, { error: 'current password is incorrect', code: 'bad_current_password' });
+    }
+  }
+
+  const newHash = core.hashPassword(newPassword);
+  let updatedUser;
+  await core.mutate((store) => {
+    const u = (store.users || []).find((x) => x.id === ctx.user.id);
+    if (!u) return;
+    u.passHash = newHash;
+    u.updatedAt = new Date().toISOString();
+    updatedUser = u;
+    addAudit(store, ctx, hasExistingPassword ? 'user.password.changed' : 'user.password.created', 'user', u.id);
+  });
+
+  if (!updatedUser) {
+    return core.sendJson(res, 404, { error: 'User not found in store', code: 'not_found' });
+  }
+
+  core.sendJson(res, 200, {
+    ok: true,
+    message: hasExistingPassword ? 'password updated successfully' : 'password created successfully',
+    user: publicUser(updatedUser),
+  });
+}
+
 async function apiUserProfileUpdate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
@@ -12569,6 +12619,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/workflows') return core.requireAuth(req, res, apiWorkflowsList);
         if (route.startsWith('/api/workflows/')) return core.requireAuth(req, res, apiWorkflowGet);
         if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycGet);
+        if (route === '/api/user/password-status') return core.requireAuth(req, res, (rq, rs, cx) => core.sendJson(rs, 200, { hasPassword: !!(core.db().users.find(u => u.id === cx.user.id) || {}).passHash }));
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -12652,6 +12703,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
+      if (route === '/api/user/password' || route === '/api/auth/password') return core.requireAuth(req, res, apiUserPasswordUpdate, body);
       if (route === '/api/tenant/update') return core.requireRole(req, res, 'owner', apiTenantUpdate, body);
       if (route === '/api/tenant/onboarding-complete') return core.requireAuth(req, res, apiTenantOnboardingComplete, body);
       if (route === '/api/clerk/sync-metadata') return core.requireAuth(req, res, apiClerkSyncMetadata, body);

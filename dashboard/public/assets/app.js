@@ -13252,13 +13252,14 @@ async function viewSettings(root) {
   let currentTab = urlParams.get('tab') || 'general';
   // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
   if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
-  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  if (!['general', 'security', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
+    { id: 'security', label: 'Password & Security', icon: 'shield' },
     { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
@@ -13304,6 +13305,7 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
+    else if (tabId === 'security') renderSecurityTab(contentHost);
     else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
@@ -13315,6 +13317,236 @@ async function viewSettings(root) {
 
   // Initial tab render
   switchTab(currentTab);
+
+
+  // ==========================================================================
+  // PASSWORD MANAGEMENT COMPONENT (Change / Create Password)
+  // ==========================================================================
+  function createPasswordSection(isStandaloneTab) {
+    const hasPassword = Boolean(u && u.hasPassword);
+
+    const section = el('section', {
+      class: 'settings-section aria-password-card',
+      style: isStandaloneTab
+        ? 'padding:24px;background:#ffffff;border:1.5px solid rgba(13,93,65,0.12);border-radius:18px;max-width:680px;box-shadow:0 4px 18px rgba(13,93,65,0.04);'
+        : 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);'
+    });
+
+    // Inline notification banner for immediate visual feedback on the card
+    const banner = el('div', {
+      class: 'password-alert-banner',
+      style: 'display:none;'
+    });
+
+    function setBanner(text, type) {
+      if (!text) {
+        banner.style.display = 'none';
+        banner.className = 'password-alert-banner';
+        banner.innerHTML = '';
+        return;
+      }
+      banner.className = 'password-alert-banner ' + (type === 'ok' ? 'ok' : 'err');
+      const icon = type === 'ok'
+        ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      banner.innerHTML = '<span style="display:flex;align-items:center;">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
+      banner.style.display = 'flex';
+    }
+
+    function clearErrors() {
+      setBanner(null);
+      currentPassField.input.classList.remove('password-field-error');
+      newPassField.input.classList.remove('password-field-error');
+      confirmPassField.input.classList.remove('password-field-error');
+    }
+
+    // Helper for password input with show/hide eye toggle
+    function createPasswordField(id, placeholder, autocomplete) {
+      const input = el('input', {
+        class: 'input',
+        id,
+        type: 'password',
+        placeholder,
+        autocomplete: autocomplete || 'new-password',
+        style: 'padding-right:42px;width:100%;box-sizing:border-box;'
+      });
+      input.addEventListener('input', () => {
+        input.classList.remove('password-field-error');
+      });
+      const eyeBtn = el('button', {
+        type: 'button',
+        title: 'Toggle password visibility',
+        style: 'position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#5d7468;display:flex;align-items:center;padding:4px;',
+        html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+      });
+      let isVisible = false;
+      eyeBtn.onclick = () => {
+        isVisible = !isVisible;
+        input.type = isVisible ? 'text' : 'password';
+        eyeBtn.innerHTML = isVisible
+          ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      };
+      const wrapper = el('div', { style: 'position:relative;width:100%;' }, [input, eyeBtn]);
+      return { wrapper, input };
+    }
+
+    const currentPassField = createPasswordField('pwd_current', 'Enter your current password', 'current-password');
+    const newPassField = createPasswordField('pwd_new', 'Enter new password (min 8 characters)', 'new-password');
+    const confirmPassField = createPasswordField('pwd_confirm', 'Confirm new password', 'new-password');
+
+    const submitBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 26px;font-weight:750;background:#0d5d41;color:#fff;border:none;cursor:pointer;'
+    }, hasPassword ? 'Update Password' : 'Create Password');
+
+    submitBtn.onclick = async () => {
+      clearErrors();
+      const currentPassword = currentPassField.input.value;
+      const newPassword = newPassField.input.value;
+      const confirmPassword = confirmPassField.input.value;
+
+      // 1. Check current password if required
+      if (hasPassword && !currentPassword) {
+        const msg = 'current password is incorrect';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        currentPassField.input.classList.add('password-field-error');
+        currentPassField.input.focus();
+        return;
+      }
+
+      // Check new password length
+      if (!newPassword || newPassword.length < 8) {
+        const msg = 'New password must be at least 8 characters long.';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        newPassField.input.classList.add('password-field-error');
+        newPassField.input.focus();
+        return;
+      }
+
+      // 2. Check confirm password match
+      if (newPassword !== confirmPassword) {
+        const msg = 'again confirm your new password';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        confirmPassField.input.classList.add('password-field-error');
+        confirmPassField.input.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Updating...';
+
+      try {
+        const res = await api('/api/user/password', {
+          method: 'POST',
+          body: { currentPassword, newPassword }
+        });
+        if (res && res.ok) {
+          const successMsg = res.message || (hasPassword ? 'password updated successfully' : 'password created successfully');
+          setBanner(successMsg, 'ok');
+          toast(successMsg, 'ok');
+          u.hasPassword = true;
+          if (State.me && State.me.user) State.me.user.hasPassword = true;
+          currentPassField.input.value = '';
+          newPassField.input.value = '';
+          confirmPassField.input.value = '';
+          setTimeout(() => {
+            if (isStandaloneTab) {
+              switchTab('security');
+            } else {
+              switchTab('general');
+            }
+          }, 1500);
+        }
+      } catch (err) {
+        let errMsg = (err && err.message) || 'current password is incorrect';
+        // Normalize any casing/trailing punctuation from server
+        if (errMsg.toLowerCase().includes('current password')) {
+          errMsg = 'current password is incorrect';
+          currentPassField.input.classList.add('password-field-error');
+          currentPassField.input.focus();
+        } else if (errMsg.toLowerCase().includes('confirm')) {
+          errMsg = 'again confirm your new password';
+          confirmPassField.input.classList.add('password-field-error');
+          confirmPassField.input.focus();
+        }
+        setBanner(errMsg, 'err');
+        toast(errMsg, 'err');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = hasPassword ? 'Update Password' : 'Create Password';
+      }
+    };
+
+    // Header
+    const header = el('div', { style: 'margin-bottom:18px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Security'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, hasPassword ? 'Change Account Password' : 'Create Account Password'),
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;line-height:1.4;' },
+        hasPassword
+          ? 'Update your existing password to protect your Seevora voice agent workspace.'
+          : 'Create a password for your account to sign in directly with your email and password.'
+      )
+    ]);
+
+    // Form fields container
+    const fieldsWrap = el('div', { style: 'display:flex;flex-direction:column;gap:16px;max-width:540px;margin-bottom:22px;' });
+
+    if (hasPassword) {
+      fieldsWrap.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Current Password'),
+        currentPassField.wrapper
+      ]));
+    }
+
+    fieldsWrap.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, hasPassword ? 'New Password' : 'Password'),
+      newPassField.wrapper,
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;margin-top:4px;' }, 'Must be at least 8 characters long.')
+    ]));
+
+    fieldsWrap.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Confirm New Password'),
+      confirmPassField.wrapper
+    ]));
+
+    const actions = el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+      submitBtn
+    ]);
+
+    section.appendChild(header);
+    section.appendChild(banner);
+    section.appendChild(fieldsWrap);
+    section.appendChild(actions);
+    return section;
+  }
+
+  // Dedicated Password & Security Tab
+  function renderSecurityTab(panel) {
+    const wrap = el('div', { class: 'settings-tab-inner', style: 'width:100%;' });
+    panel.appendChild(wrap);
+
+    // Security Overview Card
+    const overview = el('div', {
+      style: 'margin-bottom:28px;padding:20px;background:rgba(13,93,65,0.03);border:1.5px solid rgba(13,93,65,0.12);border-radius:16px;max-width:680px;display:flex;align-items:center;gap:16px;'
+    }, [
+      el('div', {
+        style: 'width:44px;height:44px;border-radius:12px;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        html: navIcon('shield')
+      }),
+      el('div', { style: 'flex:1;' }, [
+        el('div', { style: 'font-weight:800;font-size:1rem;color:#14221c;' }, 'Account Security & Access Credentials'),
+        el('div', { class: 'muted', style: 'font-size:0.82rem;color:#5d7468;margin-top:2px;' },
+          'Your Seevora voice agent workspace is protected by scrypt cryptographic hashing. Change or create your password below.'
+        )
+      ])
+    ]);
+    wrap.appendChild(overview);
+    wrap.appendChild(createPasswordSection(true));
+  }
 
   // ==========================================================================
   // TAB 1: GENERAL IDENTITY (PROFILE, WORKSPACE & HIPAA MODE)
@@ -13423,6 +13655,7 @@ async function viewSettings(root) {
       ])
     ]);
     wrap.appendChild(profileSection);
+    wrap.appendChild(createPasswordSection(false));
 
     // SECTION 2: Workspace & Brand Identity
     const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
@@ -18144,15 +18377,193 @@ async function viewAssistant(wrap) {
     title: 'Upload images, documents or audio files',
     onclick: () => fileInput.click()
   }, '+');
-  const textInput = el('input', { class: 'chat-text-input', placeholder: 'Type your message...', maxlength: '4000' });
+  const textInput = el('input', { class: 'chat-text-input', placeholder: 'Type your message or use mic to speak...', maxlength: '4000' });
+
+  // Voice recording & Speech-to-Text Controller for AI Chatbot
+  let isChatRecording = false;
+  let chatMediaRecorder = null;
+  let chatAudioChunks = [];
+  let chatRecognition = null;
+  let chatRecStream = null;
+  let chatRecTimer = null;
+
+  const micIconSvg = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>';
+  const micStopSvg = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+
+  const micBtn = el('button', {
+    type: 'button',
+    class: 'chat-mic-btn',
+    title: 'Ask with voice (click to speak)',
+    'aria-label': 'Record Voice Question',
+    html: micIconSvg
+  });
+
+  async function startChatVoiceRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('Voice recording is not supported in this browser.', 'err');
+      return;
+    }
+    try {
+      chatRecStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (err) {
+      console.warn('Microphone permission error:', err);
+      toast('Microphone access was denied. Please allow microphone in browser.', 'err');
+      return;
+    }
+
+    isChatRecording = true;
+    chatAudioChunks = [];
+    micBtn.classList.add('recording');
+    micBtn.innerHTML = micStopSvg;
+    micBtn.title = 'Stop recording voice (click to finish)';
+
+    textInput.placeholder = 'Listening... Speak your question now';
+    textInput.classList.add('chat-listening-active');
+
+    // 1. Live browser Speech Recognition for instant real-time transcription
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let liveTranscript = '';
+    if (SpeechRec) {
+      try {
+        chatRecognition = new SpeechRec();
+        chatRecognition.continuous = true;
+        chatRecognition.interimResults = true;
+        chatRecognition.lang = 'en-IN';
+        chatRecognition.onresult = (ev) => {
+          let interim = '';
+          for (let i = ev.resultIndex; i < ev.results.length; ++i) {
+            if (ev.results[i].isFinal) {
+              liveTranscript += ev.results[i][0].transcript + ' ';
+            } else {
+              interim += ev.results[i][0].transcript;
+            }
+          }
+          const combined = (liveTranscript + interim).trim();
+          if (combined) {
+            textInput.value = combined;
+          }
+        };
+        chatRecognition.onerror = (e) => {
+          console.warn('Chat SpeechRecognition error:', e);
+        };
+        chatRecognition.start();
+      } catch (e) {
+        console.warn('Web Speech API start error:', e);
+      }
+    }
+
+    // 2. MediaRecorder for Deepgram AI backup transcription
+    try {
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+      chatMediaRecorder = mime ? new MediaRecorder(chatRecStream, { mimeType: mime }) : new MediaRecorder(chatRecStream);
+      chatMediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chatAudioChunks.push(e.data);
+      };
+      chatMediaRecorder.start(200);
+    } catch (e) {
+      console.warn('MediaRecorder error:', e);
+    }
+
+    // Safety timeout: 60s max
+    clearTimeout(chatRecTimer);
+    chatRecTimer = setTimeout(() => {
+      if (isChatRecording) stopChatVoiceRecording();
+    }, 60000);
+  }
+
+  async function stopChatVoiceRecording() {
+    if (!isChatRecording) return;
+    isChatRecording = false;
+    clearTimeout(chatRecTimer);
+
+    micBtn.classList.remove('recording');
+    micBtn.innerHTML = micIconSvg;
+    micBtn.title = 'Ask with voice (click to speak)';
+    textInput.placeholder = 'Type your message or use mic to speak...';
+    textInput.classList.remove('chat-listening-active');
+
+    if (chatRecognition) {
+      try { chatRecognition.stop(); } catch (_) {}
+      chatRecognition = null;
+    }
+
+    if (chatMediaRecorder && chatMediaRecorder.state !== 'inactive') {
+      try { chatMediaRecorder.stop(); } catch (_) {}
+    }
+
+    if (chatRecStream) {
+      chatRecStream.getTracks().forEach(t => t.stop());
+      chatRecStream = null;
+    }
+
+    // If live speech recognition already filled text, let customer review or send
+    if (textInput.value.trim().length > 0) {
+      textInput.focus();
+      toast('Voice captured! Click send or press Enter.', 'ok');
+      return;
+    }
+
+    // If empty, send audio to Deepgram Nova-3 (/api/stt)
+    if (chatAudioChunks.length > 0) {
+      const mime = (chatMediaRecorder && chatMediaRecorder.mimeType) || 'audio/webm';
+      const audioBlob = new Blob(chatAudioChunks, { type: mime });
+      if (audioBlob.size > 800) {
+        textInput.placeholder = 'Transcribing with Deepgram AI...';
+        micBtn.disabled = true;
+        try {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64 = reader.result.split(',')[1];
+              const res = await api('/api/stt', {
+                method: 'POST',
+                body: { audio: base64, mime }
+              });
+              if (res && res.text && res.text.trim()) {
+                textInput.value = res.text.trim();
+                textInput.focus();
+                toast('Voice recognized! Click send or press Enter.', 'ok');
+              } else {
+                toast('Could not detect clear speech. Please try speaking again.', 'info');
+              }
+            } catch (err) {
+              console.warn('STT transcription error:', err);
+              toast('Could not transcribe audio. You can type your message.', 'info');
+            } finally {
+              textInput.placeholder = 'Type your message or use mic to speak...';
+              micBtn.disabled = false;
+            }
+          };
+          reader.readAsDataURL(audioBlob);
+        } catch (_) {
+          textInput.placeholder = 'Type your message or use mic to speak...';
+          micBtn.disabled = false;
+        }
+      }
+    }
+  }
+
+  micBtn.onclick = () => {
+    if (isChatRecording) stopChatVoiceRecording();
+    else startChatVoiceRecording();
+  };
+
   const sendBtn = el('button', {
     class: 'chat-send-btn',
     title: 'Send message',
-    onclick: () => submitCurrent(),
+    onclick: () => {
+      if (isChatRecording) stopChatVoiceRecording();
+      submitCurrent();
+    },
     html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
   });
   capsule.appendChild(attachBtn);
   capsule.appendChild(textInput);
+  capsule.appendChild(micBtn);
   capsule.appendChild(sendBtn);
   inputDock.appendChild(attachmentPreview);
   inputDock.appendChild(capsule);
