@@ -1096,3 +1096,186 @@ h1, h2, h3, h4 {
   }
 }
 
+/* ==========================================================================
+   Interactive Animation Suite
+   ========================================================================== */
+
+/* 1. Radar Live Pulse for status dots */
+.sim-live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.sim-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  animation: radarPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+@keyframes radarPing {
+  0% { transform: scale(0.8); opacity: 0.9; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* 2. Floating Card Hover & Floating Effect */
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.float-card {
+  animation: floatSubtle 5s ease-in-out infinite;
+}
+
+/* 3. Audio Equalizer Waveform Animation */
+.audio-equalizer {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.audio-bar {
+  width: 3px;
+  background: var(--primary);
+  border-radius: 99px;
+  animation: soundwave 1.2s ease-in-out infinite alternate;
+}
+
+.audio-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+.audio-bar:nth-child(2) { height: 16px; animation-delay: 0.35s; }
+.audio-bar:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+.audio-bar:nth-child(4) { height: 14px; animation-delay: 0.45s; }
+.audio-bar:nth-child(5) { height: 8px; animation-delay: 0.15s; }
+
+@keyframes soundwave {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1.15); }
+}
+
+/* 4. Dialogue Bubble Entry Stagger */
+.sim-bubble {
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  animation: bubblePop 0.5s ease-out backwards;
+}
+
+.sim-bubble:nth-child(1) { animation-delay: 0.1s; }
+.sim-bubble:nth-child(2) { animation-delay: 0.22s; }
+.sim-bubble:nth-child(3) { animation-delay: 0.35s; }
+.sim-bubble:nth-child(4) { animation-delay: 0.48s; }
+.sim-bubble:nth-child(5) { animation-delay: 0.6s; }
+
+@keyframes bubblePop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sim-bubble:hover {
+  transform: translateX(4px);
+  border-color: rgba(13, 93, 65, 0.28);
+}
+
+/* 5. Scroll Reveal Fade-Up Animations */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 6. Card Shimmer Glow on Hover */
+.bento-card, .preset-card, .site-card, .testimonial-card, .pricing-card {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease !important;
+}
+
+.bento-card:hover, .testimonial-card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 16px 36px rgba(13, 93, 65, 0.12) !important;
+  border-color: rgba(13, 93, 65, 0.28) !important;
+}
+
+.hero-visual-card {
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.hero-visual-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 48px rgba(13, 93, 65, 0.14);
+}
+
+/* 7. Button Hover Pulse & Press */
+.btn-primary, .btn-secondary {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(13, 93, 65, 0.35) !important;
+}
+
+.btn-primary:active, .btn-secondary:active {
+  transform: translateY(1px);
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(60deg, transparent 40%, rgba(255, 255, 255, 0.22) 50%, transparent 60%);
+  transform: rotate(25deg) translateY(-100%);
+  transition: transform 0.65s ease;
+  pointer-events: none;
+}
+
+.btn-primary:hover::after {
+  transform: rotate(25deg) translateY(100%);
+}
+
+/* 8. Badge Glow Animation */
+@keyframes badgeGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 93, 65, 0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(13, 93, 65, 0); }
+}
+
+.badge-pill {
+  animation: badgeGlow 3s infinite;
+}
+
+/* 9. Soft Glowing Ring on Avatar */
+.preset-avatar-img, .testimonial-avatar, .sim-avatar img {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.preset-avatar-img:hover, .testimonial-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.25);
+}
+
