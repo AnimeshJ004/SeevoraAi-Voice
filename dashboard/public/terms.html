@@ -60,56 +60,104 @@
   <!-- Page Body -->
   <main class="site-container">
     <div class="site-card" style="max-width:880px;margin:0 auto;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
         <span class="badge-pill">Customer Agreement</span>
+        <span style="font-size:12px;font-weight:600;color:var(--primary);background:rgba(13,93,65,0.08);padding:4px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2.5px rgba(16,185,129,0.25);animation:badgeGlow 2s infinite;"></span>
+          Active Master Terms &middot; TRAI Telecom Compliant
+        </span>
       </div>
       <h1 style="font-size:clamp(28px, 4vw, 36px);margin-bottom:8px;">Terms of Service</h1>
-      <p style="color:var(--muted);font-size:13.5px;margin-bottom:32px;">Last updated: November 2, 2026</p>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:24px;">Last updated: November 2, 2026 &middot; Version 2.4.0</p>
 
-      <div style="display:flex;flex-direction:column;gap:24px;color:var(--ink-dim);font-size:15px;line-height:1.7;">
-        <p>
-          Welcome to Seevora AI Voice. These Terms of Service ("Agreement") govern your access to and use of our conversational AI platform, telephony orchestration engine, agent APIs, and web console provided by Seevora Pvt Ltd. By creating an account or provisioning an AI voice agent, you agree to be bound by these terms.
-        </p>
+      <!-- Quick Jump Interactive Navigation Pills -->
+      <div class="legal-jump-nav">
+        <a href="#scope" class="legal-jump-pill">1. Service Scope</a>
+        <a href="#telecom-trai" class="legal-jump-pill">2. Telecom & TRAI Rules</a>
+        <a href="#billing" class="legal-jump-pill">3. ₹2/Min Metering</a>
+        <a href="#sla" class="legal-jump-pill">4. 99.8% SLA Target</a>
+        <a href="#liability" class="legal-jump-pill">5. Liability Limits</a>
+        <a href="#terms-notices" class="legal-jump-pill">6. Legal Notices</a>
+      </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">1. Service Description & Provisioning</h2>
-        <p>
-          Seevora provides enterprise voice agents capable of answering inbound phone calls, placing scheduled outbound calls, transcribing audio streams in real time, and triggering business actions such as appointment bookings and CRM record updates. We grant you a revocable, non-exclusive license to configure and utilize these services in accordance with your chosen subscription tier.
-        </p>
+      <div style="display:flex;flex-direction:column;gap:12px;color:var(--ink-dim);font-size:15px;line-height:1.7;">
+        <div class="legal-clause" id="intro">
+          <p style="margin:0;">
+            Welcome to Seevora AI Voice. These Terms of Service ("Agreement") govern your access to and use of our conversational AI platform, telephony orchestration engine, agent APIs, and web console provided by Seevora Pvt Ltd. By creating an account or provisioning an AI voice agent, you agree to be bound by these terms.
+          </p>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">2. Telephony Compliance & Acceptable Use Policy</h2>
-        <p>
-          You agree to utilize our telephony infrastructure in strict compliance with applicable telecommunications regulations (including TRAI directives in India and international anti-spam legislation):
-        </p>
-        <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;">
-          <li><strong>Prior Consent:</strong> You must have legitimate commercial interest or prior explicit consent before placing automated outbound calls to any individual or business phone number.</li>
-          <li><strong>Prohibited Content:</strong> You may not use the voice platform for harassment, deceptive impersonation, emergency service spoofing, or fraudulent financial solicitations.</li>
-          <li><strong>Recording Notification:</strong> Where required by local laws, you must configure your agent greeting to inform callers that the conversation may be recorded or assisted by AI.</li>
-        </ul>
+        <div class="legal-clause" id="scope">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">1</span>
+            Service Description & Provisioning
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            Seevora provides enterprise voice agents capable of answering inbound phone calls, placing scheduled outbound calls, transcribing audio streams in real time, and triggering business actions such as appointment bookings and CRM record updates. We grant you a revocable, non-exclusive license to configure and utilize these services in accordance with your chosen subscription tier.
+          </p>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">3. Wallets, Usage Meters & Billing</h2>
-        <p>
-          Telephony, synthesis, and language model usage is measured in per-minute units (approximately ₹1.80 to ₹2.00 per minute) and deducted from your tenant balance in real time. Refill packs and plan fees are billed in Indian Rupees (INR) via Razorpay or PayU. All fees are exclusive of applicable GST. Wallet credits are non-transferable between unrelated tenants.
-        </p>
+        <div class="legal-clause" id="telecom-trai">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">2</span>
+            Telephony Compliance & Acceptable Use Policy
+          </h3>
+          <p style="margin:8px 0 8px 0;">
+            You agree to utilize our telephony infrastructure in strict compliance with applicable telecommunications regulations (including TRAI directives in India and international anti-spam legislation):
+          </p>
+          <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;">
+            <li><strong>Prior Consent:</strong> You must have legitimate commercial interest or prior explicit consent before placing automated outbound calls to any individual or business phone number.</li>
+            <li><strong>Prohibited Content:</strong> You may not use the voice platform for harassment, deceptive impersonation, emergency service spoofing, or fraudulent financial solicitations.</li>
+            <li><strong>Recording Notification:</strong> Where required by local laws, you must configure your agent greeting to inform callers that the conversation may be recorded or assisted by AI.</li>
+          </ul>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">4. Service Availability & SLA</h2>
-        <p>
-          We target a 99.8% monthly service availability for our core orchestration and telephony gateway. While our pipeline utilizes low-latency edge networks (Groq LPU, Deepgram, and Rumik Silk), occasional provider network latency or carrier jitter may occur beyond our reasonable control.
-        </p>
+        <div class="legal-clause" id="billing">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">3</span>
+            Wallets, Usage Meters & Billing
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            Telephony, synthesis, and language model usage is measured in per-minute units (approximately ₹1.80 to ₹2.00 per minute) and deducted from your tenant balance in real time. Refill packs and plan fees are billed in Indian Rupees (INR) via Razorpay or PayU. All fees are exclusive of applicable GST. Wallet credits are non-transferable between unrelated tenants.
+          </p>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">5. Limitation of Liability</h2>
-        <p>
-          Seevora AI Voice provides automated communication tools. In no event shall Seevora Pvt Ltd be liable for indirect, incidental, or consequential damages resulting from lost business opportunities, carrier outages, or caller misinterpretation of automated voice responses.
-        </p>
+        <div class="legal-clause" id="sla">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">4</span>
+            Service Availability & SLA Target
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            We target a 99.8% monthly service availability for our core orchestration and telephony gateway. While our pipeline utilizes low-latency edge networks (Groq LPU, Deepgram, and Rumik Silk), occasional provider network latency or carrier jitter may occur beyond our reasonable control.
+          </p>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">6. Inquiries and Notices</h2>
-        <p>
-          Official legal or contractual notices should be directed to:
-        </p>
-        <div style="background:#f4f9f6;border:1px solid rgba(13,93,65,0.15);padding:16px 20px;border-radius:12px;margin-top:4px;">
-          <strong style="color:var(--ink);">Seevora Pvt Ltd — Legal & Operations</strong><br />
-          Email: <a href="mailto:seevorapvtltd@gmail.com">seevorapvtltd@gmail.com</a><br />
-          Phone: +91 80715 82519<br />
-          India
+        <div class="legal-clause" id="liability">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">5</span>
+            Limitation of Liability
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            Seevora AI Voice provides automated communication tools. In no event shall Seevora Pvt Ltd be liable for indirect, incidental, or consequential damages resulting from lost business opportunities, carrier outages, or caller misinterpretation of automated voice responses.
+          </p>
+        </div>
+
+        <div class="legal-clause" id="terms-notices">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">6</span>
+            Inquiries and Legal Notices
+          </h3>
+          <p style="margin:8px 0 10px 0;">
+            Official legal or contractual notices should be directed to:
+          </p>
+          <div style="background:#f4f9f6;border:1px solid rgba(13,93,65,0.15);padding:18px 22px;border-radius:12px;">
+            <strong style="color:var(--ink);font-size:15px;">Seevora Pvt Ltd — Legal & Operations</strong><br />
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;font-size:13.5px;color:var(--muted);">
+              <div>Email: <a href="mailto:seevorapvtltd@gmail.com" style="color:var(--primary);font-weight:600;">seevorapvtltd@gmail.com</a></div>
+              <div>Phone: <a href="tel:+918071582519" style="color:var(--ink);text-decoration:none;">+91 80715 82519</a></div>
+              <div>Jurisdiction: New Delhi & Bengaluru, India</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

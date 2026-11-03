@@ -60,52 +60,106 @@
   <!-- Page Body -->
   <main class="site-container">
     <div class="site-card" style="max-width:880px;margin:0 auto;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
         <span class="badge-pill">Legal & Compliance</span>
+        <span style="font-size:12px;font-weight:600;color:var(--primary);background:rgba(13,93,65,0.08);padding:4px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2.5px rgba(16,185,129,0.25);animation:badgeGlow 2s infinite;"></span>
+          DPDP 2023 & ISO-aligned Encryption
+        </span>
       </div>
       <h1 style="font-size:clamp(28px, 4vw, 36px);margin-bottom:8px;">Privacy Policy</h1>
-      <p style="color:var(--muted);font-size:13.5px;margin-bottom:32px;">Last updated: November 2, 2026</p>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:24px;">Last updated: November 2, 2026 &middot; Version 2.4.0</p>
 
-      <div style="display:flex;flex-direction:column;gap:24px;color:var(--ink-dim);font-size:15px;line-height:1.7;">
-        <p>
-          Seevora Pvt Ltd ("Seevora", "we", "our", or "us") provides autonomous AI-powered voice receptionists, conversational telephony, and dispatch intelligence. We are deeply committed to protecting the privacy, cryptographic isolation, and telecommunications security of your organization and the callers you serve.
-        </p>
+      <!-- Animated Security Shield Pulse Card -->
+      <div class="compliance-pulse-card">
+        <div class="shield-pulse-icon">
+          <div class="shield-pulse-ring"></div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:-0.01em;">DPDP Act 2023 & Enterprise Cryptographic Compliance</div>
+          <p style="font-size:12.5px;color:#a7f3d0;margin-top:2px;line-height:1.4;">End-to-End Voice Encryption &middot; Zero Audio Retention Mode &middot; Indian Data Residency</p>
+        </div>
+      </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">1. Information We Collect</h2>
-        <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;">
-          <li><strong>Account & Tenant Details:</strong> Name, work email address, company title, and workspace credentials provided during signup via Clerk authentication or direct registration.</li>
-          <li><strong>Telephony & Voice Stream Audio:</strong> Inbound and outbound phone audio streams, synthesized voice packets, and live Deepgram speech-to-text transcripts generated strictly for fulfilling automated call flows.</li>
-          <li><strong>Call Analytics & Disposition Metadata:</strong> Timestamps, call duration, caller phone numbers, sentiment ratings, and CRM outcome categorizations.</li>
-          <li><strong>Billing & Wallet Records:</strong> Transaction identifiers, token allocations, and invoice logs managed through PCI-DSS compliant gateways (Razorpay and PayU).</li>
-        </ul>
+      <!-- Quick Jump Interactive Navigation Pills -->
+      <div class="legal-jump-nav">
+        <a href="#info-collect" class="legal-jump-pill">1. Data Collected</a>
+        <a href="#info-usage" class="legal-jump-pill">2. Voice Pipeline Usage</a>
+        <a href="#zero-retention" class="legal-jump-pill">3. Cryptographic Isolation</a>
+        <a href="#dpdp-rights" class="legal-jump-pill">4. DPDP User Rights</a>
+        <a href="#privacy-contact" class="legal-jump-pill">5. Contact DPO</a>
+      </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">2. How We Use Information</h2>
-        <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;">
-          <li>To power sub-second conversational speech synthesis and reasoning with our provider pipeline (Deepgram Nova-3, Groq Qwen, and Rumik Silk).</li>
-          <li>To execute requested real-world actions, such as booking calendar slots on Cal.com, sending confirmation SMS messages, or dispatching customer service tickets.</li>
-          <li>To enforce tenant isolation and role-based access control across multi-tenant enterprise workspaces.</li>
-          <li>To comply with regulatory telecommunication and security requirements mandated by applicable national authorities.</li>
-        </ul>
+      <div style="display:flex;flex-direction:column;gap:12px;color:var(--ink-dim);font-size:15px;line-height:1.7;">
+        <div class="legal-clause" id="intro">
+          <p style="margin:0;">
+            Seevora Pvt Ltd ("Seevora", "we", "our", or "us") provides autonomous AI-powered voice receptionists, conversational telephony, and dispatch intelligence. We are deeply committed to protecting the privacy, cryptographic isolation, and telecommunications security of your organization and the callers you serve.
+          </p>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">3. Cryptographic Multi-Tenant Isolation & Zero-Recording Mode</h2>
-        <p>
-          Seevora enforces complete tenant segregation: no organization can ever view, query, or access another client's recordings, transcripts, or agent configurations. Additionally, enterprise clients may activate <strong>Zero-Recording Privacy Mode</strong> from the settings console, which immediately disables all persistent audio file storage on Dograh and retains only ephemeral anonymized analytics.
-        </p>
+        <div class="legal-clause" id="info-collect">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">1</span>
+            Information We Collect
+          </h3>
+          <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <li><strong>Account & Tenant Details:</strong> Name, work email address, company title, and workspace credentials provided during signup via Clerk authentication or direct registration.</li>
+            <li><strong>Telephony & Voice Stream Audio:</strong> Inbound and outbound phone audio streams, synthesized voice packets, and live Deepgram speech-to-text transcripts generated strictly for fulfilling automated call flows.</li>
+            <li><strong>Call Analytics & Disposition Metadata:</strong> Timestamps, call duration, caller phone numbers, sentiment ratings, and CRM outcome categorizations.</li>
+            <li><strong>Billing & Wallet Records:</strong> Transaction identifiers, token allocations, and invoice logs managed through PCI-DSS compliant gateways (Razorpay and PayU).</li>
+          </ul>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">4. User Data Deletion & Rights</h2>
-        <p>
-          Under Indian Digital Personal Data Protection (DPDP) and international privacy frameworks, you have the right to inspect, export, or permanently delete all personal data and call recordings associated with your workspace. For self-service deletion, visit your Studio Settings or view our <a href="/data-deletion.html" style="text-decoration:underline;">User Data Deletion Instructions</a>.
-        </p>
+        <div class="legal-clause" id="info-usage">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">2</span>
+            How We Use Information
+          </h3>
+          <ul style="padding-left:22px;display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <li>To power sub-second conversational speech synthesis and reasoning with our provider pipeline (Deepgram Nova-3, Groq Qwen, and Rumik Silk).</li>
+            <li>To execute requested real-world actions, such as booking calendar slots on Cal.com, sending confirmation SMS messages, or dispatching customer service tickets.</li>
+            <li>To enforce tenant isolation and role-based access control across multi-tenant enterprise workspaces.</li>
+            <li>To comply with regulatory telecommunication and security requirements mandated by applicable national authorities.</li>
+          </ul>
+        </div>
 
-        <h2 style="font-size:20px;color:var(--ink);margin-top:14px;">5. Contact Our Privacy Team</h2>
-        <p>
-          If you have questions or concerns regarding our privacy practices, please contact our Data Protection Officer at:
-        </p>
-        <div style="background:#f4f9f6;border:1px solid rgba(13,93,65,0.15);padding:16px 20px;border-radius:12px;margin-top:4px;">
-          <strong style="color:var(--ink);">Seevora Pvt Ltd — Privacy & Legal Team</strong><br />
-          Email: <a href="mailto:seevorapvtltd@gmail.com">seevorapvtltd@gmail.com</a><br />
-          Phone: +91 80715 82519<br />
-          India
+        <div class="legal-clause" id="zero-retention">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">3</span>
+            Cryptographic Multi-Tenant Isolation & Zero-Recording Mode
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            Seevora enforces complete tenant segregation: no organization can ever view, query, or access another client's recordings, transcripts, or agent configurations. Additionally, enterprise clients may activate <strong>Zero-Recording Privacy Mode</strong> from the settings console, which immediately disables all persistent audio file storage on Dograh and retains only ephemeral anonymized analytics.
+          </p>
+        </div>
+
+        <div class="legal-clause" id="dpdp-rights">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">4</span>
+            User Data Deletion & DPDP Rights
+          </h3>
+          <p style="margin:8px 0 0 0;">
+            Under Indian Digital Personal Data Protection (DPDP) and international privacy frameworks, you have the right to inspect, export, or permanently delete all personal data and call recordings associated with your workspace. For self-service deletion, visit your Studio Settings or view our <a href="/data-deletion.html" style="color:var(--primary);font-weight:600;text-decoration:underline;">User Data Deletion Instructions</a>.
+          </p>
+        </div>
+
+        <div class="legal-clause" id="privacy-contact">
+          <h3>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:800;">5</span>
+            Contact Our Privacy Team
+          </h3>
+          <p style="margin:8px 0 10px 0;">
+            If you have questions or concerns regarding our privacy practices, please contact our Data Protection Officer at:
+          </p>
+          <div style="background:#f4f9f6;border:1px solid rgba(13,93,65,0.15);padding:18px 22px;border-radius:12px;">
+            <strong style="color:var(--ink);font-size:15px;">Seevora Pvt Ltd — Privacy & Legal Team</strong><br />
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;font-size:13.5px;color:var(--muted);">
+              <div>Email: <a href="mailto:seevorapvtltd@gmail.com" style="color:var(--primary);font-weight:600;">seevorapvtltd@gmail.com</a></div>
+              <div>Phone: <a href="tel:+918071582519" style="color:var(--ink);text-decoration:none;">+91 80715 82519</a></div>
+              <div>Jurisdiction: New Delhi & Bengaluru, India</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

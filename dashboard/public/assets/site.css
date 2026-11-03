@@ -177,23 +177,48 @@ h1, h2, h3, h4 {
   color: var(--ink-dim);
   padding: 6px 4px;
   position: relative;
-  transition: color 0.18s ease;
+  transition: color 0.22s ease;
+  outline: none;
+  text-decoration: none;
+  display: inline-block;
 }
 
-.site-nav-link:hover,
-.site-nav-link.active {
-  color: var(--primary);
+.site-nav-link:focus {
+  outline: none;
 }
 
-.site-nav-link.active::after {
+.site-nav-link:focus-visible {
+  outline: 2px solid rgba(13, 93, 65, 0.4);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.site-nav-link::after {
   content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 2.5px;
   background: var(--primary);
   border-radius: 999px;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.site-nav-link:hover {
+  color: var(--primary);
+}
+
+.site-nav-link:hover::after,
+.site-nav-link.active::after {
+  transform: scaleX(1);
+}
+
+.site-nav-link.active {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .site-nav-actions {
@@ -1910,3 +1935,166 @@ h1, h2, h3, h4 {
   box-shadow: 0 4px 14px rgba(13, 93, 65, 0.25);
 }
 
+
+
+/* ==========================================================================
+   Page Animations & Micro-Interactions: Contact, Privacy, Terms
+   ========================================================================== */
+
+/* 1. Contact Form Inputs Animation */
+.contact-layout .form-input,
+.contact-layout .form-textarea,
+.contact-layout .form-select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  outline: none;
+}
+
+.contact-layout .form-input:focus,
+.contact-layout .form-textarea:focus,
+.contact-layout .form-select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.16) !important;
+  transform: translateY(-1px);
+}
+
+/* 2. Contact Info Items Hover Slide */
+.contact-info-item {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s ease, box-shadow 0.24s ease;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.contact-info-item:hover {
+  transform: translateX(6px);
+  background: #fbfdfc;
+  border-color: rgba(13, 93, 65, 0.3);
+  box-shadow: 0 4px 14px rgba(13, 93, 65, 0.08);
+}
+
+.contact-icon-box {
+  transition: transform 0.24s ease, background 0.24s ease;
+}
+
+.contact-info-item:hover .contact-icon-box {
+  transform: scale(1.1);
+  background: #0d5d41;
+  color: #ffffff;
+}
+
+/* 3. Fast Onboarding Promise Box Animated Gradient Border */
+.onboarding-promise-box {
+  position: relative;
+  border-radius: 18px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1.5px solid rgba(13, 93, 65, 0.18);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.onboarding-promise-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(13, 93, 65, 0.10);
+  border-color: var(--primary);
+}
+
+/* 4. Legal Quick-Jump Sticky Navigation Pills */
+.legal-jump-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.legal-jump-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--ink-secondary);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.legal-jump-pill:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 93, 65, 0.12);
+}
+
+/* 5. Legal Clause Animated Hover Accent */
+.legal-clause {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border-left: 3px solid transparent;
+  transition: all 0.25s ease;
+  background: transparent;
+  margin-bottom: 16px;
+}
+
+.legal-clause:hover {
+  border-left-color: var(--primary);
+  background: rgba(13, 93, 65, 0.03);
+  transform: translateX(4px);
+}
+
+.legal-clause h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 6. Security Shield Pulse Card */
+.compliance-pulse-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #0d3828 0%, #154c37 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(13, 93, 65, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.shield-pulse-icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(52, 211, 153, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #34d399;
+}
+
+.shield-pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #34d399;
+  animation: shieldPulse 2.2s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes shieldPulse {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
