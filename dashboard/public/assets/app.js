@@ -221,6 +221,61 @@ function modal(opts, maybeBody) {
 /* ===========================================================================
    SMALL UTILITIES
    =========================================================================== */
+function formatFriendlyLeadNote(text) {
+  if (!text || typeof text !== 'string') return '';
+  let str = text.trim();
+
+  // If there are multiple call entries, extract the first/most relevant entry
+  const entries = str.split(/(?=\[Voice Call|\n\n)/i).map(x => x.trim()).filter(Boolean);
+  if (entries.length > 0) {
+    str = entries[0];
+  }
+
+  // Strip technical headers and prefixes
+  str = str.replace(/^\[Voice Call [^\]]+\]\s*/i, '').replace(/^Inquiry:\s*/i, '').trim();
+
+  // Transform technical "Visited nodes" patterns
+  str = str.replace(/(?:Inquiry:\s*)?Visited nodes:\s*([^\r\n•]+)(?:\s*•\s*Appointment\s*\/\s*Booking:\s*([^\r\n]+))?/gi, (match, nodesPart, apptPart) => {
+    const combined = (nodesPart + ' ' + (apptPart || '')).toLowerCase();
+    if (apptPart && /requested|confirmed|booked/i.test(apptPart)) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('appointment') || combined.includes('booking')) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('complaint') || combined.includes('issue') || combined.includes('problem')) {
+      return 'Customer Complaint & Support';
+    }
+    if (combined.includes('pricing') || combined.includes('package') || combined.includes('cost') || combined.includes('fee')) {
+      return 'Pricing & Service Consultation';
+    }
+    if (combined.includes('service')) {
+      return 'Services Consultation';
+    }
+    if (combined.includes('pipeline_error') || combined.includes('error')) {
+      return 'Call disconnected early';
+    }
+    if (combined.includes('user_hangup') || combined.includes('hangup')) {
+      if (combined.includes('intent') || combined.includes('discover')) {
+        return 'General Inquiry · Caller ended call';
+      }
+      return 'Brief Call · Caller hung up during greeting';
+    }
+    return 'Voice Consultation Completed';
+  });
+
+  // Clean remaining technical tags
+  str = str.replace(/\((?:user_hangup|pipeline_error|normal_hangup|completed)\)/gi, '');
+  str = str.replace(/pipeline_error/gi, 'call disconnected early');
+  str = str.replace(/user_hangup/gi, 'caller ended call');
+  str = str.replace(/\bStart\s*\/\s*Greeting\b/gi, 'Greeting');
+  str = str.replace(/\bDiscover Intent\b/gi, 'Service Inquiry');
+  str = str.replace(/\s*->\s*/g, ' · ');
+  str = str.replace(/\s+/g, ' ').trim();
+
+  return str || null;
+}
+
 function initials(name) {
   const words = String(name || '?')
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -815,7 +870,6 @@ function getVisibleRoutes() {
       { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: tFeats.crmPipeline === false },
       { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
       { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
-      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
@@ -2320,7 +2374,7 @@ async function viewOverview(root) {
 
 const defaultMockCalls = [
   { name: 'Dr. Sharma Clinic Triage (+91 98765 43210)', meta: 'Today, 4:18 PM', tag: 'Appointment Booked', dur: '+3m 24s', out: false, av: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80' },
-  { name: 'Rajesh Verma - Lead (+91 81205 90466)', meta: 'Today, 3:45 PM', tag: 'Qualified Lead', dur: '+2m 48s', out: false, av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
+  { name: 'Rajesh Verma - Lead (+91 98765 43210)', meta: 'Today, 3:45 PM', tag: 'Qualified Lead', dur: '+2m 48s', out: false, av: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80' },
   { name: 'CarePlus Diagnostic (+91 89822 00895)', meta: 'Today, 2:30 PM', tag: 'Prescription Triage', dur: '+1m 52s', out: false, av: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80' },
   { name: 'Anita Deshmukh - HVAC (+91 94250 12345)', meta: 'Today, 1:15 PM', tag: 'Service Dispatched', dur: '+4m 10s', out: false, av: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=80&q=80' },
   { name: 'Metropolis Lab Query (+91 98260 54321)', meta: 'Today, 11:40 AM', tag: 'Inquiry Handled', dur: '+1m 35s', out: false, av: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80' },
@@ -4284,35 +4338,11 @@ function renderAgentsListPage(wrap) {
   ]);
 
   head.appendChild(el('div', { class: 'view-actions flex items-center gap-2' }, [
-    syncDograhBtn,
     createAgentBtn
   ]));
   wrap.appendChild(head);
 
-  // 2. Flat KPI Metrics Row (4 Columns, zero cards, transparent background)
-  const statsRow = el('div', { class: 'admin-kpi-grid aria-kpi-grid recordings-kpi-grid', style: 'margin-bottom:20px;' }, [
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'TOTAL AGENTS'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-total' }, '--'),
-      el('div', { class: 'agency-metric-sub' }, 'Configured neural personas')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'ACTIVE ON LIVE LINE'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-active', style: 'color:#047857;' }, '--'),
-      el('div', { class: 'agency-metric-sub' }, 'Answering incoming calls')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'SHARED DID LINE'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-did', style: 'font-size:1.45rem;color:#0d5d41;' }, '+91 80715 82519'),
-      el('div', { class: 'agency-metric-sub' }, 'VoBiz Bangalore carrier route')
-    ]),
-    el('div', { class: 'agency-metric' }, [
-      el('div', { class: 'agency-metric-label' }, 'TELEPHONY ORCHESTRATOR'),
-      el('div', { class: 'agency-metric-value', id: 'agents-metric-engine', style: 'font-size:1.45rem;' }, 'Dograh #13027'),
-      el('div', { class: 'agency-metric-sub' }, 'Live SIP & speech pipeline')
-    ])
-  ]);
-  wrap.appendChild(statsRow);
+
 
   // 3. Filter Toolbar (Minimalist Scandinavian, zero cards)
   const toolbar = el('div', {
@@ -4468,16 +4498,18 @@ function buildAgentStudioPage(existing, onBack) {
   const descI = el('input', { class: 'input', id: 'f_desc', type: 'text', value: (tts.description || ''), placeholder: 'e.g. calm, friendly Indian English accent with polite cadence', style: 'width:100%;font-size:0.88rem;padding:9px 14px;border:1px solid rgba(13,93,65,0.22);border-radius:8px;' });
 
   // DID Dropdown
-  const didSel = el('select', { class: 'select', id: 'f_did', style: 'width:100%;padding:9px 14px;font-size:0.90rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;' }, [
-    el('option', { value: '' }, 'No dedicated number (Inherits Shared Line)')
-  ]);
   const didsList = dids();
-  didsList.forEach((num) => {
-    didSel.appendChild(el('option', { value: num }, num + ' (Active Carrier Line)'));
+  const didOptions = [
+    { value: '', label: 'No dedicated number (Inherits Shared Line)' },
+    ...didsList.map((num) => ({ value: num, label: num + ' (Active Carrier Line)' }))
+  ];
+  const didSel = createThemedDropdown({
+    value: (e.telephony && e.telephony.did) || '',
+    options: didOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
   });
-  if (e.telephony && e.telephony.did) {
-    didSel.value = e.telephony.did;
-  }
 
   // Voice controls
   const modelSeg = el('div', { class: 'admin-tab-nav', style: 'margin:0;padding:0;border:none;' }, VOICE_MODELS.map((m) =>
@@ -4507,12 +4539,21 @@ function buildAgentStudioPage(existing, onBack) {
   ));
   toneSeg.id = 'f_tone_seg';
 
-  const speakerSel = el('select', { class: 'select', id: 'f_speaker', style: 'width:100%;padding:9px 14px;font-size:0.88rem;border:1px solid rgba(13,93,65,0.22);border-radius:8px;background:transparent;' }, [
-    el('option', { value: 'speaker_2', selected: state.speaker === 'speaker_2' }, 'speaker_2 (Professional Indian Female • Recommended)'),
-    el('option', { value: 'speaker_1', selected: state.speaker === 'speaker_1' }, 'speaker_1 (Warm & Deep Male)'),
-    el('option', { value: 'speaker_3', selected: state.speaker === 'speaker_3' }, 'speaker_3 (Youthful & Energetic Male)'),
-    el('option', { value: 'speaker_4', selected: state.speaker === 'speaker_4' }, 'speaker_4 (Polite Female Assistant)')
-  ]);
+  const speakerSel = createThemedDropdown({
+    value: state.speaker || 'speaker_2',
+    options: [
+      { value: 'speaker_2', label: 'speaker_2 (Professional Indian Female • Recommended)' },
+      { value: 'speaker_1', label: 'speaker_1 (Warm & Deep Male)' },
+      { value: 'speaker_3', label: 'speaker_3 (Youthful & Energetic Male)' },
+      { value: 'speaker_4', label: 'speaker_4 (Polite Female Assistant)' }
+    ],
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;',
+    onChange: (val) => {
+      state.speaker = val;
+    }
+  });
 
   const f0Val = el('span', { class: 'rv', id: 'f_f0_val', style: 'font-weight:750;color:#0d5d41;font-size:0.92rem;min-width:32px;display:inline-block;' }, String(state.f0));
   const f0Range = el('input', {
@@ -4908,15 +4949,15 @@ function agentCard(a) {
   const tts = a.tts || {};
   const vId = (a.rumikVoice || tts.voice || '').toLowerCase();
   const voiceNames = {
-    ira: 'Ira (Mia · Female)',
-    riya: 'Priya (Sophia · Female)',
-    arav: 'Aarav (Lucas · Male)',
-    ananya: 'Ananya (Emma · Female)',
-    dev: 'Dev (Adam · Male)',
-    kabir: 'Kabir (Noah · Male)'
+    ira: 'Ira (Warm Female)',
+    riya: 'Priya (Empathetic Female)',
+    arav: 'Aarav (Professional Male)',
+    ananya: 'Ananya (Executive Female)',
+    dev: 'Dev (Calm Male)',
+    kabir: 'Kabir (Energetic Male)'
   };
-  const voiceLabel = voiceNames[vId] || (tts.model === 'muga' ? ('Muga • ' + (tts.tone || 'neutral')) : ('Mulberry • ' + (tts.speaker || 'speaker_2')));
-  const voiceLine = 'Rumik: ' + voiceLabel;
+  const voiceLabel = voiceNames[vId] || (tts.tone ? ('Tone: ' + tts.tone) : 'Neural Indian Voice');
+  const voiceLine = 'Voice: ' + voiceLabel;
   const did = a.telephony && a.telephony.did ? a.telephony.did : '+91 80715 82519';
 
   // Test in Browser button
@@ -4949,22 +4990,28 @@ function agentCard(a) {
     el('span', {}, 'Edit')
   ]);
 
-  // Set Active on Line button (if enabled and not primary)
-  const activeBtn = (!a.isPrimary && isEnabled) ? el('button', {
-    type: 'button',
-    class: 'btn btn-ghost btn-sm',
-    style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.06);color:#0d5d41;font-weight:700;font-size:0.80rem;',
-    onclick: async () => {
-      try {
-        await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
-        toast(a.name.split('-')[0].trim() + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
-        await ensureAgents(true);
-        paintAgents();
-      } catch (err) {
-        toast(err.message || 'Could not activate agent on line', 'err');
+  // Set Active on Line button (or Active Line badge for consistent button alignment)
+  const activeBtn = a.isPrimary
+    ? el('span', {
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 13px;border:1.5px solid rgba(16,185,129,0.30);background:rgba(16,185,129,0.12);color:#047857;font-weight:750;font-size:0.80rem;cursor:default;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;',
+      title: 'This agent is currently active and answering calls on your shared live line (+91 80715 82519)'
+    }, '● Active on Line')
+    : (isEnabled ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 13px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.06);color:#0d5d41;font-weight:700;font-size:0.80rem;white-space:nowrap;',
+      onclick: async () => {
+        try {
+          await api('/api/agents/activate', { method: 'POST', body: { agentId: a.id } });
+          toast(a.name.split('-')[0].trim() + ' is now LIVE on your shared business number (+91 80715 82519)!', 'ok');
+          await ensureAgents(true);
+          paintAgents();
+        } catch (err) {
+          toast(err.message || 'Could not activate agent on line', 'err');
+        }
       }
-    }
-  }, 'Set Active on Line') : null;
+    }, 'Set Active on Line') : null);
 
   // Enable / Disable Toggle button
   const toggleBtn = !isEnabled
@@ -5042,7 +5089,8 @@ function agentCard(a) {
   const bodyWrap = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;' });
 
   // Role Badge (Receptionist, Customer Care, Sales, VIP Billing, Tech Support)
-  const roleLabel = a.role || (a.name.includes('Receptionist') ? 'Front Desk Receptionist' : (a.name.includes('Customer') ? 'Customer Care' : (a.name.includes('Sales') ? 'Sales Specialist' : (a.name.includes('Billing') ? 'VIP Billing' : (a.name.includes('Technical') ? 'Technical Support' : 'AI Voice Agent')))));
+  let roleLabel = a.role || 'AI Voice Agent';
+  if (roleLabel.includes('VIP')) roleLabel = 'VIP Billing Specialist';
   const rolePill = el('span', {
     style: 'font-size:0.72rem;font-weight:750;padding:2px 9px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;letter-spacing:0.02em;border:1px solid rgba(13,93,65,0.18);'
   }, roleLabel);
@@ -5054,15 +5102,19 @@ function agentCard(a) {
       ? el('span', { style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(16,185,129,0.12);color:#047857;letter-spacing:0.02em;' }, '● Active on Live Line')
       : el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, 'Enabled · Standby'));
 
-  // Title & Badges line
-  const titleLine = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
-    el('b', { style: 'font-size:1.02rem;color:#14221c;letter-spacing:-0.01em;' }, a.name),
+  // Title on its own line
+  const nameLine = el('div', { style: 'margin-bottom:2px;' }, [
+    el('b', { style: 'font-size:1.04rem;color:#14221c;letter-spacing:-0.01em;' }, a.name)
+  ]);
+  bodyWrap.appendChild(nameLine);
+
+  // Badges line directly underneath title (ek k neeche ek)
+  const badgesLine = el('div', { style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;' }, [
     rolePill,
     statusBadge,
-    el('span', { style: 'font-size:0.74rem;font-family:var(--mono);color:#5d7468;' }, did),
     el('span', { style: 'font-size:0.70rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.06);color:#0d5d41;' }, voiceLine)
   ]);
-  bodyWrap.appendChild(titleLine);
+  bodyWrap.appendChild(badgesLine);
 
   // Greeting quote if exists
   if (a.greeting) {
@@ -5079,34 +5131,26 @@ function agentCard(a) {
   }, a.persona || 'No persona instructions set.'));
 
   // Assigned Employee / Teams Handoff
-  const staffLine = el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:0.74rem;color:#5d7468;padding-top:2px;' });
   const hasStaff = Array.isArray(a.assignedEmployees) && a.assignedEmployees.length > 0;
   if (hasStaff) {
+    const staffLine = el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:0.74rem;color:#5d7468;padding-top:2px;' });
     staffLine.appendChild(el('span', { style: 'color:#0d5d41;font-weight:700;' }, 'Staff Handoff:'));
     staffLine.appendChild(el('span', {}, a.assignedEmployees.map((emp) => emp.name + (emp.phone ? ' (' + emp.phone + ')' : '')).join(', ')));
-  } else {
-    staffLine.appendChild(el('span', {}, 'No human staff assigned for call handoff ·'));
-    staffLine.appendChild(el('a', { href: '#teams', style: 'color:#0d5d41;font-weight:700;text-decoration:none;' }, 'Assign in Teams ↗'));
+    bodyWrap.appendChild(staffLine);
   }
-  bodyWrap.appendChild(staffLine);
 
   leftSection.appendChild(bodyWrap);
   row.appendChild(leftSection);
 
   // Right Section (Actions)
   const actionsWrap = el('div', {
-    style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;'
+    style: 'display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0;padding-top:4px;'
   }, [
     talkMicBtn,
     previewBtn,
     editBtn,
     activeBtn,
     toggleBtn,
-    (a.sampleTranscript && a.sampleTranscript.length) ? el('button', {
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:6px 12px;font-size:0.78rem;color:#0d5d41;',
-      onclick: () => showTranscriptModal(a)
-    }, 'Transcript') : null,
     deleteBtn
   ].filter(Boolean));
 
@@ -6527,23 +6571,25 @@ async function viewTalk(root, customAgent) {
 
   // Status & Metrics Row
   let sttLang = 'en-IN';
-  const langSel = el('select', {
-    class: 'select',
-    style: 'width:auto;font-size:0.82rem;padding:5px 14px 5px 12px;border-radius:999px;border:1.5px solid rgba(13,93,65,0.25);color:#0d5d41;background:var(--bg-2,#f4f8f6);font-weight:600;cursor:pointer;outline:none;',
-    title: 'Select microphone language for speech-to-text',
-    onchange: (e) => {
-      sttLang = e.target.value;
-      toast(`Microphone language set to: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+  const langSel = createThemedDropdown({
+    value: sttLang,
+    options: [
+      { value: 'en-IN', label: 'English / Hinglish (India)' },
+      { value: 'hi', label: 'Hindi (हिन्दी)' },
+      { value: 'en', label: 'English (General)' }
+    ],
+    searchable: false,
+    align: 'right',
+    className: 'sv-stt-lang-dropdown',
+    onChange: (val, opt) => {
+      sttLang = val;
+      toast('Microphone language set to: ' + (opt ? opt.label : val), 'info');
       if (isListening) {
         stopVoiceListening();
         startVoiceListening();
       }
     }
-  }, [
-    el('option', { value: 'en-IN', selected: true }, 'English / Hinglish (India)'),
-    el('option', { value: 'hi' }, 'Hindi (हिन्दी)'),
-    el('option', { value: 'en' }, 'English (General)')
-  ]);
+  });
 
   const statusDot = el('span', { class: 'conversation-dot', 'aria-hidden': 'true' });
   const statusText = el('span', {}, 'Ready');
@@ -10222,71 +10268,6 @@ async function viewInvoices(root) {
   renderCurrent();
 }
 
-async function viewIntegrations(root) {
-  root.appendChild(viewHead('Integrations', 'Bring client conversations and ad research into the operating system without pretending setup is complete.'));
-  const host = el('div', { class: 'integration-grid' }, skeleton('sk-card', 2)); root.appendChild(host);
-  try {
-    const out = await api('/api/integrations');
-    State.integrations = out.integrations || []; State.loaded.integrations = true;
-    host.innerHTML = '';
-    State.integrations.forEach((item) => host.appendChild(integrationCard(item)));
-  } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad error-state' }, e.message)); }
-}
-
-function integrationCard(item) {
-  const requested = item.status === 'requested';
-  const mark = item.id === 'whatsapp-business' ? 'WA' : 'META';
-  const button = el('button', { class: 'btn ' + (requested ? 'btn-ghost' : 'btn-primary'), disabled: requested ? 'disabled' : null }, requested ? 'Setup requested' : 'Request setup');
-  button.onclick = async () => {
-    button.disabled = true; button.textContent = 'Recording request...';
-    try { const out = await api('/api/integrations/request', { method: 'POST', body: { integrationId: item.id } }); toast(out.note, 'ok'); onRoute(); }
-    catch (e) { button.disabled = false; button.textContent = 'Request setup'; toast(e.message, 'err'); }
-  };
-  return el('article', { class: 'card integration-card' }, [
-    el('div', { class: 'integration-head' }, [el('span', { class: 'integration-mark' }, mark), el('span', { class: 'status-badge ' + (requested ? 'status-requested' : 'status-setup') }, requested ? 'requested' : 'setup required')]),
-    el('span', { class: 'section-kicker' }, item.category), el('h3', {}, item.name), el('p', {}, item.description),
-    el('div', { class: 'integration-columns' }, [
-      el('div', {}, [el('h4', {}, 'What you will see'), el('ul', {}, (item.capabilities || []).map((value) => el('li', {}, value)))]),
-      el('div', {}, [el('h4', {}, 'Required to connect'), el('ul', {}, (item.setup || []).map((value) => el('li', {}, value)))])
-    ]),
-    el('div', { class: 'integration-foot' }, [button, el('small', {}, 'No external service is contacted by this request.')])
-  ]);
-}
-
-async function viewAgencyPrompt(root) {
-  root.appendChild(viewHead('Agency prompt', 'One persistent operating instruction for this workspace. Per-agent personas remain separate.'));
-  const host = el('div', { class: 'prompt-layout' }, [el('section', { class: 'card prompt-editor' }, skeleton('sk-card', 1)), el('aside', { class: 'card prompt-guide' }, skeleton('sk-card', 1))]);
-  root.appendChild(host);
-  try {
-    const out = await api('/api/agency/prompt'); State.agencyPrompt = out; State.loaded.agencyPrompt = true;
-    paintAgencyPrompt(host, out);
-  } catch (e) { host.innerHTML = ''; host.appendChild(el('div', { class: 'card card-pad error-state' }, e.message)); }
-}
-
-function paintAgencyPrompt(host, data) {
-  const text = el('textarea', { class: 'agency-prompt-text', maxlength: '12000', placeholder: 'Define how Agency OS should reason about client priorities, reporting, delivery quality, and escalation...' });
-  text.value = data.prompt || '';
-  const count = el('span', { class: 'prompt-count' }, text.value.length.toLocaleString('en-IN') + ' / 12,000');
-  text.oninput = () => { count.textContent = text.value.length.toLocaleString('en-IN') + ' / 12,000'; };
-  const save = el('button', { class: 'btn btn-primary' }, 'Save operating prompt');
-  save.onclick = async () => {
-    save.disabled = true; save.textContent = 'Saving...';
-    try { const out = await api('/api/agency/prompt', { method: 'POST', body: { prompt: text.value } }); toast('Agency prompt saved as version ' + out.version + '.', 'ok'); paintAgencyPrompt(host, out); }
-    catch (e) { toast(e.message, 'err'); save.disabled = false; save.textContent = 'Save operating prompt'; }
-  };
-  const editor = el('section', { class: 'card prompt-editor' }, [
-    el('div', { class: 'prompt-meta' }, [el('div', {}, [el('span', { class: 'section-kicker' }, 'Persistent context'), el('h3', {}, 'Agency operating prompt')]), el('span', { class: 'status-badge status-active' }, 'Version ' + (data.version || 0))]),
-    text,
-    el('div', { class: 'prompt-editor-foot' }, [el('div', {}, [count, el('small', {}, data.updatedAt ? 'Updated ' + new Date(data.updatedAt).toLocaleString('en-IN') + (data.updatedBy ? ' by ' + data.updatedBy : '') : 'Not saved yet')]), save])
-  ]);
-  const guide = el('aside', { class: 'card prompt-guide' }, [
-    el('span', { class: 'section-kicker' }, 'Prompt contract'), el('h3', {}, 'What belongs here'),
-    el('ul', {}, ['Agency priorities and escalation rules', 'Reporting cadence and decision principles', 'Delivery quality standards', 'How to treat client money and access'].map((value) => el('li', {}, value))),
-    el('div', { class: 'prompt-boundary' }, [el('strong', {}, 'Boundary'), el('p', {}, 'This text does not authorize external messages, calls, payments, or tool actions. Those still require their normal confirmation gates.')])
-  ]);
-  host.innerHTML = ''; host.appendChild(editor); host.appendChild(guide);
-}
-
 let currentBillingInterval = 'monthly';
 
 // ============================================================================
@@ -10863,26 +10844,6 @@ async function startCustomRecharge(amount) {
 async function viewSupport(root) {
   root.innerHTML = '';
   root.classList.add('aria-clients-view', 'aria-support-view');
-
-  // Feature Lock Check: ensure at least one agent exists for support
-  if (!hasTenantAgent('support')) {
-    root.appendChild(viewHead('Support & Help Desk'));
-    const skeletonContent = el('div', { style: 'padding:16px;' }, [
-      el('div', { class: 'settings-kpi-bar', style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0;margin-bottom:20px;border:1px solid var(--line-2);border-radius:12px;opacity:0.5;' }, [
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'OPEN TICKETS'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'RESOLVED'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '--')]),
-        el('div', { style: 'padding:16px 20px;border-right:1px solid var(--line-2);' }, [el('div', { style: 'font-weight:700;' }, 'SLA'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, '< 2 Hours')]),
-        el('div', { style: 'padding:16px 20px;' }, [el('div', { style: 'font-weight:700;' }, 'DESK'), el('div', { style: 'font-size:1.1rem;font-weight:800;' }, 'In-App')])
-      ])
-    ]);
-    renderFeatureLock(root, skeletonContent, {
-      title: 'Customer Care Agent Required',
-      description: 'Create a Customer Care AI agent to unlock the Support Help Desk, ticket management, and automated response workflows.',
-      buttonText: '+ Create Customer Care Agent to Unlock',
-      agentType: 'support'
-    });
-    return;
-  }
 
   const wrap = el('div', { class: 'aria-support-view aria-clients-view', style: 'width:100%;' });
   root.appendChild(wrap);
@@ -12792,11 +12753,6 @@ async function viewTeams(root) {
   if (canManageTeam) {
     head.appendChild(el('div', { class: 'view-actions flex gap-2 items-center' }, [
       el('button', {
-        class: 'btn btn-ghost',
-        style: 'border:1px solid rgba(13,93,65,0.28);color:#0d5d41;font-weight:700;border-radius:999px;padding:9px 18px;',
-        onclick: () => goto('agents')
-      }, '+ Create / Manage AI Agents'),
-      el('button', {
         class: 'btn btn-primary',
         id: 'btnAddTeamMember',
         style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 20px;',
@@ -12843,85 +12799,9 @@ async function viewTeams(root) {
     const totalHandoffs = teamState.handoffLogs.length;
     const fmtSharedNum = teamState.sharedNumber.replace(/^(\+91)(\d{5})(\d{5})$/, '$1 $2 $3');
 
-    const kpiGrid = el('div', {
-      style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:22px;'
-    }, [
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'TEAM MEMBERS'),
-        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(activeEmployees.length)),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Active workspace staff & owners')
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'SHARED BUSINESS LINE'),
-        el('div', { style: 'font-size:22px;font-weight:800;color:#0d5d41;margin:8px 0 4px;font-family:Manrope,sans-serif;' }, fmtSharedNum),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'All agents & handoffs use this number')
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'ACTIVE LINE AGENT'),
-        el('div', { style: 'font-size:18px;font-weight:800;color:#14221c;margin:8px 0 4px;font-family:Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' },
-          teamState.activeAgent ? teamState.activeAgent.name : 'No Agent Created'
-        ),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#0b6b47;' },
-          assignedAgentsCount + ' of ' + teamState.agents.length + ' agent(s) assigned to staff'
-        )
-      ]),
-      el('div', { class: 'card card-pad', style: 'background:#fff;border:1px solid rgba(13,93,65,0.14);border-radius:16px;padding:18px;' }, [
-        el('div', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1a2c24;text-transform:uppercase;' }, 'CALL ESCALATIONS (STUCK → HUMAN)'),
-        el('div', { style: 'font-size:28px;font-weight:800;color:#14221c;margin:6px 0 2px;font-family:Manrope,sans-serif;' }, String(totalHandoffs)),
-        el('div', { style: 'font-size:12.5px;font-weight:600;color:#2c4238;' }, 'Calls routed to assigned employee phone')
-      ])
-    ]);
-    contentWrap.appendChild(kpiGrid);
 
-    const agentSwitchSelect = el('select', {
-      class: 'input',
-      style: 'min-width:260px;height:40px;padding:6px 14px;border-radius:999px;border:1.5px solid rgba(13,93,65,0.3);font-weight:700;color:#14221c;background:#fff;cursor:pointer;'
-    }, teamState.agents.length
-      ? teamState.agents.map((a) => el('option', { value: a.id, selected: !!(teamState.activeAgent && teamState.activeAgent.id === a.id) },
-        a.name + (a.isPrimary ? ' (● Active on Line)' : '')
-      ))
-      : [el('option', { value: '' }, 'No agents created yet')]
-    );
 
-    const switchBtn = el('button', {
-      class: 'btn btn-primary btn-sm',
-      style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:9px 18px;',
-      onclick: async () => {
-        if (!agentSwitchSelect.value) return;
-        switchBtn.disabled = true;
-        switchBtn.textContent = 'Syncing Line...';
-        try {
-          await api('/api/agents/activate', { method: 'POST', body: { agentId: agentSwitchSelect.value } });
-          toast('Switched active agent on ' + fmtSharedNum + ' & synced live!', 'ok');
-          await reloadTeams();
-        } catch (err) {
-          toast(err.message || 'Failed to switch active agent', 'err');
-        } finally {
-          switchBtn.disabled = false;
-          switchBtn.textContent = 'Activate on Same Number';
-        }
-      }
-    }, 'Activate on Same Number');
 
-    const sharedLineBanner = el('div', {
-      class: 'card card-pad',
-      style: 'background:linear-gradient(135deg, rgba(13,93,65,0.06) 0%, rgba(227,241,233,0.45) 100%);border:1px solid rgba(13,93,65,0.18);border-radius:16px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;'
-    }, [
-      el('div', { style: 'max-width:620px;' }, [
-        el('div', { style: 'display:flex;align-items:center;gap:8px;margin-bottom:4px;' }, [
-          el('span', { style: 'width:9px;height:9px;border-radius:50%;background:#0d5d41;display:inline-block;' }),
-          el('strong', { style: 'font-size:0.95rem;color:#14221c;' }, 'Same-Number Multi-Agent Routing (' + fmtSharedNum + ')')
-        ]),
-        el('div', { style: 'font-size:0.84rem;color:#2c4238;line-height:1.45;' },
-          'All your custom AI agents operate on your single business number. Select which agent answers incoming calls below, or choose any agent when dialing outbound calls. If the AI agent gets stuck or the caller asks for a human, the call escalates to the employee assigned to that agent.'
-        )
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-        agentSwitchSelect,
-        switchBtn
-      ])
-    ]);
-    contentWrap.appendChild(sharedLineBanner);
 
     const membersCard = el('div', {
       class: 'card card-pad',
@@ -12931,12 +12811,7 @@ async function viewTeams(root) {
         el('div', {}, [
           el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'Employee Directory & Agent Routing'),
           el('h3', { style: 'margin:2px 0 0 0;font-size:1.15rem;font-weight:800;color:#14221c;' }, 'Workspace Employees & Assigned AI Agents')
-        ]),
-        canManageTeam ? el('button', {
-          class: 'btn btn-primary btn-sm',
-          style: 'background:#0d5d41;color:#fff;font-weight:700;border-radius:999px;padding:7px 16px;',
-          onclick: () => openTeamMemberModal(null, teamState, reloadTeams)
-        }, '+ Add Employee') : null
+        ])
       ]),
       el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
         el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
@@ -12944,7 +12819,7 @@ async function viewTeams(root) {
             el('th', {}, 'Employee / Member'),
             el('th', {}, 'Department & Role'),
             el('th', {}, 'Assigned AI Agent(s)'),
-            el('th', {}, 'Escalation Phone (If AI Stuck)'),
+            el('th', {}, 'Live Handoff Phone'),
             el('th', {}, 'Handoffs'),
             el('th', {}, 'Status'),
             el('th', { style: 'text-align:right;' }, 'Actions')
@@ -12979,7 +12854,7 @@ async function viewTeams(root) {
                     el('div', { style: 'font-weight:700;color:#14221c;font-size:0.85rem;' }, m.phone),
                     el('span', {
                       style: 'font-size:0.72rem;font-weight:700;color:' + (m.escalationEnabled !== false ? '#0b6b47' : '#b45309') + ';'
-                    }, m.escalationEnabled !== false ? '✓ Auto-Transfer When AI Stuck' : '⏸ Escalation Paused')
+                    }, m.escalationEnabled !== false ? '✓ Live Transfer Enabled' : '⏸ Escalation Paused')
                   ])
                   : el('span', { style: 'font-size:0.78rem;color:#b45309;font-weight:600;' }, 'Add phone for call transfer')
               ]),
@@ -13002,12 +12877,12 @@ async function viewTeams(root) {
                     style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
                     onclick: () => openAssignAgentModal(m, teamState, reloadTeams)
                   }, 'Assign Agent') : null,
-                  el('button', {
+                  (m.phone && m.phone.trim()) ? el('button', {
                     class: 'btn btn-ghost btn-sm',
                     style: 'padding:5px 10px;font-size:0.76rem;color:#0d5d41;font-weight:700;border:1px solid rgba(13,93,65,0.25);',
-                    title: 'Simulate or trigger live call transfer when AI agent gets stuck',
+                    title: 'Simulate or test live call transfer to this employee phone',
                     onclick: () => openTestHandoffModal(m, teamState, reloadTeams)
-                  }, 'Test Handoff'),
+                  }, 'Test Handoff') : null,
                   canManageTeam ? el('button', {
                     class: 'btn btn-ghost btn-sm',
                     style: 'padding:5px 10px;font-size:0.76rem;',
@@ -13042,14 +12917,14 @@ async function viewTeams(root) {
     }, [
       el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;' }, [
         el('div', {}, [
-          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'AI-to-Employee Call Transfer Log'),
-          el('h3', { style: 'margin:2px 0 0 0;font-size:1.1rem;font-weight:800;color:#14221c;' }, 'Recent Human Escalations (When AI Got Stuck)')
+          el('span', { style: 'font-size:11px;font-weight:700;letter-spacing:0.06em;color:#0d5d41;text-transform:uppercase;' }, 'Live Call Escalation Log'),
+          el('h3', { style: 'margin:2px 0 0 0;font-size:1.1rem;font-weight:800;color:#14221c;' }, 'Recent Call Handoffs & Human Escalation History')
         ]),
         el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.09);color:#0d5d41;font-weight:700;' }, teamState.handoffLogs.length + ' Events')
       ]),
       teamState.handoffLogs.length === 0
         ? el('div', { style: 'padding:18px 0;color:#2c4238;font-size:0.88rem;' },
-          'No calls have required human escalation yet. When an AI agent cannot resolve a caller query or the caller asks for a person, the call is transferred to the assigned employee and logged here.'
+          'No calls have required live transfer yet. When a caller requests a human staff member or specialized escalation, the call is transferred to the assigned employee and logged here.'
         )
         : el('div', { class: 'admin-table-wrap', style: 'overflow-x:auto;' }, [
           el('table', { class: 'admin-table', style: 'width:100%;border-collapse:collapse;' }, [
@@ -13092,14 +12967,35 @@ function openTeamMemberModal(existing, teamState, onDone) {
   const nameI = el('input', { class: 'input', value: m.name || '', placeholder: 'e.g. Rahul Sharma' });
   const emailI = el('input', { class: 'input', type: 'email', value: m.email || '', placeholder: 'e.g. rahul@company.com' });
   const phoneI = el('input', { class: 'input', type: 'tel', value: (m.phone || '').replace(/^\+91/, ''), placeholder: '10-digit mobile for call transfer (e.g. 9876543210)' });
-  const deptS = el('select', { class: 'select' }, ['Sales', 'Support', 'Reception', 'Billing', 'Technical', 'Operations', 'Management', 'General'].map((d) =>
-    el('option', { value: d, selected: (m.department || 'Sales') === d }, d)
-  ));
-  const roleS = el('select', { class: 'select' }, [
-    { v: 'employee', l: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
-    { v: 'manager', l: 'Team Manager (Can Manage All Agents & Employees)' },
-    { v: 'owner', l: 'Workspace Co-Owner (Full Client Access)' }
-  ].map((r) => el('option', { value: r.v, selected: (m.role || 'employee') === r.v }, r.l)));
+  const deptOptions = [
+    { value: 'General', label: 'General' },
+    { value: 'Sales', label: 'Sales' },
+    { value: 'Support', label: 'Support' },
+    { value: 'Reception', label: 'Reception' },
+    { value: 'Billing', label: 'Billing' },
+    { value: 'Technical', label: 'Technical' },
+    { value: 'Operations', label: 'Operations' },
+    { value: 'Management', label: 'Management' }
+  ];
+  const deptS = createThemedDropdown({
+    value: m.department || 'General',
+    options: deptOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
+  });
+  const roleOptions = [
+    { value: 'employee', label: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
+    { value: 'manager', label: 'Team Manager (Can Manage All Agents & Employees)' },
+    { value: 'owner', label: 'Workspace Co-Owner (Full Client Access)' }
+  ];
+  const roleS = createThemedDropdown({
+    value: m.role || 'employee',
+    options: roleOptions,
+    searchable: false,
+    className: 'sv-modal-dropdown w-full',
+    style: 'width:100%;'
+  });
   const passI = el('input', { class: 'input', type: 'password', placeholder: isEdit ? 'Leave blank to keep existing password' : 'Minimum 8 characters (e.g. Welcome@123)' });
   const escCheck = el('input', { type: 'checkbox', checked: m.escalationEnabled !== false });
 
@@ -13118,7 +13014,7 @@ function openTeamMemberModal(existing, teamState, onDone) {
   const body = el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
     field('Employee Full Name', nameI),
     field('Employee Login Email', emailI),
-    field('Employee Mobile Number (+91) — For Live Call Transfer When AI Stuck', phoneI),
+    field('Employee Mobile Number (+91) - For Live Call Transfer When AI Stuck', phoneI),
     field('Department', deptS),
     field('Access Role', roleS),
     field(isEdit ? 'Reset Login Password (Optional)' : 'Temporary Login Password', passI),
@@ -13625,23 +13521,33 @@ async function viewSettings(root) {
     const userPhoneInput = el('input', { class: 'input', id: 'prof_phone', type: 'tel', value: u.phone || '', placeholder: '+91 98765 43210' });
     const userDesignationInput = el('input', { class: 'input', id: 'prof_designation', type: 'text', value: u.designation || '', placeholder: 'e.g. Managing Director / Operations Lead' });
 
-    const tzSelect = el('select', { class: 'select aria-select', id: 'prof_timezone' }, [
-      el('option', { value: 'Asia/Kolkata' }, 'Asia/Kolkata (IST, UTC+5:30) - India Standard Time'),
-      el('option', { value: 'Asia/Dubai' }, 'Asia/Dubai (GST, UTC+4:00) - Gulf Standard Time'),
-      el('option', { value: 'Europe/London' }, 'Europe/London (GMT/BST, UTC+0/1) - UK Time'),
-      el('option', { value: 'America/New_York' }, 'America/New_York (EST, UTC-5:00) - US Eastern'),
-      el('option', { value: 'America/Los_Angeles' }, 'America/Los_Angeles (PST, UTC-8:00) - US Pacific'),
-      el('option', { value: 'Asia/Singapore' }, 'Asia/Singapore (SGT, UTC+8:00) - Singapore Time')
-    ]);
-    if (u.timezone) tzSelect.value = u.timezone;
+    const tzSelect = createThemedDropdown({
+      value: u.timezone || 'Asia/Kolkata',
+      options: [
+        { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST, UTC+5:30) - India Standard Time' },
+        { value: 'Asia/Dubai', label: 'Asia/Dubai (GST, UTC+4:00) - Gulf Standard Time' },
+        { value: 'Europe/London', label: 'Europe/London (GMT/BST, UTC+0/1) - UK Time' },
+        { value: 'America/New_York', label: 'America/New_York (EST, UTC-5:00) - US Eastern' },
+        { value: 'America/Los_Angeles', label: 'America/Los_Angeles (PST, UTC-8:00) - US Pacific' },
+        { value: 'Asia/Singapore', label: 'Asia/Singapore (SGT, UTC+8:00) - Singapore Time' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
 
-    const langSelect = el('select', { class: 'select aria-select', id: 'prof_language' }, [
-      el('option', { value: 'en-IN' }, 'English (India) - Default'),
-      el('option', { value: 'hi-IN' }, 'Hindi (हिंदी)'),
-      el('option', { value: 'hinglish' }, 'Hinglish (Conversational)'),
-      el('option', { value: 'en-US' }, 'English (United States)')
-    ]);
-    if (u.language) langSelect.value = u.language;
+    const langSelect = createThemedDropdown({
+      value: u.language || 'en-IN',
+      options: [
+        { value: 'en-IN', label: 'English (India) - Default' },
+        { value: 'hi-IN', label: 'Hindi (हिंदी)' },
+        { value: 'hinglish', label: 'Hinglish (Conversational)' },
+        { value: 'en-US', label: 'English (United States)' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
 
     const saveProfileBtn = el('button', {
       class: 'btn btn-primary',
@@ -13770,19 +13676,24 @@ async function viewSettings(root) {
     // SECTION 2: Business & Corporate Identity (Company Profile)
     // ========================================================================
     const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '', placeholder: 'e.g. CarePlus Health & Diagnostic' });
-    const tenantIndustrySelect = el('select', { class: 'select aria-select', id: 'set_industry' }, [
-      el('option', { value: 'Healthcare & Diagnostic' }, 'Healthcare & Diagnostic Clinics'),
-      el('option', { value: 'Real Estate & Housing' }, 'Real Estate & Property Development'),
-      el('option', { value: 'Automotive & Dealerships' }, 'Automotive & Dealerships'),
-      el('option', { value: 'Legal & Corporate Advisory' }, 'Legal & Corporate Advisory'),
-      el('option', { value: 'Financial Services & Insurance' }, 'Financial Services & Insurance'),
-      el('option', { value: 'Hospitality & Travel' }, 'Hospitality, Travel & Resorts'),
-      el('option', { value: 'Education & Coaching' }, 'Education, Universities & Coaching'),
-      el('option', { value: 'SaaS & Technology' }, 'SaaS, AI & Technology'),
-      el('option', { value: 'Retail & E-Commerce' }, 'Retail, Direct Sales & E-Commerce'),
-      el('option', { value: 'Professional Services' }, 'Professional & Agency Services')
-    ]);
-    if (t.industry) tenantIndustrySelect.value = t.industry;
+    const tenantIndustrySelect = createThemedDropdown({
+      value: t.industry || 'Healthcare & Diagnostic',
+      options: [
+        { value: 'Healthcare & Diagnostic', label: 'Healthcare & Diagnostic Clinics' },
+        { value: 'Real Estate & Housing', label: 'Real Estate & Property Development' },
+        { value: 'Automotive & Dealerships', label: 'Automotive & Dealerships' },
+        { value: 'Legal & Corporate Advisory', label: 'Legal & Corporate Advisory' },
+        { value: 'Financial Services & Insurance', label: 'Financial Services & Insurance' },
+        { value: 'Hospitality & Travel', label: 'Hospitality, Travel & Resorts' },
+        { value: 'Education & Coaching', label: 'Education, Universities & Coaching' },
+        { value: 'SaaS & Technology', label: 'SaaS, AI & Technology' },
+        { value: 'Retail & E-Commerce', label: 'Retail, Direct Sales & E-Commerce' },
+        { value: 'Professional Services', label: 'Professional & Agency Services' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;'
+    });
 
     const tenantWebsiteInput = el('input', { class: 'input', id: 'set_website', type: 'url', value: t.website || '', placeholder: 'https://www.example.com' });
     const tenantSupportEmailInput = el('input', { class: 'input', id: 'set_support_email', type: 'email', value: t.supportEmail || '', placeholder: 'support@example.com' });
@@ -13902,42 +13813,19 @@ async function viewSettings(root) {
     wrap.appendChild(tenantSection);
 
     // ========================================================================
-    // SECTION 3: Account Security & Authentication Signals
+    // SECTION 3: Compliance & HIPAA Retention
     // ========================================================================
-    const securitySection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'margin-bottom:6px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Authentication & Access'),
-        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Account Security & Active Session')
-      ]),
-      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:18px;line-height:1.45;' }, 'Workspace security status, role permissions, and active credential integrity.'),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;max-width:680px;' }, [
-        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
-          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'TWO-FACTOR (2FA)'),
-          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#0d5d41;margin:4px 0;' }, 'Protected'),
-          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'OTP & session cookies active')
-        ]),
-        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
-          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SESSION STATUS'),
-          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#047857;margin:4px 0;' }, 'Active & Verified'),
-          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'Encrypted SHA-256 token')
-        ]),
-        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
-          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'PERMISSION LEVEL'),
-          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#14221c;margin:4px 0;' }, isAdm ? 'Full SuperAdmin' : 'Workspace Owner'),
-          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'Voice & telephony authorized')
-        ])
-      ])
-    ]);
-    wrap.appendChild(securitySection);
-
-    // ========================================================================
-    // SECTION 4: Compliance & HIPAA Retention
-    // ========================================================================
-    const privacySelect = el('select', { class: 'select aria-select', id: 'privacy_mode', style: 'max-width:380px;' }, [
-      el('option', { value: 'standard' }, 'Standard retention (Recordings & transcripts kept)'),
-      el('option', { value: 'metadata_only' }, 'Privacy mode (Metadata only, logs stripped)'),
-      el('option', { value: 'no_recording' }, 'HIPAA mode (No recording or transcript retention)')
-    ]);
+    const privacySelect = createThemedDropdown({
+      value: 'standard',
+      options: [
+        { value: 'standard', label: 'Standard retention (Recordings & transcripts kept)' },
+        { value: 'metadata_only', label: 'Privacy mode (Metadata only, logs stripped)' },
+        { value: 'no_recording', label: 'HIPAA mode (No recording or transcript retention)' }
+      ],
+      searchable: false,
+      className: 'w-full',
+      style: 'max-width:440px;flex:1;'
+    });
     const privacySave = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Privacy Mode');
     privacySave.onclick = async () => {
       privacySave.disabled = true;
@@ -14009,36 +13897,12 @@ async function viewSettings(root) {
     let currentAudio = null;
     let currentlyPlayingId = null;
 
-    // ── PAGE HEADER ──────────────────────────────────────────────────────────
-    const pageHeader = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
-      el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
-      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
-        'Complete voice pipeline in one place. Choose your AI voice persona (Rumik), assign your VoBiz phone number, and configure the Dograh AI call flow — all changes sync live to your phone lines instantly.'
-      ),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
-          el('span', { id: 'vi-voice-pill' }, 'Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik Mulberry)')
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
-          el('span', {}, 'Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Shared Core)'))
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
-          el('span', {}, 'VoBiz SIP Carrier: Ready')
-        ])
-      ])
-    ]);
-    wrap.appendChild(pageHeader);
-
     // ── SECTION TAB BAR ───────────────────────────────────────────────────────
     let activeSectionTab = _scrollToSection || 'voice';
     const sectionTabs = [
-      { id: 'voice', label: 'Voice & Speech (Rumik)' },
-      { id: 'phone', label: 'Phone Numbers (VoBiz)' },
-      { id: 'flows', label: 'AI Call Flows (Dograh)' }
+      { id: 'voice', label: 'Voice & Speech' },
+      { id: 'phone', label: 'Phone Numbers' },
+      { id: 'flows', label: 'AI Call Flows' }
     ];
     const sectionBtnMap = {};
     const sectionPanelMap = {};
@@ -14167,10 +14031,20 @@ async function viewSettings(root) {
     // Tone & Speed Controls
     var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
     if (tones.length > 0) {
-      var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
-        tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
-      );
-      toneSel.onchange = function() { selectedTone = toneSel.value; };
+      var toneOptions = tones.map(function(t) {
+        return {
+          value: t.id,
+          label: t.label + (t.desc ? ' - ' + t.desc : '')
+        };
+      });
+      var toneSel = createThemedDropdown({
+        value: selectedTone,
+        options: toneOptions,
+        searchable: false,
+        className: 'w-full',
+        style: 'width:100%;',
+        onChange: function(val) { selectedTone = val; }
+      });
       toneRow.appendChild(el('div', {}, [
         el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
         toneSel
@@ -14185,11 +14059,23 @@ async function viewSettings(root) {
       el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
     ]));
 
-    var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
-      el('option', { value: '' }, 'Primary Agent (Default)'),
-      ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
-    ]);
-    agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
+    var agentOptions = [
+      { value: '', label: 'Primary Agent (Default)' },
+      ...agentsCatalog.map(function(a) {
+        return {
+          value: a.id,
+          label: a.name + (a.isPrimary ? ' (Primary)' : '')
+        };
+      })
+    ];
+    var agentSel2 = createThemedDropdown({
+      value: selectedAgentId,
+      options: agentOptions,
+      searchable: false,
+      className: 'w-full',
+      style: 'width:100%;',
+      onChange: function(val) { selectedAgentId = val; }
+    });
     toneRow.appendChild(el('div', {}, [
       el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
       agentSel2
@@ -14254,367 +14140,8 @@ async function viewSettings(root) {
   }
 
   // ==========================================================================
-  // TAB 2 (Legacy compat): RUMIK VOICE & STREAMING SPEECH STUDIO
   // ==========================================================================
-  async function renderRumikVoiceTab(panel) {
-    const wrap = el('div', { class: 'settings-tab-inner aria-rumik-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
-    panel.innerHTML = '';
-    panel.appendChild(wrap);
-
-    let catalogData = null;
-    try {
-      catalogData = await api('/api/voice/catalog');
-    } catch (e) {
-      wrap.innerHTML = '';
-      wrap.appendChild(el('div', { style: 'color:#dc2626;padding:24px 0;' }, 'Failed to load voice catalog. Please refresh.'));
-      return;
-    }
-
-    const voices = (catalogData && catalogData.voices) || [];
-    const tones = (catalogData && catalogData.tones) || [];
-    const active = (catalogData && catalogData.activeVoice) || {};
-    const agents = (catalogData && catalogData.agents) || [];
-    const activeWfId = (catalogData && catalogData.activeWorkflowId) || '13027';
-
-    let selectedVoiceId = active.voiceId || 'ira';
-    let selectedTone = active.tone || 'happy';
-    let selectedSpeed = active.speed || 1.0;
-    let selectedAgentId = active.agentId || (agents[0] && agents[0].id) || '';
-    let currentAudio = null;
-    let currentlyPlayingId = null;
-
-    wrap.innerHTML = '';
-
-    // Section 1: Header & Live Ecosystem Status
-    const headerSection = el('div', { style: 'margin-bottom:28px;padding-bottom:22px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine'),
-      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Rumik Voice & Realtime Speech Studio'),
-      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:760px;line-height:1.5;' },
-        'Listen to and choose the natural voice for your AI receptionist. When you select a voice, it automatically binds to your Dograh flow and VoBiz phone numbers so every caller hears your chosen voice instantly.'
-      ),
-      // Live Pipeline Connectivity Pills (Zero Boxes, pure minimal Scandinavian indicators)
-      el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#047857;display:inline-block;' }),
-          el('span', { id: 'rumik-active-voice-pill' }, `Active Voice: ${voices.find(v => v.id === selectedVoiceId)?.name || 'Ira'} (Rumik Mulberry)`)
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#2563eb;display:inline-block;' }),
-          el('span', {}, `Dograh Pipeline: Synced (#${activeWfId})`)
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
-          el('span', {}, 'VoBiz DID Carrier Line: Ready')
-        ])
-      ])
-    ]);
-    wrap.appendChild(headerSection);
-
-    // Audio Player Helper
-    function stopPlayback() {
-      if (currentAudio) {
-        try {
-          currentAudio.pause();
-          currentAudio.currentTime = 0;
-        } catch (_) { }
-        currentAudio = null;
-      }
-      currentlyPlayingId = null;
-      updatePlayButtons();
-    }
-
-    function playAudioUrl(url, id, onEnd) {
-      stopPlayback();
-      currentlyPlayingId = id;
-      updatePlayButtons();
-      const a = new Audio(url);
-      currentAudio = a;
-      a.onended = () => {
-        stopPlayback();
-        if (onEnd) onEnd();
-      };
-      a.onerror = () => {
-        stopPlayback();
-        toast('Unable to play audio sample.', 'err');
-      };
-      a.play().catch(() => {
-        stopPlayback();
-      });
-    }
-
-    const playBtnElements = new Map();
-    function updatePlayButtons() {
-      voices.forEach((v) => {
-        const btn = playBtnElements.get(v.id);
-        if (!btn) return;
-        const isPlaying = currentlyPlayingId === v.id;
-        btn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Listen Sample';
-        btn.style.background = isPlaying ? '#dc2626' : 'transparent';
-        btn.style.color = isPlaying ? '#ffffff' : '#0d5d41';
-        btn.style.borderColor = isPlaying ? '#dc2626' : '#0d5d41';
-      });
-      const customBtn = playBtnElements.get('custom');
-      if (customBtn) {
-        const isPlaying = currentlyPlayingId === 'custom';
-        customBtn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop Audio'
-          : '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Custom Text';
-        customBtn.style.background = isPlaying ? '#dc2626' : '#0d5d41';
-        customBtn.style.color = '#ffffff';
-      }
-    }
-
-    // Section 2: Voice Catalog List (Strictly Flat Underline Scandinavian Rows)
-    const voiceListHeader = el('div', { style: 'margin-bottom:12px;' }, [
-      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:2px;' }, 'Available Indian Voices'),
-      el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Select Voice Identity')
-    ]);
-    wrap.appendChild(voiceListHeader);
-
-    const voicesContainer = el('div', { style: 'margin-bottom:32px;display:flex;flex-direction:column;gap:8px;' });
-
-    voices.forEach((v) => {
-      const isSelected = v.id === selectedVoiceId;
-      const row = el('div', {
-        class: 'rumik-voice-row',
-        style: `display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(13,93,65,0.09);border-left:${isSelected ? '3px solid #0d5d41' : '3px solid transparent'};background:${isSelected ? 'rgba(13,93,65,0.035)' : 'transparent'};transition:all 0.18s ease;cursor:pointer;flex-wrap:wrap;gap:14px;`,
-        onclick: () => {
-          selectedVoiceId = v.id;
-          refreshVoiceSelections();
-        }
-      });
-
-      // Left info
-      const avatarEl = el('div', {
-        class: 'rumik-voice-avatar',
-        style: `width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isSelected ? '#0d5d41' : 'rgba(13,93,65,0.09)'};color:${isSelected ? '#ffffff' : '#0d5d41'};font-size:0.90rem;font-weight:800;flex-shrink:0;transition:all 0.18s ease;`
-      }, v.name.slice(0, 1));
-
-      const leftInfo = el('div', { style: 'display:flex;align-items:center;gap:14px;flex:1;min-width:280px;' }, [
-        avatarEl,
-        el('div', { style: 'flex:1;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
-            el('span', { style: 'font-size:1.02rem;font-weight:850;color:#14221c;' }, v.name),
-            el('span', { style: 'font-size:0.68rem;font-weight:800;letter-spacing:0.04em;padding:2px 8px;border-radius:999px;background:rgba(93,116,104,0.12);color:#334d40;' }, v.gender === 'female' ? 'Female' : 'Male'),
-            el('span', { style: 'font-size:0.74rem;color:#5d7468;font-weight:600;' }, v.accent)
-          ]),
-          el('div', { style: 'font-size:0.80rem;color:#5d7468;margin-top:3px;' },
-            el('strong', { style: 'color:#0d5d41;' }, 'Best for: '),
-            el('span', {}, v.recommendedFor)
-          )
-        ])
-      ]);
-
-      // Right action buttons
-      const playBtn = el('button', {
-        type: 'button',
-        class: 'btn-sample-play',
-        style: 'background:transparent;color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
-        onclick: async (e) => {
-          e.stopPropagation();
-          if (currentlyPlayingId === v.id) {
-            stopPlayback();
-            return;
-          }
-          playBtn.textContent = 'Loading...';
-          try {
-            const previewRes = await api('/api/voice/preview', {
-              method: 'POST',
-              body: { voiceId: v.id, tone: selectedTone, text: v.sampleGreeting }
-            });
-            if (previewRes && previewRes.dataUrl) {
-              playAudioUrl(previewRes.dataUrl, v.id);
-            }
-          } catch (err) {
-            toast(err.message || 'Failed to generate voice preview', 'err');
-            stopPlayback();
-          }
-        }
-      });
-      playBtnElements.set(v.id, playBtn);
-
-      const selectBtn = el('button', {
-        type: 'button',
-        class: 'btn-voice-select',
-        style: isSelected
-          ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
-          : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;',
-        onclick: (e) => {
-          e.stopPropagation();
-          selectedVoiceId = v.id;
-          refreshVoiceSelections();
-        }
-      }, isSelected ? '✓ Active Voice' : 'Select Voice');
-
-      const actions = el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [playBtn, selectBtn]);
-      row.appendChild(leftInfo);
-      row.appendChild(actions);
-      voicesContainer.appendChild(row);
-    });
-
-    wrap.appendChild(voicesContainer);
-    updatePlayButtons();
-
-    function refreshVoiceSelections() {
-      const activeVoiceObj = voices.find(v => v.id === selectedVoiceId);
-      const pill = $('#rumik-active-voice-pill');
-      if (pill) pill.textContent = `Active Voice: ${activeVoiceObj?.name || 'Ira'} (Rumik Mulberry)`;
-
-      const rows = wrap.querySelectorAll('.rumik-voice-row');
-      rows.forEach((r, idx) => {
-        const v = voices[idx];
-        if (!v) return;
-        const isSel = v.id === selectedVoiceId;
-        r.style.background = isSel ? 'rgba(13,93,65,0.035)' : 'transparent';
-        r.style.borderLeft = isSel ? '3px solid #0d5d41' : '3px solid transparent';
-        r.style.borderBottom = '1px solid rgba(13,93,65,0.09)';
-
-        const avatar = r.querySelector('.rumik-voice-avatar');
-        if (avatar) {
-          avatar.style.background = isSel ? '#0d5d41' : 'rgba(13,93,65,0.09)';
-          avatar.style.color = isSel ? '#ffffff' : '#0d5d41';
-        }
-        const selBtn = r.querySelector('.btn-voice-select');
-        if (selBtn) {
-          selBtn.textContent = isSel ? '✓ Active Voice' : 'Select Voice';
-          selBtn.style.cssText = isSel
-            ? 'background:rgba(13,93,65,0.10);color:#0d5d41;border:1.5px solid #0d5d41;border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:800;cursor:default;'
-            : 'background:transparent;color:#5d7468;border:1px solid rgba(13,93,65,0.22);border-radius:999px;padding:6px 18px;font-size:0.78rem;font-weight:750;cursor:pointer;';
-        }
-      });
-    }
-
-    // Section 3: Speech Delivery & Tone Tuning (Flat Underline Inputs - Zero Boxes)
-    const flatInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
-    const flatLabelStyle = 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;';
-
-    const controlsSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'margin-bottom:16px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Tone & Agent Assignment'),
-        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Speech Energy & Behavior Configuration')
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px 28px;max-width:860px;margin-bottom:24px;' }, [
-        // Assign to Agent
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Assign Voice to Agent'),
-          el('select', {
-            id: 'rumik-agent-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedAgentId = e.target.value; }
-          }, agents.map(a => el('option', { value: a.id, selected: a.id === selectedAgentId }, `${a.name}${a.isPrimary ? ' (Primary Agent)' : ''}`)))
-        ]),
-        // Tone Presets
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Emotion & Energy Tone'),
-          el('select', {
-            id: 'rumik-tone-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedTone = e.target.value; }
-          }, tones.map(t => el('option', { value: t.id, selected: t.id === selectedTone }, `${t.label} (${t.emotionTag})`)))
-        ]),
-        // Speech Rate / Speed
-        el('div', {}, [
-          el('label', { style: flatLabelStyle }, 'Speech Delivery Rate'),
-          el('select', {
-            id: 'rumik-speed-select',
-            class: 'select aria-select',
-            style: flatInputStyle,
-            onchange: (e) => { selectedSpeed = parseFloat(e.target.value); }
-          }, [
-            el('option', { value: '0.9' }, '0.90x (Deliberate & Relaxed)'),
-            el('option', { value: '1.0', selected: selectedSpeed === 1.0 }, '1.00x (Standard Conversational)'),
-            el('option', { value: '1.1' }, '1.10x (Brisk & Energetic)'),
-            el('option', { value: '1.2' }, '1.20x (Fast Delivery)')
-          ])
-        ])
-      ]),
-
-      // Custom Phrase Interactive Tester (Flat Underline)
-      el('div', { style: 'max-width:860px;margin-top:16px;' }, [
-        el('label', { style: flatLabelStyle }, 'Test Custom Business Greeting in Selected Voice'),
-        el('div', { style: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;' }, [
-          el('input', {
-            id: 'rumik-custom-text',
-            class: 'input',
-            style: 'flex:1;min-width:280px;' + flatInputStyle,
-            placeholder: 'e.g. Namaste! Welcome to Apollo Dental Clinic. Main aapki appointment book karne mein madad kar sakti hoon.'
-          }),
-          (() => {
-            const customTestBtn = el('button', {
-              type: 'button',
-              style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;'
-            });
-            playBtnElements.set('custom', customTestBtn);
-            customTestBtn.onclick = async () => {
-              if (currentlyPlayingId === 'custom') {
-                stopPlayback();
-                return;
-              }
-              const customVal = $('#rumik-custom-text')?.value.trim();
-              const textToSpeak = customVal || 'Namaste! Welcome to our clinic. Main aapki kya sahayata kar sakti hoon?';
-              customTestBtn.textContent = 'Generating...';
-              try {
-                const res = await api('/api/voice/preview', {
-                  method: 'POST',
-                  body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, text: textToSpeak }
-                });
-                if (res && res.dataUrl) {
-                  playAudioUrl(res.dataUrl, 'custom');
-                }
-              } catch (err) {
-                toast(err.message || 'Failed to preview custom audio', 'err');
-                stopPlayback();
-              }
-            };
-            return customTestBtn;
-          })()
-        ]),
-        el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:6px;' }, 'Enter your exact business name to hear how your callers will experience the greeting.')
-      ])
-    ]);
-    wrap.appendChild(controlsSection);
-    updatePlayButtons();
-
-    // Section 4: Save & Apply Button
-    const saveBtn = el('button', {
-      type: 'button',
-      class: 'btn btn-primary',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:10px 28px;font-weight:750;border:none;cursor:pointer;'
-    }, 'Apply Voice & Sync to Dograh Flow');
-
-    saveBtn.onclick = async () => {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving & Synchronizing Flow...';
-      try {
-        const res = await api('/api/voice/save', {
-          method: 'POST',
-          body: {
-            voiceId: selectedVoiceId,
-            tone: selectedTone,
-            speed: selectedSpeed,
-            agentId: selectedAgentId,
-            model: 'muga'
-          }
-        });
-        toast(res.message || 'Voice updated successfully and synced with Dograh workflow & phone lines!', 'ok');
-        refreshVoiceSelections();
-      } catch (err) {
-        toast(err.message || 'Failed to apply voice.', 'err');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Apply Voice & Sync to Dograh Flow';
-      }
-    };
-
-    wrap.appendChild(el('div', { style: 'margin-top:20px;' }, [saveBtn]));
-  }
-
-  // ==========================================================================
-  // TAB 3: VOBIZ NUMBERS (TELEPHONY LINES & ASSIGNMENTS)
+  // VOBIZ TELEPHONY & CARRIER INTEGRATIONS
   // ==========================================================================
   async function renderVoBizTab(panel) {
     const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
@@ -16912,7 +16439,7 @@ async function viewCrmPipeline(root) {
             ]),
             el('span', { class: 'pill', style: 'font-size:0.72rem;' }, d.stage || 'New Lead')
           ]),
-          d.notes ? el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:6px;' }, d.notes) : ''
+          d.notes ? el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);margin-top:6px;' }, formatFriendlyLeadNote(d.notes) || d.notes) : ''
         ]));
       });
       host.appendChild(list);
@@ -18055,8 +17582,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
           // Clean notes: strip "[Voice Call YYYY-MM-DD] Inquiry:" prefix
           const noteClean = (() => {
             if (!deal.notes) return null;
-            let s = deal.notes.replace(/^\[Voice Call [^\]]+\]\s*/i, '').replace(/^Inquiry:\s*/i, '').trim();
-            return s || null;
+            return formatFriendlyLeadNote(deal.notes);
           })();
 
           const card = el('div', { class: 'wacrm-deal-card' });

@@ -16716,18 +16716,23 @@ body > .sv-quick-call-popover {
   overflow: visible !important;
 }
 
+.modal:has(.aria-custom-dropdown.open),
+.modal:has(.aria-custom-dropdown.open) > div:not(.modal-actions),
+.modal-body:has(.aria-custom-dropdown.open),
 .modal.sv-add-lead-modal:has(.aria-custom-dropdown.open),
 .sv-add-lead-modal:has(.aria-custom-dropdown.open) > div:not(.modal-actions) {
   overflow: visible !important;
 }
 
-.sv-lead-stage-dropdown {
+.sv-lead-stage-dropdown,
+.sv-modal-dropdown {
   width: 100% !important;
   position: relative !important;
   margin-top: 4px !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-trigger {
+.sv-lead-stage-dropdown .aria-dropdown-trigger,
+.sv-modal-dropdown .aria-dropdown-trigger {
   width: 100% !important;
   display: flex !important;
   align-items: center !important;
@@ -16746,19 +16751,23 @@ body > .sv-quick-call-popover {
 }
 
 .sv-lead-stage-dropdown .aria-dropdown-trigger:hover,
-.sv-lead-stage-dropdown.open .aria-dropdown-trigger {
+.sv-lead-stage-dropdown.open .aria-dropdown-trigger,
+.sv-modal-dropdown .aria-dropdown-trigger:hover,
+.sv-modal-dropdown.open .aria-dropdown-trigger {
   border-color: #0d5d41 !important;
   background: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-current-label {
+.sv-lead-stage-dropdown .aria-dropdown-current-label,
+.sv-modal-dropdown .aria-dropdown-current-label {
   font-size: 0.90rem !important;
   font-weight: 600 !important;
   color: #14221c !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-menu {
+.sv-lead-stage-dropdown .aria-dropdown-menu,
+.sv-modal-dropdown .aria-dropdown-menu {
   width: 100% !important;
   max-width: 100% !important;
   left: 0 !important;
@@ -16771,7 +16780,8 @@ body > .sv-quick-call-popover {
   z-index: 999999 !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-opt {
+.sv-lead-stage-dropdown .aria-dropdown-opt,
+.sv-modal-dropdown .aria-dropdown-opt {
   padding: 9px 12px !important;
   border-radius: 8px !important;
   font-size: 0.88rem !important;
@@ -16784,24 +16794,78 @@ body > .sv-quick-call-popover {
   justify-content: space-between !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-opt:hover {
+.sv-lead-stage-dropdown .aria-dropdown-opt:hover,
+.sv-modal-dropdown .aria-dropdown-opt:hover {
   background: rgba(13, 93, 65, 0.08) !important;
   color: #0d5d41 !important;
   font-weight: 650 !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-opt.selected {
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected,
+.sv-modal-dropdown .aria-dropdown-opt.selected {
   background: #0d5d41 !important;
   color: #ffffff !important;
   font-weight: 650 !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-label {
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-label,
+.sv-modal-dropdown .aria-dropdown-opt.selected .aria-opt-label {
   color: #ffffff !important;
 }
 
-.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-check {
+.sv-lead-stage-dropdown .aria-dropdown-opt.selected .aria-opt-check,
+.sv-modal-dropdown .aria-dropdown-opt.selected .aria-opt-check {
   color: #ffffff !important;
+}
+
+/* Voice Simulator / Test AI STT Language Custom Dropdown */
+.sv-stt-lang-dropdown {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.sv-stt-lang-dropdown .aria-dropdown-trigger {
+  font-size: 0.82rem !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.25) !important;
+  color: #0d5d41 !important;
+  background: var(--bg-2, #f4f8f6) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.05) !important;
+  transition: all 0.18s ease !important;
+}
+
+.sv-stt-lang-dropdown .aria-dropdown-trigger:hover,
+.sv-stt-lang-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-stt-lang-dropdown .aria-dropdown-current-label {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: #0d5d41 !important;
+}
+
+.sv-stt-lang-dropdown .aria-dropdown-menu {
+  min-width: 240px !important;
+  max-width: 320px !important;
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 36px rgba(13, 93, 65, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 999999 !important;
+}
+
+.sv-stt-lang-dropdown .aria-dropdown-opt {
+  padding: 8px 12px !important;
+  font-size: 0.84rem !important;
+  border-radius: 8px !important;
+  font-weight: 550 !important;
 }
 
 /* ==========================================================================
@@ -18232,3 +18296,17 @@ body > .sv-quick-call-popover {
   }
 }
 
+
+/* Settings Page Metric & Security Tile Cards */
+.settings-metric-tile {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.14) !important;
+  border-radius: 14px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 1px 4px rgba(13, 93, 65, 0.03) !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.settings-metric-tile:hover {
+  border-color: rgba(13, 93, 65, 0.28) !important;
+  box-shadow: 0 4px 12px rgba(13, 93, 65, 0.06) !important;
+}

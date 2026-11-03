@@ -1,3 +1,49 @@
+function cleanFriendlyDescription(text) {
+  if (!text || typeof text !== 'string') return '';
+  let str = text.trim();
+
+  // Transform technical "Visited nodes" patterns
+  str = str.replace(/(?:Inquiry:\s*)?Visited nodes:\s*([^\r\n•]+)(?:\s*•\s*Appointment\s*\/\s*Booking:\s*([^\r\n]+))?/gi, (match, nodesPart, apptPart) => {
+    const combined = (nodesPart + ' ' + (apptPart || '')).toLowerCase();
+    if (apptPart && /requested|confirmed|booked/i.test(apptPart)) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('appointment') || combined.includes('booking')) {
+      return 'Appointment Booking Request';
+    }
+    if (combined.includes('complaint') || combined.includes('issue') || combined.includes('problem')) {
+      return 'Customer Complaint & Support';
+    }
+    if (combined.includes('pricing') || combined.includes('package') || combined.includes('cost') || combined.includes('fee')) {
+      return 'Pricing & Service Consultation';
+    }
+    if (combined.includes('service')) {
+      return 'Services Consultation';
+    }
+    if (combined.includes('pipeline_error') || combined.includes('error')) {
+      return 'Call disconnected early';
+    }
+    if (combined.includes('user_hangup') || combined.includes('hangup')) {
+      if (combined.includes('intent') || combined.includes('discover')) {
+        return 'General Inquiry · Caller ended call';
+      }
+      return 'Brief Call · Caller hung up during greeting';
+    }
+    return 'Voice Consultation Completed';
+  });
+
+  // Clean remaining technical tags
+  str = str.replace(/\((?:user_hangup|pipeline_error|normal_hangup|completed)\)/gi, '');
+  str = str.replace(/pipeline_error/gi, 'call disconnected early');
+  str = str.replace(/user_hangup/gi, 'caller ended call');
+  str = str.replace(/\bStart\s*\/\s*Greeting\b/gi, 'Greeting');
+  str = str.replace(/\bDiscover Intent\b/gi, 'Service Inquiry');
+  str = str.replace(/\s*->\s*/g, ' · ');
+  str = str.replace(/\s+/g, ' ').trim();
+
+  return str;
+}
+
 /**
  * RapidX Voice / Seevora AI Voice Receptionist
  * WACRM & WhatsApp Business Cloud Integration Adapter.
@@ -742,7 +788,7 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
     dealValue: (callDetails.dealValue !== undefined) ? Number(callDetails.dealValue) : (extracted.dealValue || 0),
     stage,
     tags: ['ai-voice-call', ...(extracted.tags || []), `disposition:${disposition}`],
-    notes: `[Voice Call ${now.slice(0, 10)}] ${extracted.structuredNotes || summary}`,
+    notes: `[Voice Call ${now.slice(0, 10)}] ${cleanFriendlyDescription(extracted.structuredNotes || summary)}`,
     complaint: extracted.isComplaint ? {
       description: extracted.complaintDescription || summary,
       status: extracted.complaintStatus || 'unresolved',

@@ -7918,7 +7918,7 @@ async function apiTeamsEscalate(req, res, ctx) {
    ========================================================================== */
 const KNOWN_CALLER_DIRECTORY = {
   '9876543210': { name: 'Dr. Sunita Sharma', source: 'CRM Directory' },
-  '8120590466': { name: 'Rajesh Verma', source: 'CRM Lead' },
+  '9876543211': { name: 'Rajesh Verma', source: 'CRM Lead' },
   '8982200895': { name: 'CarePlus Diagnostic', source: 'Verified Client' },
   '9425012345': { name: 'Anita Deshmukh', source: 'Service CRM' },
   '9826054321': { name: 'Metropolis Lab Desk', source: 'Partner Directory' },
@@ -8254,7 +8254,7 @@ async function apiLiveCallAction(req, res, ctx) {
     const sampleScenarios = [
       {
         callerName: b.callerName || (contacts[0] && contacts[0].name) || 'Rajesh Verma',
-        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+918120590466',
+        phoneNumber: b.phoneNumber || (contacts[0] && contacts[0].phone) || '+919876543211',
         direction: b.direction || 'inbound',
         department: 'Sales & Lead Qualification',
         scriptTurns: [
@@ -10352,8 +10352,26 @@ function normalizeRun(run, tenantId) {
   }
 
   let summary = String(run.summary || run.call_summary || '');
-  if (!summary && run.gathered_context && Array.isArray(run.gathered_context.nodes_visited)) {
-    summary = `Visited nodes: ${run.gathered_context.nodes_visited.join(' -> ')}${run.gathered_context.call_disposition ? ` (${run.gathered_context.call_disposition})` : ''}`;
+  if (!summary && run.gathered_context) {
+    const nodes = Array.isArray(run.gathered_context.nodes_visited) ? run.gathered_context.nodes_visited : [];
+    const disp = run.gathered_context.call_disposition || status || '';
+    const nodesStr = nodes.join(' ').toLowerCase();
+
+    if (run.gathered_context.appointment || run.gathered_context.booking_time || nodesStr.includes('appointment') || nodesStr.includes('booking')) {
+      summary = 'Appointment Booking Request';
+    } else if (nodesStr.includes('service') || nodesStr.includes('pricing') || nodesStr.includes('package')) {
+      summary = 'Services & Pricing Consultation';
+    } else if (nodesStr.includes('support') || nodesStr.includes('complaint') || nodesStr.includes('issue')) {
+      summary = 'Customer Support & Assistance';
+    } else if (disp === 'user_hangup' && (nodesStr.includes('greeting') || nodes.length <= 1 || duration < 20)) {
+      summary = 'Brief call · Caller disconnected after greeting';
+    } else if (disp === 'pipeline_error' || disp === 'failed') {
+      summary = 'Call disconnected early';
+    } else if (nodesStr.includes('discover intent') || nodesStr.includes('intent')) {
+      summary = 'General Service Inquiry';
+    } else {
+      summary = 'Voice Consultation Completed';
+    }
   }
 
   const purchasedDefault = process.env.VOBIZ_NUMBER || '+918071582519';
