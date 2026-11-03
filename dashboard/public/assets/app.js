@@ -956,6 +956,7 @@ function uiIcon(name, size) {
   elSvg.setAttribute('stroke-linejoin', 'round');
   elSvg.setAttribute('class', 'ui-svg-icon');
   elSvg.innerHTML = paths[name] || paths.sparkle;
+  elSvg.toString = function() { return this.outerHTML || ''; };
   return elSvg;
 }
 
@@ -1596,6 +1597,10 @@ function renderShell() {
     class: 'side-collapse-btn', title: 'Toggle Sidebar Width', type: 'button',
     onclick: (e) => { e.stopPropagation(); $('.shell').classList.toggle('side-collapsed'); }
   }, [el('span', {}, '◨')]);
+  const mobileCloseBtn = el('button', {
+    class: 'side-mobile-close-btn', title: 'Close Navigation', type: 'button',
+    onclick: (e) => { e.stopPropagation(); $('.shell').classList.remove('nav-open'); }
+  }, [el('span', {}, '✕')]);
   const sideBrand = el('div', {
     class: 'side-brand',
     style: 'cursor:pointer;',
@@ -1607,7 +1612,7 @@ function renderShell() {
       }
     }
   }, [
-    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle])
+    el('div', { class: 'side-brand-inner' }, [brandLogo, brandMeta, collapseToggle, mobileCloseBtn])
   ]);
 
   const side = el('aside', { class: 'side' }, [
@@ -1634,7 +1639,11 @@ function renderShell() {
 
   const top = el('header', { class: 'top' }, [
     el('div', { class: 'flex items-center gap-2', style: 'min-width:0' }, [
-      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' })
+      el('button', { class: 'menu-btn', 'aria-label': 'Menu', onclick: () => $('.shell').classList.toggle('nav-open'), html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' }),
+      el('div', { class: 'top-mobile-brand' }, [
+        el('img', { src: '/assets/seevora-logo.png', alt: 'Seevora', width: '26', height: '26', style: 'border-radius:6px;object-fit:contain;' }),
+        el('span', { class: 'top-mobile-brand-title' }, 'SEEVORA')
+      ])
     ]),
     el('div', { class: 'flex items-center gap-3', style: 'margin-left:auto' }, [
       el('div', { id: 'clerkUserButtonMount', class: 'clerk-user-mount', style: 'display:inline-flex;align-items:center;' })
@@ -4310,11 +4319,21 @@ function renderAgentsListPage(wrap) {
     style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;margin-bottom:18px;border-bottom:1px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
   });
 
-  const searchInput = el('input', {
-    class: 'input aria-search-input',
-    placeholder: 'Filter agents by name, persona, voice timbre, phone...',
-    style: 'max-width:320px;border-radius:999px;font-size:0.84rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);background:transparent;'
+  const searchIcon = el('span', {
+    class: 'admin-search-icon',
+    html: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
   });
+
+  const searchInput = el('input', {
+    class: 'admin-search-input',
+    placeholder: 'Filter agents by name, persona, voice timbre, phone...',
+    type: 'text'
+  });
+
+  const searchWrap = el('div', { class: 'admin-search-wrap', style: 'max-width:380px;' }, [
+    searchIcon,
+    searchInput
+  ]);
 
   // Filter tabs: All, Active on Line, Standby (Enabled), Disabled
   let currentFilter = 'all';
@@ -4339,7 +4358,7 @@ function renderAgentsListPage(wrap) {
     paintAgents(searchInput.value, currentFilter);
   };
 
-  toolbar.appendChild(searchInput);
+  toolbar.appendChild(searchWrap);
   toolbar.appendChild(filterTabs);
   wrap.appendChild(toolbar);
 
@@ -11055,11 +11074,11 @@ function ticketCard(t, admin) {
 
   const toggleBtn = el('button', {
     type: 'button',
-    class: 'btn btn-ghost btn-sm',
-    style: 'font-size:12px;padding:6px 12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
+    class: 'btn btn-ghost btn-sm ticket-toggle-btn',
+    style: 'font-size:12px;padding:6px 14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.04);color:#0d5d41;cursor:pointer;flex-shrink:0;'
   }, [
     el('span', { class: 'ticket-toggle-label' }, 'View & Reply (' + msgCount + ')'),
-    el('span', { class: 'ticket-toggle-icon', html: uiIcon('chevron-down', 13) })
+    el('span', { class: 'ticket-toggle-icon', style: 'display:inline-flex;align-items:center;' }, [uiIcon('chevron-down', 13)])
   ]);
 
   // Main row strip: 5 columns aligned with .admin-ticket-row grid
@@ -11208,7 +11227,10 @@ function ticketCard(t, admin) {
     const label = toggleBtn.querySelector('.ticket-toggle-label');
     const icon = toggleBtn.querySelector('.ticket-toggle-icon');
     if (label) label.textContent = isExpanded ? 'Close Thread' : 'View & Reply (' + msgCount + ')';
-    if (icon) icon.innerHTML = isExpanded ? uiIcon('chevron-up', 13) : uiIcon('chevron-down', 13);
+    if (icon) {
+      icon.innerHTML = '';
+      icon.appendChild(uiIcon(isExpanded ? 'chevron-up' : 'chevron-down', 13));
+    }
   }
 
   toggleBtn.onclick = (e) => {
@@ -13112,11 +13134,16 @@ function openTeamMemberModal(existing, teamState, onDone) {
     confirmText: isEdit ? 'Save Changes' : '+ Add Employee & Assign Agent',
     confirmKind: 'primary',
     onConfirm: async () => {
+      const name = nameI.value.trim();
+      const email = emailI.value.trim();
+      if (!name) throw new Error('Please enter employee full name.');
+      if (!email) throw new Error('Please enter a valid employee login email.');
+
       const selectedAgentIds = agentChecks.filter((x) => x.cb.checked).map((x) => x.cb.value);
       const payload = {
         id: m.id,
-        name: nameI.value.trim(),
-        email: emailI.value.trim(),
+        name,
+        email,
         phone: phoneI.value.trim(),
         department: deptS.value,
         role: roleS.value,
@@ -13126,8 +13153,8 @@ function openTeamMemberModal(existing, teamState, onDone) {
       if (passI.value.trim()) payload.password = passI.value.trim();
       else if (!isEdit) payload.password = 'Welcome@123';
 
-      await api(isEdit ? '/api/teams/update' : '/api/teams/create', { method: 'POST', body: payload });
-      toast(isEdit ? 'Updated team member & synced agent routing!' : 'Employee added & agent assigned!', 'ok');
+      const res = await api(isEdit ? '/api/teams/update' : '/api/teams/create', { method: 'POST', body: payload });
+      toast(isEdit ? 'Updated team member & synced agent routing!' : (res && res.updated ? 'Employee profile updated & synced!' : 'Employee added & agent assigned!'), 'ok');
       if (onDone) await onDone();
     }
   });
@@ -13252,13 +13279,14 @@ async function viewSettings(root) {
   let currentTab = urlParams.get('tab') || 'general';
   // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
   if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
-  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  if (!['general', 'security', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
+    { id: 'security', label: 'Password & Security', icon: 'shield' },
     { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
     { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
@@ -13304,6 +13332,7 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
+    else if (tabId === 'security') renderSecurityTab(contentHost);
     else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
     else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
@@ -13319,7 +13348,240 @@ async function viewSettings(root) {
   // ==========================================================================
   // TAB 1: GENERAL IDENTITY (PROFILE, WORKSPACE & HIPAA MODE)
   // ==========================================================================
+
+  // ==========================================================================
+  // PASSWORD MANAGEMENT COMPONENT (Change / Create Password)
+  // ==========================================================================
+  function createPasswordSection(isStandaloneTab) {
+    const hasPassword = Boolean(u && u.hasPassword);
+
+    const section = el('section', {
+      class: 'settings-section aria-password-card',
+      style: isStandaloneTab
+        ? 'padding:24px;background:#ffffff;border:1.5px solid rgba(13,93,65,0.12);border-radius:18px;max-width:680px;box-shadow:0 4px 18px rgba(13,93,65,0.04);'
+        : 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);'
+    });
+
+    // Inline notification banner for immediate visual feedback on the card
+    const banner = el('div', {
+      class: 'password-alert-banner',
+      style: 'display:none;'
+    });
+
+    function setBanner(text, type) {
+      if (!text) {
+        banner.style.display = 'none';
+        banner.className = 'password-alert-banner';
+        banner.innerHTML = '';
+        return;
+      }
+      banner.className = 'password-alert-banner ' + (type === 'ok' ? 'ok' : 'err');
+      const icon = type === 'ok'
+        ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      banner.innerHTML = '<span style="display:flex;align-items:center;">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
+      banner.style.display = 'flex';
+    }
+
+    function clearErrors() {
+      setBanner(null);
+      currentPassField.input.classList.remove('password-field-error');
+      newPassField.input.classList.remove('password-field-error');
+      confirmPassField.input.classList.remove('password-field-error');
+    }
+
+    // Helper for password input with show/hide eye toggle
+    function createPasswordField(id, placeholder, autocomplete) {
+      const input = el('input', {
+        class: 'input',
+        id,
+        type: 'password',
+        placeholder,
+        autocomplete: autocomplete || 'new-password',
+        style: 'padding-right:42px;width:100%;box-sizing:border-box;'
+      });
+      input.addEventListener('input', () => {
+        input.classList.remove('password-field-error');
+      });
+      const eyeBtn = el('button', {
+        type: 'button',
+        title: 'Toggle password visibility',
+        style: 'position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#5d7468;display:flex;align-items:center;padding:4px;',
+        html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+      });
+      let isVisible = false;
+      eyeBtn.onclick = () => {
+        isVisible = !isVisible;
+        input.type = isVisible ? 'text' : 'password';
+        eyeBtn.innerHTML = isVisible
+          ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      };
+      const wrapper = el('div', { style: 'position:relative;width:100%;' }, [input, eyeBtn]);
+      return { wrapper, input };
+    }
+
+    const currentPassField = createPasswordField('pwd_current', 'Enter your current password', 'current-password');
+    const newPassField = createPasswordField('pwd_new', 'Enter new password (min 8 characters)', 'new-password');
+    const confirmPassField = createPasswordField('pwd_confirm', 'Confirm new password', 'new-password');
+
+    const submitBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 26px;font-weight:750;background:#0d5d41;color:#fff;border:none;cursor:pointer;'
+    }, hasPassword ? 'Update Password' : 'Create Password');
+
+    submitBtn.onclick = async () => {
+      clearErrors();
+      const currentPassword = currentPassField.input.value;
+      const newPassword = newPassField.input.value;
+      const confirmPassword = confirmPassField.input.value;
+
+      // 1. Check current password if required
+      if (hasPassword && !currentPassword) {
+        const msg = 'current password is incorrect';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        currentPassField.input.classList.add('password-field-error');
+        currentPassField.input.focus();
+        return;
+      }
+
+      // Check new password length
+      if (!newPassword || newPassword.length < 8) {
+        const msg = 'New password must be at least 8 characters long.';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        newPassField.input.classList.add('password-field-error');
+        newPassField.input.focus();
+        return;
+      }
+
+      // 2. Check confirm password match
+      if (newPassword !== confirmPassword) {
+        const msg = 'again confirm your new password';
+        setBanner(msg, 'err');
+        toast(msg, 'err');
+        confirmPassField.input.classList.add('password-field-error');
+        confirmPassField.input.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Updating...';
+
+      try {
+        const res = await api('/api/user/password', {
+          method: 'POST',
+          body: { currentPassword, newPassword }
+        });
+        if (res && res.ok) {
+          const successMsg = res.message || (hasPassword ? 'password updated successfully' : 'password created successfully');
+          setBanner(successMsg, 'ok');
+          toast(successMsg, 'ok');
+          u.hasPassword = true;
+          if (State.me && State.me.user) State.me.user.hasPassword = true;
+          currentPassField.input.value = '';
+          newPassField.input.value = '';
+          confirmPassField.input.value = '';
+          setTimeout(() => {
+            if (isStandaloneTab) {
+              switchTab('security');
+            } else {
+              switchTab('general');
+            }
+          }, 1500);
+        }
+      } catch (err) {
+        let errMsg = (err && err.message) || 'current password is incorrect';
+        // Normalize any casing/trailing punctuation from server
+        if (errMsg.toLowerCase().includes('current password')) {
+          errMsg = 'current password is incorrect';
+          currentPassField.input.classList.add('password-field-error');
+          currentPassField.input.focus();
+        } else if (errMsg.toLowerCase().includes('confirm')) {
+          errMsg = 'again confirm your new password';
+          confirmPassField.input.classList.add('password-field-error');
+          confirmPassField.input.focus();
+        }
+        setBanner(errMsg, 'err');
+        toast(errMsg, 'err');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = hasPassword ? 'Update Password' : 'Create Password';
+      }
+    };
+
+    // Header
+    const header = el('div', { style: 'margin-bottom:18px;' }, [
+      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Security'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, hasPassword ? 'Change Account Password' : 'Create Account Password'),
+      el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;line-height:1.4;' },
+        hasPassword
+          ? 'Update your existing password to protect your Seevora voice agent workspace.'
+          : 'Create a password for your account to sign in directly with your email and password.'
+      )
+    ]);
+
+    // Form fields container
+    const fieldsWrap = el('div', { style: 'display:flex;flex-direction:column;gap:16px;max-width:540px;margin-bottom:22px;' });
+
+    if (hasPassword) {
+      fieldsWrap.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Current Password'),
+        currentPassField.wrapper
+      ]));
+    }
+
+    fieldsWrap.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, hasPassword ? 'New Password' : 'Password'),
+      newPassField.wrapper,
+      el('div', { style: 'font-size:0.72rem;color:#5d7468;margin-top:4px;' }, 'Must be at least 8 characters long.')
+    ]));
+
+    fieldsWrap.appendChild(el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Confirm New Password'),
+      confirmPassField.wrapper
+    ]));
+
+    const actions = el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+      submitBtn
+    ]);
+
+    section.appendChild(header);
+    section.appendChild(banner);
+    section.appendChild(fieldsWrap);
+    section.appendChild(actions);
+    return section;
+  }
+
+  // Dedicated Password & Security Tab
+  function renderSecurityTab(panel) {
+    const wrap = el('div', { class: 'settings-tab-inner', style: 'width:100%;' });
+    panel.appendChild(wrap);
+
+    // Security Overview Card
+    const overview = el('div', {
+      style: 'margin-bottom:28px;padding:20px;background:rgba(13,93,65,0.03);border:1.5px solid rgba(13,93,65,0.12);border-radius:16px;max-width:680px;display:flex;align-items:center;gap:16px;'
+    }, [
+      el('div', {
+        style: 'width:44px;height:44px;border-radius:12px;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;',
+        html: navIcon('shield')
+      }),
+      el('div', { style: 'flex:1;' }, [
+        el('div', { style: 'font-weight:800;font-size:1rem;color:#14221c;' }, 'Account Security & Access Credentials'),
+        el('div', { class: 'muted', style: 'font-size:0.82rem;color:#5d7468;margin-top:2px;' },
+          'Your Seevora voice agent workspace is protected by scrypt cryptographic hashing. Change or create your password below.'
+        )
+      ])
+    ]);
+    wrap.appendChild(overview);
+    wrap.appendChild(createPasswordSection(true));
+  }
+
   function renderGeneralTab(panel) {
+    const u = (State && State.me && State.me.user) || {};
+    const t = (State && State.me && State.me.tenant) || {};
+    const isAdm = ['super_admin', 'admin', 'owner'].includes(u.role || '');
     const wrap = el('div', { class: 'settings-tab-inner', style: 'width:100%;' });
     panel.appendChild(wrap);
 
@@ -13329,38 +13591,66 @@ async function viewSettings(root) {
     }, [
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'WORKSPACE NAME'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, t.name || 'Demo Workspace'),
+        el('div', { class: 'kpi-value', id: 'kpi-ws-name', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, t.name || 'Demo Workspace'),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'ID: ' + (t.id || 'default'))
       ]),
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT ROLE'),
         el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, isAdm ? 'Administrator' : 'Client Member'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, u.email || 'Verified Account')
+        el('div', { id: 'kpi-user-email', style: 'font-size:0.72rem;color:#5d7468;' }, u.email || 'Verified Account')
       ]),
       el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'TIMEZONE & LOCALE'),
+        el('div', { class: 'kpi-value', id: 'kpi-tz-val', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, (u.timezone ? u.timezone.split('/')[1] || u.timezone : 'IST (UTC+5:30)')),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Language: ' + (u.language || 'English (IN)'))
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'DATA RETENTION'),
         el('div', { class: 'kpi-value', id: 'gen-retention-val', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, 'Standard Active'),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Audio & Transcripts stored')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'BRAND ACCENT'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;display:flex;align-items:center;gap:8px;' }, [
-          el('span', { style: 'display:inline-block;width:14px;height:14px;border-radius:4px;background:' + ((t.branding && t.branding.color) || '#0d5d41') + ';' }),
-          el('span', {}, (t.branding && t.branding.color) || '#0d5d41')
-        ]),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Custom interface accent')
       ])
     ]);
     wrap.appendChild(kpis);
 
-    // SECTION 1: User Profile & Account
+    // ========================================================================
+    // SECTION 1: Personal User Profile & Account Identity
+    // ========================================================================
     const userNameInput = el('input', { class: 'input', id: 'prof_name', type: 'text', value: u.name || '', placeholder: 'Your Full Name' });
     const userEmailInput = el('input', { class: 'input', id: 'prof_email', type: 'email', value: u.email || '', placeholder: 'name@company.com' });
-    const saveProfileBtn = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Profile');
+    const userPhoneInput = el('input', { class: 'input', id: 'prof_phone', type: 'tel', value: u.phone || '', placeholder: '+91 98765 43210' });
+    const userDesignationInput = el('input', { class: 'input', id: 'prof_designation', type: 'text', value: u.designation || '', placeholder: 'e.g. Managing Director / Operations Lead' });
+
+    const tzSelect = el('select', { class: 'select aria-select', id: 'prof_timezone' }, [
+      el('option', { value: 'Asia/Kolkata' }, 'Asia/Kolkata (IST, UTC+5:30) - India Standard Time'),
+      el('option', { value: 'Asia/Dubai' }, 'Asia/Dubai (GST, UTC+4:00) - Gulf Standard Time'),
+      el('option', { value: 'Europe/London' }, 'Europe/London (GMT/BST, UTC+0/1) - UK Time'),
+      el('option', { value: 'America/New_York' }, 'America/New_York (EST, UTC-5:00) - US Eastern'),
+      el('option', { value: 'America/Los_Angeles' }, 'America/Los_Angeles (PST, UTC-8:00) - US Pacific'),
+      el('option', { value: 'Asia/Singapore' }, 'Asia/Singapore (SGT, UTC+8:00) - Singapore Time')
+    ]);
+    if (u.timezone) tzSelect.value = u.timezone;
+
+    const langSelect = el('select', { class: 'select aria-select', id: 'prof_language' }, [
+      el('option', { value: 'en-IN' }, 'English (India) - Default'),
+      el('option', { value: 'hi-IN' }, 'Hindi (हिंदी)'),
+      el('option', { value: 'hinglish' }, 'Hinglish (Conversational)'),
+      el('option', { value: 'en-US' }, 'English (United States)')
+    ]);
+    if (u.language) langSelect.value = u.language;
+
+    const saveProfileBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;'
+    }, 'Save Personal Profile');
 
     saveProfileBtn.addEventListener('click', async () => {
       const newName = userNameInput.value.trim();
       const newEmail = userEmailInput.value.trim().toLowerCase();
+      const newPhone = userPhoneInput.value.trim();
+      const newDesignation = userDesignationInput.value.trim();
+      const newTimezone = tzSelect.value;
+      const newLanguage = langSelect.value;
+
       if (!newName && !newEmail) {
         toast('Name or email is required.', 'err');
         return;
@@ -13368,41 +13658,70 @@ async function viewSettings(root) {
       saveProfileBtn.disabled = true;
       saveProfileBtn.textContent = 'Saving...';
       try {
-        const res = await api('/api/user/profile', { method: 'POST', body: { name: newName, email: newEmail } });
+        const res = await api('/api/user/profile', {
+          method: 'POST',
+          body: {
+            name: newName,
+            email: newEmail,
+            phone: newPhone,
+            designation: newDesignation,
+            timezone: newTimezone,
+            language: newLanguage
+          }
+        });
         if (res && res.user) {
           Object.assign(State.me.user, res.user);
-          toast('Profile updated successfully.', 'ok');
+          toast('Personal profile updated successfully.', 'ok');
           const tn = $('.tenant-chip .tn');
           if (tn) tn.textContent = res.user.name || res.user.email;
           const av = $('.tenant-chip .av');
           if (av) av.textContent = initials(res.user.name || res.user.email);
+          const profCardName = $('#prof-display-name');
+          if (profCardName) profCardName.textContent = res.user.name || 'User Account';
+          const profCardEmail = $('#prof-display-email');
+          if (profCardEmail) profCardEmail.textContent = res.user.email || '';
+          const profCardPhone = $('#prof-display-phone');
+          if (profCardPhone) profCardPhone.textContent = res.user.phone ? ('📞 ' + res.user.phone) : '';
+          const tzKpi = $('#kpi-tz-val');
+          if (tzKpi) tzKpi.textContent = res.user.timezone ? res.user.timezone.split('/')[1] || res.user.timezone : 'IST';
         }
       } catch (err) {
         toast(err.message || 'Failed to update profile.', 'err');
       } finally {
         saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = 'Save Profile';
+        saveProfileBtn.textContent = 'Save Personal Profile';
       }
     });
 
     const profileSection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;' }, [
         el('div', {}, [
           el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Identity'),
-          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'User Profile & Account')
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'User Profile & Personal Identity')
         ]),
-        isAdm
-          ? el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Administrator')
-          : null
-      ].filter(Boolean)),
-      el('div', { style: 'display:flex;align-items:center;gap:14px;margin-bottom:22px;padding:12px 16px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.10);border-radius:12px;max-width:540px;' }, [
-        el('div', { class: 'av', style: 'width:44px;height:44px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;' }, initials(u.name || u.email || 'User')),
-        el('div', { style: 'flex:1;' }, [
-          el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, u.name || 'User Account'),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;' }, u.email || 'No email attached')
+        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+          isAdm
+            ? el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Administrator')
+            : el('span', { style: 'background:rgba(13,93,65,0.08);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);font-weight:750;padding:4px 14px;border-radius:999px;font-size:0.76rem;' }, 'Workspace Member'),
+          el('span', { class: 'pill badge-green', style: 'font-size:0.74rem;padding:3px 10px;border-radius:999px;' }, 'Active')
         ])
       ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:680px;margin-bottom:20px;' }, [
+      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Your personal profile details, notification phone number, localization timezone, and language preferences.'),
+
+      // User Profile Header Card with Avatar
+      el('div', { style: 'display:flex;align-items:center;gap:16px;margin-bottom:22px;padding:14px 18px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.10);border-radius:14px;max-width:680px;' }, [
+        el('div', { class: 'av', style: 'width:48px;height:48px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;box-shadow:0 2px 6px rgba(13,93,65,0.25);' }, initials(u.name || u.email || 'User')),
+        el('div', { style: 'flex:1;' }, [
+          el('div', { id: 'prof-display-name', style: 'font-weight:800;font-size:1rem;color:#14221c;' }, u.name || 'User Account'),
+          el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:2px;flex-wrap:wrap;' }, [
+            el('span', { id: 'prof-display-email', class: 'muted', style: 'font-size:0.82rem;color:#5d7468;' }, u.email || 'No email attached'),
+            u.phone ? el('span', { id: 'prof-display-phone', style: 'font-size:0.80rem;color:#0d5d41;font-weight:600;' }, '📞 ' + u.phone) : ''
+          ])
+        ])
+      ]),
+
+      // 6-Field Responsive Form Grid
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;max-width:680px;margin-bottom:24px;' }, [
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Full Name'),
           userNameInput
@@ -13410,68 +13729,205 @@ async function viewSettings(root) {
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Email Address'),
           userEmailInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Mobile / Phone Number (For Escalations & SMS)'),
+          userPhoneInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Job Title / Designation'),
+          userDesignationInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Preferred Timezone'),
+          tzSelect
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dashboard & Report Language'),
+          langSelect
         ])
       ]),
+
       el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
         saveProfileBtn,
         el('button', {
           type: 'button',
           class: 'btn btn-ghost',
-          style: 'border-radius:999px;padding:9px 20px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;',
+          style: 'border-radius:999px;padding:9px 20px;border:1.5px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;',
           onclick: doLogout
         }, 'Sign out')
       ])
     ]);
     wrap.appendChild(profileSection);
+    wrap.appendChild(createPasswordSection(false));
 
-    // SECTION 2: Workspace & Brand Identity
-    const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '' });
+    // ========================================================================
+    // SECTION 2: Business & Corporate Identity (Company Profile)
+    // ========================================================================
+    const tenantNameInput = el('input', { class: 'input', id: 'set_name', type: 'text', value: t.name || '', placeholder: 'e.g. CarePlus Health & Diagnostic' });
+    const tenantIndustrySelect = el('select', { class: 'select aria-select', id: 'set_industry' }, [
+      el('option', { value: 'Healthcare & Diagnostic' }, 'Healthcare & Diagnostic Clinics'),
+      el('option', { value: 'Real Estate & Housing' }, 'Real Estate & Property Development'),
+      el('option', { value: 'Automotive & Dealerships' }, 'Automotive & Dealerships'),
+      el('option', { value: 'Legal & Corporate Advisory' }, 'Legal & Corporate Advisory'),
+      el('option', { value: 'Financial Services & Insurance' }, 'Financial Services & Insurance'),
+      el('option', { value: 'Hospitality & Travel' }, 'Hospitality, Travel & Resorts'),
+      el('option', { value: 'Education & Coaching' }, 'Education, Universities & Coaching'),
+      el('option', { value: 'SaaS & Technology' }, 'SaaS, AI & Technology'),
+      el('option', { value: 'Retail & E-Commerce' }, 'Retail, Direct Sales & E-Commerce'),
+      el('option', { value: 'Professional Services' }, 'Professional & Agency Services')
+    ]);
+    if (t.industry) tenantIndustrySelect.value = t.industry;
+
+    const tenantWebsiteInput = el('input', { class: 'input', id: 'set_website', type: 'url', value: t.website || '', placeholder: 'https://www.example.com' });
+    const tenantSupportEmailInput = el('input', { class: 'input', id: 'set_support_email', type: 'email', value: t.supportEmail || '', placeholder: 'support@example.com' });
+    const tenantSupportPhoneInput = el('input', { class: 'input', id: 'set_support_phone', type: 'tel', value: t.supportPhone || (t.telephony && t.telephony.did) || '', placeholder: '+91 80715 82519' });
+    const tenantGstinInput = el('input', { class: 'input', id: 'set_gstin', type: 'text', value: t.gstin || '', placeholder: 'e.g. 23AAAAA0000A1Z5' });
+    const tenantAddressInput = el('input', { class: 'input', id: 'set_address', type: 'text', value: t.address || '', placeholder: 'Street address, Suite / Floor, City, PIN' });
+
+    const tenantDescInput = el('textarea', {
+      class: 'input',
+      id: 'set_description',
+      style: 'width:100%;min-height:75px;font-size:0.85rem;line-height:1.45;padding:10px 14px;border-radius:10px;resize:vertical;',
+      placeholder: 'Briefly explain what your business offers. For example: "We are a multi-specialty diagnostic and imaging center offering MRI, CT, and blood tests in Indore." The AI Voice Agent will cite this during live caller conversations.'
+    });
+    tenantDescInput.value = t.description || '';
+
     const colorVal = (t.branding && t.branding.color) || '#0d5d41';
     const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal, style: 'width:42px;height:42px;border:1px solid rgba(13,93,65,0.2);border-radius:8px;padding:2px;cursor:pointer;background:transparent;' });
     const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:140px;font-family:var(--mono);' });
     colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
     colorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorI.value = colorHex.value; });
 
-    const saveTenantBtn = el('button', { class: 'btn btn-primary', style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;' }, 'Save Workspace');
+    const saveTenantBtn = el('button', {
+      class: 'btn btn-primary',
+      style: 'border-radius:999px;padding:9px 24px;font-weight:750;background:#0d5d41;color:#fff;border:none;'
+    }, 'Save Business Profile');
+
     saveTenantBtn.addEventListener('click', async () => {
       saveTenantBtn.disabled = true;
       saveTenantBtn.textContent = 'Saving...';
       try {
-        await api('/api/tenant/update', { method: 'POST', body: { name: tenantNameInput.value.trim(), color: colorI.value } });
-        State.me.tenant.name = tenantNameInput.value.trim();
-        State.me.tenant.branding = Object.assign({}, State.me.tenant.branding, { color: colorI.value });
+        const payload = {
+          name: tenantNameInput.value.trim(),
+          color: colorI.value,
+          industry: tenantIndustrySelect.value,
+          website: tenantWebsiteInput.value.trim(),
+          supportEmail: tenantSupportEmailInput.value.trim().toLowerCase(),
+          supportPhone: tenantSupportPhoneInput.value.trim(),
+          gstin: tenantGstinInput.value.trim(),
+          address: tenantAddressInput.value.trim(),
+          description: tenantDescInput.value.trim()
+        };
+        const res = await api('/api/tenant/update', { method: 'POST', body: payload });
+        if (res && res.tenant) {
+          Object.assign(State.me.tenant, res.tenant);
+        } else {
+          State.me.tenant.name = payload.name;
+          State.me.tenant.branding = Object.assign({}, State.me.tenant.branding, { color: payload.color });
+          State.me.tenant.industry = payload.industry;
+          State.me.tenant.website = payload.website;
+          State.me.tenant.supportEmail = payload.supportEmail;
+          State.me.tenant.supportPhone = payload.supportPhone;
+          State.me.tenant.gstin = payload.gstin;
+          State.me.tenant.address = payload.address;
+          State.me.tenant.description = payload.description;
+        }
         const tn = $('.tenant-chip .tn'); if (tn) { tn.textContent = State.me.tenant.name; tn.title = State.me.tenant.name; }
         const av = $('.tenant-chip .av'); if (av) av.textContent = initials(State.me.tenant.name);
-        toast('Workspace settings saved.', 'ok');
+        const kpiWs = $('#kpi-ws-name'); if (kpiWs) kpiWs.textContent = State.me.tenant.name;
+        toast('Business profile & workspace settings saved.', 'ok');
       } catch (ex) {
         toast(ex.status === 404 ? 'Tenant settings endpoint not available.' : (ex.message || 'Save failed.'), 'err');
       } finally {
         saveTenantBtn.disabled = false;
-        saveTenantBtn.textContent = 'Save Workspace';
+        saveTenantBtn.textContent = 'Save Business Profile';
       }
     });
 
     const tenantSection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
       el('div', { style: 'margin-bottom:6px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Branding'),
-        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Workspace & Brand Identity')
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Workspace Branding & AI Persona Knowledge'),
+        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Business Identity & Company Profile')
       ]),
-      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Customize your business workspace name and brand accent color displayed across client interfaces and reports.'),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:680px;margin-bottom:20px;' }, [
+      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:20px;line-height:1.45;' }, 'Company information, industry context, and public contact handles. Your AI Voice Receptionist automatically uses these details to greet callers and answer inquiries about your company.'),
+
+      // 2-Column Grid of Inputs
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;max-width:680px;margin-bottom:18px;' }, [
         el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Workspace / Business Name'),
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Company / Legal Business Name'),
           tenantNameInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Industry / Domain'),
+          tenantIndustrySelect
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Official Website URL'),
+          tenantWebsiteInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Customer Support / Inbound Email'),
+          tenantSupportEmailInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Helpline / Inbound Phone Number'),
+          tenantSupportPhoneInput
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'GSTIN / Business Registration ID'),
+          tenantGstinInput
+        ]),
+        el('div', { style: 'grid-column: 1 / -1;' }, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Operational Office Address'),
+          tenantAddressInput
+        ]),
+        el('div', { style: 'grid-column: 1 / -1;' }, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Company Overview & What We Do (AI Voice Persona Knowledge)'),
+          tenantDescInput,
+          el('span', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;margin-top:4px;display:block;' }, 'Your AI Voice Receptionist automatically uses this summary when callers ask "What does your company do?" or ask about available services.')
         ]),
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Brand Accent Color'),
           el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [colorI, colorHex])
         ])
       ]),
-      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [saveTenantBtn])
+      el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:8px;' }, [saveTenantBtn])
     ]);
     wrap.appendChild(tenantSection);
 
-    // SECTION 3: Privacy & HIPAA Mode
+    // ========================================================================
+    // SECTION 3: Account Security & Authentication Signals
+    // ========================================================================
+    const securitySection = el('section', { class: 'settings-section', style: 'margin-bottom:36px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:6px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Authentication & Access'),
+        el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Account Security & Active Session')
+      ]),
+      el('p', { class: 'muted', style: 'font-size:0.84rem;color:#5d7468;margin-bottom:18px;line-height:1.45;' }, 'Workspace security status, role permissions, and active credential integrity.'),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;max-width:680px;' }, [
+        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
+          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'TWO-FACTOR (2FA)'),
+          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#0d5d41;margin:4px 0;' }, 'Protected'),
+          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'OTP & session cookies active')
+        ]),
+        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
+          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SESSION STATUS'),
+          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#047857;margin:4px 0;' }, 'Active & Verified'),
+          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'Encrypted SHA-256 token')
+        ]),
+        el('div', { class: 'card', style: 'background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;padding:14px;' }, [
+          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'PERMISSION LEVEL'),
+          el('div', { style: 'font-size:0.95rem;font-weight:750;color:#14221c;margin:4px 0;' }, isAdm ? 'Full SuperAdmin' : 'Workspace Owner'),
+          el('div', { style: 'font-size:0.75rem;color:#5d7468;' }, 'Voice & telephony authorized')
+        ])
+      ])
+    ]);
+    wrap.appendChild(securitySection);
+
+    // ========================================================================
+    // SECTION 4: Compliance & HIPAA Retention
+    // ========================================================================
     const privacySelect = el('select', { class: 'select aria-select', id: 'privacy_mode', style: 'max-width:380px;' }, [
       el('option', { value: 'standard' }, 'Standard retention (Recordings & transcripts kept)'),
       el('option', { value: 'metadata_only' }, 'Privacy mode (Metadata only, logs stripped)'),
@@ -13514,7 +13970,7 @@ async function viewSettings(root) {
     }).catch(() => { });
   }
 
-  // ==========================================================================
+    // ==========================================================================
   // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
   // ==========================================================================
   async function renderVoiceIntegrationsTab(panel, _scrollToSection) {
@@ -16162,21 +16618,53 @@ function renderFeatureLock(container, lockedContent, opts) {
    CONTACTS SUB-NAVIGATION TABS (All, Pipeline, Appointments, Visitors)
    =========================================================================== */
 
-function buildContactsSubNav(activeTab, onSwitch) {
+function buildContactsSubNav(activeTab, onSwitch, counts) {
+  counts = counts || {};
   const tabs = [
-    { id: 'pipeline', label: 'Pipeline' },
-    { id: 'all', label: 'All Contacts' },
-    { id: 'appointments', label: 'Appointments' },
-    { id: 'visitors', label: 'Visitors' }
+    {
+      id: 'pipeline',
+      label: 'Pipeline',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>',
+      badgeId: 'tab-badge-pipeline',
+      badgeVal: counts.pipeline != null ? String(counts.pipeline) : 'Live'
+    },
+    {
+      id: 'all',
+      label: 'All Contacts',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      badgeId: 'tab-badge-contacts',
+      badgeVal: counts.all != null ? String(counts.all) : '0'
+    },
+    {
+      id: 'appointments',
+      label: 'Appointments',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      badgeId: 'tab-badge-appointments',
+      badgeVal: counts.appointments != null ? String(counts.appointments) : '0'
+    },
+    {
+      id: 'visitors',
+      label: 'Visitors',
+      iconHtml: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+      badgeId: 'tab-badge-visitors',
+      badgeVal: counts.visitors != null ? String(counts.visitors) : 'Live'
+    }
   ];
 
-  const nav = el('div', { class: 'sv-contacts-subnav' });
+  const nav = el('div', { class: 'admin-tab-nav sv-contacts-subnav' });
   tabs.forEach(function(tab) {
+    const isActive = activeTab === tab.id;
+    const badge = el('span', { class: 'admin-tab-badge', id: tab.badgeId }, tab.badgeVal);
     const btn = el('button', {
       type: 'button',
-      class: 'sv-contacts-subnav-btn' + (activeTab === tab.id ? ' active' : ''),
+      class: 'admin-tab-btn sv-contacts-subnav-btn' + (isActive ? ' active' : ''),
+      'data-tab': tab.id,
       onclick: function() { onSwitch(tab.id); }
-    }, (tab.icon ? (tab.icon + ' ') : '') + tab.label);
+    }, [
+      el('span', { html: tab.iconHtml }),
+      el('span', {}, tab.label),
+      badge
+    ]);
     nav.appendChild(btn);
   });
   return nav;
@@ -16218,10 +16706,23 @@ async function viewCrmPipeline(root) {
   root.appendChild(subNavContainer);
   root.appendChild(tabContentHost);
 
+  let cachedSubNavCounts = { pipeline: 'Live', all: 0, appointments: 0, visitors: 'Live' };
+
+  function refreshSubNavBadges() {
+    const elP = document.getElementById('tab-badge-pipeline');
+    if (elP && cachedSubNavCounts.pipeline != null) elP.textContent = String(cachedSubNavCounts.pipeline);
+    const elA = document.getElementById('tab-badge-contacts');
+    if (elA && cachedSubNavCounts.all != null) elA.textContent = String(cachedSubNavCounts.all);
+    const elAppt = document.getElementById('tab-badge-appointments');
+    if (elAppt && cachedSubNavCounts.appointments != null) elAppt.textContent = String(cachedSubNavCounts.appointments);
+    const elV = document.getElementById('tab-badge-visitors');
+    if (elV && cachedSubNavCounts.visitors != null) elV.textContent = String(cachedSubNavCounts.visitors);
+  }
+
   function switchContactsTab(tabId) {
     activeContactsTab = tabId;
     subNavContainer.innerHTML = '';
-    subNavContainer.appendChild(buildContactsSubNav(tabId, switchContactsTab));
+    subNavContainer.appendChild(buildContactsSubNav(tabId, switchContactsTab, cachedSubNavCounts));
 
     tabContentHost.innerHTML = '';
     if (tabId === 'pipeline') {
@@ -16993,7 +17494,14 @@ async function viewCrmPipeline(root) {
 
     const leftControls = [
     el('button', { class: 'btn btn-primary', style: 'border-radius:999px;font-weight:700;', onclick: openAddLeadModal }, '+ Add New Lead'),
-    el('button', { class: 'btn btn-ghost', style: 'border-radius:999px;font-weight:600;', onclick: () => goto('campaigns') }, 'Go to Outbound Calls')
+    el('button', {
+      class: 'btn btn-ghost',
+      style: 'border:1.5px solid rgba(13,93,65,0.24);color:#0d5d41;background:#ffffff;padding:7px 16px;border-radius:999px;font-size:0.82rem;font-weight:650;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(13,93,65,0.05);cursor:pointer;',
+      onclick: () => goto('campaigns')
+    }, [
+      el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' }),
+      el('span', {}, 'Go to Outbound Calls')
+    ])
   ];
 const topBar = el('div', { class: 'flex items-center justify-between', style: 'margin-bottom:16px;flex-wrap:wrap;gap:12px' }, [
     el('div', { class: 'flex gap-2 items-center', style: 'flex-wrap:wrap;' }, leftControls),
@@ -17002,7 +17510,10 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       exportBtn,
       bulkDeleteBtn,
       syncLeadBtn,
-      el('span', { class: 'pill', style: 'font-size:0.75rem' }, 'Live CRM Leads')
+      el('span', { class: 'admin-tab-badge', style: 'font-size:0.75rem;padding:4px 10px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;border-radius:999px;display:inline-flex;align-items:center;gap:6px;' }, [
+        el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block;' }),
+        'Live CRM Leads'
+      ])
     ])
   ]);
   pipelineContentContainer.appendChild(topBar);
@@ -17033,6 +17544,17 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
   function renderStages(stages) {
     latestRenderedStages = stages || defaultStages;
+    let totalDeals = 0;
+    let visitorsCount = 0;
+    (stages || defaultStages).forEach(function(st) {
+      const c = (st.deals ? st.deals.length : (st.count || 0));
+      totalDeals += c;
+      if (st.stage === 'New Lead') visitorsCount += c;
+    });
+    cachedSubNavCounts.pipeline = totalDeals || 'Live';
+    cachedSubNavCounts.all = totalDeals;
+    cachedSubNavCounts.visitors = visitorsCount || 'Live';
+    refreshSubNavBadges();
     board.innerHTML = '';
     (stages || defaultStages).forEach((st) => {
       const col = el('div', { class: 'wacrm-pipeline-col' }, [
@@ -17221,68 +17743,161 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
   }
 
 
-  /* ---- Dedicated Contact Inspection Drawer with Appointments Sub-Section ---- */
+    /* ---- Dedicated Contact Inspection Drawer with Appointments Sub-Section ---- */
   async function openContactInspectionDrawer(deal) {
     if (!deal) return;
     const phone = deal.phone || '';
     const cleanPhone = phone.replace(/\D/g, '');
+    const name = deal.name || ('Contact ' + (cleanPhone ? cleanPhone.slice(-4) : ''));
+    const initialText = typeof initials === 'function' ? initials(name) : (name.slice(0, 2).toUpperCase());
 
-    const container = el('div', { class: 'sv-contact-drawer-container', style: 'display:flex;flex-direction:column;gap:16px;' });
+    const container = el('div', { class: 'sv-contact-drawer-container', style: 'display:flex;flex-direction:column;gap:18px;' });
 
-    // 1. Top Contact Header Card
-    const headerCard = el('div', {
-      class: 'card',
-      style: 'background:var(--bg-2, #f5f7fa);border:1px solid var(--line-2, rgba(34,43,56,0.1));border-radius:14px;padding:16px;'
+    // Format phone nicely: +91 79743 15518
+    let displayPhone = phone;
+    if (phone.startsWith('+91') && phone.length === 13) {
+      displayPhone = '+91 ' + phone.slice(3, 8) + ' ' + phone.slice(8);
+    } else if (phone.length === 10) {
+      displayPhone = '+91 ' + phone.slice(0, 5) + ' ' + phone.slice(5);
+    }
+
+    // 1. Top Contact Header Area (Zero Heavy Boxes, Clean Scandinavian Sage Layout)
+    const initialsBox = el('div', {
+      style: 'width:48px;height:48px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:800;font-size:1.15rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(13,93,65,0.10);flex-shrink:0;'
+    }, initialText);
+
+    // Stage Pill
+    const stageVal = deal.stage || 'New Lead';
+    const stagePill = el('span', {
+      class: 'pill badge-gold',
+      style: 'font-weight:750;font-size:0.75rem;padding:3px 12px;border-radius:999px;display:inline-flex;align-items:center;'
+    }, stageVal);
+
+    // Call Action Button
+    const quickCallBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:3px 10px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
+      title: 'Call Contact with Voice AI',
+      onclick: (e) => {
+        e.stopPropagation();
+        if (typeof openMakeCallModal === 'function') openMakeCallModal(phone, deal.name || '', quickCallBtn);
+      }
     }, [
-      el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;' }, [
-        el('div', {}, [
-          el('h3', { style: 'margin:0 0 4px 0;font-size:1.15rem;font-weight:700;color:var(--ink);' }, deal.name || ('Contact ' + phone.slice(-4))),
-          el('div', { style: 'font-size:0.85rem;color:var(--ink-dim, #5d7468);display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;gap:4px;' }, [iconCallSvg(13), phone]),
-            deal.email ? el('span', {}, deal.email) : '',
-            deal.company ? el('span', { class: 'pill', style: 'font-size:0.75rem;padding:2px 8px;' }, deal.company) : ''
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('phone', 12)]),
+      el('span', {}, 'Call')
+    ]);
+
+    // WhatsApp Action Button
+    const quickWaBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:3px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
+      title: 'Open WhatsApp Chat',
+      onclick: (e) => {
+        e.stopPropagation();
+        if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
+        else toast('No valid phone number for WhatsApp.', 'warn');
+      }
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),
+      el('span', {}, 'WhatsApp')
+    ]);
+
+    // Clean curated tags (remove noise/duplicates like 'ai-voice-call' + 'voice-call')
+    const rawTags = Array.isArray(deal.tags) ? deal.tags : [];
+    const seenTags = new Set();
+    const curatedTags = [];
+    rawTags.forEach((t) => {
+      const clean = String(t).trim();
+      if (!clean) return;
+      if (['ai-voice-call', 'voice-call'].includes(clean) && seenTags.has('voice-lead')) return;
+      if (seenTags.has(clean)) return;
+      seenTags.add(clean);
+      curatedTags.push(clean);
+    });
+
+    const headerArea = el('div', {
+      style: 'padding-bottom:16px;border-bottom:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;gap:12px;'
+    }, [
+      // Top row: Avatar + Identity + Stage + Value
+      el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:14px;min-width:0;flex:1;' }, [
+          initialsBox,
+          el('div', { style: 'min-width:0;' }, [
+            el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+              el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:800;color:#14221c;letter-spacing:-0.02em;' }, name),
+              stagePill,
+              deal.dealValue ? el('span', { style: 'font-weight:800;color:#0d5d41;font-size:1rem;' }, '₹' + fmtInr(deal.dealValue)) : ''
+            ]),
+            el('div', { style: 'margin-top:6px;display:flex;align-items:center;gap:12px;font-size:0.84rem;color:#5d7468;flex-wrap:wrap;' }, [
+              phone ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#14221c;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('phone', 13)]),
+                el('span', {}, displayPhone)
+              ]) : '',
+              quickCallBtn,
+              cleanPhone ? quickWaBtn : '',
+              deal.email ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;color:#5d7468;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('send', 12)]),
+                el('span', {}, deal.email)
+              ]) : '',
+              deal.company ? el('span', { style: 'display:inline-flex;align-items:center;gap:5px;color:#5d7468;' }, [
+                el('span', { style: 'display:inline-flex;align-items:center;color:#0d5d41;' }, [uiIcon('building', 12)]),
+                el('span', {}, deal.company)
+              ]) : ''
+            ])
           ])
-        ]),
-        el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;' }, [
-          el('span', { class: 'pill badge-gold', style: 'font-weight:700;font-size:0.8rem;padding:3px 10px;' }, deal.stage || 'New Lead'),
-          deal.dealValue ? el('span', { style: 'font-weight:700;color:var(--brand, #0d5d41);font-size:0.95rem;' }, '₹' + fmtInr(deal.dealValue)) : ''
         ])
       ]),
-      el('div', { style: 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;' }, [
+
+      // Capabilities & Tags Strip
+      el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;' }, [
         (deal.communicationPreference && deal.communicationPreference.prefersWhatsApp)
-          ? el('span', { class: 'pill', style: 'background:rgba(37,211,102,0.15);color:#0d5d41;border:1px solid rgba(37,211,102,0.3);font-size:0.75rem;font-weight:600;' }, '💬 Prefers WhatsApp (Calls Paused)')
-          : el('span', { class: 'pill', style: 'background:rgba(14,143,99,0.12);color:#0E8F63;border:1px solid rgba(14,143,99,0.25);font-size:0.75rem;font-weight:600;' }, '📞 Voice AI Auto-Dial Eligible'),
-        el('span', { class: 'pill', style: 'font-size:0.75rem;background:var(--bg);border:1px solid var(--line-2);' }, 'Type: ' + (deal.type || 'Lead')),
-        ...(deal.tags || []).map((t) => el('span', { class: 'pill', style: 'font-size:0.75rem;background:rgba(0,0,0,0.04);' }, t))
+          ? el('span', { class: 'pill', style: 'background:rgba(37,211,102,0.12);color:#0d5d41;border:1px solid rgba(37,211,102,0.25);font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;' }, '💬 Prefers WhatsApp (Calls Paused)')
+          : el('span', { class: 'pill', style: 'background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.18);font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;' }, '📞 Voice AI Auto-Dial Eligible'),
+        el('span', { class: 'pill', style: 'font-size:0.72rem;font-weight:600;background:rgba(13,93,65,0.03);color:#5d7468;border:1px solid rgba(13,93,65,0.10);' }, 'Type: ' + (deal.type || 'Lead')),
+        ...curatedTags.map((t) => el('span', {
+          class: 'pill',
+          style: 'font-size:0.72rem;font-weight:600;background:rgba(13,93,65,0.04);color:#0d5d41;border:1px solid rgba(13,93,65,0.12);border-radius:999px;'
+        }, t.replace(/_/g, ' ')))
       ])
     ]);
-    container.appendChild(headerCard);
+    container.appendChild(headerArea);
 
-    // 2. Navigation Tabs
+    // 2. Navigation Tabs (Pill style matching Scandinavian Sage theme)
     const tabNav = el('div', {
-      style: 'display:flex;gap:8px;border-bottom:1.5px solid var(--line-2, rgba(34,43,56,0.1));padding-bottom:8px;margin-top:4px;'
+      style: 'display:inline-flex;gap:4px;padding:3px;background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.08);border-radius:999px;width:fit-content;'
     });
 
     const apptTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;background:#0d5d41;color:#ffffff;border:none;cursor:pointer;',
+      class: 'btn btn-sm sv-drawer-tab-btn active',
+      style: 'border-radius:999px;font-weight:750;padding:6px 16px;background:#0d5d41;color:#ffffff;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('appointments')
-    }, 'Appointments');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('clock', 12)]),
+      el('span', {}, 'Appointments')
+    ]);
 
     const timelineTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm btn-ghost',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('timeline')
-    }, 'Voice & WhatsApp History');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('headset', 12)]),
+      el('span', {}, 'Voice & WhatsApp History')
+    ]);
 
     const detailsTabBtn = el('button', {
       type: 'button',
-      class: 'btn btn-sm btn-ghost',
-      style: 'border-radius:999px;font-weight:600;padding:5px 14px;border:1px solid var(--line-2);cursor:pointer;',
+      class: 'btn btn-sm btn-ghost sv-drawer-tab-btn',
+      style: 'border-radius:999px;font-weight:650;padding:6px 16px;background:transparent;color:#5d7468;border:1px solid transparent;cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;',
       onclick: () => switchDrawerTab('details')
-    }, 'Notes & Settings');
+    }, [
+      el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('building', 12)]),
+      el('span', {}, 'Notes & Settings')
+    ]);
 
     tabNav.appendChild(apptTabBtn);
     tabNav.appendChild(timelineTabBtn);
@@ -17290,46 +17905,46 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     container.appendChild(tabNav);
 
     // 3. Tab Content Area
-    const tabContent = el('div', { class: 'sv-drawer-tab-content', style: 'min-height:240px;' });
+    const tabContent = el('div', { class: 'sv-drawer-tab-content', style: 'min-height:220px;' });
     container.appendChild(tabContent);
 
     function switchDrawerTab(tab) {
       [apptTabBtn, timelineTabBtn, detailsTabBtn].forEach((btn) => {
         btn.style.background = 'transparent';
-        btn.style.color = 'var(--ink)';
-        btn.style.border = '1px solid var(--line-2)';
+        btn.style.color = '#5d7468';
+        btn.style.border = '1px solid transparent';
+        btn.style.fontWeight = '650';
+        btn.style.boxShadow = 'none';
       });
+      const activeBtn = tab === 'appointments' ? apptTabBtn : tab === 'timeline' ? timelineTabBtn : detailsTabBtn;
+      activeBtn.style.background = '#0d5d41';
+      activeBtn.style.color = '#ffffff';
+      activeBtn.style.border = 'none';
+      activeBtn.style.fontWeight = '750';
+      activeBtn.style.boxShadow = '0 2px 6px rgba(13,93,65,0.20)';
+
       if (tab === 'appointments') {
-        apptTabBtn.style.background = '#0d5d41';
-        apptTabBtn.style.color = '#ffffff';
-        apptTabBtn.style.border = 'none';
         renderAppointmentsTab(tabContent);
       } else if (tab === 'timeline') {
-        timelineTabBtn.style.background = '#0d5d41';
-        timelineTabBtn.style.color = '#ffffff';
-        timelineTabBtn.style.border = 'none';
         renderTimelineTab(tabContent);
       } else if (tab === 'details') {
-        detailsTabBtn.style.background = '#0d5d41';
-        detailsTabBtn.style.color = '#ffffff';
-        detailsTabBtn.style.border = 'none';
         renderDetailsTab(tabContent);
       }
     }
 
     async function renderAppointmentsTab(panel) {
-      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading appointments...</div>';
+      panel.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading appointments...</div>';
       try {
         const res = await api('/api/booking/list?phone=' + encodeURIComponent(phone) + '&contactId=' + encodeURIComponent(deal.id));
         const bookings = (res && Array.isArray(res.bookings)) ? res.bookings : [];
 
         panel.innerHTML = '';
         const topActions = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
-          el('span', { style: 'font-weight:600;font-size:0.9rem;color:var(--ink);' }, `Scheduled Appointments (${bookings.length})`),
+          el('span', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, 'Scheduled Appointments (' + bookings.length + ')'),
           el('button', {
             type: 'button',
             class: 'btn btn-primary btn-sm',
-            style: 'border-radius:999px;font-size:0.8rem;padding:4px 14px;background:#0d5d41;color:#fff;border:none;cursor:pointer;',
+            style: 'border-radius:999px;font-size:0.8rem;font-weight:750;padding:5px 16px;background:#0d5d41;color:#fff;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;',
             onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
           }, '+ Book Appointment')
         ]);
@@ -17337,17 +17952,19 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         if (!bookings.length) {
           panel.appendChild(el('div', {
-            style: 'text-align:center;padding:32px 16px;background:var(--bg-2);border-radius:12px;border:1px dashed var(--line-2);'
+            style: 'text-align:center;padding:36px 20px;background:rgba(13,93,65,0.02);border-radius:16px;border:1px dashed rgba(13,93,65,0.18);'
           }, [
-            
-            el('p', { style: 'margin:0 0 10px 0;font-weight:600;color:var(--ink);font-size:0.92rem;' }, 'No Appointments Scheduled'),
-            el('p', { style: 'margin:0 0 14px 0;font-size:0.82rem;color:var(--ink-dim);' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or direct intake appear here.'),
+            el('div', {
+              style: 'width:42px;height:42px;border-radius:50%;background:rgba(13,93,65,0.08);color:#0d5d41;display:flex;align-items:center;justify-content:center;margin:0 auto 12px auto;'
+            }, [uiIcon('clock', 18)]),
+            el('div', { style: 'margin:0 0 4px 0;font-weight:750;color:#14221c;font-size:0.95rem;' }, 'No Appointments Scheduled'),
+            el('div', { style: 'margin:0 0 16px 0;font-size:0.82rem;color:#5d7468;' }, 'Appointments booked via Voice AI agent, WhatsApp automation, or direct intake appear here.'),
             el('button', {
               type: 'button',
               class: 'btn btn-secondary btn-sm',
-              style: 'border-radius:999px;',
+              style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;',
               onclick: () => openScheduleAppointmentModal(deal, () => renderAppointmentsTab(panel))
-            }, 'Schedule First Appointment')
+            }, '+ Schedule First Appointment')
           ]));
           return;
         }
@@ -17356,36 +17973,35 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
         bookings.forEach((b) => {
           const isConfirmed = b.status === 'confirmed';
           const card = el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;'
+            style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
             el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
-              el('span', { style: 'font-weight:700;color:var(--ink);font-size:0.95rem;' },
+              el('span', { style: 'font-weight:750;color:#14221c;font-size:0.95rem;' },
                 new Date(b.startTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })),
               el('span', {
                 class: 'pill ' + (isConfirmed ? 'badge-gold' : ''),
-                style: 'font-size:0.75rem;font-weight:700;'
+                style: 'font-size:0.75rem;font-weight:750;'
               }, (b.status || 'confirmed').toUpperCase())
             ]),
-            el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);display:flex;gap:12px;align-items:center;' }, [
-              el('span', {}, `Duration: ${b.durationMin || 30} mins`),
-              el('span', {}, `Source: ${b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual')}`),
-              b.confirmationCode ? el('span', { class: 'pill', style: 'font-size:0.7rem;padding:1px 6px;' }, 'Code: ' + b.confirmationCode) : ''
+            el('div', { style: 'font-size:0.82rem;color:#5d7468;display:flex;gap:12px;align-items:center;flex-wrap:wrap;' }, [
+              el('span', {}, 'Duration: ' + (b.durationMin || 30) + ' mins'),
+              el('span', {}, 'Source: ' + (b.source === 'voice_ai' ? 'Voice AI Agent' : (b.source === 'whatsapp' ? 'WhatsApp' : 'Manual'))),
+              b.confirmationCode ? el('span', { class: 'pill', style: 'font-size:0.7rem;padding:1px 6px;background:rgba(13,93,65,0.05);color:#0d5d41;' }, 'Code: ' + b.confirmationCode) : ''
             ]),
             b.notes ? el('div', {
-              style: 'font-size:0.82rem;background:var(--bg);padding:8px 10px;border-radius:8px;margin-top:4px;color:var(--ink);'
+              style: 'font-size:0.82rem;background:rgba(13,93,65,0.03);padding:8px 12px;border-radius:8px;margin-top:4px;color:#14221c;'
             }, b.notes) : ''
           ]);
           apptList.appendChild(card);
         });
         panel.appendChild(apptList);
       } catch (err) {
-        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load appointments: ${err.message}</div>`;
+        panel.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load appointments: ' + err.message + '</div>';
       }
     }
 
     async function renderTimelineTab(panel) {
-      panel.innerHTML = '<div style="padding:24px;text-align:center;"><span class="boot-spin"></span> Loading conversation history...</div>';
+      panel.innerHTML = '<div style="padding:28px;text-align:center;color:#5d7468;font-size:0.88rem;"><span class="boot-spin"></span> Loading conversation history...</div>';
       try {
         const recsRes = await api('/api/recordings').catch(() => ({ recordings: [] }));
         const calls = (recsRes.recordings || []).filter((r) => {
@@ -17395,35 +18011,46 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         panel.innerHTML = '';
         if (!calls.length && !deal.notes) {
-          panel.innerHTML = '<div class="muted" style="text-align:center;padding:24px;">No call recordings or logs logged for this contact yet.</div>';
+          panel.innerHTML = '<div class="muted" style="text-align:center;padding:32px 16px;color:#5d7468;font-size:0.85rem;">No call recordings or notes logged for this contact yet.</div>';
           return;
         }
 
         const timelineList = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' });
         if (deal.notes) {
           timelineList.appendChild(el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);font-size:0.85rem;'
+            style: 'background:#ffffff;padding:14px 16px;border-radius:14px;border:1px solid rgba(13,93,65,0.12);font-size:0.85rem;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
-            el('div', { style: 'font-weight:600;margin-bottom:4px;color:var(--ink);' }, 'Contact Notes & Summary:'),
-            el('div', { style: 'white-space:pre-wrap;color:var(--ink-dim);line-height:1.45;' }, deal.notes)
+            el('div', { style: 'font-weight:750;margin-bottom:4px;color:#14221c;display:flex;align-items:center;gap:6px;' }, [
+              el('span', { style: 'color:#0d5d41;' }, [uiIcon('sparkle', 13)]),
+              'Contact Notes & Context:'
+            ]),
+            el('div', { style: 'white-space:pre-wrap;color:#5d7468;line-height:1.5;' }, deal.notes)
           ]));
         }
 
         calls.forEach((c) => {
+          const isOutbound = c.direction === 'outbound';
           const item = el('div', {
-            class: 'card',
-            style: 'background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;'
+            style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(13,93,65,0.04);'
           }, [
             el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' }, [
-              el('span', { style: 'font-weight:600;color:var(--ink);font-size:0.9rem;' },
-                `Voice Call (${c.direction === 'outbound' ? 'Outbound AI' : 'Inbound'}) · ${c.durationSeconds || 0}s`),
-              el('span', { style: 'font-size:0.75rem;color:var(--ink-dim);' }, (c.startedAt || '').slice(0, 16).replace('T', ' '))
+              el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [
+                el('span', {
+                  class: 'pill',
+                  style: isOutbound ? 'background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:750;' : 'background:rgba(59,130,246,0.10);color:#2563eb;font-weight:750;'
+                }, isOutbound ? 'Outbound Voice AI' : 'Inbound Call'),
+                el('span', { style: 'font-weight:700;color:#14221c;font-size:0.88rem;' }, (c.durationSeconds || 0) + 's duration')
+              ]),
+              el('span', { style: 'font-size:0.75rem;color:#5d7468;' }, (c.startedAt || '').slice(0, 16).replace('T', ' '))
             ]),
-            c.summary ? el('div', { style: 'font-size:0.83rem;color:var(--ink);line-height:1.4;' }, `AI Summary: ${c.summary}`) : '',
-            c.transcript ? el('details', { style: 'font-size:0.8rem;margin-top:4px;' }, [
-              el('summary', { style: 'cursor:pointer;color:var(--brand);font-weight:600;' }, 'View Full Transcript'),
-              el('pre', { style: 'background:var(--bg);padding:8px;border-radius:8px;white-space:pre-wrap;font-size:0.78rem;max-height:160px;overflow-y:auto;margin-top:6px;' }, c.transcript)
+            c.summary ? el('div', {
+              style: 'font-size:0.84rem;color:#14221c;line-height:1.45;background:rgba(13,93,65,0.03);border-left:3px solid #0d5d41;padding:8px 12px;border-radius:0 8px 8px 0;'
+            }, 'AI Call Summary: ' + c.summary) : '',
+            c.transcript ? el('details', { style: 'font-size:0.8rem;margin-top:2px;' }, [
+              el('summary', { style: 'cursor:pointer;color:#0d5d41;font-weight:700;user-select:none;' }, 'View Full Conversation Transcript'),
+              el('pre', {
+                style: 'background:rgba(13,93,65,0.02);border:1px solid rgba(13,93,65,0.08);padding:10px 12px;border-radius:10px;white-space:pre-wrap;font-size:0.78rem;color:#14221c;max-height:180px;overflow-y:auto;margin-top:6px;line-height:1.5;'
+              }, c.transcript)
             ]) : ''
           ]);
           timelineList.appendChild(item);
@@ -17431,40 +18058,47 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
 
         panel.appendChild(timelineList);
       } catch (err) {
-        panel.innerHTML = `<div style="color:#dc2626;padding:16px;">Failed to load conversation history: ${err.message}</div>`;
+        panel.innerHTML = '<div style="color:#dc2626;padding:16px;">Failed to load conversation history: ' + err.message + '</div>';
       }
     }
 
     function renderDetailsTab(panel) {
       panel.innerHTML = '';
-      const form = el('div', { style: 'display:flex;flex-direction:column;gap:12px;' }, [
-        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:10px;' }, [
+      const form = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' }, [
+        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px;' }, [
           el('div', { class: 'form-group' }, [
-            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Pipeline Stage'),
+            el('label', { style: 'font-size:0.8rem;font-weight:700;color:#5d7468;margin-bottom:4px;display:block;' }, 'Pipeline Stage'),
             createStageSelect(deal.id, deal.stage, () => loadPipeline(currentTenantFilter))
           ]),
           el('div', { class: 'form-group' }, [
-            el('label', { style: 'font-size:0.8rem;font-weight:600;' }, 'Deal Value (INR)'),
-            el('input', { class: 'input', value: '₹' + fmtInr(deal.dealValue || 0), disabled: true })
+            el('label', { style: 'font-size:0.8rem;font-weight:700;color:#5d7468;margin-bottom:4px;display:block;' }, 'Deal Value (INR)'),
+            el('input', { class: 'input', value: '₹' + fmtInr(deal.dealValue || 0), disabled: true, style: 'font-weight:700;color:#14221c;' })
           ])
         ]),
-        el('div', { class: 'card', style: 'background:var(--bg-2);padding:12px;border-radius:10px;border:1px solid var(--line-2);' }, [
-          el('div', { style: 'font-weight:600;font-size:0.88rem;margin-bottom:6px;' }, 'Customer Communication Preferences'),
-          el('div', { style: 'font-size:0.82rem;color:var(--ink-dim);line-height:1.5;' }, [
-            el('div', {}, `• WhatsApp Messaging: ${(deal.communicationPreference && deal.communicationPreference.prefersWhatsApp) ? 'Preferred by customer' : 'Default'}`),
-            el('div', {}, `• Phone / Voice Calling: ${(deal.communicationPreference && deal.communicationPreference.doNotCall) ? 'Paused / Do Not Call' : 'Active and Enabled'}`),
-            el('div', {}, `• Call Attempts Made: ${(deal.communicationPreference && deal.communicationPreference.voiceCallAttempts) || 0}`)
+        el('div', {
+          style: 'background:#ffffff;padding:14px 16px;border-radius:14px;border:1px solid rgba(13,93,65,0.12);box-shadow:0 1px 3px rgba(13,93,65,0.04);'
+        }, [
+          el('div', { style: 'font-weight:750;font-size:0.88rem;color:#14221c;margin-bottom:8px;display:flex;align-items:center;gap:6px;' }, [
+            el('span', { style: 'color:#0d5d41;' }, [uiIcon('shield', 13)]),
+            'Customer Communication Preferences'
+          ]),
+          el('div', { style: 'font-size:0.82rem;color:#5d7468;line-height:1.6;' }, [
+            el('div', {}, '• WhatsApp Messaging: ' + ((deal.communicationPreference && deal.communicationPreference.prefersWhatsApp) ? 'Preferred by customer (Auto-calls paused)' : 'Standard Active')),
+            el('div', {}, '• Phone / Voice Calling: ' + ((deal.communicationPreference && deal.communicationPreference.doNotCall) ? 'Paused / Do Not Call' : 'Active & Voice AI Auto-Dial Eligible')),
+            el('div', {}, '• Total Voice Call Attempts: ' + (((deal.communicationPreference && deal.communicationPreference.voiceCallAttempts) || 0) + ' calls'))
           ])
         ]),
-        el('div', { style: 'display:flex;gap:10px;margin-top:8px;' }, [
+        el('div', { style: 'display:flex;gap:10px;margin-top:6px;' }, [
           el('button', {
             type: 'button',
             class: 'btn btn-secondary btn-sm',
+            style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(13,93,65,0.06);color:#0d5d41;border:1px solid rgba(13,93,65,0.20);cursor:pointer;',
             onclick: () => { openEditLeadModal(deal); }
           }, 'Edit Contact Details'),
           el('button', {
             type: 'button',
             class: 'btn btn-danger btn-sm',
+            style: 'border-radius:999px;font-weight:700;padding:6px 16px;background:rgba(239,68,68,0.08);color:#dc2626;border:1px solid rgba(239,68,68,0.25);cursor:pointer;',
             onclick: () => { openDeleteLeadModal(deal); }
           }, 'Delete Contact')
         ])
@@ -17476,7 +18110,7 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       const dateInp = el('input', { class: 'input', type: 'datetime-local' });
       const nowPlusDay = new Date(Date.now() + 24 * 3600000);
       const pad = (n) => String(n).padStart(2, '0');
-      dateInp.value = `${nowPlusDay.getFullYear()}-${pad(nowPlusDay.getMonth() + 1)}-${pad(nowPlusDay.getDate())}T10:00`;
+      dateInp.value = nowPlusDay.getFullYear() + '-' + pad(nowPlusDay.getMonth() + 1) + '-' + pad(nowPlusDay.getDate()) + 'T10:00';
 
       const durationSel = el('select', { class: 'input' }, [
         el('option', { value: '15' }, '15 minutes'),
@@ -17520,9 +18154,10 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
     switchDrawerTab('appointments');
 
     modal({
-      title: 'Contact Inspection: ' + (deal.name || deal.phone),
+      title: 'Contact Inspection',
       className: 'sv-contact-inspection-modal',
       body: container,
+      cancelText: false,
       confirmText: 'Close',
       onConfirm: async () => {}
     });
@@ -18144,15 +18779,192 @@ async function viewAssistant(wrap) {
     title: 'Upload images, documents or audio files',
     onclick: () => fileInput.click()
   }, '+');
-  const textInput = el('input', { class: 'chat-text-input', placeholder: 'Type your message...', maxlength: '4000' });
+  const textInput = el('input', { class: 'chat-text-input', placeholder: 'Type your message or use mic to speak...', maxlength: '4000' });
+
+  // Voice recording & Speech-to-Text Controller for AI Chatbot
+  let isChatRecording = false;
+  let chatMediaRecorder = null;
+  let chatAudioChunks = [];
+  let chatRecognition = null;
+  let chatRecStream = null;
+  let chatRecTimer = null;
+
+  const micIconSvg = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>';
+  const micStopSvg = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+
+  const micBtn = el('button', {
+    type: 'button',
+    class: 'chat-mic-btn',
+    title: 'Ask with voice (click to speak)',
+    'aria-label': 'Record Voice Question',
+    html: micIconSvg
+  });
+
+  async function startChatVoiceRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('Voice recording is not supported in this browser.', 'err');
+      return;
+    }
+    try {
+      chatRecStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (err) {
+      console.warn('Microphone permission error:', err);
+      toast('Microphone access was denied. Please allow microphone in browser.', 'err');
+      return;
+    }
+
+    isChatRecording = true;
+    chatAudioChunks = [];
+    micBtn.classList.add('recording');
+    micBtn.innerHTML = micStopSvg;
+    micBtn.title = 'Stop recording voice (click to finish)';
+
+    textInput.placeholder = 'Listening... Speak your question now';
+    textInput.classList.add('chat-listening-active');
+
+    // 1. Live browser Speech Recognition for instant real-time transcription
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let liveTranscript = '';
+    if (SpeechRec) {
+      try {
+        chatRecognition = new SpeechRec();
+        chatRecognition.continuous = true;
+        chatRecognition.interimResults = true;
+        chatRecognition.lang = 'en-IN';
+        chatRecognition.onresult = (ev) => {
+          let interim = '';
+          for (let i = ev.resultIndex; i < ev.results.length; ++i) {
+            if (ev.results[i].isFinal) {
+              liveTranscript += ev.results[i][0].transcript + ' ';
+            } else {
+              interim += ev.results[i][0].transcript;
+            }
+          }
+          const combined = (liveTranscript + interim).trim();
+          if (combined) {
+            textInput.value = combined;
+          }
+        };
+        chatRecognition.onerror = (e) => {
+          console.warn('Chat SpeechRecognition error:', e);
+        };
+        chatRecognition.start();
+      } catch (e) {
+        console.warn('Web Speech API start error:', e);
+      }
+    }
+
+    // 2. MediaRecorder for Deepgram AI backup transcription
+    try {
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+      chatMediaRecorder = mime ? new MediaRecorder(chatRecStream, { mimeType: mime }) : new MediaRecorder(chatRecStream);
+      chatMediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chatAudioChunks.push(e.data);
+      };
+      chatMediaRecorder.start(200);
+    } catch (e) {
+      console.warn('MediaRecorder error:', e);
+    }
+
+    // Safety timeout: 60s max
+    clearTimeout(chatRecTimer);
+    chatRecTimer = setTimeout(() => {
+      if (isChatRecording) stopChatVoiceRecording();
+    }, 60000);
+  }
+
+  async function stopChatVoiceRecording() {
+    if (!isChatRecording) return;
+    isChatRecording = false;
+    clearTimeout(chatRecTimer);
+
+    micBtn.classList.remove('recording');
+    micBtn.innerHTML = micIconSvg;
+    micBtn.title = 'Ask with voice (click to speak)';
+    textInput.placeholder = 'Type your message or use mic to speak...';
+    textInput.classList.remove('chat-listening-active');
+
+    if (chatRecognition) {
+      try { chatRecognition.stop(); } catch (_) {}
+      chatRecognition = null;
+    }
+
+    if (chatMediaRecorder && chatMediaRecorder.state !== 'inactive') {
+      try { chatMediaRecorder.stop(); } catch (_) {}
+    }
+
+    if (chatRecStream) {
+      chatRecStream.getTracks().forEach(t => t.stop());
+      chatRecStream = null;
+    }
+
+    // If live speech recognition already filled text, let customer review or send
+    if (textInput.value.trim().length > 0) {
+      textInput.focus();
+      toast('Voice captured! Click send or press Enter.', 'ok');
+      return;
+    }
+
+    // If empty, send audio to Deepgram Nova-3 (/api/stt)
+    if (chatAudioChunks.length > 0) {
+      const mime = (chatMediaRecorder && chatMediaRecorder.mimeType) || 'audio/webm';
+      const audioBlob = new Blob(chatAudioChunks, { type: mime });
+      if (audioBlob.size > 800) {
+        textInput.placeholder = 'Transcribing with Deepgram AI...';
+        micBtn.disabled = true;
+        try {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64 = reader.result.split(',')[1];
+              const res = await api('/api/stt', {
+                method: 'POST',
+                body: { audio: base64, mime }
+              });
+              if (res && res.text && res.text.trim()) {
+                textInput.value = res.text.trim();
+                textInput.focus();
+                toast('Voice recognized! Click send or press Enter.', 'ok');
+              } else {
+                toast('Could not detect clear speech. Please try speaking again.', 'info');
+              }
+            } catch (err) {
+              console.warn('STT transcription error:', err);
+              toast('Could not transcribe audio. You can type your message.', 'info');
+            } finally {
+              textInput.placeholder = 'Type your message or use mic to speak...';
+              micBtn.disabled = false;
+            }
+          };
+          reader.readAsDataURL(audioBlob);
+        } catch (_) {
+          textInput.placeholder = 'Type your message or use mic to speak...';
+          micBtn.disabled = false;
+        }
+      }
+    }
+  }
+
+  micBtn.onclick = () => {
+    if (isChatRecording) stopChatVoiceRecording();
+    else startChatVoiceRecording();
+  };
   const sendBtn = el('button', {
     class: 'chat-send-btn',
     title: 'Send message',
-    onclick: () => submitCurrent(),
+    onclick: () => {
+      if (isChatRecording) stopChatVoiceRecording();
+      submitCurrent();
+    },
     html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
   });
   capsule.appendChild(attachBtn);
   capsule.appendChild(textInput);
+  capsule.appendChild(micBtn);
   capsule.appendChild(sendBtn);
   inputDock.appendChild(attachmentPreview);
   inputDock.appendChild(capsule);
@@ -18162,6 +18974,7 @@ async function viewAssistant(wrap) {
   textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (isChatRecording) stopChatVoiceRecording();
       submitCurrent();
     }
   });

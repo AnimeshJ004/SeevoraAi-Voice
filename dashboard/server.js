@@ -449,6 +449,9 @@ function publicUser(u) {
     email: u.email,
     name: u.name || 'Team Member',
     phone: u.phone || '',
+    designation: u.designation || u.title || '',
+    timezone: u.timezone || 'Asia/Kolkata',
+    language: u.language || 'en-IN',
     department: u.department || (['admin', 'super_admin', 'owner', 'client'].includes(u.role) ? 'Management' : 'General'),
     role: u.role,
     status: u.status || 'active',
@@ -457,7 +460,8 @@ function publicUser(u) {
     handoffCount: Number(u.handoffCount || 0),
     lastHandoffAt: u.lastHandoffAt || null,
     createdAt: u.createdAt,
-    onboardingCompleted: isCompleted
+    onboardingCompleted: isCompleted,
+    hasPassword: !!u.passHash
   };
 }
 
@@ -494,6 +498,13 @@ function publicTenant(t) {
     campaignFrozen: !!t.campaignFrozen,
     campaignFreezeReason: t.campaignFreezeReason || null,
     kyc: t.kyc || null,
+    industry: t.industry || '',
+    website: t.website || '',
+    supportEmail: t.supportEmail || '',
+    supportPhone: t.supportPhone || '',
+    address: t.address || '',
+    description: t.description || '',
+    gstin: t.gstin || '',
     limits: usageAndLimits.limits,
     features: usageAndLimits.features,
     usage: usageAndLimits.usage,
@@ -7644,58 +7655,82 @@ async function apiTeamsCreate(req, res, ctx) {
   const phone = rawPhone ? (rawPhone.startsWith('+') ? rawPhone : (rawPhone.length === 10 ? '+91' + rawPhone : '+' + rawPhone)) : '';
   const department = String(b.department || 'General').trim().slice(0, 60);
   const role = ['employee', 'manager', 'client', 'owner'].includes(b.role) ? b.role : 'employee';
-  const password = String(b.password || 'TeamMember@123').trim();
+  const password = String(b.password || 'Welcome@123').trim();
   const escalationEnabled = b.escalationEnabled !== false;
   const assignedAgentIds = Array.isArray(b.assignedAgentIds) ? b.assignedAgentIds.map(String) : [];
 
-  if (!name) return core.sendJson(res, 422, { error: 'Employee name is required', code: 'bad_name' });
-  if (!email || !EMAIL_RE.test(email)) return core.sendJson(res, 422, { error: 'Valid employee email is required', code: 'bad_email' });
-  if (password.length < 8) return core.sendJson(res, 422, { error: 'Password must be at least 8 characters', code: 'bad_password' });
+  if (!name) return core.sendJson(res, 422, { error: 'Employee full name is required', code: 'bad_name' });
+  if (!email || !EMAIL_RE.test(email)) return core.sendJson(res, 422, { error: 'Valid employee login email is required', code: 'bad_email' });
+
+  const tenantId = (['super_admin', 'admin'].includes(ctx.user.role) && b.tenantId) ? String(b.tenantId) : ctx.tenant.id;
 
   const d = core.db();
-  const existing = d.users.find((u) => u.email && u.email.toLowerCase() === email && u.status !== 'deleted');
-  if (existing && existing.tenantId !== ctx.tenant.id) {
-    return core.sendJson(res, 409, { error: 'This email is already registered to another workspace', code: 'email_taken' });
-  }
-  if (existing && existing.tenantId === ctx.tenant.id) {
-    return core.sendJson(res, 409, { error: 'A team member with this email already exists in your workspace', code: 'duplicate_member' });
-  }
+  const existingInTenant = (d.users || []).find(
+    (u) => u.email && u.email.toLowerCase() === email && u.tenantId === tenantId
+  );
 
   const now = new Date().toISOString();
-  const validAgentIds = d.agents
-    .filter((a) => a.tenantId === ctx.tenant.id && assignedAgentIds.includes(a.id))
+  const validAgentIds = (d.agents || [])
+    .filter((a) => a.tenantId === tenantId && assignedAgentIds.includes(a.id))
     .map((a) => a.id);
 
-  const newMember = {
-    id: core.genId('u_'),
-    tenantId: ctx.tenant.id,
-    name,
-    email,
-    phone,
-    department,
-    role,
-    status: 'active',
-    passHash: core.hashPassword(password),
-    assignedAgentIds: validAgentIds,
-    escalationEnabled,
-    handoffCount: 0,
-    lastHandoffAt: null,
-    onboardingCompleted: true,
-    createdAt: now,
-  };
+  let resultMember;
 
-  await core.mutate((dd) => {
-    dd.users.push(newMember);
-    addAudit(dd, ctx, 'team.member.created', 'user', newMember.id, { name, email, department, role, assignedAgentIds: validAgentIds });
-  });
+  if (existingInTenant) {
+    // If user already exists in this workspace, update their employee profile, reactivate, and assign agents
+    await core.mutate((dd) => {
+      const u = (dd.users || []).find((x) => x.id === existingInTenant.id);
+      if (!u) return;
+      u.name = name;
+      if (phone) u.phone = phone;
+      u.department = department;
+      u.role = role;
+      u.status = 'active';
+      u.assignedAgentIds = validAgentIds;
+      u.escalationEnabled = escalationEnabled;
+      if (password && password.length >= 8) {
+        u.passHash = core.hashPassword(password);
+      }
+      u.updatedAt = now;
+      resultMember = u;
+      addAudit(dd, ctx, 'team.member.updated', 'user', u.id, { name, email, department, role, assignedAgentIds: validAgentIds });
+    });
+  } else {
+    // Create new member in current workspace
+    const newMember = {
+      id: core.genId('u_'),
+      tenantId,
+      name,
+      email,
+      phone,
+      department,
+      role,
+      status: 'active',
+      passHash: core.hashPassword(password.length >= 8 ? password : 'Welcome@123'),
+      assignedAgentIds: validAgentIds,
+      escalationEnabled,
+      handoffCount: 0,
+      lastHandoffAt: null,
+      onboardingCompleted: true,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  // Sync primary agent on shared number if assigned to this employee
-  const activeAgent = core.db().agents.find((a) => a.tenantId === ctx.tenant.id && (a.isPrimary || validAgentIds.includes(a.id)));
-  if (activeAgent) {
-    pushAgentToDograhWorkflow(activeAgent, ctx.tenant.id).catch(() => { });
+    await core.mutate((dd) => {
+      if (!Array.isArray(dd.users)) dd.users = [];
+      dd.users.push(newMember);
+      resultMember = newMember;
+      addAudit(dd, ctx, 'team.member.created', 'user', newMember.id, { name, email, department, role, assignedAgentIds: validAgentIds });
+    });
   }
 
-  core.sendJson(res, 201, { ok: true, member: publicUser(newMember) });
+  // Sync primary agent on shared number if assigned to this employee
+  const activeAgent = (core.db().agents || []).find((a) => a.tenantId === tenantId && (a.isPrimary || validAgentIds.includes(a.id)));
+  if (activeAgent) {
+    pushAgentToDograhWorkflow(activeAgent, tenantId).catch(() => { });
+  }
+
+  core.sendJson(res, existingInTenant ? 200 : 201, { ok: true, member: publicUser(resultMember), updated: !!existingInTenant });
 }
 
 async function apiTeamsUpdate(req, res, ctx) {
@@ -8768,11 +8803,64 @@ async function apiAgencyPromptSave(req, res, ctx) {
   core.sendJson(res, 200, { prompt: row.text, version: row.version, updatedAt: row.updatedAt, updatedBy: ctx.user.name || ctx.user.email });
 }
 
+async function apiUserPasswordUpdate(req, res, ctx) {
+  if (rejectImpersonated(res, ctx)) return;
+  const b = ctx.body || {};
+  const currentPassword = String(b.currentPassword || '');
+  const newPassword = String(b.newPassword || '');
+
+  if (!newPassword || newPassword.length < 8) {
+    return core.sendJson(res, 422, { error: 'New password must be at least 8 characters long.', code: 'weak_password' });
+  }
+
+  const d = core.db();
+  const user = (d.users || []).find((u) => u.id === ctx.user.id);
+  if (!user) {
+    return core.sendJson(res, 404, { error: 'User not found', code: 'not_found' });
+  }
+
+  const hasExistingPassword = Boolean(user.passHash);
+  if (hasExistingPassword) {
+    if (!currentPassword) {
+      return core.sendJson(res, 400, { error: 'current password is incorrect', code: 'bad_current_password' });
+    }
+    const isOk = core.verifyPassword(currentPassword, user.passHash);
+    if (!isOk) {
+      return core.sendJson(res, 400, { error: 'current password is incorrect', code: 'bad_current_password' });
+    }
+  }
+
+  const newHash = core.hashPassword(newPassword);
+  let updatedUser;
+  await core.mutate((store) => {
+    const u = (store.users || []).find((x) => x.id === ctx.user.id);
+    if (!u) return;
+    u.passHash = newHash;
+    u.updatedAt = new Date().toISOString();
+    updatedUser = u;
+    addAudit(store, ctx, hasExistingPassword ? 'user.password.changed' : 'user.password.created', 'user', u.id);
+  });
+
+  if (!updatedUser) {
+    return core.sendJson(res, 404, { error: 'User not found in store', code: 'not_found' });
+  }
+
+  core.sendJson(res, 200, {
+    ok: true,
+    message: hasExistingPassword ? 'password updated successfully' : 'password created successfully',
+    user: publicUser(updatedUser),
+  });
+}
+
 async function apiUserProfileUpdate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
   const name = String(b.name || '').trim().slice(0, 80);
   const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
+  const phone = String(b.phone || '').trim().slice(0, 40);
+  const designation = String(b.designation || b.title || '').trim().slice(0, 100);
+  const timezone = String(b.timezone || 'Asia/Kolkata').trim().slice(0, 60);
+  const language = String(b.language || 'en-IN').trim().slice(0, 30);
 
   if (!name && !email) {
     return core.sendJson(res, 422, { error: 'Name or email is required', code: 'bad_input' });
@@ -8789,9 +8877,13 @@ async function apiUserProfileUpdate(req, res, ctx) {
         user.email = email;
       }
     }
+    if (phone !== undefined) user.phone = phone;
+    if (designation !== undefined) user.designation = designation;
+    if (timezone !== undefined) user.timezone = timezone;
+    if (language !== undefined) user.language = language;
     user.updatedAt = new Date().toISOString();
     updatedUser = user;
-    addAudit(store, ctx, 'user.profile.updated', 'user', user.id, { name: user.name, email: user.email });
+    addAudit(store, ctx, 'user.profile.updated', 'user', user.id, { name: user.name, email: user.email, phone: user.phone });
   });
 
   if (!updatedUser) {
@@ -8804,13 +8896,31 @@ async function apiUserProfileUpdate(req, res, ctx) {
 async function apiTenantUpdate(req, res, ctx) {
   if (rejectImpersonated(res, ctx)) return;
   const b = ctx.body || {};
-  const name = String(b.name || '').trim().slice(0, 80);
-  const color = String(b.color || '').trim();
-  if (!name || !/^#[0-9a-fA-F]{6}$/.test(color)) return core.sendJson(res, 422, { error: 'valid tenant name and color required', code: 'bad_tenant' });
+  const name = String(b.name || '').trim().slice(0, 120);
+  const color = String(b.color || '#0d5d41').trim();
+  const industry = String(b.industry || '').trim().slice(0, 100);
+  const website = String(b.website || '').trim().slice(0, 150);
+  const supportEmail = String(b.supportEmail || '').trim().toLowerCase().slice(0, 120);
+  const supportPhone = String(b.supportPhone || '').trim().slice(0, 40);
+  const address = String(b.address || '').trim().slice(0, 300);
+  const description = String(b.description || '').trim().slice(0, 1000);
+  const gstin = String(b.gstin || '').trim().slice(0, 30);
+
+  if (!name) return core.sendJson(res, 422, { error: 'valid tenant name required', code: 'bad_tenant' });
   let tenant;
   await core.mutate((store) => {
     tenant = store.tenants.find((row) => row.id === ctx.tenant.id);
-    tenant.name = name; tenant.branding = { ...(tenant.branding || {}), color };
+    if (!tenant) return;
+    tenant.name = name;
+    tenant.branding = { ...(tenant.branding || {}), color: (/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#0d5d41') };
+    if (b.industry !== undefined) tenant.industry = industry;
+    if (b.website !== undefined) tenant.website = website;
+    if (b.supportEmail !== undefined) tenant.supportEmail = supportEmail;
+    if (b.supportPhone !== undefined) tenant.supportPhone = supportPhone;
+    if (b.address !== undefined) tenant.address = address;
+    if (b.description !== undefined) tenant.description = description;
+    if (b.gstin !== undefined) tenant.gstin = gstin;
+    tenant.updatedAt = new Date().toISOString();
     addAudit(store, ctx, 'tenant.settings.updated', 'tenant', tenant.id);
   });
   core.sendJson(res, 200, { tenant: publicTenant(tenant) });
@@ -12569,6 +12679,7 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/workflows') return core.requireAuth(req, res, apiWorkflowsList);
         if (route.startsWith('/api/workflows/')) return core.requireAuth(req, res, apiWorkflowGet);
         if (route === '/api/compliance/kyc') return core.requireAuth(req, res, apiComplianceKycGet);
+        if (route === '/api/user/password-status') return core.requireAuth(req, res, (rq, rs, cx) => core.sendJson(rs, 200, { hasPassword: !!(core.db().users.find(u => u.id === cx.user.id) || {}).passHash }));
         return core.sendJson(res, 404, { error: 'no such endpoint', code: 'not_found' });
       }
 
@@ -12652,6 +12763,7 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
+      if (route === '/api/user/password' || route === '/api/auth/password') return core.requireAuth(req, res, apiUserPasswordUpdate, body);
       if (route === '/api/tenant/update') return core.requireRole(req, res, 'owner', apiTenantUpdate, body);
       if (route === '/api/tenant/onboarding-complete') return core.requireAuth(req, res, apiTenantOnboardingComplete, body);
       if (route === '/api/clerk/sync-metadata') return core.requireAuth(req, res, apiClerkSyncMetadata, body);
@@ -12734,7 +12846,25 @@ const server = http.createServer(async (req, res) => {
       req.url = '/demo.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/sign-in' || route === '/sign-up' || route === '/login' || route === '/signup')) {
-      req.url = '/index.html';
+      req.url = '/login.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/home' || route === '/home.html')) {
+      req.url = '/home.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/features') {
+      req.url = '/features.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/pricing') {
+      req.url = '/pricing.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/contact' || route === '/contact-us')) {
+      req.url = '/contact.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && route === '/privacy') {
+      req.url = '/privacy.html';
+    }
+    if (['GET', 'HEAD'].includes(req.method || '') && (route === '/terms' || route === '/terms-and-conditions' || route === '/terms-of-service')) {
+      req.url = '/terms.html';
     }
     if (['GET', 'HEAD'].includes(req.method || '') && (route === '/recordings' || route === '/recordings/' || route === '/recordings.html')) {
       res.writeHead(302, { Location: '/app.html#/recordings', 'Cache-Control': 'no-store' });

@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Seevora AI Voice Receptionist</title>
+  <meta name="description"
+    content="Seevora AI Voice Receptionist. Natural, human-parity conversational voice agents." />
+  <meta name="theme-color" content="#FFFFFF" />
+  <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/assets/seevora-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Optional Clerk Prebuilt UI & SDK (loaded gracefully in background) -->
+  <script defer crossorigin="anonymous"
+    src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js"
+    type="text/javascript"></script>
+  <script defer crossorigin="anonymous"
+    data-clerk-publishable-key="pk_test_Y2xlYW4taW1wYWxhLTczMzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+    src="https://clean-impala-7331.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"
+    type="text/javascript"></script>
+
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --ink: #14221c;
+      --ink-soft: #2d3b34;
+      --ink-faint: #8a9e94;
+      --muted: #5d7468;
+      --line: rgba(13, 93, 65, 0.12);
+      --line-2: rgba(13, 93, 65, 0.18);
+      --blue: #0d5d41;
+      --blue2: #eaf4ef;
+      --glass: rgba(255, 255, 255, 0.68);
+      --shadow: 0 24px 70px rgba(13, 93, 65, 0.08);
+      --primary: #0d5d41;
+      --primary-hover: #094530;
+      --primary-light: #eaf4ef;
+      --link-hover: #0d5d41;
+      --accent: #2f8a63;
+      --accent-mint: #89cfab;
+      --accent-soft: #d3ebd9;
+      --accent-gradient: linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%);
+      --danger: #ef4444;
+      --danger-bg: #fff1f2;
+      --danger-border: #fecaca;
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      background-color: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      display: flex;
+      min-height: 100vh;
+      width: 100vw;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .noise {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.14;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+    }
+
+    /* Split-Screen Edge-to-Edge Container */
+    .auth-wrapper {
+      width: 100vw;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(440px, 500px) 1fr;
+      background: var(--bg);
+      overflow: hidden;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Left: Auth Form Column */
+    .auth-column {
+      padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 40px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: rgba(255, 255, 255, 0.94);
+      min-height: 100vh;
+      position: relative;
+      z-index: 5;
+      border-right: 1px solid var(--line);
+      box-shadow: 12px 0 40px rgba(45, 62, 86, 0.05);
+      overflow-y: auto;
+    }
+
+    .auth-content-inner {
+      width: 100%;
+      max-width: 400px;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Brand Header */
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 2px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      padding: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(45, 62, 86, 0.06);
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .brand-name {
+      font-family: var(--font-heading);
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .brand-subtitle {
+      width: 100%;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -8px;
+      margin-bottom: 2px;
+      line-height: 1.4;
+    }
+
+    /* Tab Switcher */
+    .auth-tabs-wrap {
+      display: flex;
+      background: #eaf4ef;
+      border: 1px solid rgba(13, 93, 65, 0.14);
+      border-radius: 999px;
+      padding: 4px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0;
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: #5d7468;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .auth-tab-btn:hover {
+      color: #0d5d41;
+    }
+
+    .auth-tab-btn.active {
+      background: #FFFFFF;
+      color: #0d5d41;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(13, 93, 65, 0.12);
+    }
+
+    /* Alert Banner */
+    .auth-alert-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .auth-alert-box.error {
+      display: flex;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+    }
+
+    .auth-alert-box.success {
+      display: flex;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Clerk Mount Zone */
+    #clerk-mount-zone {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .clerk-slot {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    #clerk-mount-zone .cl-rootBox,
+    #clerk-mount-zone .cl-cardBox,
+    #clerk-mount-zone .cl-signIn-root,
+    #clerk-mount-zone .cl-signUp-root {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin: 0 !important;
+    }
+
+    #clerk-mount-zone .cl-card {
+      width: 100% !important;
+      max-width: 400px !important;
+      box-shadow: 0 4px 16px rgba(45, 62, 86, 0.06) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 18px !important;
+      background: #FFFFFF !important;
+      margin: 0 !important;
+      padding: 18px 16px !important;
+    }
+
+    #clerk-mount-zone .cl-formButtonPrimary,
+    #clerk-mount-zone .cl-button[data-variant="solid"],
+    .cl-formButtonPrimary,
+    .cl-button[data-variant="solid"] {
+      background: linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%) !important;
+      color: #FFFFFF !important;
+      border: 1px solid rgba(255, 255, 255, 0.35) !important;
+      border-radius: 999px !important;
+      box-shadow: 0 4px 14px rgba(13, 93, 65, 0.28) !important;
+      font-family: var(--font) !important;
+      font-weight: 600 !important;
+      transition: transform .25s, box-shadow .25s, background .25s !important;
+    }
+
+    #clerk-mount-zone .cl-formButtonPrimary:hover,
+    .cl-formButtonPrimary:hover {
+      background: linear-gradient(135deg, #094530 0%, #0d5d41 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 24px rgba(13, 93, 65, 0.38) !important;
+    }
+
+    #clerk-mount-zone .cl-socialButtonsIconButton,
+    #clerk-mount-zone .cl-socialButtonsBlockButton {
+      border: 1px solid var(--line-2) !important;
+      border-radius: 12px !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      transition: all 0.18s ease !important;
+    }
+
+    #clerk-mount-zone .cl-socialButtonsIconButton:hover,
+    #clerk-mount-zone .cl-socialButtonsBlockButton:hover {
+      border-color: var(--blue) !important;
+      box-shadow: 0 4px 12px rgba(13, 93, 65, 0.15) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    #clerk-mount-zone .cl-formFieldInput {
+      border: 1px solid var(--line-2) !important;
+      border-radius: 12px !important;
+      background: #FFFFFF !important;
+      font-family: var(--font) !important;
+      color: var(--ink) !important;
+    }
+
+    #clerk-mount-zone .cl-formFieldInput:focus {
+      border-color: var(--blue) !important;
+      box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.18) !important;
+      outline: none !important;
+    }
+
+    #clerk-mount-zone .cl-footerActionLink,
+    #clerk-mount-zone .cl-identityPreviewEditButton,
+    #clerk-mount-zone .cl-formFieldAction,
+    .cl-footerActionLink {
+      color: var(--link-hover) !important;
+      font-weight: 600 !important;
+    }
+
+    #clerk-mount-zone .cl-footerActionLink:hover,
+    #clerk-mount-zone .cl-identityPreviewEditButton:hover,
+    .cl-footerActionLink:hover {
+      color: #094530 !important;
+    }
+
+    #clerk-mount-zone .cl-headerTitle {
+      color: var(--ink) !important;
+      font-family: var(--font-heading) !important;
+      font-weight: 700 !important;
+    }
+
+    #clerk-mount-zone .cl-headerSubtitle {
+      color: var(--muted) !important;
+      font-family: var(--font) !important;
+    }
+
+    #clerk-mount-zone .cl-dividerLine {
+      background: var(--line) !important;
+    }
+
+    #clerk-mount-zone .cl-dividerText {
+      color: var(--muted) !important;
+      font-family: var(--font) !important;
+    }
+
+    #clerk-mount-zone .cl-badge,
+    .cl-badge {
+      background: var(--blue2) !important;
+      color: var(--link-hover) !important;
+      border: 1px solid rgba(13, 93, 65, 0.25) !important;
+    }
+
+    #clerk-mount-zone a,
+    #clerk-mount-zone button[data-variant="link"] {
+      color: var(--link-hover) !important;
+    }
+
+    /* Native Auth Form */
+    .auth-form-panel {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 13px;
+      color: var(--muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      height: 42px;
+      padding: 0 40px 0 38px;
+      border-radius: 10px;
+      border: 1.5px solid var(--line-2);
+      background: #FFFFFF;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--ink);
+      transition: all 0.18s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--blue);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.18);
+    }
+
+    .auth-input::placeholder {
+      color: var(--ink-faint);
+    }
+
+    .btn-toggle-pass {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+
+    .btn-toggle-pass:hover {
+      color: var(--ink);
+    }
+
+    .btn-submit-primary,
+    .primary {
+      width: 100%;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(13, 93, 65, 0.28);
+      transition: transform .25s, box-shadow .25s, background .25s;
+      margin-top: 2px;
+    }
+
+    .btn-submit-primary:hover,
+    .primary:hover {
+      background: linear-gradient(135deg, #094530 0%, #0d5d41 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(13, 93, 65, 0.38);
+    }
+
+    .btn-submit-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .mini-spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    /* Quick Demo Section */
+    .demo-access-wrap {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .demo-divider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+
+    .demo-line {
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .demo-buttons-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .btn-demo-sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(13, 93, 65, 0.22);
+      background: #FFFFFF;
+      color: #0d5d41;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+      box-shadow: 0 1px 3px rgba(13, 93, 65, 0.05);
+    }
+
+    #btnDemoAdmin {
+      background: #eaf4ef;
+      border-color: rgba(13, 93, 65, 0.30);
+    }
+
+    .btn-demo-sub:hover {
+      background: #eaf4ef !important;
+      border-color: #0d5d41 !important;
+      color: #094530 !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(13, 93, 65, 0.16);
+    }
+
+    .demo-hint {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Right: Visual Showcase Column with Seevora Voice Logo in Bottom Left Corner */
+    .showcase-column {
+      position: relative;
+      background-image: url('/assets/receptionist.jpg');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-start;
+      padding: clamp(32px, 5vw, 56px);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .showcase-column::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(23, 25, 29, 0.06) 0%, rgba(23, 25, 29, 0.68) 100%);
+      pointer-events: none;
+    }
+
+    .showcase-logo-corner {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+    }
+
+    .showcase-brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 22px 12px 14px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.80);
+      border-radius: 999px;
+      box-shadow: 0 16px 40px rgba(16, 21, 29, 0.22);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .showcase-brand-mark:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 50px rgba(16, 21, 29, 0.30);
+    }
+
+    .showcase-brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 8px rgba(45, 62, 86, 0.12);
+      flex-shrink: 0;
+      background: #FFFFFF;
+    }
+
+    .showcase-brand-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .showcase-brand-name {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 800;
+      color: #17191d;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .showcase-brand-accent {
+      background: linear-gradient(100deg, #0d5d41, #2f8a63);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-left: 2px;
+    }
+
+    .showcase-brand-desc {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #5d7468;
+      letter-spacing: 0.01em;
+    }
+
+    /* Responsive */
+    @media (max-width: 960px) {
+      .auth-wrapper {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-column {
+        display: none;
+      }
+
+      .auth-column {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 40px 24px;
+        border-right: none;
+        box-shadow: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .auth-column {
+        padding: 24px 16px;
+        width: 100%;
+        max-width: 100%;
+      }
+      .brand-row {
+        gap: 10px;
+      }
+      .brand-name {
+        font-size: 19px;
+      }
+      .brand-subtitle {
+        font-size: 12.5px;
+      }
+      .auth-tabs-wrap {
+        width: 100%;
+        padding: 3px;
+      }
+      .auth-tab-btn {
+        padding: 9px 12px;
+        font-size: 13px;
+      }
+      .demo-btn-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+      .demo-access-wrap {
+        width: 100%;
+      }
+      .auth-form-card {
+        padding: 16px 14px;
+      }
+      .input {
+        font-size: 14px;
+        padding: 10px 12px;
+      }
+      .btn-submit {
+        padding: 12px 18px;
+        font-size: 14px;
+      }
+    }
+  
+    /* Clerk Theme Override Guarantees */
+    #clerk-mount-zone button[type="submit"],
+    #clerk-mount-zone .cl-formButtonPrimary,
+    #clerk-mount-zone .cl-button[data-variant="solid"] {
+      background: linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%) !important;
+      color: #FFFFFF !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      border-radius: 999px !important;
+      box-shadow: 0 4px 14px rgba(13, 93, 65, 0.28) !important;
+      font-weight: 700 !important;
+    }
+    #clerk-mount-zone button[type="submit"]:hover,
+    #clerk-mount-zone .cl-formButtonPrimary:hover,
+    #clerk-mount-zone .cl-button[data-variant="solid"]:hover {
+      background: linear-gradient(135deg, #094530 0%, #0d5d41 100%) !important;
+      box-shadow: 0 8px 24px rgba(13, 93, 65, 0.38) !important;
+    }
+    #clerk-mount-zone .cl-card {
+      box-shadow: 0 8px 30px rgba(13, 93, 65, 0.08) !important;
+      border: 1px solid rgba(13, 93, 65, 0.14) !important;
+    }
+    #clerk-mount-zone input:focus {
+      border-color: #0d5d41 !important;
+      box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.18) !important;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="auth-wrapper">
+    <!-- Left Column: Unified Clerk SSO & Direct Login -->
+    <section class="auth-column" aria-label="Authentication">
+      <div class="auth-content-inner">
+        <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <a href="/" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0d5d41;text-decoration:none;">
+            &larr; Back to Home
+          </a>
+          <div style="display:flex;gap:12px;font-size:12.5px;font-weight:600;">
+            <a href="/features.html" style="color:#5d7468;text-decoration:none;">Features</a>
+            <a href="/pricing.html" style="color:#5d7468;text-decoration:none;">Pricing</a>
+            <a href="/contact.html" style="color:#5d7468;text-decoration:none;">Contact</a>
+          </div>
+        </div>
+        <!-- Seevora Brand Row -->
+        <div class="brand-row">
+          <div class="brand-logo">
+            <img src="/assets/seevora-logo.png" alt="SeevoraVoice Logo" width="34" height="34" />
+          </div>
+          <span class="brand-name">SeevoraVoice</span>
+        </div>
+        <p class="brand-subtitle">Autonomous Conversational AI Receptionist & Front-Desk Agent</p>
+
+        <!-- Quick Switch Tabs -->
+        <div class="auth-tabs-wrap" role="tablist">
+          <button id="tabBtnSignIn" class="auth-tab-btn active" type="button" role="tab" aria-selected="true">Sign
+            In</button>
+          <button id="tabBtnSignUp" class="auth-tab-btn" type="button" role="tab" aria-selected="false">Create
+            Account</button>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="authAlertBox" class="auth-alert-box" role="alert">
+          <svg id="authAlertIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <span id="authAlertText"></span>
+        </div>
+
+        <!-- 1. Clerk SSO & Social Sign-In (PROMINENT AT TOP) -->
+        <div id="clerk-mount-zone">
+          <div id="clerk-sign-in-slot" class="clerk-slot"></div>
+          <div id="clerk-sign-up-slot" class="clerk-slot" style="display: none;"></div>
+        </div>
+
+        <!-- 2. Quick Demo Access (Active when ENABLE_DEMO_LOGIN is true) -->
+        <div id="demoAccessWrap" class="demo-access-wrap" style="display: none; margin-top: 14px;">
+          <div class="demo-divider-row">
+            <div class="demo-line"></div>
+            <span>Demo Access</span>
+            <div class="demo-line"></div>
+          </div>
+          <div class="demo-buttons-row">
+            <button id="btnDemoAdmin" type="button" class="btn-demo-sub" title="Admin Demo Login">Admin Demo</button>
+            <button id="btnDemoClient" type="button" class="btn-demo-sub" title="Client Demo Login">Client Demo</button>
+          </div>
+          <div class="demo-hint">Instant access for workspace evaluation and testing</div>
+        </div>
+
+        <div style="margin-top:16px;font-size:12px;color:#5d7468;text-align:center;">
+            By continuing, you agree to our <a href="/terms.html" style="color:#0d5d41;text-decoration:underline;">Terms</a> and <a href="/privacy.html" style="color:#0d5d41;text-decoration:underline;">Privacy Policy</a>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Visual Showcase with Seevora Voice Logo in Bottom Left Corner -->
+    <aside class="showcase-column" aria-label="Seevora AI Overview">
+      <div class="showcase-logo-corner">
+        <div class="showcase-brand-mark">
+          <img src="/assets/seevora-logo.png" alt="Seevora Voice Logo" width="44" height="44"
+            class="showcase-brand-icon" />
+          <div class="showcase-brand-meta">
+            <span class="showcase-brand-name">Seevora<span class="showcase-brand-accent">Voice</span></span>
+            <span class="showcase-brand-desc">Autonomous Conversational AI Receptionist</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    (function () {
+      const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
+      if (isLoggedOut) {
+        document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
+        document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
+        try { localStorage.clear(); sessionStorage.clear(); } catch (_) { }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (document.cookie && document.cookie.includes('rxv_sess=')) {
+        // Fast-path: if already logged in via session cookie, verify and redirect to dashboard
+        fetch('/api/me')
+          .then((r) => r.ok ? r.json() : null)
+          .then((me) => {
+            if (me && me.user) {
+              window.location.replace('/app.html');
+            }
+          })
+          .catch(() => { });
+      }
+
+      // UI Elements
+      const tabSignIn = document.getElementById('tabBtnSignIn');
+      const tabSignUp = document.getElementById('tabBtnSignUp');
+      const alertBox = document.getElementById('authAlertBox');
+      const alertText = document.getElementById('authAlertText');
+      const alertIcon = document.getElementById('authAlertIcon');
+      const clerkMountZone = document.getElementById('clerk-mount-zone');
+      const signInSlot = document.getElementById('clerk-sign-in-slot');
+      const signUpSlot = document.getElementById('clerk-sign-up-slot');
+      let signUpMounted = false;
+      let isSyncingOAuth = false;
+
+      function showAlert(msg, kind) {
+        kind = kind || 'error';
+        if (!msg) {
+          alertBox.style.display = 'none';
+          alertBox.className = 'auth-alert-box';
+          return;
+        }
+        alertBox.className = 'auth-alert-box ' + kind;
+        alertText.textContent = msg;
+        if (kind === 'error') {
+          alertIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+        } else {
+          alertIcon.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
+        }
+        alertBox.style.display = 'flex';
+      }
+
+      function showSignIn() {
+        if (tabSignIn) {
+          tabSignIn.classList.add('active');
+          tabSignIn.setAttribute('aria-selected', 'true');
+        }
+        if (tabSignUp) {
+          tabSignUp.classList.remove('active');
+          tabSignUp.setAttribute('aria-selected', 'false');
+        }
+        if (signUpSlot) signUpSlot.style.display = 'none';
+        if (signInSlot) signInSlot.style.display = 'flex';
+        showAlert('');
+      }
+
+      function showSignUp() {
+        if (tabSignUp) {
+          tabSignUp.classList.add('active');
+          tabSignUp.setAttribute('aria-selected', 'true');
+        }
+        if (tabSignIn) {
+          tabSignIn.classList.remove('active');
+          tabSignIn.setAttribute('aria-selected', 'false');
+        }
+        if (signInSlot) signInSlot.style.display = 'none';
+        if (signUpSlot) {
+          signUpSlot.style.display = 'flex';
+          if (!signUpMounted && window.Clerk && window.Clerk.loaded) {
+            signUpMounted = true;
+            window.Clerk.mountSignUp(signUpSlot, {
+              forceRedirectUrl: '/app.html',
+              fallbackRedirectUrl: '/app.html',
+              signInUrl: '/#sign-in',
+            });
+          }
+        }
+        showAlert('');
+      }
+
+      if (tabSignIn) tabSignIn.addEventListener('click', (e) => { e.preventDefault(); window.location.hash = '#sign-in'; showSignIn(); });
+      if (tabSignUp) tabSignUp.addEventListener('click', (e) => { e.preventDefault(); window.location.hash = '#sign-up'; showSignUp(); });
+
+      // Listen for hash changes so Clerk's internal "Sign up" and "Sign in" links switch views
+      window.addEventListener('hashchange', () => {
+        const h = (window.location.hash || '').toLowerCase();
+        if (h.includes('sign-up') || h.includes('signup')) {
+          showSignUp();
+        } else {
+          showSignIn();
+        }
+      });
+
+      // Check initial URL hash / path
+      const h = (window.location.hash || '').toLowerCase();
+      const p = (window.location.pathname || '').toLowerCase();
+      if (h.includes('sign-up') || h.includes('signup') || p.includes('sign-up') || p.includes('signup')) {
+        showSignUp();
+      } else {
+        showSignIn();
+      }
+
+      // 4. Safe OAuth Session Synchronization (Prevents Loop and establishes server cookie)
+      async function handleClerkSession() {
+        if (!window.Clerk || !window.Clerk.user || isLoggedOut || isSyncingOAuth) return;
+        isSyncingOAuth = true;
+        showAlert('Signing in with Google / Clerk SSO...', 'success');
+
+        try {
+          let token = null;
+          if (window.Clerk.session && typeof window.Clerk.session.getToken === 'function') {
+            token = await window.Clerk.session.getToken();
+          }
+
+          const headers = {};
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+
+          const cu = window.Clerk.user;
+          const fullName = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.fullName || cu.username || '';
+          const emailAddr = (cu.primaryEmailAddress && cu.primaryEmailAddress.emailAddress) || (cu.emailAddresses && cu.emailAddresses[0] && cu.emailAddresses[0].emailAddress) || '';
+          const isOnboarded = (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) || (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) || (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true');
+
+          if (fullName) headers['X-Clerk-User-Name'] = encodeURIComponent(fullName);
+          if (emailAddr) headers['X-Clerk-User-Email'] = encodeURIComponent(emailAddr);
+          if (isOnboarded) headers['X-Clerk-Onboarded'] = '1';
+
+          // Exchange Clerk session token for server cookie rxv_sess
+          const res = await fetch('/api/me', { headers, credentials: 'include' });
+          if (res.ok) {
+            showAlert('Authentication successful! Launching workspace...', 'success');
+            setTimeout(() => {
+              window.location.replace('/app.html');
+            }, 250);
+          } else {
+            isSyncingOAuth = false;
+            const err = await res.json().catch(() => ({}));
+            showAlert(err.error || 'Session could not be synchronized with server. Please try signing in again.', 'error');
+          }
+        } catch (e) {
+          isSyncingOAuth = false;
+          showAlert('Network error while connecting to workspace.', 'error');
+        }
+      }
+
+      // 5. Mount Clerk Prominently at Top
+      async function loadClerkSafely() {
+        if (!window.Clerk) return;
+        try {
+          await window.Clerk.load({
+            ui: { ClerkUI: window.__internal_ClerkUICtor },
+            appearance: {
+              variables: {
+                colorPrimary: '#0d5d41',
+                colorBackground: '#ffffff',
+                colorText: '#14221c',
+                colorNeutral: '#5d7468',
+                borderRadius: '14px',
+              },
+              elements: {
+                formButtonPrimary: {
+                  background: 'linear-gradient(135deg, #0d5d41 0%, #2f8a63 100%) !important',
+                  borderRadius: '99px !important',
+                  boxShadow: '0 4px 14px rgba(13, 93, 65, 0.28) !important',
+                },
+                footerActionLink: {
+                  color: '#0d5d41 !important',
+                  fontWeight: '600 !important',
+                },
+              },
+            },
+          });
+
+          // Check if user is already signed in via OAuth
+          if (!isLoggedOut && window.Clerk.user) {
+            handleClerkSession();
+            return;
+          }
+
+          if (typeof window.Clerk.addListener === 'function') {
+            window.Clerk.addListener(({ user }) => {
+              if (user && !isLoggedOut) {
+                handleClerkSession();
+              }
+            });
+          }
+
+          // Mount Clerk into visible top slot
+          if (signInSlot) {
+            window.Clerk.mountSignIn(signInSlot, {
+              forceRedirectUrl: '/app.html',
+              fallbackRedirectUrl: '/app.html',
+              signUpUrl: '/#sign-up',
+            });
+          }
+        } catch (clerkErr) {
+          console.error('Clerk SSO initialization error:', clerkErr.message);
+          showAlert('Clerk authentication service is temporarily unavailable. Please check your network connection.', 'error');
+        }
+      }
+
+      // Check if demo login is enabled via server env
+      fetch('/api/billing/config')
+        .then((r) => r.ok ? r.json() : null)
+        .then((cfg) => {
+          if (cfg && cfg.auth && cfg.auth.demoLoginEnabled) {
+            const wrap = document.getElementById('demoAccessWrap');
+            if (wrap) wrap.style.display = 'flex';
+          }
+        })
+        .catch(() => { });
+
+      async function doQuickLogin(email, password, btnElement) {
+        if (!btnElement) return;
+        const origText = btnElement.textContent;
+        btnElement.disabled = true;
+        btnElement.textContent = 'Logging in...';
+        showAlert('Signing in with demo credentials...', 'success');
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include'
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || 'Demo login failed');
+          showAlert('Login successful. Loading workspace...', 'success');
+          setTimeout(() => {
+            window.location.replace('/app.html');
+          }, 250);
+        } catch (err) {
+          showAlert(err.message || 'Demo login failed.', 'error');
+          btnElement.disabled = false;
+          btnElement.textContent = origText;
+        }
+      }
+
+      const btnAdmin = document.getElementById('btnDemoAdmin');
+      if (btnAdmin) {
+        btnAdmin.addEventListener('click', () => doQuickLogin('admin@demo.com', 'admin123', btnAdmin));
+      }
+      const btnClient = document.getElementById('btnDemoClient');
+      if (btnClient) {
+        btnClient.addEventListener('click', () => doQuickLogin('client@demo.com', 'client123', btnClient));
+      }
+
+
+
+      // Initialize Clerk
+      if (document.readyState === 'complete') {
+        loadClerkSafely();
+      } else {
+        window.addEventListener('load', loadClerkSafely);
+      }
+    })();
+  </script>
+</body>
+
+</html>
