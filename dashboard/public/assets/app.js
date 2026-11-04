@@ -16568,9 +16568,38 @@ async function viewSettings(root) {
       el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Speed-to-Lead Inbound Webhook'),
       el('h3', { style: 'margin:0 0 6px;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Inbound Lead-to-Call Relay URL'),
       el('p', { style: 'margin:0 0 16px;font-size:0.84rem;color:#5d7468;max-width:720px;' }, 'Paste this URL into Meta / Facebook Lead Ads, Zapier, Webflow, or Google Forms. Whenever someone submits their contact form, your AI receptionist immediately places an outbound call within 3 seconds.'),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;max-width:720px;' }, [
-        el('input', { class: 'input', readonly: true, value: ingestUrl, style: 'font-family:var(--mono);font-size:0.83rem;background:transparent;border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;box-shadow:none;' }),
-        copyUrlBtn2
+      el('div', { style: 'display:flex;align-items:center;gap:10px;max-width:720px;flex-wrap:wrap;' }, [
+        el('input', { class: 'input', readonly: true, value: ingestUrl, style: 'flex:1;min-width:260px;font-family:var(--mono);font-size:0.83rem;background:transparent;border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;box-shadow:none;' }),
+        copyUrlBtn2,
+        el('button', {
+          type: 'button',
+          class: 'btn btn-primary btn-sm',
+          style: 'border-radius:999px;padding:8px 18px;background:#0d5d41;color:#fff;font-weight:700;border:none;cursor:pointer;',
+          onclick: async (ev) => {
+            const btn = ev.currentTarget;
+            btn.disabled = true;
+            btn.textContent = 'Simulating Lead...';
+            try {
+              const res = await api('/api/leads/ingest?tenantId=' + encodeURIComponent(t.id || 'default'), {
+                method: 'POST',
+                body: {
+                  name: 'Priya Sharma (Sample Ad Lead)',
+                  phone: '+91 98765 43210',
+                  email: 'priya.sharma@example.com',
+                  formName: 'Meta Instant Form #1042',
+                  campaign: 'Meta Ads Demo',
+                  notes: 'Interested in booking product demo for clinic.'
+                }
+              });
+              toast(res.message || 'Sample Meta Ads lead received & logged in CRM!', 'ok');
+            } catch (err) {
+              toast(err.message || 'Test failed.', 'err');
+            } finally {
+              btn.disabled = false;
+              btn.textContent = '⚡ Test Inbound Lead';
+            }
+          }
+        }, '⚡ Test Inbound Lead')
       ])
     ]));
   }
@@ -17694,11 +17723,18 @@ async function viewCrmPipeline(root) {
             type: 'button',
             class: 'btn btn-ghost btn-sm',
             style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:4px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;',
-            title: 'Open WhatsApp Chat',
+            title: 'Open WhatsApp Chat with Pre-filled Follow-up',
             onclick: (e) => {
               e.stopPropagation();
-              if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
-              else toast('No valid phone number for WhatsApp.', 'warn');
+              if (cleanPhone) {
+                const company = (State.me && State.me.tenant && State.me.tenant.name) || 'Seevora AI Voice';
+                const custName = c.name || 'there';
+                const msg = `Hello ${custName}! Following up from ${company}. Our AI Voice Receptionist logged your inquiry. How can we help you today?`;
+                const waUrl = c.waMeUrl || ('https://wa.me/' + cleanPhone.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg));
+                window.open(waUrl, '_blank');
+              } else {
+                toast('No valid phone number for WhatsApp.', 'warn');
+              }
             }
           }, [
             el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),
@@ -18760,11 +18796,21 @@ const topBar = el('div', { class: 'flex items-center justify-between', style: 'm
       type: 'button',
       class: 'btn btn-ghost btn-sm',
       style: 'border-radius:999px;font-size:0.75rem;font-weight:700;padding:3px 10px;background:rgba(37,211,102,0.10);color:#0d5d41;border:1px solid rgba(37,211,102,0.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s ease;',
-      title: 'Open WhatsApp Chat',
+      title: 'Open WhatsApp Chat with Pre-filled Follow-up',
       onclick: (e) => {
         e.stopPropagation();
-        if (cleanPhone) window.open('https://wa.me/' + cleanPhone, '_blank');
-        else toast('No valid phone number for WhatsApp.', 'warn');
+        if (cleanPhone) {
+          const company = (State.me && State.me.tenant && State.me.tenant.name) || 'Seevora AI Voice';
+          const custName = deal.name || 'there';
+          let msg = `Hello ${custName}! Thank you for your interest in ${company}. Our team received your inquiry. When is a good time to speak?`;
+          if (deal.summary && deal.summary.length > 5) {
+            msg = `Hello ${custName}! Following up from ${company} regarding: ${deal.summary.slice(0, 140)}. Please let us know how we can assist you!`;
+          }
+          const waUrl = deal.waMeUrl || ('https://wa.me/' + cleanPhone.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg));
+          window.open(waUrl, '_blank');
+        } else {
+          toast('No valid phone number for WhatsApp.', 'warn');
+        }
       }
     }, [
       el('span', { style: 'display:inline-flex;align-items:center;' }, [uiIcon('whatsapp', 13)]),

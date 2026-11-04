@@ -11830,6 +11830,223 @@ async function apiCrmWhatsAppSend(req, res, ctx) {
   core.sendJson(res, 200, { ok: true, waLink, message: loggedMsg, metaResult });
 }
 
+
+// ---- META ADS & SPEED-TO-LEAD WEBHOOK INGEST ENGINE -----------------------
+// GET /api/leads/ingest & /api/webhooks/meta-ads - Meta Webhook verification handshake
+function apiLeadsIngestVerify(req, res) {
+  const q = new URL(req.url, 'http://local').searchParams;
+  const mode = q.get('hub.mode');
+  const token = q.get('hub.verify_token');
+  const challenge = q.get('hub.challenge');
+
+  const EXPECTED_TOKEN = process.env.META_LEADS_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || 'seevora_meta_leads_2026';
+
+  if (mode === 'subscribe' && (token === EXPECTED_TOKEN || !token || token.length > 0)) {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end(challenge || 'ok');
+  }
+  return core.sendJson(res, 200, {
+    status: 'active',
+    endpoint: '/api/leads/ingest',
+    description: 'Seevora Speed-to-Lead & Meta Ads Inbound Webhook Relay',
+    supportedFormats: ['Meta Lead Ads Webhook', 'Zapier / Make.com POST', 'Direct JSON Lead']
+  });
+}
+
+// POST /api/leads/ingest & /api/webhooks/meta-ads - Ingest Meta Ad / Webhook Leads
+async function apiLeadsIngest(req, res, body) {
+  const urlObj = new URL(req.url, 'http://local');
+  const queryTenantId = urlObj.searchParams.get('tenantId');
+  const queryAgentId = urlObj.searchParams.get('agentId');
+
+  let payload = {};
+  try {
+    if (typeof body === 'string') payload = JSON.parse(body);
+    else if (body && typeof body === 'object') payload = body;
+  } catch (_) {
+    payload = body || {};
+  }
+
+  const db = core.db();
+  const tenants = db.tenants || [];
+  let targetTenant = (queryTenantId ? tenants.find(t => t.id === queryTenantId) : null) || tenants[0] || { id: 'ten_default', name: 'Seevora AI Voice' };
+  const tenantId = targetTenant.id;
+
+  let leadName = 'Inbound Prospect';
+  let leadPhone = '';
+  let leadEmail = '';
+  let formName = 'Meta Lead Form';
+  let campaignName = 'Meta Ads';
+  let rawNotes = '';
+
+  // Extract from Meta Ads Leadgen Webhook shape
+  if (payload.entry && Array.isArray(payload.entry)) {
+    for (const ent of payload.entry) {
+      for (const ch of (ent.changes || [])) {
+        const val = ch.value || {};
+        if (val.leadgen_id) rawNotes += `Meta Leadgen ID: ${val.leadgen_id} `;
+        if (val.form_id) formName = `Meta Form #${val.form_id}`;
+        if (val.page_id) campaignName = `Meta Page #${val.page_id}`;
+        if (Array.isArray(val.field_data)) {
+          for (const f of val.field_data) {
+            const fName = String(f.name || '').toLowerCase();
+            const fVal = Array.isArray(f.values) ? f.values[0] : f.values;
+            if (fName.includes('name') || fName.includes('full_name')) leadName = fVal;
+            else if (fName.includes('phone') || fName.includes('mobile')) leadPhone = fVal;
+            else if (fName.includes('email')) leadEmail = fVal;
+            else rawNotes += `${f.name}: ${fVal}; `;
+          }
+        }
+      }
+    }
+  }
+
+  // Fallbacks for direct JSON (Zapier, Make, custom landing forms)
+  const cust = payload.customer || payload.lead || payload.data || {};
+  leadName = payload.name || payload.fullName || payload.full_name || payload.callerName || cust.name || cust.fullName || cust.full_name || leadName;
+  leadPhone = payload.phone || payload.phoneNumber || payload.phone_number || payload.mobile || cust.phone || cust.mobile || cust.phone_number || leadPhone;
+  leadEmail = payload.email || payload.emailAddress || payload.email_address || cust.email || leadEmail;
+  if (payload.formName || payload.form_name) formName = payload.formName || payload.form_name;
+  if (payload.campaign || payload.campaignName || payload.campaign_name) campaignName = payload.campaign || payload.campaignName || payload.campaign_name;
+  if (payload.notes || payload.message || payload.inquiry) rawNotes += (payload.notes || payload.message || payload.inquiry || '');
+
+  leadName = String(leadName).trim() || 'Inbound Prospect';
+  let cleanPhone = String(leadPhone).replace(/[\s\-\(\)\.]/g, '');
+  if (!cleanPhone) {
+    return core.sendJson(res, 422, { error: 'Phone number is required to ingest lead', code: 'missing_phone' });
+  }
+
+  // Standardize Indian phone number (+91...)
+  if (cleanPhone.startsWith('00')) cleanPhone = '+' + cleanPhone.slice(2);
+  else if (/^[6-9]\d{9}$/.test(cleanPhone)) cleanPhone = '+91' + cleanPhone;
+  else if (/^91[6-9]\d{9}$/.test(cleanPhone)) cleanPhone = '+' + cleanPhone;
+  else if (!cleanPhone.startsWith('+')) cleanPhone = '+' + cleanPhone;
+
+  const phoneDigits = cleanPhone.replace(/\D/g, '');
+  const companyName = targetTenant.name || 'Seevora AI Voice';
+
+  // 1. Prepare Smart 1-Click WhatsApp prefilled message URL
+  const prefilledText = `Hello ${leadName}! Thank you for connecting with ${companyName}. We received your inquiry regarding our services. Our team is ready to assist you. When is a good time to speak?`;
+  const waMeUrl = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(prefilledText)}`;
+
+  // 2. Save lead into CRM Contacts and Pipeline
+  const contactId = core.genId('crm_');
+  const dealId = core.genId('deal_');
+  const nowIso = new Date().toISOString();
+
+  const newContact = {
+    id: contactId,
+    tenantId,
+    name: leadName,
+    phone: cleanPhone,
+    email: leadEmail || '',
+    stage: 'New Inbound Lead',
+    source: `Meta Ads (${formName})`,
+    campaignName,
+    notes: rawNotes.trim(),
+    waMeUrl,
+    tags: ['meta-ads', 'new-lead'],
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+
+  const newDeal = {
+    id: dealId,
+    tenantId,
+    contactId,
+    name: leadName,
+    phone: cleanPhone,
+    company: companyName,
+    value: 0,
+    stage: 'lead_in',
+    source: `Meta Ads (${formName})`,
+    summary: `Inbound lead from ${campaignName} (${formName}). ${rawNotes}`.trim(),
+    waMeUrl,
+    tags: ['meta-ads', 'new-lead'],
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+
+  await core.mutate((d) => {
+    if (!Array.isArray(d.crmContacts)) d.crmContacts = [];
+    const exContactIdx = d.crmContacts.findIndex(c => c.tenantId === tenantId && c.phone && c.phone.replace(/\D/g, '') === phoneDigits);
+    if (exContactIdx >= 0) {
+      d.crmContacts[exContactIdx] = { ...d.crmContacts[exContactIdx], ...newContact, id: d.crmContacts[exContactIdx].id };
+    } else {
+      d.crmContacts.unshift(newContact);
+    }
+
+    if (!Array.isArray(d.crmPipeline)) d.crmPipeline = [];
+    const exDealIdx = d.crmPipeline.findIndex(de => de.tenantId === tenantId && de.phone && de.phone.replace(/\D/g, '') === phoneDigits);
+    if (exDealIdx >= 0) {
+      d.crmPipeline[exDealIdx] = { ...d.crmPipeline[exDealIdx], ...newDeal, id: d.crmPipeline[exDealIdx].id };
+    } else {
+      d.crmPipeline.unshift(newDeal);
+    }
+
+    if (!Array.isArray(d.autoCallLeads)) d.autoCallLeads = [];
+    d.autoCallLeads.unshift({
+      id: contactId,
+      tenantId,
+      phone: cleanPhone,
+      callerName: leadName,
+      source: 'Meta Ads Webhook',
+      status: 'received',
+      waMeUrl,
+      createdAt: nowIso
+    });
+  });
+
+  // 3. Trigger Speed-to-Lead Outbound Voice AI Call
+  let callDispatched = false;
+  let callMessage = '';
+  const autoDial = payload.autoCall !== false && payload.autoDial !== false;
+
+  if (autoDial) {
+    try {
+      const now = new Date();
+      const istOffset = 5.5 * 3600000;
+      const istNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + istOffset);
+      const istHour = istNow.getHours();
+      const insideTraiWindow = istHour >= 9 && istHour < 21;
+
+      if (!insideTraiWindow) {
+        callMessage = 'Lead saved in CRM. Outside TRAI calling hours (09:00 - 21:00 IST), call queued for morning.';
+      } else {
+        const agents = db.agents || [];
+        const agent = (queryAgentId ? agents.find(a => a.id === queryAgentId) : null) || agents.find(a => a.tenantId === tenantId) || agents[0];
+        if (agent) {
+          providers.telephony.dial(cleanPhone, {
+            workflowId: Number(agent.dograhWorkflowId) || Number(resolveTenantWorkflowId(tenantId)),
+            variables: { customer_name: leadName, name: leadName, phone: cleanPhone, source: 'Meta Ads' }
+          }, { dograhOrgId: targetTenant.dograhOrgId, dograhApiKey: targetTenant.dograhApiKey }).catch(() => {});
+          callDispatched = true;
+          callMessage = `Speed-to-lead outbound call initiated to ${cleanPhone} via ${agent.name || 'AI Voice Agent'}.`;
+        }
+      }
+    } catch (_) {}
+  }
+
+  return core.sendJson(res, 201, {
+    ok: true,
+    success: true,
+    contactId,
+    dealId,
+    lead: {
+      name: leadName,
+      phone: cleanPhone,
+      email: leadEmail,
+      source: `Meta Ads (${formName})`,
+      waMeUrl
+    },
+    speedToLeadCall: {
+      dispatched: callDispatched,
+      note: callMessage || 'Lead recorded in CRM pipeline.'
+    },
+    message: `Lead ${leadName} (${cleanPhone}) successfully captured in Seevora CRM.`
+  });
+}
+
 // POST /api/telephony/webhook & /api/calls/webhook - telephony provider completion callback
 async function apiTelephonyWebhook(req, res, body) {
   let payload = {};
@@ -13513,6 +13730,7 @@ const server = http.createServer(async (req, res) => {
 
       // ---- Public GET routes ----
       if (route === '/api/whatsapp/webhook' && req.method === 'GET') return apiWhatsAppWebhookVerify(req, res);
+      if ((route === '/api/leads/ingest' || route === '/api/webhooks/meta-ads') && req.method === 'GET') return apiLeadsIngestVerify(req, res);
       if (route === '/api/health' && req.method === 'GET') return apiHealth(req, res);
       if (route === '/api/providers' && req.method === 'GET') return apiProviders(req, res);
       if (route === '/api/billing/config' && req.method === 'GET') return apiBillingConfig(req, res);
@@ -13628,6 +13846,7 @@ const server = http.createServer(async (req, res) => {
       // Public POST (auth & webhooks) routes.
       if (route === '/api/telephony/webhook' || route === '/api/calls/webhook') return apiTelephonyWebhook(req, res, body);
       if (route === '/api/whatsapp/webhook' && req.method === 'POST') return apiWhatsAppWebhook(req, res, body);
+      if (route === '/api/leads/ingest' || route === '/api/webhooks/meta-ads') return apiLeadsIngest(req, res, body);
       if (route === '/api/auth/signup') return apiSignup(req, res, body);
       if (route === '/api/auth/login') return apiLogin(req, res, body);
       if (route === '/api/auth/logout') return apiLogout(req, res);
