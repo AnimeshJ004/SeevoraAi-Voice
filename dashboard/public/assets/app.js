@@ -15293,7 +15293,7 @@ async function viewSettings(root) {
                 onclick: async () => {
                   if (!confirm('Are you sure you want to disconnect ' + num + '?')) return;
                   try {
-                    await api('/api/telephony/dids/delete', { method: 'POST', body: { number: num } });
+                    await api('/api/telephony/dids/delete', { method: 'POST', body: { number: num, address: num, id: (typeof d === 'object' ? d.id : undefined) } });
                     toast('Number disconnected.', 'ok');
                     renderVoBizTab(panel);
                   } catch (e) { toast(e.message, 'err'); }

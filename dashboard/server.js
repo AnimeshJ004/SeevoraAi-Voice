@@ -7827,8 +7827,10 @@ async function apiByonSave(req, res, ctx) {
     : ' in platform pool';
 
   core.sendJson(res, 201, {
+    ok: true,
     connection: { ...connection, authToken: connection.authToken ? '••••••••' : undefined },
-    message: `Phone number ${address} connected${assignMsg}. Ready to assign to AI Agents.`
+    message: `Phone number ${address} connected${assignMsg}. Ready to assign to AI Agents.`,
+    note: `Phone number ${address} connected${assignMsg}. Ready to assign to AI Agents.`
   });
 }
 
@@ -7884,28 +7886,55 @@ async function apiByonDelete(req, res, ctx) {
   const b = ctx.body || {};
   const urlObj = new URL(req.url, 'http://localhost');
   const id = b.id || urlObj.searchParams.get('id');
-  if (!id) return core.sendJson(res, 422, { error: 'Connection ID is required', code: 'missing_id' });
-  const isAdm = ctx.user && ['super_admin', 'admin'].includes(ctx.user.role);
+  const rawNumber = String(b.number || b.address || b.did || urlObj.searchParams.get('number') || urlObj.searchParams.get('address') || urlObj.searchParams.get('did') || '').trim();
+  const targetDigits = rawNumber.replace(/\D/g, '');
+  if (!id && !targetDigits) return core.sendJson(res, 422, { error: 'Connection ID or Phone Number is required', code: 'missing_id' });
+  const isAdm = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
 
   let removed = null;
+  let clearedTenant = null;
   await core.mutate((d) => {
     if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
-    const idx = d.byonConnections.findIndex((x) => x.id === id && (isAdm || x.tenantId === ctx.tenant.id));
+    const idx = d.byonConnections.findIndex((x) => {
+      if (id && x.id === id) return isAdm || x.tenantId === ctx.tenant.id || !x.tenantId;
+      if (targetDigits) {
+        const xDigits = String(x.address || '').replace(/\D/g, '');
+        const match = xDigits === targetDigits || (xDigits.length >= 10 && targetDigits.length >= 10 && (xDigits.endsWith(targetDigits) || targetDigits.endsWith(xDigits)));
+        if (match) return isAdm || x.tenantId === ctx.tenant.id || !x.tenantId;
+      }
+      return false;
+    });
     if (idx >= 0) {
       removed = d.byonConnections.splice(idx, 1)[0];
       if (removed.tenantId) {
         const t = d.tenants.find((x) => x.id === removed.tenantId);
-        if (t && t.telephony && t.telephony.did === removed.address) {
-          const next = d.byonConnections.find((x) => x.tenantId === removed.tenantId);
-          t.telephony.did = next ? next.address : undefined;
+        if (t && t.telephony && t.telephony.did) {
+          const tDigits = String(t.telephony.did).replace(/\D/g, '');
+          const rDigits = String(removed.address || '').replace(/\D/g, '');
+          if (tDigits === rDigits || tDigits.endsWith(rDigits) || rDigits.endsWith(tDigits)) {
+            const next = d.byonConnections.find((x) => x.tenantId === removed.tenantId);
+            t.telephony.did = next ? next.address : undefined;
+          }
         }
       }
-      addAudit(d, ctx, 'telephony.byon.deleted', 'byon_connection', id, { address: removed.address });
+      addAudit(d, ctx, 'telephony.byon.deleted', 'byon_connection', removed.id, { address: removed.address });
+    } else if (targetDigits) {
+      // Check if tenant has this DID set directly on tenant.telephony
+      const t = d.tenants.find((x) => x.id === ctx.tenant.id);
+      if (t && t.telephony && t.telephony.did) {
+        const tDigits = String(t.telephony.did).replace(/\D/g, '');
+        if (tDigits === targetDigits || (tDigits.length >= 10 && targetDigits.length >= 10 && (tDigits.endsWith(targetDigits) || targetDigits.endsWith(tDigits)))) {
+          clearedTenant = t.telephony.did;
+          t.telephony.did = undefined;
+          addAudit(d, ctx, 'telephony.byon.deleted', 'tenant_telephony', t.id, { address: clearedTenant });
+        }
+      }
     }
   });
 
-  if (!removed) return core.sendJson(res, 404, { error: 'Phone number connection not found', code: 'not_found' });
-  core.sendJson(res, 200, { ok: true, message: `Disconnected phone number ${removed.address}` });
+  if (!removed && !clearedTenant) return core.sendJson(res, 404, { error: 'Phone number connection not found', code: 'not_found' });
+  const disconnectedAddr = removed ? removed.address : (clearedTenant || rawNumber);
+  core.sendJson(res, 200, { ok: true, message: `Disconnected phone number ${disconnectedAddr}` });
 }
 
 async function apiPrivacyMode(req, res, ctx) {
@@ -13498,7 +13527,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'DELETE' && route === '/api/admin/tenants') return core.requireRole(req, res, 'admin', apiAdminTenantDelete);
       if (req.method === 'DELETE' && route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionDelete);
       if (req.method === 'DELETE' && route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadDelete);
-      if (req.method === 'DELETE' && (route === '/api/byon' || route.startsWith('/api/byon/'))) return core.requireRole(req, res, 'owner', apiByonDelete);
+      if (req.method === 'DELETE' && (route === '/api/byon' || route.startsWith('/api/byon/') || route === '/api/telephony/dids/delete' || route === '/api/telephony/dids' || route.startsWith('/api/telephony/dids/'))) return core.requireAuth(req, res, apiByonDelete);
 
       // ---- Authed GET routes ----
       if (req.method === 'GET') {
@@ -13511,6 +13540,8 @@ const server = http.createServer(async (req, res) => {
         if (route === '/api/payment-intents') return core.requireAuth(req, res, apiPaymentIntents);
         if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportList);
         if (route === '/api/byon') return core.requireAuth(req, res, apiByonList);
+        if (route === '/api/telephony/dids') return core.requireAuth(req, res, apiTelephonyStatus);
+        if (route === '/api/telephony/dids/delete') return core.sendJson(res, 405, { error: 'Method Not Allowed: Use POST or DELETE to remove a phone number', code: 'method_not_allowed' });
         if (route === '/api/dograh/flows') return core.requireAuth(req, res, apiDograhFlowsList);
         if (route === '/api/dograh/remote-workflows') return core.requireRole(req, res, 'admin', apiDograhRemoteWorkflows);
         if (route === '/api/voice/catalog') return core.requireAuth(req, res, apiVoiceCatalog);
@@ -13656,9 +13687,9 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/billing/razorpay/verify') return core.requireAuth(req, res, apiRazorpayVerifyPayment, body);
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
-      if (route === '/api/byon') return core.requireRole(req, res, 'owner', apiByonSave, body);
+      if (route === '/api/byon' || route === '/api/telephony/connect-did' || route === '/api/telephony/dids') return core.requireAuth(req, res, apiByonSave, body);
       if (route === '/api/byon/assign') return core.requireRole(req, res, 'owner', apiByonAssign, body);
-      if (route === '/api/byon/delete') return core.requireRole(req, res, 'owner', apiByonDelete, body);
+      if (route === '/api/byon/delete' || route === '/api/telephony/dids/delete' || route === '/api/telephony/disconnect-did') return core.requireAuth(req, res, apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
       if (route === '/api/user/password' || route === '/api/auth/password') return core.requireAuth(req, res, apiUserPasswordUpdate, body);
