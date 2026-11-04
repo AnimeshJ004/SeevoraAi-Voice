@@ -13382,7 +13382,7 @@ async function viewWhatsappHub(root) {
           el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (isConn ? '#047857' : '#94a3b8') + ';display:inline-block;' }),
           el('span', {}, isConn ? 'Live Connected' : 'Setup Required')
         ]),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, isConn ? 'Verified & Active' : 'Add keys in Connected Apps')
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, isConn ? 'Verified & Active' : 'Link in Connected Apps')
       ]),
       el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'TOTAL DISPATCHED'),
@@ -16225,6 +16225,315 @@ async function viewSettings(root) {
   // ==========================================================================
   // TAB 4: INBOUND AUTO-CALL & INTEGRATIONS + CONNECTED APPS HUB
   // ==========================================================================
+
+  function renderWhatsAppQrRow(row, waCfg, onRefresh) {
+    waCfg = waCfg || {};
+    const isConn = waCfg.status === 'connected' || waCfg.method === 'qr_session';
+    const isEnabled = waCfg.enabled !== false;
+    const senderNumber = waCfg.senderNumber || waCfg.phoneNumber || '';
+    const companyName = waCfg.companyName || 'Seevora AI Voice';
+
+    const pillGreen = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(4,120,87,0.10);color:#047857;font-size:0.72rem;font-weight:750;border-radius:999px;';
+    const pillGray = 'display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(93,116,104,0.10);color:#5d7468;font-size:0.72rem;font-weight:750;border-radius:999px;';
+
+    const statusPill = el('span', {
+      style: isConn ? pillGreen : pillGray
+    }, [
+      el('span', { style: 'width:6px;height:6px;border-radius:50%;background:' + (isConn ? '#047857' : '#5d7468') + ';display:inline-block;' }),
+      el('span', {}, isConn ? 'Linked & Active' : 'Scan to Connect')
+    ]);
+
+    const enableToggle = el('input', {
+      type: 'checkbox',
+      checked: isEnabled,
+      style: 'accent-color:#0d5d41;width:18px;height:18px;cursor:pointer;'
+    });
+
+    enableToggle.onchange = async () => {
+      try {
+        await api('/api/crm-integrations/toggle', { method: 'POST', body: { channel: 'whatsapp', enabled: enableToggle.checked } });
+        toast('WhatsApp Auto-Dispatch ' + (enableToggle.checked ? 'enabled.' : 'disabled.'), 'ok');
+      } catch (e) {
+        toast(e.message, 'err');
+        enableToggle.checked = !enableToggle.checked;
+      }
+    };
+
+    const iconEl = el('div', {
+      style: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#0d5d41;flex-shrink:0;'
+    });
+    iconEl.innerHTML = navIcon('whatsapp');
+
+    // Header row
+    row.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;' }, [
+      iconEl,
+      el('div', { style: 'flex:1;min-width:240px;' }, [
+        el('div', { style: 'font-size:1.02rem;font-weight:800;color:#14221c;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+          el('span', {}, 'WhatsApp Business (Linked Device)'),
+          statusPill
+        ]),
+        el('div', { style: 'font-size:0.83rem;color:#5d7468;margin-top:3px;' },
+          '1-Click QR connection. Zero Meta Cloud API tokens, WABA setup, or developer portals required.'
+        )
+      ]),
+      el('label', { style: 'display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;color:#14221c;font-weight:750;' }, [
+        enableToggle,
+        el('span', {}, 'Auto-Dispatch')
+      ])
+    ]));
+
+    // Body content: Disconnected (QR Scanner) vs Connected (Active Device)
+    if (!isConn) {
+      const qrBox = el('div', {
+        id: 'wa-qr-container',
+        style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.18);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:240px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,0.04);'
+      }, [
+        el('div', { style: 'font-size:0.75rem;color:#5d7468;padding:24px 0;' }, 'Generating QR code...')
+      ]);
+
+      api('/api/whatsapp/qr').then((res) => {
+        qrBox.innerHTML = '';
+        if (res.qrSvg) {
+          qrBox.innerHTML = res.qrSvg;
+        } else if (res.qrDataUrl) {
+          const img = el('img', { src: res.qrDataUrl, style: 'width:220px;height:220px;display:block;' });
+          qrBox.appendChild(img);
+        }
+        qrBox.appendChild(el('div', { style: 'font-size:0.72rem;color:#5d7468;margin-top:10px;text-align:center;' }, 'Point your camera at this QR code'));
+        if (res.pairingCode) {
+          qrBox.appendChild(el('div', { style: 'font-size:0.74rem;font-weight:750;color:#0d5d41;margin-top:4px;' }, 'Pairing Code: ' + res.pairingCode));
+        }
+      }).catch(() => {
+        qrBox.innerHTML = '<div style="font-size:0.75rem;color:#dc2626;">Failed to load QR code. Click below to retry.</div>';
+      });
+
+      const phoneInp = el('input', {
+        type: 'tel',
+        value: senderNumber || '+91 80715 82519',
+        placeholder: '+91 98765 43210',
+        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;'
+      });
+
+      const brandInp = el('input', {
+        type: 'text',
+        value: companyName,
+        placeholder: 'Your Company Name',
+        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;'
+      });
+
+      const connectBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;border:none;font-size:0.84rem;cursor:pointer;'
+      }, '⚡ Connect WhatsApp (Linked Device)');
+
+      connectBtn.onclick = async () => {
+        connectBtn.disabled = true;
+        connectBtn.textContent = 'Connecting...';
+        try {
+          const ph = phoneInp.value.trim();
+          const br = brandInp.value.trim() || 'Seevora AI Voice';
+          await api('/api/whatsapp/qr/connect', { method: 'POST', body: { phoneNumber: ph, companyName: br } });
+          toast('WhatsApp Linked Device connected successfully!', 'ok');
+          if (onRefresh) onRefresh();
+        } catch (e) {
+          toast(e.message || 'Connection failed', 'err');
+          connectBtn.disabled = false;
+          connectBtn.textContent = '⚡ Connect WhatsApp (Linked Device)';
+        }
+      };
+
+      const stepsList = el('div', { style: 'flex:1;min-width:280px;max-width:540px;' }, [
+        el('div', { style: 'font-size:0.82rem;font-weight:800;color:#0d5d41;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;' }, 'Link your WhatsApp in 3 quick steps:'),
+        el('div', { style: 'font-size:0.85rem;color:#14221c;line-height:1.6;margin-bottom:18px;' }, [
+          el('div', { style: 'display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;' }, [
+            el('span', { style: 'width:20px;height:20px;border-radius:50%;background:rgba(13,93,65,0.10);color:#0d5d41;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;' }, '1'),
+            el('span', {}, 'Open WhatsApp on your mobile phone.')
+          ]),
+          el('div', { style: 'display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;' }, [
+            el('span', { style: 'width:20px;height:20px;border-radius:50%;background:rgba(13,93,65,0.10);color:#0d5d41;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;' }, '2'),
+            el('span', {}, 'Tap Menu (Android) or Settings (iPhone) → Linked Devices.')
+          ]),
+          el('div', { style: 'display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;' }, [
+            el('span', { style: 'width:20px;height:20px;border-radius:50%;background:rgba(13,93,65,0.10);color:#0d5d41;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;' }, '3'),
+            el('span', {}, 'Tap Link a Device and point your phone at the QR code, or confirm your number below.')
+          ])
+        ]),
+        el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;' }, [
+          el('div', {}, [
+            el('label', { style: 'display:block;font-size:0.72rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, 'Business WhatsApp Number'),
+            phoneInp
+          ]),
+          el('div', {}, [
+            el('label', { style: 'display:block;font-size:0.72rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, 'Brand / Business Name'),
+            brandInp
+          ])
+        ]),
+        el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+          connectBtn
+        ])
+      ]);
+
+      row.appendChild(el('div', { style: 'display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;margin:16px 0;' }, [
+        qrBox,
+        stepsList
+      ]));
+
+    } else {
+      const infoBox = el('div', {
+        style: 'background:rgba(13,93,65,0.04);border:1px solid rgba(13,93,65,0.14);border-radius:12px;padding:16px 20px;margin:12px 0 20px;max-width:880px;'
+      }, [
+        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+            el('div', { style: 'width:42px;height:42px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;' }, '✓'),
+            el('div', {}, [
+              el('div', { style: 'font-size:1.05rem;font-weight:850;color:#14221c;' }, senderNumber || '+91 80715 82519'),
+              el('div', { style: 'font-size:0.76rem;color:#047857;font-weight:700;' }, '● Connected & Active (WhatsApp Web Linked Device) · Syncing Leads')
+            ])
+          ]),
+          el('div', { style: 'font-size:0.76rem;color:#5d7468;' }, 'Connected: ' + (waCfg.connectedAt ? new Date(waCfg.connectedAt).toLocaleDateString('en-IN') : 'Live Session'))
+        ]),
+        el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(13,93,65,0.10);' }, [
+          el('div', { style: 'background:#ffffff;padding:10px 14px;border-radius:8px;border:1px solid rgba(13,93,65,0.10);' }, [
+            el('div', { style: 'font-size:0.70rem;font-weight:800;color:#0d5d41;text-transform:uppercase;' }, '1. META ADS LEADS'),
+            el('div', { style: 'font-size:0.78rem;color:#14221c;margin-top:2px;' }, 'Instant automated WhatsApp greeting dispatched upon form submit.')
+          ]),
+          el('div', { style: 'background:#ffffff;padding:10px 14px;border-radius:8px;border:1px solid rgba(13,93,65,0.10);' }, [
+            el('div', { style: 'font-size:0.70rem;font-weight:800;color:#047857;text-transform:uppercase;' }, '2. "INTERESTED" REPLIES'),
+            el('div', { style: 'font-size:0.78rem;color:#14221c;margin-top:2px;' }, 'AI Voice Agent automatically initiates live phone call instantly!')
+          ]),
+          el('div', { style: 'background:#ffffff;padding:10px 14px;border-radius:8px;border:1px solid rgba(13,93,65,0.10);' }, [
+            el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, '3. "NOT INTERESTED" REPLIES'),
+            el('div', { style: 'font-size:0.78rem;color:#14221c;margin-top:2px;' }, 'Voice calls suppressed; polite WhatsApp follow-ups delivered.')
+          ])
+        ])
+      ]);
+
+      const brandInp = el('input', {
+        type: 'text',
+        value: companyName,
+        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;max-width:320px;outline:none;box-sizing:border-box;'
+      });
+
+      const saveBrandBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-ghost',
+        style: 'border-radius:999px;padding:6px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.80rem;cursor:pointer;'
+      }, 'Save Brand Name');
+
+      saveBrandBtn.onclick = async () => {
+        try {
+          await api('/api/whatsapp/qr/connect', { method: 'POST', body: { phoneNumber: senderNumber, companyName: brandInp.value.trim() } });
+          toast('Brand name saved: ' + brandInp.value.trim(), 'ok');
+        } catch (e) {
+          toast(e.message, 'err');
+        }
+      };
+
+      const testBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 22px;font-weight:750;border:none;font-size:0.84rem;cursor:pointer;'
+      }, 'Send Test Alert');
+
+      testBtn.onclick = async () => {
+        testBtn.disabled = true;
+        testBtn.textContent = 'Sending...';
+        try {
+          const res = await api('/api/crm-integrations/test', { method: 'POST', body: { channel: 'whatsapp' } });
+          toast(res.message || 'Test alert delivered via WhatsApp session!', res.ok ? 'ok' : 'err');
+        } catch (e) {
+          toast(e.message || 'Test send failed', 'err');
+        } finally {
+          testBtn.disabled = false;
+          testBtn.textContent = 'Send Test Alert';
+        }
+      };
+
+      const simInterestedBtn = el('button', {
+        type: 'button',
+        style: 'border-radius:999px;padding:8px 18px;background:rgba(4,120,87,0.12);color:#047857;border:1px solid rgba(4,120,87,0.25);font-weight:750;font-size:0.82rem;cursor:pointer;'
+      }, '⚡ Test "Interested" Reply');
+
+      simInterestedBtn.onclick = async () => {
+        simInterestedBtn.disabled = true;
+        try {
+          const res = await api('/api/whatsapp/simulate-reply', {
+            method: 'POST',
+            body: {
+              fromPhone: senderNumber || '+91 98765 43210',
+              text: 'Hi, I am interested in your services. Please call me right now!',
+              senderName: 'Simulated Interested Lead'
+            }
+          });
+          toast(res.actionSummary || 'High Intent! Autonomous Voice AI call dispatched to lead!', 'ok');
+        } catch (e) {
+          toast(e.message, 'err');
+        } finally {
+          simInterestedBtn.disabled = false;
+        }
+      };
+
+      const simNotInterestedBtn = el('button', {
+        type: 'button',
+        style: 'border-radius:999px;padding:8px 18px;background:rgba(93,116,104,0.10);color:#5d7468;border:1px solid rgba(93,116,104,0.25);font-weight:750;font-size:0.82rem;cursor:pointer;'
+      }, '🛑 Test "Not Interested" Reply');
+
+      simNotInterestedBtn.onclick = async () => {
+        simNotInterestedBtn.disabled = true;
+        try {
+          const res = await api('/api/whatsapp/simulate-reply', {
+            method: 'POST',
+            body: {
+              fromPhone: senderNumber || '+91 98765 43210',
+              text: 'Not interested at this time, please do not call.',
+              senderName: 'Simulated Lead'
+            }
+          });
+          toast(res.actionSummary || 'Opt-out handled: Call suppressed, follow-up delivered on WhatsApp.', 'ok');
+        } catch (e) {
+          toast(e.message, 'err');
+        } finally {
+          simNotInterestedBtn.disabled = false;
+        }
+      };
+
+      const disconnectBtn = el('button', {
+        type: 'button',
+        style: 'border-radius:999px;padding:8px 18px;background:transparent;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;font-size:0.82rem;cursor:pointer;'
+      }, 'Disconnect WhatsApp');
+
+      disconnectBtn.onclick = async () => {
+        if (!confirm('Disconnect WhatsApp Linked Device session? Automated WhatsApp dispatches will pause.')) return;
+        disconnectBtn.disabled = true;
+        try {
+          await api('/api/whatsapp/qr/disconnect', { method: 'POST' });
+          toast('WhatsApp session disconnected.', 'ok');
+          if (onRefresh) onRefresh();
+        } catch (e) {
+          toast(e.message, 'err');
+          disconnectBtn.disabled = false;
+        }
+      };
+
+      row.appendChild(infoBox);
+      row.appendChild(el('div', { style: 'margin:14px 0;' }, [
+        el('label', { style: 'display:block;font-size:0.72rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, 'Display Brand Name in Messages:'),
+        el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
+          brandInp,
+          saveBrandBtn
+        ])
+      ]));
+
+      row.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;' }, [
+        testBtn,
+        simInterestedBtn,
+        simNotInterestedBtn,
+        disconnectBtn
+      ]));
+    }
+  }
+
   async function renderIntegrationsTab(panel) {
     const wrap = el('div', { class: 'settings-tab-inner aria-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
     panel.appendChild(wrap);
@@ -16279,18 +16588,12 @@ async function viewSettings(root) {
     const INTEGRATIONS_META = [
       {
         key: 'whatsapp',
-        badge: 'POPULAR IN INDIA',
+        badge: '1-CLICK QR CONNECT',
         badgeColor: '#059669',
-        label: 'WhatsApp Business',
+        label: 'WhatsApp Business (Linked Device)',
         iconName: 'whatsapp',
-        description: 'Sends instant WhatsApp updates, call confirmations, and appointment details directly to the caller mobile number via Meta Cloud API or VoBiz Line.',
-        fields: [
-          { key: 'metaToken', label: 'Meta System User Permanent Access Token', placeholder: 'EAAG...', type: 'password', hint: 'Generate from Meta Business Manager -> System Users with whatsapp_business_messaging.' },
-          { key: 'metaPhoneId', label: 'Meta WhatsApp Phone Number ID', placeholder: 'e.g. 104829182390192', type: 'text', hint: 'Found under WhatsApp -> API Setup in Meta Developer Dashboard.' },
-          { key: 'senderNumber', label: 'VoBiz / Sender WhatsApp Number', placeholder: '+91 80715 82519', type: 'text' },
-          { key: 'companyName', label: 'Display Brand / Business Name', placeholder: 'Seevora AI Voice', type: 'text' }
-        ],
-        setupGuide: 'Add your VoBiz number in Meta Developer Portal via Voice Call OTP verification. Paste your Phone Number ID and Permanent Access Token above.'
+        description: 'Connect your business WhatsApp directly via 1-Click QR Code (Linked Devices). Automatically sends call summaries, handles inbound Meta Ads leads, and triggers autonomous voice calls for interested leads — zero Meta Cloud API tokens required.',
+        fields: []
       },
       {
         key: 'hubspot',
@@ -16401,6 +16704,12 @@ async function viewSettings(root) {
 
     INTEGRATIONS_META.forEach((intg) => {
       const intgCfg = cfg[intg.key] || {};
+      if (intg.key === 'whatsapp') {
+        const row = el('div', { style: rowStyle });
+        renderWhatsAppQrRow(row, intgCfg, () => { panel.innerHTML = ''; renderIntegrationsTab(panel); });
+        wrap.appendChild(row);
+        return;
+      }
       const isEnabled = intgCfg.enabled || false;
       const status = intgCfg.status || 'not_connected';
 
@@ -21155,220 +21464,39 @@ async function viewAssistant(wrap) {
     });
   }
 
-  // 2. WhatsApp Business Modal (With Phone Number + WABA Detection + OTP Flow)
+  // 2. WhatsApp Business Modal (1-Click QR Linked Device)
   async function openWhatsAppModal() {
-    const wa = (currentIntegrations && currentIntegrations.whatsapp) || {};
-    const isConn = wa.status === 'connected' || wa.status === 'live' || wa.status === 'active';
-    let step = 1;
-    let generatedOtp = '849201';
-    let verifiedWabaId = wa.wabaId || 'waba_991204';
+    let cfg = {};
+    try {
+      const out = await api('/api/crm-integrations/config');
+      cfg = (out && out.config && out.config.whatsapp) || (currentIntegrations && currentIntegrations.whatsapp) || {};
+    } catch (_) {
+      cfg = (currentIntegrations && currentIntegrations.whatsapp) || {};
+    }
 
-    const statusBox = el('div', { id: 'wa-status-box', style: 'margin-top:8px;' });
-
-    const metaCredsSection = el('div', { id: 'wa-meta-creds', style: 'display:none;margin-top:8px;padding:12px;background:rgba(255,255,255,0.7);border:1px solid rgba(47,138,99,0.3);border-radius:10px;' }, [
-      el('div', { style: 'font-size:0.76rem;color:#475569;margin-bottom:6px;' }, 'For direct live WhatsApp message delivery to your phone from developers.facebook.com:'),
-      el('input', { id: 'wa-meta-token', type: 'password', placeholder: 'Meta Permanent System User Access Token', style: 'width:100%;font-size:0.8rem;margin-bottom:6px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' }),
-      el('input', { id: 'wa-meta-phone-id', type: 'text', placeholder: 'Meta WhatsApp Phone Number ID (e.g. 109823412345)', style: 'width:100%;font-size:0.8rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;' })
-    ]);
-
-    const metaToggleBtn = el('button', {
-      type: 'button',
-      style: 'background:none;border:none;color:#0d5d41;font-size:0.76rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:8px;',
-      onclick: () => {
-        metaCredsSection.style.display = metaCredsSection.style.display === 'none' ? 'block' : 'none';
-      }
-    }, 'Connect via Custom Meta WhatsApp Cloud API Credentials (Optional)');
-
-    const step1Container = el('div', { class: 'conn-card highlight' }, [
-      el('div', { class: 'conn-form-group' }, [
-        el('label', {}, 'Business WhatsApp Phone Number (with Country Code)'),
-        el('input', {
-          id: 'wa-phone',
-          type: 'tel',
-          value: wa.phoneNumber || '+91 80715 82519',
-          placeholder: '+91 80715 82519',
-          oninput: () => {
-            const inp = $('#wa-phone');
-            if (inp) inp.style.borderColor = '';
-            statusBox.innerHTML = '';
-          }
-        }),
-        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-top:4px;flex-wrap:wrap;gap:6px;' }, [
-          el('span', { style: 'font-size:0.74rem;color:#5d7468;' }, 'Only registered WhatsApp Business Accounts (WABA) are accepted.'),
-          el('button', {
-            type: 'button',
-            style: 'background:none;border:none;color:#0d5d41;font-size:0.74rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;',
-            onclick: () => {
-              const inp = $('#wa-phone');
-              if (inp) { inp.value = '+91 80715 82519'; inp.style.borderColor = ''; }
-              statusBox.innerHTML = '';
-            }
-          }, 'Use Verified Business Number (+91 80715 82519)')
-        ]),
-        metaToggleBtn,
-        metaCredsSection,
-        statusBox
-      ])
-    ]);
-
-    const otpNotice = el('div', {
-      style: 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:10px;font-size:0.82rem;margin-bottom:10px;line-height:1.4;',
-      html: `OTP Code has been generated: <strong style="color:#065f46;font-size:1.02rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong> (enter below to complete verification)`
+    const modalBody = el('div', { style: 'padding:8px 0;' });
+    renderWhatsAppQrRow(modalBody, cfg, async () => {
+      try {
+        const out = await api('/api/crm-integrations/config');
+        currentIntegrations = out.config || currentIntegrations;
+        updateIntegrationsUI(currentIntegrations);
+      } catch (_) {}
+      const host = $('#modal-host');
+      if (host) host.classList.add('hide');
     });
 
-    const step2Container = el('div', { class: 'conn-card highlight', style: 'display:none;flex-direction:column;gap:10px;' }, [
-      otpNotice,
-      el('div', { class: 'conn-form-group' }, [
-        el('label', {}, 'Enter 6-Digit Verification Code'),
-        el('input', { id: 'wa-otp', type: 'text', placeholder: '849201', maxlength: '6' })
-      ]),
-      el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#475569;font-weight:normal;cursor:pointer;' }, [
-        el('input', { type: 'checkbox', id: 'wa-bot-toggle', checked: true }),
-        el('span', {}, 'Activate autonomous voice & WhatsApp message responder on missed calls')
-      ])
-    ]);
-
-    const connectedDetailsCard = isConn ? el('div', { class: 'conn-card' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
-        el('div', {}, [
-          el('strong', { style: 'display:block;color:#0f172a;font-size:0.9rem;' }, wa.phoneNumber || '+91 80715 82519'),
-          el('span', { style: 'font-size:0.74rem;color:#5d7468;' }, `WABA ID: ${wa.wabaId || 'waba_991204'} · Verified & Active`)
-        ]),
-        el('button', {
-          type: 'button',
-          class: 'btn-conn-sync',
-          onclick: () => {
-            const ph = wa.phoneNumber || '+91 80715 82519';
-            toast(`Live test WhatsApp message delivered to ${ph}! Message ID: wamid.HBgM...`, 'info', 'WhatsApp Delivered');
-          }
-        }, 'Send Test Alert')
-      ]),
-      el('div', { style: 'font-size:0.76rem;color:#475569;background:rgba(227,241,233,0.4);padding:8px 12px;border-radius:8px;' },
-        'Automated Trigger: Sends caller booking confirmation, clinic map pin, and voice conversation summary instantly.'
-      )
-    ]) : null;
-
-    const disconnectRow = isConn ? el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-top:6px;' }, [
-      el('button', {
-        type: 'button',
-        class: 'btn-conn-disconnect',
-        onclick: async () => {
-          const res = await api('/api/assistant/integrations', {
-            method: 'POST',
-            body: { channel: 'whatsapp', data: { status: 'disconnected', disconnectedAt: new Date().toISOString() } }
-          });
-          currentIntegrations = (res && res.integrations) || currentIntegrations;
-          updateIntegrationsUI(currentIntegrations);
-          toast('WhatsApp Voice Alerts disconnected', 'info', 'WhatsApp Disconnected');
-          const host = $('#modal-host');
-          if (host) host.classList.add('hide');
-        }
-      }, 'Disconnect WhatsApp'),
-      el('span', { style: 'font-size:0.75rem;color:#5d7468;' }, 'Stops automated WhatsApp dispatches')
-    ]) : null;
-
-    const body = el('div', { class: 'conn-modal-body' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;' }, [
-        el('span', { style: 'font-size:0.86rem;color:#475569;font-weight:600;' }, 'Connect Voice AI directly to WhatsApp Business Account'),
-        el('span', { class: 'conn-status-badge ' + (isConn ? 'connected' : 'disconnected') }, isConn ? '● Connected & Live' : '○ Disconnected')
-      ]),
-      connectedDetailsCard,
-      step1Container,
-      step2Container,
-      disconnectRow
-    ]);
-
     modal({
-      title: 'WhatsApp Business Voice Integration',
-      body,
-      confirmText: isConn ? 'Save Changes' : (step === 1 ? 'Verify & Send OTP' : 'Verify OTP & Activate'),
+      title: 'WhatsApp Business Linked Device',
+      body: modalBody,
+      confirmText: 'Done',
       confirmKind: 'primary',
       onConfirm: async () => {
-        if (isConn && step === 1 && (!($('#wa-phone') && $('#wa-phone').value.trim().startsWith('+91 80715')) && !($('#wa-meta-token') && $('#wa-meta-token').value))) {
-          const phone = $('#wa-phone').value.trim();
-          const res = await api('/api/assistant/integrations', {
-            method: 'POST',
-            body: { channel: 'whatsapp', data: { phoneNumber: phone, status: 'connected' } }
-          });
-          currentIntegrations = (res && res.integrations) || currentIntegrations;
+        try {
+          const out = await api('/api/crm-integrations/config');
+          currentIntegrations = out.config || currentIntegrations;
           updateIntegrationsUI(currentIntegrations);
-          toast('WhatsApp settings saved!', 'info', 'WhatsApp Active');
-          return;
-        }
-
-        if (step === 1) {
-          const phoneInput = $('#wa-phone');
-          const phone = phoneInput ? phoneInput.value.trim() : '';
-          if (!phone) throw new Error('Please enter a valid phone number');
-
-          const metaToken = ($('#wa-meta-token') && $('#wa-meta-token').value.trim()) || '';
-          const phoneId = ($('#wa-meta-phone-id') && $('#wa-meta-phone-id').value.trim()) || '';
-          const metaConfig = (metaToken && phoneId) ? { accessToken: metaToken, phoneNumberId: phoneId } : {};
-
-          statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#0d5d41;font-size:0.82rem;padding:6px 0;"><span class="spin" style="width:14px;height:14px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;display:inline-block;"></span> Verifying WhatsApp Business status with Meta Cloud...</div>';
-
-          let checkRes = null;
-          try {
-            checkRes = await api('/api/integrations/whatsapp/verify-business', {
-              method: 'POST',
-              body: { phoneNumber: phone, metaConfig }
-            });
-          } catch (err) {
-            checkRes = { isBusiness: false, error: err.message || 'Verification failed' };
-          }
-
-          if (!checkRes || !checkRes.isBusiness) {
-            statusBox.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;line-height:1.45;"><strong style="display:block;margin-bottom:3px;font-size:0.88rem;">Personal WhatsApp Account Detected</strong>Seevora Voice AI strictly requires an official WhatsApp Business account (WABA).<div style="margin-top:8px;font-size:0.76rem;color:#7f1d1d;border-top:1px dashed #fca5a5;padding-top:6px;"><strong>Quick Testing:</strong> Click <a href="javascript:void(0)" id="wa-fill-biz-link" style="color:#0d5d41;font-weight:700;text-decoration:underline;">here to test with verified business number (+91 80715 82519)</a>.</div></div>`;
-            if (phoneInput) phoneInput.style.borderColor = '#ef4444';
-            const link = $('#wa-fill-biz-link');
-            if (link) {
-              link.onclick = (e) => {
-                e.preventDefault();
-                if (phoneInput) { phoneInput.value = '+91 80715 82519'; phoneInput.style.borderColor = ''; }
-                statusBox.innerHTML = '';
-              };
-            }
-            toast('Personal WhatsApp number rejected. WhatsApp Business number required.', 'err', 'Verification Failed');
-            return false;
-          }
-
-          generatedOtp = checkRes.otp || '849201';
-          verifiedWabaId = checkRes.wabaId || 'waba_991204';
-          otpNotice.innerHTML = `✓ Verified WhatsApp Business Account: <strong style="color:#0f172a;">${checkRes.phoneNumber}</strong> (WABA: <code>${verifiedWabaId}</code>)<br/><span style="display:block;margin-top:6px;">OTP Code: <strong style="color:#065f46;font-size:1.05rem;letter-spacing:1.5px;padding:2px 6px;background:#d1fae5;border-radius:4px;">${generatedOtp}</strong> (enter below to complete verification)</span>`;
-
-          step = 2;
-          step1Container.style.display = 'none';
-          step2Container.style.display = 'flex';
-          const modalBtn = $('.modal .btn-primary');
-          if (modalBtn) modalBtn.textContent = 'Verify OTP & Activate Bot';
-          toast('WhatsApp Business verified! OTP generated for ' + phone, 'info', 'OTP Ready');
-          return false;
-        } else {
-          const otpInput = $('#wa-otp');
-          const otp = otpInput ? otpInput.value.trim() : '';
-          if (otp !== generatedOtp && otp !== '849201' && otp !== '123456') {
-            throw new Error('Invalid OTP. Please enter ' + generatedOtp);
-          }
-          const phone = $('#wa-phone').value.trim();
-          const botActive = $('#wa-bot-toggle').checked;
-          const res = await api('/api/assistant/integrations', {
-            method: 'POST',
-            body: {
-              channel: 'whatsapp',
-              data: {
-                status: 'connected',
-                phoneNumber: phone,
-                wabaId: verifiedWabaId,
-                botActive,
-                verifiedAt: new Date().toISOString(),
-                description: `Auto-sends booking summary & call transcript to caller from ${phone}`
-              }
-            }
-          });
-          currentIntegrations = (res && res.integrations) || currentIntegrations;
-          updateIntegrationsUI(currentIntegrations);
-          toast('WhatsApp Business connected live!', 'info', 'WhatsApp Verified');
-        }
+        } catch (_) {}
+        return true;
       }
     });
   }
