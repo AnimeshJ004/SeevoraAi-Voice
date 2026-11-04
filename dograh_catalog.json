@@ -1,0 +1,5736 @@
+{
+  "services": {
+    "llm": {
+      "openai": {
+        "title": "OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.openai.com/v1",
+            "description": "Override only if using an OpenAI-compatible API (e.g. local LLM, proxy).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gpt-4.1",
+              "description": "OpenAI chat model to use.",
+              "examples": [
+                "gpt-4.1",
+                "gpt-4.1-mini",
+                "gpt-5",
+                "gpt-5-mini",
+                "gpt-5-nano"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "custom_endpoint": {
+                "default_hostname": "api.openai.com",
+                "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Limits depend on your server and model.",
+                "field": "base_url",
+                "maximum": 2
+              },
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://developers.openai.com/api/reference/resources/chat",
+              "model_constraints": [
+                {
+                  "pattern": "(^|/)(gpt-5|o[134](?:-|$))",
+                  "supported": false
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "OpenAI",
+          "type": "object"
+        }
+      },
+      "atlascloud": {
+        "title": "Atlas Cloud",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.atlascloud.ai/v1",
+            "description": "Atlas Cloud OpenAI-compatible API endpoint.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Atlas Cloud OpenAI-compatible LLM API.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "qwen/qwen3.5-flash",
+              "description": "Atlas Cloud OpenAI-compatible chat model identifier.",
+              "examples": [
+                "qwen/qwen3.5-flash",
+                "deepseek-ai/deepseek-v4-pro"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://www.atlascloud.ai/models/deepseek-ai/deepseek-v4-pro",
+              "model_constraints": [
+                {
+                  "pattern": "(^|/)(gpt-5|o[134](?:-|$))",
+                  "supported": false
+                },
+                {
+                  "pattern": "claude-(?:(?:opus|sonnet|haiku)-(?:4[.-](?:[7-9]|[1-9][0-9])(?:[.:-]|$)|[5-9](?:[.-]|$))|mythos)",
+                  "supported": false
+                },
+                {
+                  "docs_url": "https://platform.claude.com/docs/en/api/typescript/messages/create",
+                  "maximum": 1,
+                  "pattern": "claude-"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Atlas Cloud",
+          "type": "object"
+        }
+      },
+      "hopper": {
+        "title": "Hopper",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "description": "API key from your Hopper console.",
+            "docs_label": "Create a key",
+            "docs_url": "https://withhopper.com/console/keys",
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gemma-4-31b",
+              "description": "Hopper chat model.",
+              "examples": [
+                "gemma-4-31b"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Limits depend on the hosted model.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.withhopper.com/llm",
+              "title": "Temperature"
+            }
+          },
+          "provider_docs_url": "https://docs.withhopper.com",
+          "required": [],
+          "title": "Hopper",
+          "type": "object"
+        }
+      },
+      "google": {
+        "title": "Google",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gemini-3.5-flash",
+              "description": "Gemini model on Google AI Studio (not Vertex).",
+              "examples": [
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://ai.google.dev/api/generate-content#v1beta.GenerationConfig",
+              "model_constraints": [
+                {
+                  "pattern": "gemini-3[.-](?:[6-9]|[1-9][0-9])(?:-|$)",
+                  "supported": false
+                },
+                {
+                  "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Google recommends leaving sampling parameters unset for Gemini 3.x.",
+                  "pattern": "gemini-3[.-]"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Google",
+          "type": "object"
+        }
+      },
+      "google_vertex": {
+        "title": "Google Vertex",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Vertex AI — authentication is via the service account in `credentials` (or ADC). Leave blank.",
+            "title": "Api Key"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Paste the entire service-account JSON file contents. If omitted, falls back to Application Default Credentials (ADC).",
+            "multiline": true,
+            "title": "Credentials"
+          }
+        },
+        "connection_fields": {
+          "project_id": {
+            "description": "Google Cloud project ID for Vertex AI.",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "location": {
+            "allow_custom_input": true,
+            "default": "global",
+            "description": "Vertex AI location, which decides where requests are processed. 'eu' and 'us' are multi-regions that keep processing inside that geography; a single region such as 'europe-west4' pins it further; 'global' routes anywhere in the world and carries no data residency guarantee. Model availability varies by location.",
+            "examples": [
+              "global",
+              "eu",
+              "us"
+            ],
+            "title": "Location",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [
+          "project_id"
+        ],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gemini-3.5-flash",
+              "description": "Gemini model on Vertex AI.",
+              "examples": [
+                "gemini-3.1-flash-lite",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference",
+              "model_constraints": [
+                {
+                  "pattern": "gemini-3[.-](?:[6-9]|[1-9][0-9])(?:-|$)",
+                  "supported": false
+                },
+                {
+                  "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Google recommends leaving sampling parameters unset for Gemini 3.x.",
+                  "pattern": "gemini-3[.-]"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Google Vertex",
+          "type": "object"
+        }
+      },
+      "groq": {
+        "title": "Groq",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "llama-3.3-70b-versatile",
+              "description": "Groq-hosted model identifier.",
+              "examples": [
+                "llama-3.3-70b-versatile",
+                "openai/gpt-oss-120b"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://console.groq.com/docs/api-reference",
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Groq",
+          "type": "object"
+        }
+      },
+      "openrouter": {
+        "title": "Open Router",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://openrouter.ai/api/v1",
+            "description": "Override only if proxying OpenRouter through your own gateway.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "openai/gpt-4.1",
+              "description": "OpenRouter model slug in 'vendor/model' form.",
+              "examples": [
+                "openai/gpt-4.1",
+                "openai/gpt-4.1-mini",
+                "anthropic/claude-sonnet-4",
+                "google/gemini-2.5-flash",
+                "meta-llama/llama-3.3-70b-instruct",
+                "deepseek/deepseek-chat-v3-0324"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://openrouter.ai/docs/api/reference/parameters",
+              "model_constraints": [
+                {
+                  "pattern": "^openai/(gpt-5(?:(?:\\.\\d+)?-(?:mini|nano|pro))?(?:-\\d{4}-\\d{2}-\\d{2})?$|o[134](?:-|$))",
+                  "supported": false
+                },
+                {
+                  "pattern": "claude-(?:(?:opus|sonnet|haiku)-(?:4[.-](?:[7-9]|[1-9][0-9])(?:[.:-]|$)|[5-9](?:[.-]|$))|mythos)",
+                  "supported": false
+                },
+                {
+                  "docs_url": "https://platform.claude.com/docs/en/api/typescript/messages/create",
+                  "maximum": 1,
+                  "pattern": "claude-"
+                },
+                {
+                  "pattern": "gemini-3[.-](?:[6-9]|[1-9][0-9])(?:-|$)",
+                  "supported": false
+                },
+                {
+                  "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Google recommends leaving sampling parameters unset for Gemini 3.x.",
+                  "pattern": "gemini-3[.-]"
+                }
+              ],
+              "title": "Temperature"
+            },
+            "provider_order": {
+              "description": "OpenRouter provider slugs to try first, in order, one per entry (e.g. groq), as listed on the model's OpenRouter page. Pinning a low-latency provider avoids OpenRouter's default price-weighted routing; other providers are still used if these are unavailable.",
+              "items": {
+                "type": "string"
+              },
+              "title": "Provider Order",
+              "type": "array"
+            }
+          },
+          "required": [],
+          "title": "Open Router",
+          "type": "object"
+        }
+      },
+      "azure": {
+        "title": "Azure OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "endpoint": {
+            "description": "Azure OpenAI resource endpoint (e.g. https://<resource>.openai.azure.com).",
+            "title": "Endpoint",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [
+          "endpoint"
+        ],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gpt-4.1-mini",
+              "description": "Azure deployment name (not the upstream OpenAI model id).",
+              "examples": [
+                "gpt-4.1-mini"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://learn.microsoft.com/azure/foundry/openai/how-to/reasoning",
+              "model_constraints": [
+                {
+                  "pattern": "^(gpt-5(?:(?:\\.\\d+)?-(?:mini|nano|pro))?(?:-\\d{4}-\\d{2}-\\d{2})?$|o[134](?:-|$))",
+                  "supported": false
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Azure OpenAI",
+          "type": "object"
+        }
+      },
+      "dograh": {
+        "title": "Dograh",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "default",
+              "description": "Dograh-hosted model tier.",
+              "examples": [
+                "default",
+                "accurate",
+                "fast",
+                "lite",
+                "zen"
+              ],
+              "option_labels": {
+                "default": "default (recommended)"
+              },
+              "title": "LLM model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Limits depend on the hosted model.",
+              "docs_label": "Temperature documentation",
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Dograh",
+          "type": "object"
+        }
+      },
+      "aws_bedrock": {
+        "title": "AWS Bedrock",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Bedrock — authentication is via the AWS credentials above. Leave blank.",
+            "title": "Api Key"
+          },
+          "aws_access_key": {
+            "default": "",
+            "description": "AWS access key ID with bedrock:InvokeModel permission.",
+            "title": "Aws Access Key",
+            "type": "string"
+          },
+          "aws_secret_key": {
+            "default": "",
+            "description": "AWS secret access key paired with the access key ID.",
+            "title": "Aws Secret Key",
+            "type": "string"
+          }
+        },
+        "connection_fields": {
+          "aws_region": {
+            "default": "us-east-1",
+            "description": "AWS region where the Bedrock model is available.",
+            "title": "Aws Region",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "us.amazon.nova-pro-v1:0",
+              "description": "Bedrock model ID — include the region inference-profile prefix (e.g. 'us.').",
+              "examples": [
+                "us.amazon.nova-pro-v1:0",
+                "us.amazon.nova-lite-v1:0",
+                "us.amazon.nova-micro-v1:0",
+                "us.anthropic.claude-sonnet-4-20250514-v1:0",
+                "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InferenceConfiguration.html",
+              "model_constraints": [
+                {
+                  "pattern": "claude-(?:(?:opus|sonnet|haiku)-(?:4[.-](?:[7-9]|[1-9][0-9])(?:[.:-]|$)|[5-9](?:[.-]|$))|mythos)",
+                  "supported": false
+                },
+                {
+                  "docs_url": "https://platform.claude.com/docs/en/api/typescript/messages/create",
+                  "maximum": 1,
+                  "pattern": "claude-"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          "title": "AWS Bedrock",
+          "type": "object",
+          "required": []
+        }
+      },
+      "speaches": {
+        "title": "Local Models (Speaches)",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Usually not required for self-hosted endpoints. Leave blank unless your server enforces one.",
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "http://localhost:11434/v1",
+            "description": "OpenAI-compatible endpoint (Ollama, vLLM, etc.).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Self-hosted OpenAI-compatible local models. See the Speaches project for setup and supported backends.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "llama3",
+              "description": "Model name as exposed by your OpenAI-compatible server.",
+              "examples": [
+                "llama3",
+                "mistral",
+                "phi3",
+                "qwen2",
+                "gemma2",
+                "deepseek-r1"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default. Limits depend on your server and model.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.ollama.com/openai",
+              "title": "Temperature"
+            }
+          },
+          "provider_docs_url": "https://github.com/speaches-ai/speaches",
+          "title": "Local Models (Speaches)",
+          "type": "object",
+          "required": []
+        }
+      },
+      "huggingface": {
+        "title": "Hugging Face",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://router.huggingface.co/v1",
+            "description": "Hugging Face OpenAI-compatible chat-completions router base URL.",
+            "title": "Base Url",
+            "type": "string"
+          },
+          "bill_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional Hugging Face organization or user to bill using X-HF-Bill-To.",
+            "title": "Bill To"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Hosted Hugging Face Inference Providers API for usage-based inference.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "openai/gpt-oss-120b:cerebras",
+              "description": "Hugging Face chat-completion model identifier, optionally with provider suffix.",
+              "examples": [
+                "openai/gpt-oss-120b:cerebras",
+                "deepseek-ai/DeepSeek-R1:fastest",
+                "Qwen/Qwen3-Coder-480B-A35B-Instruct:fastest"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://huggingface.co/docs/inference-providers/tasks/chat-completion",
+              "title": "Temperature"
+            }
+          },
+          "provider_docs_url": "https://huggingface.co/docs/inference-providers/en/index",
+          "required": [],
+          "title": "Hugging Face",
+          "type": "object"
+        }
+      },
+      "minimax": {
+        "title": "MiniMax",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.minimax.io/v1",
+            "description": "MiniMax OpenAI-compatible API endpoint.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "MiniMax-M2.7",
+              "description": "MiniMax chat model.",
+              "examples": [
+                "MiniMax-M2.7",
+                "MiniMax-M2.7-highspeed",
+                "MiniMax-M3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 1,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://platform.minimax.io/docs/api-reference/text-chat-openai",
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "MiniMax",
+          "type": "object"
+        }
+      },
+      "sarvam": {
+        "title": "Sarvam",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.sarvam.ai/v1",
+            "description": "Sarvam API base URL.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "sarvam-105b-conversations",
+              "description": "Sarvam chat model.",
+              "examples": [
+                "sarvam-105b-conversations",
+                "sarvam-105b"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 0.5,
+              "description": "Sampling temperature. Lower values give more predictable responses. Leave blank to use the provider default.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.sarvam.ai/api-reference/chat/chat-completions-v1",
+              "title": "Temperature"
+            }
+          },
+          "required": [],
+          "title": "Sarvam",
+          "type": "object"
+        }
+      }
+    },
+    "stt": {
+      "deepgram": {
+        "title": "Deepgram",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "allow_custom_input": true,
+            "default": "https://api.deepgram.com",
+            "description": "Deepgram API endpoint. This is what decides where call audio is processed: use https://api.eu.deepgram.com to keep processing inside the EU, or https://api.au.deepgram.com for Australia. The same API key works on every regional endpoint.",
+            "examples": [
+              "https://api.deepgram.com",
+              "https://api.eu.deepgram.com",
+              "https://api.au.deepgram.com"
+            ],
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "nova-3-general",
+              "description": "Deepgram STT model.",
+              "examples": [
+                "nova-3-general",
+                "nova-3-medical",
+                "flux-general-en",
+                "flux-general-multi"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "multi",
+              "description": "Language code. 'multi' enables Nova-3 auto-detect and omits language hints for Flux multilingual auto-detect.",
+              "examples": [
+                "multi",
+                "ar",
+                "ar-AE",
+                "ar-SA",
+                "ar-QA",
+                "ar-KW",
+                "ar-SY",
+                "ar-LB",
+                "ar-PS",
+                "ar-JO",
+                "ar-EG",
+                "ar-SD",
+                "ar-TD",
+                "ar-MA",
+                "ar-DZ",
+                "ar-TN",
+                "ar-IQ",
+                "ar-IR",
+                "be",
+                "bn",
+                "bs",
+                "bg",
+                "ca",
+                "cs",
+                "da",
+                "da-DK",
+                "de",
+                "de-CH",
+                "el",
+                "en",
+                "en-US",
+                "en-AU",
+                "en-GB",
+                "en-IN",
+                "en-NZ",
+                "es",
+                "es-419",
+                "et",
+                "fa",
+                "fi",
+                "fr",
+                "fr-CA",
+                "he",
+                "hi",
+                "hr",
+                "hu",
+                "id",
+                "it",
+                "ja",
+                "kn",
+                "ko",
+                "ko-KR",
+                "lt",
+                "lv",
+                "mk",
+                "mr",
+                "ms",
+                "nl",
+                "nl-BE",
+                "no",
+                "pl",
+                "pt",
+                "pt-BR",
+                "pt-PT",
+                "ro",
+                "ru",
+                "sk",
+                "sl",
+                "sr",
+                "sv",
+                "sv-SE",
+                "ta",
+                "te",
+                "th",
+                "tl",
+                "tr",
+                "uk",
+                "ur",
+                "vi",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "model_options": {
+                "flux-general-en": [
+                  "en"
+                ],
+                "flux-general-multi": [
+                  "multi",
+                  "de",
+                  "en",
+                  "es",
+                  "fr",
+                  "hi",
+                  "it",
+                  "ja",
+                  "nl",
+                  "pt",
+                  "ru"
+                ],
+                "nova-3-general": [
+                  "multi",
+                  "ar",
+                  "ar-AE",
+                  "ar-SA",
+                  "ar-QA",
+                  "ar-KW",
+                  "ar-SY",
+                  "ar-LB",
+                  "ar-PS",
+                  "ar-JO",
+                  "ar-EG",
+                  "ar-SD",
+                  "ar-TD",
+                  "ar-MA",
+                  "ar-DZ",
+                  "ar-TN",
+                  "ar-IQ",
+                  "ar-IR",
+                  "be",
+                  "bn",
+                  "bs",
+                  "bg",
+                  "ca",
+                  "cs",
+                  "da",
+                  "da-DK",
+                  "de",
+                  "de-CH",
+                  "el",
+                  "en",
+                  "en-US",
+                  "en-AU",
+                  "en-GB",
+                  "en-IN",
+                  "en-NZ",
+                  "es",
+                  "es-419",
+                  "et",
+                  "fa",
+                  "fi",
+                  "fr",
+                  "fr-CA",
+                  "he",
+                  "hi",
+                  "hr",
+                  "hu",
+                  "id",
+                  "it",
+                  "ja",
+                  "kn",
+                  "ko",
+                  "ko-KR",
+                  "lt",
+                  "lv",
+                  "mk",
+                  "mr",
+                  "ms",
+                  "nl",
+                  "nl-BE",
+                  "no",
+                  "pl",
+                  "pt",
+                  "pt-BR",
+                  "pt-PT",
+                  "ro",
+                  "ru",
+                  "sk",
+                  "sl",
+                  "sr",
+                  "sv",
+                  "sv-SE",
+                  "ta",
+                  "te",
+                  "th",
+                  "tl",
+                  "tr",
+                  "uk",
+                  "ur",
+                  "vi",
+                  "zh-CN",
+                  "zh-TW"
+                ],
+                "nova-3-medical": [
+                  "multi",
+                  "ar",
+                  "ar-AE",
+                  "ar-SA",
+                  "ar-QA",
+                  "ar-KW",
+                  "ar-SY",
+                  "ar-LB",
+                  "ar-PS",
+                  "ar-JO",
+                  "ar-EG",
+                  "ar-SD",
+                  "ar-TD",
+                  "ar-MA",
+                  "ar-DZ",
+                  "ar-TN",
+                  "ar-IQ",
+                  "ar-IR",
+                  "be",
+                  "bn",
+                  "bs",
+                  "bg",
+                  "ca",
+                  "cs",
+                  "da",
+                  "da-DK",
+                  "de",
+                  "de-CH",
+                  "el",
+                  "en",
+                  "en-US",
+                  "en-AU",
+                  "en-GB",
+                  "en-IN",
+                  "en-NZ",
+                  "es",
+                  "es-419",
+                  "et",
+                  "fa",
+                  "fi",
+                  "fr",
+                  "fr-CA",
+                  "he",
+                  "hi",
+                  "hr",
+                  "hu",
+                  "id",
+                  "it",
+                  "ja",
+                  "kn",
+                  "ko",
+                  "ko-KR",
+                  "lt",
+                  "lv",
+                  "mk",
+                  "mr",
+                  "ms",
+                  "nl",
+                  "nl-BE",
+                  "no",
+                  "pl",
+                  "pt",
+                  "pt-BR",
+                  "pt-PT",
+                  "ro",
+                  "ru",
+                  "sk",
+                  "sl",
+                  "sr",
+                  "sv",
+                  "sv-SE",
+                  "ta",
+                  "te",
+                  "th",
+                  "tl",
+                  "tr",
+                  "uk",
+                  "ur",
+                  "vi",
+                  "zh-CN",
+                  "zh-TW"
+                ]
+              },
+              "title": "Language",
+              "type": "string"
+            },
+            "language_hints": {
+              "description": "More languages to bias Flux multilingual toward, on top of the language above. Pick several when callers switch between known languages; leave empty to rely on the language above.",
+              "examples": [
+                "de",
+                "en",
+                "es",
+                "fr",
+                "hi",
+                "it",
+                "ja",
+                "nl",
+                "pt",
+                "ru"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "title": "Language Hints",
+              "type": "array",
+              "visible_for_models": [
+                "flux-general-multi"
+              ]
+            }
+          },
+          "required": [],
+          "title": "Deepgram",
+          "type": "object"
+        }
+      },
+      "cartesia": {
+        "title": "Cartesia",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "ink-whisper",
+              "description": "Cartesia STT model.",
+              "examples": [
+                "ink-2",
+                "ink-whisper"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "en",
+              "description": "ISO 639-1 language code. ink-2 currently supports English only.",
+              "examples": [
+                "en",
+                "zh",
+                "de",
+                "es",
+                "ru",
+                "ko",
+                "fr",
+                "ja",
+                "pt",
+                "tr",
+                "pl",
+                "ca",
+                "nl",
+                "ar",
+                "sv",
+                "it",
+                "id",
+                "hi",
+                "fi",
+                "vi",
+                "he",
+                "uk",
+                "el",
+                "ms",
+                "cs",
+                "ro",
+                "da",
+                "hu",
+                "ta",
+                "no",
+                "th",
+                "ur",
+                "hr",
+                "bg",
+                "lt",
+                "la",
+                "mi",
+                "ml",
+                "cy",
+                "sk",
+                "te",
+                "fa",
+                "lv",
+                "bn",
+                "sr",
+                "az",
+                "sl",
+                "kn",
+                "et",
+                "mk",
+                "br",
+                "eu",
+                "is",
+                "hy",
+                "ne",
+                "mn",
+                "bs",
+                "kk",
+                "sq",
+                "sw",
+                "gl",
+                "mr",
+                "pa",
+                "si",
+                "km",
+                "sn",
+                "yo",
+                "so",
+                "af",
+                "oc",
+                "ka",
+                "be",
+                "tg",
+                "sd",
+                "gu",
+                "am",
+                "yi",
+                "lo",
+                "uz",
+                "fo",
+                "ht",
+                "ps",
+                "tk",
+                "nn",
+                "mt",
+                "sa",
+                "lb",
+                "my",
+                "bo",
+                "tl",
+                "mg",
+                "as",
+                "tt",
+                "haw",
+                "ln",
+                "ha",
+                "ba",
+                "jw",
+                "su",
+                "yue"
+              ],
+              "model_options": {
+                "ink-2": [
+                  "en"
+                ],
+                "ink-whisper": [
+                  "en",
+                  "zh",
+                  "de",
+                  "es",
+                  "ru",
+                  "ko",
+                  "fr",
+                  "ja",
+                  "pt",
+                  "tr",
+                  "pl",
+                  "ca",
+                  "nl",
+                  "ar",
+                  "sv",
+                  "it",
+                  "id",
+                  "hi",
+                  "fi",
+                  "vi",
+                  "he",
+                  "uk",
+                  "el",
+                  "ms",
+                  "cs",
+                  "ro",
+                  "da",
+                  "hu",
+                  "ta",
+                  "no",
+                  "th",
+                  "ur",
+                  "hr",
+                  "bg",
+                  "lt",
+                  "la",
+                  "mi",
+                  "ml",
+                  "cy",
+                  "sk",
+                  "te",
+                  "fa",
+                  "lv",
+                  "bn",
+                  "sr",
+                  "az",
+                  "sl",
+                  "kn",
+                  "et",
+                  "mk",
+                  "br",
+                  "eu",
+                  "is",
+                  "hy",
+                  "ne",
+                  "mn",
+                  "bs",
+                  "kk",
+                  "sq",
+                  "sw",
+                  "gl",
+                  "mr",
+                  "pa",
+                  "si",
+                  "km",
+                  "sn",
+                  "yo",
+                  "so",
+                  "af",
+                  "oc",
+                  "ka",
+                  "be",
+                  "tg",
+                  "sd",
+                  "gu",
+                  "am",
+                  "yi",
+                  "lo",
+                  "uz",
+                  "fo",
+                  "ht",
+                  "ps",
+                  "tk",
+                  "nn",
+                  "mt",
+                  "sa",
+                  "lb",
+                  "my",
+                  "bo",
+                  "tl",
+                  "mg",
+                  "as",
+                  "tt",
+                  "haw",
+                  "ln",
+                  "ha",
+                  "ba",
+                  "jw",
+                  "su",
+                  "yue"
+                ]
+              },
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Cartesia",
+          "type": "object"
+        }
+      },
+      "openai": {
+        "title": "OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.openai.com/v1",
+            "description": "Override only if using an OpenAI-compatible API (e.g. local STT, proxy).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "gpt-4o-transcribe",
+              "description": "OpenAI transcription model.",
+              "examples": [
+                "gpt-4o-transcribe"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "OpenAI",
+          "type": "object"
+        }
+      },
+      "google": {
+        "title": "Google",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Google Cloud STT. Leave blank.",
+            "title": "Api Key"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Paste the entire Google Cloud service-account JSON. If omitted, the server falls back to Application Default Credentials (ADC).",
+            "multiline": true,
+            "title": "Credentials"
+          }
+        },
+        "connection_fields": {
+          "location": {
+            "default": "global",
+            "description": "Google Cloud Speech-to-Text region (for example 'global' or 'us-central1').",
+            "title": "Location",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "latest_long",
+              "description": "Google Cloud Speech-to-Text V2 recognition model.",
+              "examples": [
+                "latest_long",
+                "latest_short",
+                "chirp_3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en-US",
+              "description": "Primary BCP-47 language code for recognition.",
+              "docs_url": "https://docs.cloud.google.com/speech-to-text/docs/speech-to-text-supported-languages",
+              "examples": [
+                "af-ZA",
+                "am-ET",
+                "ar-AE",
+                "ar-BH",
+                "ar-DZ",
+                "ar-EG",
+                "ar-IL",
+                "ar-IQ",
+                "ar-JO",
+                "ar-KW",
+                "ar-LB",
+                "ar-MA",
+                "ar-MR",
+                "ar-OM",
+                "ar-PS",
+                "ar-QA",
+                "ar-SA",
+                "ar-SY",
+                "ar-TN",
+                "ar-XA",
+                "ar-YE",
+                "as-IN",
+                "ast-ES",
+                "az-AZ",
+                "be-BY",
+                "bg-BG",
+                "bn-BD",
+                "bn-IN",
+                "bs-BA",
+                "ca-ES",
+                "ceb-PH",
+                "ckb-IQ",
+                "cmn-Hans-CN",
+                "cmn-Hant-TW",
+                "cs-CZ",
+                "cy-GB",
+                "da-DK",
+                "de-AT",
+                "de-CH",
+                "de-DE",
+                "el-GR",
+                "en-AU",
+                "en-GB",
+                "en-HK",
+                "en-IE",
+                "en-IN",
+                "en-NZ",
+                "en-PH",
+                "en-PK",
+                "en-SG",
+                "en-US",
+                "es-419",
+                "es-AR",
+                "es-BO",
+                "es-CL",
+                "es-CO",
+                "es-CR",
+                "es-DO",
+                "es-EC",
+                "es-ES",
+                "es-GT",
+                "es-HN",
+                "es-MX",
+                "es-NI",
+                "es-PA",
+                "es-PE",
+                "es-PR",
+                "es-SV",
+                "es-US",
+                "es-UY",
+                "es-VE",
+                "et-EE",
+                "eu-ES",
+                "fa-IR",
+                "ff-SN",
+                "fi-FI",
+                "fil-PH",
+                "fr-BE",
+                "fr-CA",
+                "fr-CH",
+                "fr-FR",
+                "ga-IE",
+                "gl-ES",
+                "gu-IN",
+                "ha-NG",
+                "hi-IN",
+                "hr-HR",
+                "hu-HU",
+                "hy-AM",
+                "id-ID",
+                "ig-NG",
+                "is-IS",
+                "it-CH",
+                "it-IT",
+                "iw-IL",
+                "ja-JP",
+                "jv-ID",
+                "ka-GE",
+                "kam-KE",
+                "kea-CV",
+                "kk-KZ",
+                "km-KH",
+                "kn-IN",
+                "ko-KR",
+                "ky-KG",
+                "lb-LU",
+                "lg-UG",
+                "ln-CD",
+                "lo-LA",
+                "lt-LT",
+                "luo-KE",
+                "lv-LV",
+                "mi-NZ",
+                "mk-MK",
+                "ml-IN",
+                "mn-MN",
+                "mr-IN",
+                "ms-MY",
+                "mt-MT",
+                "my-MM",
+                "ne-NP",
+                "nl-BE",
+                "nl-NL",
+                "no-NO",
+                "nso-ZA",
+                "ny-MW",
+                "oc-FR",
+                "om-ET",
+                "or-IN",
+                "pa-Guru-IN",
+                "pl-PL",
+                "ps-AF",
+                "pt-BR",
+                "pt-PT",
+                "ro-RO",
+                "ru-RU",
+                "rup-BG",
+                "rw-RW",
+                "sd-IN",
+                "si-LK",
+                "sk-SK",
+                "sl-SI",
+                "sn-ZW",
+                "so-SO",
+                "sq-AL",
+                "sr-RS",
+                "ss-Latn-ZA",
+                "st-ZA",
+                "su-ID",
+                "sv-SE",
+                "sw",
+                "sw-KE",
+                "ta-IN",
+                "te-IN",
+                "tg-TJ",
+                "th-TH",
+                "tn-Latn-ZA",
+                "tr-TR",
+                "ts-ZA",
+                "uk-UA",
+                "umb-AO",
+                "ur-PK",
+                "uz-UZ",
+                "ve-ZA",
+                "vi-VN",
+                "wo-SN",
+                "xh-ZA",
+                "yo-NG",
+                "yue-Hant-HK",
+                "zu-ZA"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "title": "Google",
+          "type": "object",
+          "required": []
+        }
+      },
+      "dograh": {
+        "title": "Dograh",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "default",
+              "description": "Dograh STT tier.",
+              "examples": [
+                "default"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "multi",
+              "description": "Language code; use 'multi' for auto-detect, optionally guided by language hints.",
+              "examples": [
+                "multi",
+                "ar",
+                "ar-AE",
+                "ar-SA",
+                "ar-QA",
+                "ar-KW",
+                "ar-SY",
+                "ar-LB",
+                "ar-PS",
+                "ar-JO",
+                "ar-EG",
+                "ar-SD",
+                "ar-TD",
+                "ar-MA",
+                "ar-DZ",
+                "ar-TN",
+                "ar-IQ",
+                "ar-IR",
+                "be",
+                "bn",
+                "bs",
+                "bg",
+                "ca",
+                "cs",
+                "da",
+                "da-DK",
+                "de",
+                "de-CH",
+                "el",
+                "en",
+                "en-US",
+                "en-AU",
+                "en-GB",
+                "en-IN",
+                "en-NZ",
+                "es",
+                "es-419",
+                "et",
+                "fa",
+                "fi",
+                "fr",
+                "fr-CA",
+                "he",
+                "hi",
+                "hr",
+                "hu",
+                "id",
+                "it",
+                "ja",
+                "kn",
+                "ko",
+                "ko-KR",
+                "lt",
+                "lv",
+                "mk",
+                "mr",
+                "ms",
+                "nl",
+                "nl-BE",
+                "no",
+                "pl",
+                "pt",
+                "pt-BR",
+                "pt-PT",
+                "ro",
+                "ru",
+                "sk",
+                "sl",
+                "sr",
+                "sv",
+                "sv-SE",
+                "ta",
+                "te",
+                "th",
+                "tl",
+                "tr",
+                "uk",
+                "ur",
+                "vi",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "language_hints": {
+              "description": "Languages to bias transcription toward, in addition to the language above. For English and Spanish calls, choose auto-detect and select both hints. Hints guide recognition without restricting it to these languages, and only apply to Flux-supported languages.",
+              "examples": [
+                "de",
+                "en",
+                "es",
+                "fr",
+                "hi",
+                "it",
+                "ja",
+                "nl",
+                "pt",
+                "ru"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "title": "Language Hints",
+              "type": "array",
+              "visible_for_languages": [
+                "multi",
+                "de",
+                "en",
+                "es",
+                "fr",
+                "hi",
+                "it",
+                "ja",
+                "nl",
+                "pt",
+                "ru"
+              ]
+            }
+          },
+          "required": [],
+          "title": "Dograh",
+          "type": "object"
+        }
+      },
+      "sarvam": {
+        "title": "Sarvam",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "saarika:v2.5",
+              "description": "Sarvam STT model. saarika:v2.5 transcribes in the spoken language; saaras:v3 is the recommended model with flexible output modes.",
+              "examples": [
+                "saarika:v2.5",
+                "saaras:v3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "unknown",
+              "description": "BCP-47 language code. Use unknown for automatic language detection.",
+              "examples": [
+                "unknown",
+                "hi-IN",
+                "bn-IN",
+                "gu-IN",
+                "kn-IN",
+                "ml-IN",
+                "mr-IN",
+                "od-IN",
+                "pa-IN",
+                "ta-IN",
+                "te-IN",
+                "en-IN"
+              ],
+              "model_options": {
+                "saaras:v3": [
+                  "unknown",
+                  "hi-IN",
+                  "bn-IN",
+                  "gu-IN",
+                  "kn-IN",
+                  "ml-IN",
+                  "mr-IN",
+                  "od-IN",
+                  "pa-IN",
+                  "ta-IN",
+                  "te-IN",
+                  "en-IN",
+                  "as-IN",
+                  "ur-IN",
+                  "ne-IN",
+                  "kok-IN",
+                  "ks-IN",
+                  "sd-IN",
+                  "sa-IN",
+                  "sat-IN",
+                  "mni-IN",
+                  "brx-IN",
+                  "mai-IN",
+                  "doi-IN"
+                ],
+                "saarika:v2.5": [
+                  "unknown",
+                  "hi-IN",
+                  "bn-IN",
+                  "gu-IN",
+                  "kn-IN",
+                  "ml-IN",
+                  "mr-IN",
+                  "od-IN",
+                  "pa-IN",
+                  "ta-IN",
+                  "te-IN",
+                  "en-IN"
+                ]
+              },
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Sarvam",
+          "type": "object"
+        }
+      },
+      "speechmatics": {
+        "title": "Speechmatics",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "linden-1",
+              "description": "Speechmatics Agent STT model.",
+              "examples": [
+                "linden-1"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "ar",
+                "ar_en",
+                "ba",
+                "eu",
+                "be",
+                "bn",
+                "bg",
+                "yue",
+                "ca",
+                "hr",
+                "cs",
+                "da",
+                "nl",
+                "en",
+                "eo",
+                "et",
+                "fi",
+                "fr",
+                "gl",
+                "de",
+                "el",
+                "he",
+                "hi",
+                "hu",
+                "id",
+                "ia",
+                "ga",
+                "it",
+                "ja",
+                "ko",
+                "lv",
+                "lt",
+                "ms",
+                "en_ms",
+                "mt",
+                "cmn",
+                "cmn_en",
+                "cmn_en_ms_ta",
+                "mr",
+                "mn",
+                "no",
+                "fa",
+                "pl",
+                "pt",
+                "ro",
+                "ru",
+                "sk",
+                "sl",
+                "es",
+                "sw",
+                "sv",
+                "tl",
+                "ta",
+                "en_ta",
+                "th",
+                "tr",
+                "uk",
+                "ur",
+                "ug",
+                "vi",
+                "cy"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Speechmatics",
+          "type": "object"
+        }
+      },
+      "speaches": {
+        "title": "Local Models (Speaches)",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Usually not required for self-hosted STT. Leave blank unless enforced.",
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "http://localhost:8000/v1",
+            "description": "OpenAI-compatible STT endpoint (Speaches, etc.).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Self-hosted OpenAI-compatible local models. See the Speaches project for setup and supported backends.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "Systran/faster-distil-whisper-small.en",
+              "description": "Whisper model identifier as served by your STT endpoint.",
+              "examples": [
+                "Systran/faster-distil-whisper-small.en",
+                "Systran/faster-whisper-large-v3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "en",
+                "ar",
+                "nl",
+                "fr",
+                "de",
+                "hi",
+                "it",
+                "pt",
+                "es"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://github.com/speaches-ai/speaches",
+          "title": "Local Models (Speaches)",
+          "type": "object",
+          "required": []
+        }
+      },
+      "huggingface": {
+        "title": "Hugging Face",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://router.huggingface.co/hf-inference",
+            "description": "Hugging Face Inference Providers router base URL.",
+            "title": "Base Url",
+            "type": "string"
+          },
+          "bill_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional Hugging Face organization or user to bill using X-HF-Bill-To.",
+            "title": "Bill To"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Hosted Hugging Face Inference Providers API for usage-based inference.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "openai/whisper-large-v3-turbo",
+              "description": "Hugging Face ASR model identifier served through Inference Providers.",
+              "examples": [
+                "openai/whisper-large-v3-turbo",
+                "openai/whisper-large-v3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "return_timestamps": {
+              "default": false,
+              "description": "Request timestamp chunks when supported by the selected provider/model.",
+              "title": "Return Timestamps",
+              "type": "boolean"
+            }
+          },
+          "provider_docs_url": "https://huggingface.co/docs/inference-providers/en/index",
+          "required": [],
+          "title": "Hugging Face",
+          "type": "object"
+        }
+      },
+      "assemblyai": {
+        "title": "AssemblyAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "u3-rt-pro",
+              "description": "AssemblyAI realtime STT model.",
+              "examples": [
+                "u3-rt-pro"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "en",
+                "es",
+                "de",
+                "fr",
+                "pt",
+                "it"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "AssemblyAI",
+          "type": "object"
+        }
+      },
+      "gladia": {
+        "title": "Gladia",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "solaria-1",
+              "description": "Gladia STT model.",
+              "examples": [
+                "solaria-1"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "af",
+                "am",
+                "ar",
+                "as",
+                "az",
+                "ba",
+                "be",
+                "bg",
+                "bn",
+                "bo",
+                "br",
+                "bs",
+                "ca",
+                "cs",
+                "cy",
+                "da",
+                "de",
+                "el",
+                "en",
+                "es",
+                "et",
+                "eu",
+                "fa",
+                "fi",
+                "fo",
+                "fr",
+                "gl",
+                "gu",
+                "ha",
+                "haw",
+                "he",
+                "hi",
+                "hr",
+                "ht",
+                "hu",
+                "hy",
+                "id",
+                "is",
+                "it",
+                "ja",
+                "jw",
+                "ka",
+                "kk",
+                "km",
+                "kn",
+                "ko",
+                "la",
+                "lb",
+                "ln",
+                "lo",
+                "lt",
+                "lv",
+                "mg",
+                "mi",
+                "mk",
+                "ml",
+                "mn",
+                "mr",
+                "ms",
+                "mt",
+                "my",
+                "ne",
+                "nl",
+                "nn",
+                "no",
+                "oc",
+                "pa",
+                "pl",
+                "ps",
+                "pt",
+                "ro",
+                "ru",
+                "sa",
+                "sd",
+                "si",
+                "sk",
+                "sl",
+                "sn",
+                "so",
+                "sq",
+                "sr",
+                "su",
+                "sv",
+                "sw",
+                "ta",
+                "te",
+                "tg",
+                "th",
+                "tk",
+                "tl",
+                "tr",
+                "tt",
+                "uk",
+                "ur",
+                "uz",
+                "vi",
+                "wo",
+                "yi",
+                "yo",
+                "zh"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Gladia",
+          "type": "object"
+        }
+      },
+      "soniox": {
+        "title": "Soniox",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "stt-rt-v5",
+              "description": "Soniox real-time STT model.",
+              "examples": [
+                "stt-rt-v5"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "default": "multi",
+              "description": "ISO 639-1 language code, sent as a language hint. 'multi' sends no hint and lets Soniox auto-detect the language.",
+              "docs_url": "https://soniox.com/docs/stt/concepts/supported-languages",
+              "examples": [
+                "multi",
+                "af",
+                "ar",
+                "az",
+                "be",
+                "bg",
+                "bn",
+                "bs",
+                "ca",
+                "cs",
+                "cy",
+                "da",
+                "de",
+                "el",
+                "en",
+                "es",
+                "et",
+                "eu",
+                "fa",
+                "fi",
+                "fr",
+                "gl",
+                "gu",
+                "he",
+                "hi",
+                "hr",
+                "hu",
+                "id",
+                "it",
+                "ja",
+                "kk",
+                "kn",
+                "ko",
+                "lt",
+                "lv",
+                "mk",
+                "ml",
+                "mr",
+                "ms",
+                "nl",
+                "no",
+                "pa",
+                "pl",
+                "pt",
+                "ro",
+                "ru",
+                "sk",
+                "sl",
+                "sq",
+                "sr",
+                "sv",
+                "sw",
+                "ta",
+                "te",
+                "th",
+                "tl",
+                "tr",
+                "uk",
+                "ur",
+                "vi",
+                "zh"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Soniox",
+          "type": "object"
+        }
+      },
+      "azure_speech": {
+        "title": "Azure Speech Services",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "region": {
+            "default": "eastus",
+            "description": "Azure region for Speech Services (e.g. 'eastus', 'westeurope').",
+            "examples": [
+              "eastus",
+              "eastus2",
+              "westus",
+              "westus2",
+              "westus3",
+              "centralus",
+              "northcentralus",
+              "southcentralus",
+              "canadacentral",
+              "westcentralus",
+              "westeurope",
+              "northeurope",
+              "uksouth",
+              "ukwest",
+              "francecentral",
+              "switzerlandnorth",
+              "germanywestcentral",
+              "norwayeast",
+              "australiaeast",
+              "eastasia",
+              "southeastasia",
+              "japaneast",
+              "japanwest",
+              "koreacentral",
+              "centralindia",
+              "southindia",
+              "brazilsouth"
+            ],
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Azure Cognitive Services Speech — TTS and STT via the Azure Speech SDK.",
+          "properties": {
+            "model": {
+              "default": "latest_long",
+              "description": "Azure Speech recognition model (use 'latest_long' for continuous recognition).",
+              "examples": [
+                "latest_long",
+                "latest_short"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en-US",
+              "description": "BCP-47 language code for recognition.",
+              "examples": [
+                "en-US",
+                "en-GB",
+                "en-AU",
+                "en-CA",
+                "en-IN",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "fr-CA",
+                "de-DE",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "zh-CN",
+                "pt-BR",
+                "pt-PT",
+                "ru-RU",
+                "ar-SA",
+                "nl-NL",
+                "pl-PL",
+                "hi-IN"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/",
+          "required": [],
+          "title": "Azure Speech Services",
+          "type": "object"
+        }
+      },
+      "elevenlabs": {
+        "title": "ElevenLabs",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.elevenlabs.io",
+            "description": "ElevenLabs API base URL. Override to use a Data Residency endpoint (e.g. https://api.eu.residency.elevenlabs.io) for GDPR / HIPAA / regional compliance.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "scribe_v2_realtime",
+              "description": "ElevenLabs realtime STT model.",
+              "examples": [
+                "scribe_v2_realtime"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code for transcription. Use 'auto' to let ElevenLabs detect the language.",
+              "examples": [
+                "auto",
+                "af",
+                "am",
+                "ar",
+                "as",
+                "az",
+                "be",
+                "bg",
+                "bn",
+                "bs",
+                "ca",
+                "ceb",
+                "cs",
+                "cy",
+                "da",
+                "de",
+                "el",
+                "en",
+                "es",
+                "et",
+                "fa",
+                "fi",
+                "fil",
+                "fr",
+                "ga",
+                "gl",
+                "gu",
+                "ha",
+                "he",
+                "hi",
+                "hr",
+                "hu",
+                "hy",
+                "id",
+                "ig",
+                "is",
+                "it",
+                "ja",
+                "jv",
+                "ka",
+                "kk",
+                "km",
+                "kn",
+                "ko",
+                "ku",
+                "ky",
+                "lo",
+                "lt",
+                "lv",
+                "mi",
+                "mk",
+                "ml",
+                "mn",
+                "mr",
+                "ms",
+                "mt",
+                "my",
+                "ne",
+                "nl",
+                "no",
+                "ny",
+                "oc",
+                "or",
+                "pa",
+                "pl",
+                "ps",
+                "pt",
+                "ro",
+                "ru",
+                "sd",
+                "sk",
+                "sl",
+                "sn",
+                "so",
+                "sr",
+                "sv",
+                "sw",
+                "ta",
+                "te",
+                "tg",
+                "th",
+                "tr",
+                "uk",
+                "ur",
+                "uz",
+                "vi",
+                "wo",
+                "xh",
+                "yue",
+                "zh",
+                "zu"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "ElevenLabs",
+          "type": "object"
+        }
+      },
+      "smallest": {
+        "title": "Smallest AI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Smallest AI ultralow-latency TTS (Waves) and STT (Pulse) APIs.",
+          "properties": {
+            "model": {
+              "default": "pulse",
+              "description": "Smallest AI STT model. Supports 38 languages with real-time streaming.",
+              "examples": [
+                "pulse"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code for transcription.",
+              "examples": [
+                "en",
+                "hi",
+                "fr",
+                "de",
+                "es",
+                "it",
+                "nl",
+                "pl",
+                "ru",
+                "pt",
+                "bn",
+                "gu",
+                "kn",
+                "ml",
+                "mr",
+                "ta",
+                "te",
+                "pa",
+                "or",
+                "bg",
+                "cs",
+                "da",
+                "et",
+                "fi",
+                "hu",
+                "lt",
+                "lv",
+                "mt",
+                "ro",
+                "sk",
+                "sv",
+                "uk"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://smallest.ai/docs",
+          "required": [],
+          "title": "Smallest AI",
+          "type": "object"
+        }
+      }
+    },
+    "tts": {
+      "deepgram": {
+        "title": "Deepgram",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "allow_custom_input": true,
+            "default": "https://api.deepgram.com",
+            "description": "Deepgram API endpoint. This is what decides where your text is processed: use https://api.eu.deepgram.com to keep processing inside the EU, or https://api.au.deepgram.com for Australia. The same API key works on every regional endpoint.",
+            "examples": [
+              "https://api.deepgram.com",
+              "https://api.eu.deepgram.com",
+              "https://api.au.deepgram.com"
+            ],
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "aura-2",
+              "description": "Voice family. Aura-2 and Aura-1 voices are served from Deepgram's v1 endpoint; Flux voices stream from the v2 endpoint and support expressivity. Changing the model clears the voice.",
+              "enum": [
+                "aura-2",
+                "aura-1",
+                "flux"
+              ],
+              "option_labels": {
+                "aura-1": "Aura-1",
+                "aura-2": "Aura-2",
+                "flux": "Flux"
+              },
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "aura-2-helena-en",
+              "description": "Deepgram voice ID from the selected family.",
+              "reset_on_change": [
+                "model"
+              ],
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dropdown"
+            },
+            "speed": {
+              "anyOf": [
+                {
+                  "maximum": 1.5,
+                  "minimum": 0.7,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Speaking rate multiplier (1.0 is normal speed). Leave blank to use Deepgram's default. Supported by Flux voices and by Aura-2 English and Spanish voices; 0.9–1.5 is recommended for Spanish.",
+              "model_constraints": [
+                {
+                  "pattern": "^aura-1$",
+                  "supported": false
+                }
+              ],
+              "title": "Speed"
+            },
+            "expressivity": {
+              "anyOf": [
+                {
+                  "enum": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Expressive range for Flux voices, from -2 (calm) to 2 (animated). Leave blank to use Deepgram's default.",
+              "option_labels": {
+                "2": "2 (animated)",
+                "-2": "-2 (calm)"
+              },
+              "title": "Expressivity",
+              "visible_for_models": [
+                "flux"
+              ]
+            }
+          },
+          "required": [],
+          "title": "Deepgram",
+          "type": "object"
+        }
+      },
+      "elevenlabs": {
+        "title": "ElevenLabs",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.elevenlabs.io",
+            "description": "ElevenLabs API base URL. Override to use a Data Residency endpoint (e.g. https://api.eu.residency.elevenlabs.io) for GDPR / HIPAA / regional compliance.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "voice": {
+              "allow_custom_input": true,
+              "default": "21m00Tcm4TlvDq8ikWAM",
+              "description": "ElevenLabs voice ID from your Voice Library.",
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dropdown"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed for Flash, Turbo v2.5, and Multilingual models.",
+              "maximum": 2,
+              "minimum": 0.1,
+              "model_constraints": [
+                {
+                  "pattern": "^eleven_v[34]",
+                  "supported": false
+                }
+              ],
+              "title": "Speed",
+              "type": "number"
+            },
+            "model": {
+              "allow_custom_input": true,
+              "default": "eleven_flash_v2_5",
+              "description": "ElevenLabs TTS model.",
+              "examples": [
+                "eleven_flash_v2_5",
+                "eleven_turbo_v2_5",
+                "eleven_multilingual_v2",
+                "eleven_v3",
+                "eleven_v3_conversational",
+                "eleven_v4",
+                "eleven_v4_turbo"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "ElevenLabs",
+          "type": "object"
+        }
+      },
+      "google": {
+        "title": "Google",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Google Cloud TTS. Leave blank.",
+            "title": "Api Key"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Paste the entire Google Cloud service-account JSON. If omitted, the server falls back to Application Default Credentials (ADC).",
+            "multiline": true,
+            "title": "Credentials"
+          }
+        },
+        "connection_fields": {
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional Google Cloud regional Text-to-Speech endpoint (for example 'us-central1'). Leave blank to use the default endpoint.",
+            "title": "Location"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "chirp_3_hd",
+              "description": "Google Cloud low-latency TTS engine. Dograh maps this to Pipecat's streaming Google TTS service for Chirp 3 HD and Journey voices.",
+              "examples": [
+                "chirp_3_hd"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "en-US-Chirp3-HD-Charon",
+              "description": "Google Cloud voice name. Use a Chirp 3 HD or Journey voice for streaming TTS.",
+              "examples": [
+                "en-US-Chirp3-HD-Charon"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en-US",
+              "description": "BCP-47 language code for synthesis.",
+              "examples": [
+                "ar-XA",
+                "bn-IN",
+                "bg-BG",
+                "yue-HK",
+                "hr-HR",
+                "cs-CZ",
+                "da-DK",
+                "nl-BE",
+                "nl-NL",
+                "en-AU",
+                "en-IN",
+                "en-GB",
+                "en-US",
+                "et-EE",
+                "fi-FI",
+                "fr-CA",
+                "fr-FR",
+                "de-DE",
+                "el-GR",
+                "gu-IN",
+                "he-IL",
+                "hi-IN",
+                "hu-HU",
+                "id-ID",
+                "it-IT",
+                "ja-JP",
+                "kn-IN",
+                "ko-KR",
+                "lv-LV",
+                "lt-LT",
+                "ml-IN",
+                "cmn-CN",
+                "mr-IN",
+                "nb-NO",
+                "pl-PL",
+                "pt-BR",
+                "pa-IN",
+                "ro-RO",
+                "ru-RU",
+                "sr-RS",
+                "sk-SK",
+                "sl-SI",
+                "es-ES",
+                "es-US",
+                "sw-KE",
+                "sv-SE",
+                "ta-IN",
+                "te-IN",
+                "th-TH",
+                "tr-TR",
+                "uk-UA",
+                "ur-IN",
+                "vi-VN"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier for Google streaming TTS.",
+              "maximum": 2,
+              "minimum": 0.25,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "title": "Google",
+          "type": "object",
+          "required": []
+        }
+      },
+      "openai": {
+        "title": "OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.openai.com/v1",
+            "description": "Override only if using an OpenAI-compatible API (e.g. local TTS, proxy).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "gpt-4o-mini-tts",
+              "description": "OpenAI TTS model.",
+              "examples": [
+                "gpt-4o-mini-tts"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "default": "alloy",
+              "description": "OpenAI TTS voice name.",
+              "title": "Voice",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "OpenAI",
+          "type": "object"
+        }
+      },
+      "dograh": {
+        "title": "Dograh",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "default",
+              "description": "Dograh TTS tier.",
+              "examples": [
+                "default"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "default",
+              "description": "Voice preset.",
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dialog"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speed of the voice.",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "required": [],
+          "title": "Dograh",
+          "type": "object"
+        }
+      },
+      "cartesia": {
+        "title": "Cartesia",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "sonic-3.6",
+              "description": "Cartesia TTS model.",
+              "examples": [
+                "sonic-3.6",
+                "sonic-3.5",
+                "sonic-3"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "3faa81ae-d3d8-4ab1-9e44-e50e46d33c30",
+              "description": "Cartesia voice UUID from your Cartesia dashboard.",
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dropdown"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speed of the voice.",
+              "maximum": 1.5,
+              "minimum": 0.6,
+              "title": "Speed",
+              "type": "number"
+            },
+            "volume": {
+              "default": 1,
+              "description": "Volume multiplier for generated speech.",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Volume",
+              "type": "number"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "Cartesia language code for TTS synthesis (e.g. 'en', 'tr', 'fr', 'de').",
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Cartesia",
+          "type": "object"
+        }
+      },
+      "inworld": {
+        "title": "Inworld",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Inworld AI streaming text-to-speech with built-in and cloned voices. Defaults to the Ashley system voice on inworld-tts-2.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "inworld-tts-2",
+              "description": "Inworld TTS model.",
+              "examples": [
+                "inworld-tts-2"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "Ashley",
+              "description": "Inworld voice ID. Use Ashley for the default warm English voice, or a workspace voice ID for a cloned/custom voice.",
+              "examples": [
+                "Ashley"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en-US",
+              "description": "BCP-47 language code for synthesis.",
+              "examples": [
+                "en-US"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier.",
+              "maximum": 4,
+              "minimum": 0.25,
+              "title": "Speed",
+              "type": "number"
+            },
+            "delivery_mode": {
+              "default": "BALANCED",
+              "description": "Controls stability versus expressiveness for inworld-tts-2 (STABLE, BALANCED, or CREATIVE).",
+              "enum": [
+                "STABLE",
+                "BALANCED",
+                "CREATIVE"
+              ],
+              "title": "Delivery Mode",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://docs.inworld.ai/tts/tts",
+          "required": [],
+          "title": "Inworld",
+          "type": "object"
+        }
+      },
+      "sarvam": {
+        "title": "Sarvam",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "bulbul:v3",
+              "description": "Sarvam TTS model (voice list depends on this).",
+              "examples": [
+                "bulbul:v3",
+                "bulbul:v4-flash"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "shubh",
+              "description": "Sarvam voice name or custom voice ID.",
+              "examples": [
+                "shubh",
+                "aditya",
+                "ritu",
+                "priya",
+                "neha",
+                "rahul",
+                "pooja",
+                "rohan",
+                "simran",
+                "kavya",
+                "amit",
+                "dev",
+                "ishita",
+                "shreya",
+                "ratan",
+                "varun",
+                "manan",
+                "sumit",
+                "roopa",
+                "kabir",
+                "aayan",
+                "ashutosh",
+                "advait",
+                "amelia",
+                "sophia",
+                "anand",
+                "tanya",
+                "tarun",
+                "sunny",
+                "mani",
+                "gokul",
+                "vijay",
+                "shruti",
+                "suhani",
+                "mohit",
+                "kavitha",
+                "rehan",
+                "soham",
+                "rupali"
+              ],
+              "model_options": {
+                "bulbul:v3": [
+                  "shubh",
+                  "aditya",
+                  "ritu",
+                  "priya",
+                  "neha",
+                  "rahul",
+                  "pooja",
+                  "rohan",
+                  "simran",
+                  "kavya",
+                  "amit",
+                  "dev",
+                  "ishita",
+                  "shreya",
+                  "ratan",
+                  "varun",
+                  "manan",
+                  "sumit",
+                  "roopa",
+                  "kabir",
+                  "aayan",
+                  "ashutosh",
+                  "advait",
+                  "amelia",
+                  "sophia",
+                  "anand",
+                  "tanya",
+                  "tarun",
+                  "sunny",
+                  "mani",
+                  "gokul",
+                  "vijay",
+                  "shruti",
+                  "suhani",
+                  "mohit",
+                  "kavitha",
+                  "rehan",
+                  "soham",
+                  "rupali"
+                ],
+                "bulbul:v4-flash": [
+                  "shubh_enhi_ads",
+                  "aarti_hi_customer",
+                  "aayan_hi_conversational",
+                  "aditi_en_stories",
+                  "aditya_hi_conversational",
+                  "aditya_hi_sales",
+                  "advait_hi_character",
+                  "amelia_en_conversational",
+                  "amit_hi_conversational",
+                  "anand_hi_documentary",
+                  "anand_hi_news",
+                  "anand_pa_conversation",
+                  "anand_pa_customer",
+                  "aparna_en_companion",
+                  "aparna_en_edtech",
+                  "aparna_hi_customer",
+                  "aparna_hi_kyc",
+                  "aravind_ta_ads",
+                  "aravind_ta_suspense",
+                  "arnab_bn_conversation",
+                  "aryaman_hi_ads",
+                  "ashok_hi_character",
+                  "ashok_hi_news",
+                  "ashutosh_hi_conversational",
+                  "ashwin_en_sports",
+                  "ashwin_en_sports_energetic",
+                  "bhavik_gu_conversation",
+                  "bimal_bn_suspense",
+                  "chaitra_hi_customer",
+                  "chaitra_kn_conversation",
+                  "chaitra_kn_narration",
+                  "chandrika_en_stories",
+                  "chetan_kn_conversation",
+                  "chhavi_hi_kids",
+                  "chirag_hi_social",
+                  "dev_en_conversational",
+                  "dev_en_recovery",
+                  "deven_en_conversation",
+                  "girish_en_devotional",
+                  "girish_en_documentary",
+                  "girish_hi_devotional",
+                  "gokul_ta_narration",
+                  "harpreet_pa_narration",
+                  "ishita_en_customer",
+                  "ishita_en_medical",
+                  "ishita_en_numbers",
+                  "ishita_en_social",
+                  "ishita_en_stories",
+                  "ishita_enhi_companion",
+                  "ishita_enhi_customer",
+                  "ishita_enhi_customer_expressive",
+                  "ishita_hi_ads",
+                  "ishita_hi_ads_informal",
+                  "ishita_hi_banking",
+                  "ishita_hi_devotional",
+                  "ishita_hi_edtech",
+                  "ishita_hi_numbers",
+                  "ishita_hi_social",
+                  "ishita_mr_conversational",
+                  "jaspal_pa_banking",
+                  "kabir_hi_conversational",
+                  "kalpit_en_edtech",
+                  "kangkana_as_conversational",
+                  "kavitha_te_conversation",
+                  "kavitha_te_narration",
+                  "kavya_hi_conversational",
+                  "kunal_hi_kids",
+                  "mahesh_hi_documentary",
+                  "manan_hi_conversational",
+                  "mani_hi_conversational",
+                  "mani_hi_devotional",
+                  "mohit_hi_conversational",
+                  "mouchumi_as_conversational",
+                  "mrunal_mr_narration",
+                  "mukul_hi_ads",
+                  "mukul_hi_suspense",
+                  "mukul_mr_stories",
+                  "nachiket_en_ads",
+                  "nachiket_hi_devotional",
+                  "neha_en_customer",
+                  "neha_en_latenight",
+                  "neha_mr_narration",
+                  "nilesh_mr_conversation",
+                  "nupur_en_kids",
+                  "ojas_en_social",
+                  "payal_en_edtech",
+                  "pooja_gu_conversational",
+                  "pooja_gu_customer",
+                  "pooja_te_conversation",
+                  "priya_hi_recovery",
+                  "rahul_hi_conversational",
+                  "ratan_hi_customer_expressive",
+                  "ratan_hi_devotional",
+                  "ratan_hi_documentary",
+                  "ratan_hi_latenight",
+                  "ratan_hi_latenight_warm",
+                  "ratan_hi_recovery",
+                  "ratan_hi_social",
+                  "ratan_hi_sports",
+                  "rehan_hi_social",
+                  "ritu_en_edtech",
+                  "ritu_en_latenight",
+                  "ritu_en_medical",
+                  "ritu_en_reels",
+                  "ritu_hi_ads_formal",
+                  "ritu_hi_ads_informal",
+                  "ritu_hi_banking",
+                  "ritu_hi_conversation",
+                  "ritu_hi_customer",
+                  "ritu_hi_customer_utility",
+                  "ritu_hi_customer_warm",
+                  "ritu_hi_edtech",
+                  "ritu_hi_edtech_bot",
+                  "ritu_hi_insurance",
+                  "ritu_hi_kids",
+                  "ritu_hi_medical",
+                  "ritu_hi_reels",
+                  "ritu_hi_sales",
+                  "ritu_hi_social",
+                  "ritu_hi_social_lively",
+                  "ritu_mr_insurance",
+                  "ritu_mr_narration",
+                  "rohan_en_recovery",
+                  "roopa_bn_conversational",
+                  "roopa_en_conversational",
+                  "roopa_hi_companion",
+                  "roopa_hi_conversational",
+                  "roopa_hi_market",
+                  "roopa_hi_narration",
+                  "roopa_hi_recovery",
+                  "rupali_mr_stories",
+                  "rustom_en_suspense",
+                  "sanchita_en_companion",
+                  "sanchita_en_insurance",
+                  "sanchita_en_market",
+                  "sanchita_en_recovery",
+                  "sanchita_en_social",
+                  "sanchita_enhi_companion",
+                  "sanchita_hi_ads_formal",
+                  "sanchita_hi_ads_informal",
+                  "sanchita_hi_assistant",
+                  "sanchita_hi_banking",
+                  "sanchita_hi_edtech",
+                  "sanchita_hi_feedback",
+                  "sanchita_hi_interview",
+                  "sanchita_hi_kyc",
+                  "sanchita_hi_market",
+                  "sanchita_hi_romantic",
+                  "sanchita_hi_social",
+                  "sarang_en_narration",
+                  "sarika_hi_conversation",
+                  "shabana_en_edtech",
+                  "shalini_en_companion",
+                  "shalini_en_customer",
+                  "shalini_enhi_companion",
+                  "shalini_enhi_customer",
+                  "shalini_hi_companion",
+                  "shalini_hi_social",
+                  "shilpa_hi_narration",
+                  "shreya_hi_conversational",
+                  "shreya_hi_news",
+                  "shruti_hi_edtech",
+                  "shubh_en_ads",
+                  "shubh_en_audiobook",
+                  "shubh_en_narration",
+                  "shubh_en_narration_gentle",
+                  "shubh_en_numbers",
+                  "shubh_en_recovery",
+                  "shubh_en_sports",
+                  "shubh_enhi_banking",
+                  "shubh_enhi_companion",
+                  "shubh_hi_ads",
+                  "shubh_hi_customer",
+                  "shubh_hi_devotional",
+                  "shubh_hi_ecomm",
+                  "shubh_hi_recovery",
+                  "shubh_hi_stories_dramatic",
+                  "shubh_hi_stories_mixed",
+                  "simran_en_ads",
+                  "simran_en_automobile",
+                  "simran_en_conversation",
+                  "simran_en_customer",
+                  "simran_en_edtech",
+                  "simran_en_edtech_bot",
+                  "simran_en_narration",
+                  "simran_en_recovery",
+                  "simran_en_sales",
+                  "simran_en_therapist",
+                  "simran_enhi_banking_expressive",
+                  "simran_enhi_companion",
+                  "simran_enhi_customer",
+                  "simran_hi_assistant",
+                  "simran_hi_automobile",
+                  "simran_hi_conversation",
+                  "simran_hi_latenight",
+                  "simran_hi_narration",
+                  "simran_hi_news",
+                  "simran_hi_news_breaking",
+                  "simran_hi_recovery",
+                  "simran_hi_sales",
+                  "simran_hi_social_energetic",
+                  "simran_hi_social_excited",
+                  "soham_mr_narration",
+                  "sophia_en_conversational",
+                  "suchitra_hi_ecomm",
+                  "suchitra_kn_narration",
+                  "suhani_hi_social",
+                  "suman_hi_companion",
+                  "sumit_hi_conversational",
+                  "sunny_en_social",
+                  "sunny_enhi_customer",
+                  "sunny_hi_ads",
+                  "sunny_hi_reels",
+                  "tanya_hi_narration",
+                  "tarun_hi_conversational",
+                  "tarun_hi_sales",
+                  "tarun_te_narration",
+                  "vaibhav_hi_social",
+                  "vandana_hi_ecomm",
+                  "varun_en_ads",
+                  "varun_en_suspense",
+                  "vijay_ta_narration",
+                  "vipul_hi_social",
+                  "zarina_en_conversation"
+                ]
+              },
+              "reset_on_change": [
+                "model"
+              ],
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dropdown"
+            },
+            "language": {
+              "default": "hi-IN",
+              "description": "BCP-47 Indian-language code (e.g. hi-IN, en-IN).",
+              "examples": [
+                "bn-IN",
+                "en-IN",
+                "gu-IN",
+                "hi-IN",
+                "kn-IN",
+                "ml-IN",
+                "mr-IN",
+                "od-IN",
+                "pa-IN",
+                "ta-IN",
+                "te-IN"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier.",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "required": [],
+          "title": "Sarvam",
+          "type": "object"
+        }
+      },
+      "camb": {
+        "title": "Camb.ai",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "mars-flash",
+              "description": "Camb.ai TTS model.",
+              "examples": [
+                "mars-flash",
+                "mars-pro",
+                "mars-instruct"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "default": "147320",
+              "description": "Camb.ai voice ID.",
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "default": "en-us",
+              "description": "BCP-47 language code.",
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Camb.ai",
+          "type": "object"
+        }
+      },
+      "rime": {
+        "title": "Rime",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "arcana",
+              "description": "Rime TTS model.",
+              "examples": [
+                "arcana",
+                "mistv3",
+                "mistv2",
+                "mist"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "celeste",
+              "description": "Rime voice ID.",
+              "title": "Voice",
+              "type": "string",
+              "voice_catalog": "dropdown"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier.",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "en",
+                "de",
+                "fr",
+                "es",
+                "hi"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Rime",
+          "type": "object"
+        }
+      },
+      "speaches": {
+        "title": "Local Models (Speaches)",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Usually not required for self-hosted TTS. Leave blank unless enforced.",
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "http://localhost:8000/v1",
+            "description": "OpenAI-compatible TTS endpoint (Kokoro-FastAPI, etc.).",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Self-hosted OpenAI-compatible local models. See the Speaches project for setup and supported backends.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "kokoro",
+              "description": "Model name as served by your TTS endpoint (e.g. Kokoro-FastAPI).",
+              "examples": [
+                "hexgrad/Kokoro-82M"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "af_heart",
+              "description": "Voice ID for the TTS engine.",
+              "title": "Voice",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed (0.25 to 4.0).",
+              "maximum": 4,
+              "minimum": 0.25,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "provider_docs_url": "https://github.com/speaches-ai/speaches",
+          "title": "Local Models (Speaches)",
+          "type": "object",
+          "required": []
+        }
+      },
+      "minimax": {
+        "title": "MiniMax",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://api.minimax.io/v1/t2a_v2",
+            "description": "MiniMax TTS API endpoint (must include the /v1/t2a_v2 path). Defaults to the global endpoint; override with https://api.minimaxi.chat/v1/t2a_v2 (mainland China) or https://api-uw.minimax.io/v1/t2a_v2 (US-West).",
+            "title": "Base Url",
+            "type": "string"
+          },
+          "group_id": {
+            "description": "MiniMax Group ID (found in your MiniMax dashboard under Account → Group).",
+            "title": "Group Id",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [
+          "group_id"
+        ],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "speech-2.8-hd",
+              "description": "MiniMax TTS model.",
+              "examples": [
+                "speech-2.8-hd",
+                "speech-2.8-turbo"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "English_Graceful_Lady",
+              "description": "MiniMax voice ID.",
+              "examples": [
+                "English_Graceful_Lady",
+                "English_Insightful_Speaker",
+                "English_radiant_girl",
+                "English_Persuasive_Man",
+                "English_Lucky_Robot",
+                "English_expressive_narrator"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed (0.5 to 2.0).",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            },
+            "volume": {
+              "default": 1,
+              "description": "Volume multiplier for generated speech (greater than 0, up to 10). 1.0 is normal volume.",
+              "exclusiveMinimum": 0,
+              "maximum": 10,
+              "title": "Volume",
+              "type": "number"
+            }
+          },
+          "required": [],
+          "title": "MiniMax",
+          "type": "object"
+        }
+      },
+      "azure_speech": {
+        "title": "Azure Speech Services",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "region": {
+            "default": "eastus",
+            "description": "Azure region for Speech Services (e.g. 'eastus', 'westeurope').",
+            "examples": [
+              "eastus",
+              "eastus2",
+              "westus",
+              "westus2",
+              "westus3",
+              "centralus",
+              "northcentralus",
+              "southcentralus",
+              "canadacentral",
+              "westcentralus",
+              "westeurope",
+              "northeurope",
+              "uksouth",
+              "ukwest",
+              "francecentral",
+              "switzerlandnorth",
+              "germanywestcentral",
+              "norwayeast",
+              "australiaeast",
+              "eastasia",
+              "southeastasia",
+              "japaneast",
+              "japanwest",
+              "koreacentral",
+              "centralindia",
+              "southindia",
+              "brazilsouth"
+            ],
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Azure Cognitive Services Speech — TTS and STT via the Azure Speech SDK.",
+          "properties": {
+            "model": {
+              "default": "neural",
+              "description": "Azure Speech synthesis engine (neural voices only).",
+              "examples": [
+                "neural"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "en-US-AriaNeural",
+              "description": "Azure Neural voice name (e.g. 'en-US-AriaNeural').",
+              "examples": [
+                "en-US-AriaNeural",
+                "en-US-GuyNeural",
+                "en-US-JennyNeural",
+                "en-US-DavisNeural",
+                "en-US-AmberNeural",
+                "en-US-AnaNeural",
+                "en-US-AshleyNeural",
+                "en-US-BrandonNeural",
+                "en-US-ChristopherNeural",
+                "en-US-ElizabethNeural",
+                "en-US-EricNeural",
+                "en-US-JacobNeural",
+                "en-US-MichelleNeural",
+                "en-US-MonicaNeural",
+                "en-US-NancyNeural",
+                "en-US-RogerNeural",
+                "en-US-SaraNeural",
+                "en-US-SteffanNeural",
+                "en-US-TonyNeural"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en-US",
+              "description": "BCP-47 language code for synthesis.",
+              "examples": [
+                "en-US",
+                "en-GB",
+                "en-AU",
+                "en-CA",
+                "en-IN",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "fr-CA",
+                "de-DE",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "zh-CN",
+                "zh-HK",
+                "zh-TW",
+                "pt-BR",
+                "pt-PT",
+                "ru-RU",
+                "ar-SA",
+                "nl-NL",
+                "pl-PL",
+                "sv-SE",
+                "hi-IN"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier (0.5 to 2.0).",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "provider_docs_url": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/",
+          "required": [],
+          "title": "Azure Speech Services",
+          "type": "object"
+        }
+      },
+      "smallest": {
+        "title": "Smallest AI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Smallest AI ultralow-latency TTS (Waves) and STT (Pulse) APIs.",
+          "properties": {
+            "model": {
+              "default": "lightning_v3.1",
+              "description": "Smallest AI TTS model. lightning_v3.1_pro is the premium pool (American, British, Indian accents); lightning_v3.1 is the standard pool with 217 voices across 12 languages.",
+              "examples": [
+                "lightning_v3.1",
+                "lightning_v3.1_pro"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "sophia",
+              "description": "Smallest AI voice ID. Available voices differ by model: lightning_v3.1 has a broad multilingual pool; lightning_v3.1_pro has premium American, British, and Indian accent voices (English + Hindi only).",
+              "examples": [
+                "sophia",
+                "avery",
+                "liam",
+                "lucas",
+                "olivia",
+                "ryan",
+                "freya",
+                "william",
+                "devansh",
+                "arjun",
+                "niharika",
+                "maya",
+                "dhruv",
+                "mia",
+                "maithili"
+              ],
+              "model_options": {
+                "lightning_v3.1": [
+                  "sophia",
+                  "avery",
+                  "liam",
+                  "lucas",
+                  "olivia",
+                  "ryan",
+                  "freya",
+                  "william",
+                  "devansh",
+                  "arjun",
+                  "niharika",
+                  "maya",
+                  "dhruv",
+                  "mia",
+                  "maithili"
+                ],
+                "lightning_v3.1_pro": [
+                  "meher",
+                  "rhea",
+                  "aviraj",
+                  "cressida",
+                  "willow",
+                  "maverick"
+                ]
+              },
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code for synthesis.",
+              "examples": [
+                "en",
+                "hi",
+                "fr",
+                "de",
+                "es",
+                "it",
+                "nl",
+                "pl",
+                "ru",
+                "ar",
+                "bn",
+                "gu",
+                "he",
+                "kn",
+                "mr",
+                "ta"
+              ],
+              "title": "Language",
+              "type": "string"
+            },
+            "speed": {
+              "default": 1,
+              "description": "Speech speed multiplier (0.5 to 2.0).",
+              "maximum": 2,
+              "minimum": 0.5,
+              "title": "Speed",
+              "type": "number"
+            }
+          },
+          "provider_docs_url": "https://smallest.ai/docs",
+          "required": [],
+          "title": "Smallest AI",
+          "type": "object"
+        }
+      },
+      "xai": {
+        "title": "xAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "voice": {
+              "allow_custom_input": true,
+              "default": "eve",
+              "description": "xAI voice persona.",
+              "examples": [
+                "eve",
+                "ara",
+                "leo",
+                "rex",
+                "sal"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "BCP-47 language code for synthesis (e.g. 'en', 'fr', 'de'), or 'auto' for automatic language detection.",
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "xAI",
+          "type": "object"
+        }
+      },
+      "speechify": {
+        "title": "Speechify",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "simba-3.2",
+              "description": "Speechify TTS model. 'simba-3.2' is the streaming-native English model with the lowest latency; 'simba-3.0' adds German, Spanish, French, Italian, and Portuguese.",
+              "examples": [
+                "simba-3.2",
+                "simba-3.0"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "beatrice_32",
+              "description": "Speechify voice ID. Options are filtered to voices available for the selected model; a custom or cloned voice ID must support the selected model (see GET /v1/voices), or synthesis fails.",
+              "examples": [
+                "beatrice_32",
+                "geffen_32",
+                "alicia",
+                "alton"
+              ],
+              "model_options": {
+                "simba-3.0": [
+                  "beatrice_32",
+                  "geffen_32",
+                  "alicia",
+                  "alton"
+                ],
+                "simba-3.2": [
+                  "beatrice_32",
+                  "geffen_32"
+                ]
+              },
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "Language code for synthesis (e.g. 'en', 'de', 'es', 'fr', 'it', 'pt-BR'). Options are filtered to the selected model's documented languages; simba-3.2 is documented as English-only.",
+              "examples": [
+                "en",
+                "de",
+                "es",
+                "fr",
+                "it",
+                "pt-BR"
+              ],
+              "model_options": {
+                "simba-3.0": [
+                  "en",
+                  "de",
+                  "es",
+                  "fr",
+                  "it",
+                  "pt-BR"
+                ],
+                "simba-3.2": [
+                  "en"
+                ]
+              },
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://docs.speechify.ai",
+          "required": [],
+          "title": "Speechify",
+          "type": "object"
+        }
+      }
+    },
+    "realtime": {
+      "openai": {
+        "title": "OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gpt-realtime-2",
+              "description": "Choose GPT-Live for full-duplex speech or a GPT-Realtime model.",
+              "examples": [
+                "gpt-live-1",
+                "gpt-realtime-2.1",
+                "gpt-realtime-2.1-mini",
+                "gpt-realtime-2"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "alloy",
+              "description": "Voice the model speaks in.",
+              "examples": [
+                "alloy",
+                "ash",
+                "ballad",
+                "coral",
+                "echo",
+                "sage",
+                "shimmer",
+                "verse",
+                "marin",
+                "cedar"
+              ],
+              "model_options": {
+                "gpt-live-1": [
+                  "marin",
+                  "cedar"
+                ]
+              },
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "ISO 639-1 language code for input audio transcription (e.g. 'pt', 'es'). Improves transcription accuracy and latency. Leave unset to auto-detect.",
+              "examples": [
+                "en",
+                "es",
+                "pt",
+                "fr",
+                "de",
+                "it",
+                "hi",
+                "ja",
+                "ko",
+                "zh"
+              ],
+              "hidden_for_models": [
+                "gpt-live-1"
+              ],
+              "title": "Language"
+            },
+            "backend_model": {
+              "allow_custom_input": true,
+              "default": "gpt-5.4-mini",
+              "description": "OpenAI Responses model that follows your workflow and calls tools. Uses the same API key; backend usage is billed separately from voice.",
+              "examples": [
+                "gpt-5.4-mini"
+              ],
+              "minLength": 1,
+              "title": "Backend Model",
+              "type": "string",
+              "visible_for_models": [
+                "gpt-live-1"
+              ]
+            }
+          },
+          "required": [],
+          "title": "OpenAI",
+          "type": "object"
+        }
+      },
+      "aws_nova_sonic": {
+        "title": "AWS Nova 2 Sonic",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Nova 2 Sonic — authentication is via the AWS credentials above. Leave blank.",
+            "title": "Api Key"
+          },
+          "aws_access_key": {
+            "default": "",
+            "description": "AWS access key ID with permission to invoke Nova 2 Sonic in Bedrock.",
+            "title": "Aws Access Key",
+            "type": "string"
+          },
+          "aws_secret_key": {
+            "default": "",
+            "description": "AWS secret access key paired with the access key ID.",
+            "title": "Aws Secret Key",
+            "type": "string"
+          },
+          "aws_session_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional AWS session token for temporary IAM credentials.",
+            "title": "Aws Session Token"
+          }
+        },
+        "connection_fields": {
+          "aws_region": {
+            "allow_custom_input": true,
+            "default": "us-east-1",
+            "description": "AWS region where Nova 2 Sonic is enabled for the account.",
+            "examples": [
+              "us-east-1",
+              "us-west-2",
+              "eu-north-1",
+              "ap-northeast-1"
+            ],
+            "title": "Aws Region",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [],
+        "settings_schema": {
+          "description": "Amazon Bedrock's realtime speech-to-speech model. Uses AWS IAM credentials rather than a Bedrock API key.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "amazon.nova-2-sonic-v1:0",
+              "description": "Amazon Nova 2 Sonic model ID.",
+              "examples": [
+                "amazon.nova-2-sonic-v1:0"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "matthew",
+              "description": "Voice the model speaks in. Tiffany and Matthew are polyglot voices.",
+              "docs_url": "https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-language-support.html",
+              "examples": [
+                "tiffany",
+                "matthew",
+                "amy",
+                "olivia",
+                "kiara",
+                "arjun",
+                "ambre",
+                "florian",
+                "beatrice",
+                "lorenzo",
+                "tina",
+                "lennart",
+                "lupe",
+                "carlos",
+                "carolina",
+                "leo"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "endpointing_sensitivity": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "HIGH",
+                    "MEDIUM",
+                    "LOW"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "How quickly Nova decides the user has stopped speaking. Leave blank to use the model default.",
+              "examples": [
+                "HIGH",
+                "MEDIUM",
+                "LOW"
+              ],
+              "title": "Endpointing Sensitivity"
+            },
+            "temperature": {
+              "default": 0.7,
+              "description": "Sampling temperature for Nova 2 Sonic (0 to 1).",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-input-events.html",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Temperature",
+              "type": "number"
+            },
+            "max_tokens": {
+              "default": 1024,
+              "description": "Maximum response tokens.",
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Max Tokens",
+              "type": "integer"
+            },
+            "top_p": {
+              "default": 0.9,
+              "description": "Nucleus-sampling threshold.",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Top P",
+              "type": "number"
+            }
+          },
+          "provider_docs_url": "https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-getting-started.html",
+          "title": "AWS Nova 2 Sonic",
+          "type": "object",
+          "required": []
+        }
+      },
+      "grok_realtime": {
+        "title": "Grok",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "grok-voice-think-fast-1.0",
+              "description": "Grok realtime voice-agent model.",
+              "examples": [
+                "grok-voice-think-fast-1.0"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "ara",
+              "description": "Voice the model speaks in.",
+              "examples": [
+                "ara",
+                "rex",
+                "sal",
+                "eve",
+                "leo"
+              ],
+              "title": "Voice",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Grok",
+          "type": "object"
+        }
+      },
+      "ultravox_realtime": {
+        "title": "Ultravox",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "ultravox-v0.7",
+              "description": "Ultravox realtime voice-agent model.",
+              "examples": [
+                "ultravox-v0.7",
+                "fixie-ai/ultravox"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "default": "Mark",
+              "description": "Ultravox voice name or voice ID.",
+              "title": "Voice",
+              "type": "string"
+            },
+            "temperature": {
+              "default": 0,
+              "description": "Sampling temperature. Lower values give more predictable responses.",
+              "docs_label": "Temperature documentation",
+              "docs_url": "https://docs.ultravox.ai/api-reference/calls/calls-post",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Temperature",
+              "type": "number"
+            }
+          },
+          "required": [],
+          "title": "Ultravox",
+          "type": "object"
+        }
+      },
+      "google": {
+        "title": "Google",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gemini-3.8-live",
+              "description": "Gemini Live model on Google AI Studio (not Vertex).",
+              "examples": [
+                "gemini-3.8-live",
+                "gemini-3.1-flash-live-preview"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "Puck",
+              "description": "Voice the model speaks in.",
+              "examples": [
+                "Puck",
+                "Charon",
+                "Kore",
+                "Fenrir",
+                "Aoede"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "ISO 639-1 language code.",
+              "examples": [
+                "ar",
+                "bn",
+                "de",
+                "en",
+                "es",
+                "fr",
+                "gu",
+                "hi",
+                "id",
+                "it",
+                "ja",
+                "kn",
+                "ko",
+                "ml",
+                "mr",
+                "nl",
+                "pl",
+                "pt",
+                "ru",
+                "ta",
+                "te",
+                "th",
+                "tr",
+                "vi",
+                "zh"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Google",
+          "type": "object"
+        }
+      },
+      "google_vertex": {
+        "title": "Google Vertex",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Not used for Vertex AI — authentication is via the service account in `credentials` (or ADC). Leave blank.",
+            "title": "Api Key"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Paste the entire service-account JSON file contents. If omitted, falls back to Application Default Credentials (ADC).",
+            "multiline": true,
+            "title": "Credentials"
+          }
+        },
+        "connection_fields": {
+          "project_id": {
+            "description": "Google Cloud project ID for Vertex AI.",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "location": {
+            "allow_custom_input": true,
+            "default": "global",
+            "description": "Vertex AI location, which decides where requests are processed. 'eu' and 'us' are multi-regions that keep processing inside that geography; a single region such as 'europe-west4' pins it further; 'global' routes anywhere in the world and carries no data residency guarantee. Model availability varies by location.",
+            "examples": [
+              "global",
+              "eu",
+              "us"
+            ],
+            "title": "Location",
+            "type": "string"
+          }
+        },
+        "credential_required": [],
+        "connection_required": [
+          "project_id"
+        ],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "google/gemini-live-2.5-flash-native-audio",
+              "description": "Vertex AI publisher/model identifier.",
+              "examples": [
+                "google/gemini-live-2.5-flash-native-audio"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "Charon",
+              "description": "Voice the model speaks in.",
+              "examples": [
+                "Puck",
+                "Charon",
+                "Kore",
+                "Fenrir",
+                "Aoede"
+              ],
+              "title": "Voice",
+              "type": "string"
+            },
+            "language": {
+              "allow_custom_input": true,
+              "default": "en",
+              "description": "BCP-47 language code (e.g. 'en-US').",
+              "examples": [
+                "ar",
+                "bn",
+                "de",
+                "en",
+                "es",
+                "fr",
+                "gu",
+                "hi",
+                "id",
+                "it",
+                "ja",
+                "kn",
+                "ko",
+                "ml",
+                "mr",
+                "nl",
+                "pl",
+                "pt",
+                "ru",
+                "ta",
+                "te",
+                "th",
+                "tr",
+                "vi",
+                "zh"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Google Vertex",
+          "type": "object"
+        }
+      },
+      "azure_realtime": {
+        "title": "Azure OpenAI Realtime",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "endpoint": {
+            "description": "Azure OpenAI resource endpoint (e.g. https://<resource>.openai.azure.com).",
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "api_version": {
+            "default": "v1",
+            "description": "Azure OpenAI Realtime protocol version. Use 'v1' for the GA API; date-based versions select the deprecated preview endpoint.",
+            "examples": [
+              "v1",
+              "2025-04-01-preview",
+              "2024-10-01-preview",
+              "2024-12-17"
+            ],
+            "title": "Api Version",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [
+          "endpoint"
+        ],
+        "settings_schema": {
+          "description": "Azure OpenAI Realtime API — low-latency speech-to-speech conversations.",
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "gpt-realtime",
+              "description": "Azure OpenAI realtime deployment name.",
+              "examples": [
+                "gpt-realtime",
+                "gpt-realtime-1.5",
+                "gpt-realtime-mini"
+              ],
+              "title": "Model",
+              "type": "string"
+            },
+            "voice": {
+              "allow_custom_input": true,
+              "default": "alloy",
+              "description": "Voice the model speaks in.",
+              "examples": [
+                "alloy",
+                "ash",
+                "ballad",
+                "coral",
+                "echo",
+                "sage",
+                "shimmer",
+                "verse"
+              ],
+              "title": "Voice",
+              "type": "string"
+            }
+          },
+          "provider_docs_url": "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/realtime-audio-quickstart",
+          "required": [],
+          "title": "Azure OpenAI Realtime",
+          "type": "object"
+        }
+      }
+    },
+    "embeddings": {
+      "openai": {
+        "title": "OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "text-embedding-3-small",
+              "description": "OpenAI embedding model.",
+              "examples": [
+                "text-embedding-3-small"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "OpenAI",
+          "type": "object"
+        }
+      },
+      "openrouter": {
+        "title": "Open Router",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "base_url": {
+            "default": "https://openrouter.ai/api/v1",
+            "description": "Override only if proxying OpenRouter through your own gateway.",
+            "title": "Base Url",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "openai/text-embedding-3-small",
+              "description": "OpenRouter-hosted embedding model slug.",
+              "examples": [
+                "openai/text-embedding-3-small"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Open Router",
+          "type": "object"
+        }
+      },
+      "azure": {
+        "title": "Azure OpenAI",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {
+          "endpoint": {
+            "description": "Azure OpenAI resource endpoint (e.g. https://<resource>.openai.azure.com).",
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "api_version": {
+            "default": "2024-02-15-preview",
+            "description": "Azure OpenAI API version for embeddings.",
+            "title": "Api Version",
+            "type": "string"
+          }
+        },
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [
+          "endpoint"
+        ],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "allow_custom_input": true,
+              "default": "text-embedding-3-small",
+              "description": "Azure OpenAI embedding deployment name. The deployment must return 1536-dimensional embeddings.",
+              "examples": [
+                "text-embedding-3-small",
+                "text-embedding-ada-002"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Azure OpenAI",
+          "type": "object"
+        }
+      },
+      "dograh": {
+        "title": "Dograh",
+        "credential_fields": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "connection_fields": {},
+        "credential_required": [
+          "api_key"
+        ],
+        "connection_required": [],
+        "settings_schema": {
+          "properties": {
+            "model": {
+              "default": "dograh_embedding_v1",
+              "description": "Dograh-managed embedding model.",
+              "examples": [
+                "dograh_embedding_v1"
+              ],
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "Dograh",
+          "type": "object"
+        }
+      }
+    }
+  }
+}

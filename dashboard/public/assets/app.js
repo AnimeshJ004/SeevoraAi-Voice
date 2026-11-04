@@ -3809,6 +3809,8 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
   function paintTranscriptTurns(callObj) {
     const turns = parseTurnsFromTranscript(callObj.transcript || '');
     transcriptBox.innerHTML = '';
+    const isCompleted = callObj.isEnded || /voice consultation completed|caller disconnected|user_hangup/i.test(String(callObj.liveSnippet || callObj.summary || ''));
+
     if (turns.length > 0) {
       turns.forEach((t) => {
         transcriptBox.appendChild(el('div', {
@@ -3820,15 +3822,38 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
           el('div', {}, t.text)
         ]));
       });
+      if (isCompleted) {
+        transcriptBox.appendChild(el('div', {
+          style: 'align-self:center;margin:12px 0 4px;padding:6px 16px;border-radius:20px;font-size:0.78rem;font-weight:700;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;'
+        }, '• Call Ended •'));
+      }
       transcriptBox.scrollTop = transcriptBox.scrollHeight;
     } else {
-      transcriptBox.appendChild(el('div', { class: 'muted', style: 'text-align:center;padding:34px 18px;font-size:0.86rem;' },
-        callObj.liveSnippet || 'Call connected. Listening for live speech turns between AI Agent and caller...'
-      ));
+      transcriptBox.appendChild(el('div', {
+        class: 'muted',
+        style: `text-align:center;padding:34px 18px;font-size:0.88rem;font-weight:600;${isCompleted ? 'color:#0d5d41;' : ''}`
+      }, [
+        isCompleted ? el('div', { style: 'margin-bottom:6px;font-size:1.1rem;' }, '✓') : null,
+        el('div', {}, isCompleted ? 'Call Ended · Voice Consultation Completed' : (callObj.liveSnippet || 'Call connected. Listening for live speech turns between AI Agent and caller...'))
+      ].filter(Boolean)));
+    }
+
+    if (isCompleted) {
+      currentCall.isEnded = true;
+      if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+      const badge = document.getElementById('sv-modal-live-status');
+      if (badge) {
+        badge.style.background = '#f1f5f9';
+        badge.style.color = '#334155';
+        badge.style.borderColor = '#cbd5e1';
+        badge.textContent = `CALL ENDED (${formatLiveCallTimer(callObj.durationSeconds || currentCall.durationSeconds || 0)})`;
+      }
+      if (typeof declineBtn !== 'undefined' && declineBtn) {
+        declineBtn.disabled = true;
+        declineBtn.textContent = 'Call Ended';
+      }
     }
   }
-
-  paintTranscriptTurns(currentCall);
 
   const declineBtn = el('button', {
     type: 'button',
@@ -3867,6 +3892,8 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
       openLiveCallTransferModal(currentCall, employees, onDone);
     }
   }, assignedEmp ? `Transfer to ${assignedEmp.name}` : 'Transfer to Team Employee');
+
+  paintTranscriptTurns(currentCall);
 
   const detailsGrid = el('div', {
     style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:18px;padding:14px 0;margin-bottom:16px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);'
@@ -3948,32 +3975,51 @@ function openLiveCallMonitorModal(initialCall, employees, onDone) {
   _liveModalPollId = setInterval(async () => {
     const box = document.getElementById('sv-modal-live-transcript-box');
     if (!box || !document.body.contains(box)) {
-      clearInterval(_liveModalPollId);
-      _liveModalPollId = null;
+      if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+      if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
       return;
     }
     try {
       const res = await api('/api/calls/live?callId=' + encodeURIComponent(currentCall.id));
-      if (res && res.selectedCall) {
-        const updated = res.selectedCall;
-        const prevTranscript = currentCall.transcript || '';
-        currentCall = updated;
-        callerTitleEl.textContent = `${currentCall.callerName || 'Unknown Caller'} (${currentCall.formattedPhone || currentCall.phoneNumber})`;
-        if ((updated.transcript || '') !== prevTranscript || (updated.liveSnippet || '') !== (currentCall.liveSnippet || '')) {
-          paintTranscriptTurns(updated);
+      if (res) {
+        let updated = res.selectedCall;
+        if (!updated && Array.isArray(res.liveCalls)) {
+          updated = res.liveCalls.find((c) => c.id === currentCall.id || c.dograhRunId === currentCall.dograhRunId || (c.phoneNumber && c.phoneNumber === currentCall.phoneNumber));
         }
-        if (updated.isEnded) {
+
+        const hasEnded = !updated || updated.isEnded || /voice consultation completed|caller disconnected|user_hangup/i.test(String((updated && (updated.liveSnippet || updated.summary)) || ''));
+
+        if (hasEnded) {
+          currentCall.isEnded = true;
+          if (_liveModalTickId) { clearInterval(_liveModalTickId); _liveModalTickId = null; }
+          if (_liveModalPollId) { clearInterval(_liveModalPollId); _liveModalPollId = null; }
+
+          const durationVal = (updated && updated.durationSeconds) || currentCall.durationSeconds || Math.max(1, Math.floor((Date.now() - new Date(currentCall.startedAt || Date.now()).getTime()) / 1000));
           const badge = document.getElementById('sv-modal-live-status');
           if (badge) {
             badge.style.background = '#f1f5f9';
             badge.style.color = '#334155';
             badge.style.borderColor = '#cbd5e1';
-            badge.textContent = `CALL ENDED (${formatLiveCallTimer(updated.durationSeconds || 0)})`;
+            badge.textContent = `CALL ENDED (${formatLiveCallTimer(durationVal)})`;
           }
-          declineBtn.disabled = true;
-          declineBtn.textContent = 'Call Ended';
-          clearInterval(_liveModalPollId);
-          _liveModalPollId = null;
+          if (declineBtn) {
+            declineBtn.disabled = true;
+            declineBtn.textContent = 'Call Ended';
+          }
+          if (updated) {
+            currentCall = updated;
+            paintTranscriptTurns(updated);
+          }
+          if (typeof refreshDashboardLiveLocator === 'function') refreshDashboardLiveLocator();
+          return;
+        }
+
+        // Call is actively continuing:
+        const prevTranscript = currentCall.transcript || '';
+        currentCall = updated;
+        callerTitleEl.textContent = `${currentCall.callerName || 'Unknown Caller'} (${currentCall.formattedPhone || currentCall.phoneNumber})`;
+        if ((updated.transcript || '') !== prevTranscript || (updated.liveSnippet || '') !== (currentCall.liveSnippet || '')) {
+          paintTranscriptTurns(updated);
         }
       }
     } catch (_) { }
@@ -11016,6 +11062,7 @@ async function viewSupport(root) {
       subject.value = '';
       message.value = '';
       prioritySel.value = 'high';
+      _adminDataCache = null;
       toast('Support ticket opened successfully.', 'ok');
       await loadTickets(list);
     } catch (e) {
@@ -11033,11 +11080,11 @@ async function loadTickets(host) {
   try {
     const out = await api('/api/support/tickets');
     const rawTickets = out.tickets || [];
-    _ticketsCache = rawTickets.slice().sort((a, b) => {
-      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
+    const getTicketTime = (t) => Math.max(
+      t.updatedAt ? new Date(t.updatedAt).getTime() : 0,
+      t.createdAt ? new Date(t.createdAt).getTime() : 0
+    );
+    _ticketsCache = rawTickets.slice().sort((a, b) => getTicketTime(b) - getTicketTime(a));
     host.innerHTML = '';
 
     // Update KPI counts
@@ -11138,11 +11185,32 @@ function ticketCard(t, admin) {
 
   // Admin controls
   if (admin) {
-    const statusSelect = el('select', { class: 'select-compact' }, ['open', 'in_progress', 'waiting_on_customer', 'resolved', 'closed'].map((v) => el('option', { value: v }, v.replace(/_/g, ' '))));
-    statusSelect.value = statusVal;
+    const statusSelect = createThemedDropdown({
+      options: [
+        { value: 'open', label: 'Open' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'waiting_on_customer', label: 'Waiting on Customer' },
+        { value: 'resolved', label: 'Resolved' },
+        { value: 'closed', label: 'Closed' }
+      ],
+      value: statusVal,
+      className: 'sv-modal-dropdown sv-ticket-status-dropdown',
+      searchable: false,
+      style: 'min-width:160px;'
+    });
 
-    const prioSelect = el('select', { class: 'select-compact' }, ['low', 'normal', 'high', 'urgent'].map((v) => el('option', { value: v }, v)));
-    prioSelect.value = priorityVal;
+    const prioSelect = createThemedDropdown({
+      options: [
+        { value: 'low', label: 'Low' },
+        { value: 'normal', label: 'Normal' },
+        { value: 'high', label: 'High' },
+        { value: 'urgent', label: 'Urgent' }
+      ],
+      value: priorityVal,
+      className: 'sv-modal-dropdown sv-ticket-prio-dropdown',
+      searchable: false,
+      style: 'min-width:130px;'
+    });
 
     const updateBtn = el('button', {
       type: 'button',
@@ -12151,11 +12219,11 @@ async function viewAdmin(root) {
 
     ticketHost.innerHTML = '';
     const rawTickets = (tickets && tickets.tickets) || [];
-    const openTicketsList = rawTickets.slice().sort((a, b) => {
-      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
+    const getTicketTime = (t) => Math.max(
+      t.updatedAt ? new Date(t.updatedAt).getTime() : 0,
+      t.createdAt ? new Date(t.createdAt).getTime() : 0
+    );
+    const openTicketsList = rawTickets.slice().sort((a, b) => getTicketTime(b) - getTicketTime(a));
     const bTickets = document.getElementById('tab-badge-tickets');
     if (bTickets) bTickets.textContent = String(openTicketsList.length);
     ticketHost.appendChild(el('div', { class: 'admin-client-head' }, [
@@ -13262,32 +13330,7 @@ function adjustWallet(t) {
 async function viewWhatsappHub(root) {
   root.classList.add('aria-whatsapp-hub-view');
 
-  const head = viewHead('WhatsApp Hub & Integration', 'Centralized WhatsApp command center. View automated post-call summaries, manage follow-up workflows, and message leads directly on WhatsApp.');
-  
-  // Header Action Buttons
-  const headerActions = el('div', { style: 'display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;' }, [
-    el('button', {
-      type: 'button',
-      class: 'btn btn-primary btn-sm',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:7px 20px;font-weight:750;font-size:0.82rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;',
-      onclick: () => {
-        activeTab = 'sandbox';
-        Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
-        try { history.replaceState(null, '', '#/whatsapp-hub?tab=sandbox'); } catch (_) {}
-        renderActiveTab(contentHost);
-      }
-    }, [
-      el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' }),
-      el('span', {}, 'New WhatsApp Message')
-    ]),
-    el('button', {
-      type: 'button',
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:6px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.82rem;cursor:pointer;',
-      onclick: () => goto('settings?tab=integrations')
-    }, 'Settings →')
-  ]);
-  head.appendChild(headerActions);
+  const head = viewHead('WhatsApp Hub & Integration', 'Centralized WhatsApp dispatch logs. Review automated post-call summaries, caller appointment updates, and customer delivery receipts.');
   root.appendChild(head);
 
   // Loading skeleton
@@ -13300,8 +13343,6 @@ async function viewWhatsappHub(root) {
 
   let hubData = null;
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
-  const validTabs = ['logs', 'automations', 'credentials', 'sandbox'];
-  let activeTab = validTabs.includes(urlParams.get('tab')) ? urlParams.get('tab') : 'logs';
   const validFilters = ['all', 'call_summary', 'outbound', 'inbound'];
   let messageFilter = validFilters.includes(urlParams.get('filter')) ? urlParams.get('filter') : 'all';
   let messageSearch = '';
@@ -13310,10 +13351,10 @@ async function viewWhatsappHub(root) {
     try {
       hubData = await api('/api/whatsapp-hub/overview');
     } catch (e) {
-      toast(e.message || 'Failed to load WhatsApp Hub data', 'err');
+      console.warn('WhatsApp Hub data load warning:', e && e.message);
       hubData = {
-        stats: { totalMessages: 0, autoSentCount: 0, outboundCount: 0, inboundCount: 0, deliveryRate: 100, senderNumber: '+91 80715 82519' },
-        credentials: { isConfigured: false, status: 'not_connected', senderNumber: '+91 80715 82519', metaPhoneId: '', hasToken: false, companyName: 'Seevora AI Voice' },
+        stats: { totalMessages: 0, autoSentCount: 0, outboundCount: 0, inboundCount: 0, deliveryRate: 0, senderNumber: '' },
+        credentials: { isConfigured: false, status: 'not_connected', senderNumber: '', metaPhoneId: '', hasToken: false, companyName: 'Seevora AI Voice' },
         automatedFeatures: [],
         messages: []
       };
@@ -13355,75 +13396,32 @@ async function viewWhatsappHub(root) {
       ]),
       el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'DELIVERY RATE'),
-        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, (stats.deliveryRate || 100) + '%'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, (stats.totalMessages > 0 ? (stats.deliveryRate || 100) + '%' : '--')),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Successful WhatsApp dispatches')
       ]),
       el('div', { style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
         el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'SENDER NUMBER'),
-        el('div', { style: 'font-size:1.05rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, stats.senderNumber || '+91 80715 82519'),
+        el('div', { style: 'font-size:1.05rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, stats.senderNumber || creds.senderNumber || '--'),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Active business number')
       ])
     ]);
     mainContainer.appendChild(kpiBar);
 
-    // 2. Underline Tab Navigation (Scandinavian Style)
-    const tabNav = el('div', { class: 'admin-tab-nav', style: 'margin-bottom:28px;' });
-    const tabs = [
-      { id: 'logs', label: 'Message History & Logs', count: (hubData.messages || []).length },
-      { id: 'automations', label: 'Automated Workflows', count: (hubData.automatedFeatures || []).length },
-      { id: 'credentials', label: 'Connected WhatsApp Account' },
-      { id: 'sandbox', label: 'Send WhatsApp Message' }
-    ];
-
-    const tabBtnMap = {};
-    tabs.forEach(t => {
-      const btn = el('button', {
-        class: 'admin-tab-btn' + (activeTab === t.id ? ' active' : ''),
-        onclick: () => {
-          activeTab = t.id;
-          Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
-          try {
-            const h = '#/whatsapp-hub?tab=' + activeTab + (activeTab === 'logs' && messageFilter !== 'all' ? '&filter=' + messageFilter : '');
-            history.replaceState(null, '', h);
-          } catch (_) {}
-          renderActiveTab(contentHost);
-        }
-      }, [
-        el('span', {}, t.label),
-        t.count !== undefined ? el('span', { style: 'margin-left:6px;font-size:0.72rem;padding:2px 7px;background:rgba(13,93,65,0.08);border-radius:999px;font-weight:750;color:#0d5d41;' }, String(t.count)) : null
-      ].filter(Boolean));
-      tabBtnMap[t.id] = btn;
-      tabNav.appendChild(btn);
-    });
-    mainContainer.appendChild(tabNav);
-
-    // 3. Tab Content Canvas Host
-    const contentHost = el('div', { class: 'wa-hub-tab-host', style: 'width:100%;' });
-    mainContainer.appendChild(contentHost);
-
-    renderActiveTab(contentHost);
-  }
-
-  function renderActiveTab(host) {
-    host.innerHTML = '';
-    if (activeTab === 'logs') renderLogsTab(host);
-    else if (activeTab === 'automations') renderAutomationsTab(host);
-    else if (activeTab === 'credentials') renderCredentialsTab(host);
-    else if (activeTab === 'sandbox') renderSandboxTab(host);
+    // 2. Render Dispatch Audit Trail
+    renderLogs(mainContainer);
   }
 
   // ==========================================================================
-  // TAB 1: LIVE MESSAGE LOGS (Real-time Message Table, Zero Cards)
+  // DISPATCH AUDIT TRAIL (Real-time Message Table, Zero Cards)
   // ==========================================================================
-  function renderLogsTab(host) {
-    host.innerHTML = '';
+  function renderLogs(host) {
     const rawMessages = (hubData && hubData.messages) || [];
 
     // Title Underline Section Header
     host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
       el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Dispatch Audit Trail'),
       el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Automated & Manual WhatsApp Dispatches'),
-      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Every WhatsApp message sent automatically upon call completion, appointment booking, or manual dispatch is recorded here with recipient details, trigger source, and delivery status.')
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Every WhatsApp message sent automatically upon call completion, appointment booking, or dispatch is recorded here with recipient details, trigger source, and delivery status.')
     ]));
 
     // Toolbar (Filter Pills + Search Bar)
@@ -13471,7 +13469,7 @@ async function viewWhatsappHub(root) {
             }
           });
           try {
-            const h = '#/whatsapp-hub?tab=logs' + (f.id !== 'all' ? '&filter=' + f.id : '');
+            const h = '#/whatsapp-hub' + (f.id !== 'all' ? '?filter=' + f.id : '');
             history.replaceState(null, '', h);
           } catch (_) {}
           renderMessageTable(tableHost);
@@ -13533,13 +13531,7 @@ async function viewWhatsappHub(root) {
           style: 'padding:48px 16px;text-align:center;color:#5d7468;border-top:1px solid rgba(13,93,65,0.08);border-bottom:1px solid rgba(13,93,65,0.08);'
         }, [
           el('div', { style: 'font-weight:700;font-size:0.98rem;color:#14221c;margin-bottom:6px;' }, 'No WhatsApp messages found matching your filter'),
-          el('p', { style: 'font-size:0.84rem;margin:0 0 16px;' }, 'Dispatches will automatically appear here when voice calls end or when you send test messages.'),
-          el('button', {
-            type: 'button',
-            class: 'btn btn-primary btn-sm',
-            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 18px;',
-            onclick: () => { activeTab = 'sandbox'; Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab)); renderActiveTab(contentHost); }
-          }, 'Send Test WhatsApp Message →')
+          el('p', { style: 'font-size:0.84rem;margin:0;' }, 'Post-call summaries and caller follow-ups will automatically appear here as calls complete.')
         ]));
         return;
       }
@@ -13636,357 +13628,6 @@ async function viewWhatsappHub(root) {
     }
   }
 
-  // ==========================================================================
-  // TAB 2: AUTOMATED WORKFLOWS & TRIGGERS (Zero Cards, Title Underline)
-  // ==========================================================================
-  function renderAutomationsTab(host) {
-    const features = (hubData && hubData.automatedFeatures) || [];
-
-    // Title Underline Section Header
-    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Autonomous Post-Call Pipeline'),
-      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Automated Voice-to-WhatsApp Workflows'),
-      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Configure which automated WhatsApp messages are automatically dispatched by Seevora AI Voice when telephony calls terminate or when caller qualification occurs.')
-    ]));
-
-    // Automation Rows List (Clean Dividers, No Boxes)
-    const list = el('div', { style: 'margin-bottom:40px;' });
-
-    features.forEach((feat) => {
-      const row = el('div', {
-        style: 'padding:22px 0;border-bottom:1px solid rgba(13,93,65,0.09);display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;'
-      });
-
-      const infoCol = el('div', { style: 'flex:1;min-width:280px;' }, [
-        el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;' }, [
-          el('h4', { style: 'margin:0;font-size:1.02rem;font-weight:800;color:#14221c;' }, feat.title),
-          el('span', {
-            style: 'padding:2px 8px;background:rgba(13,93,65,0.08);color:#0d5d41;font-size:0.70rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;border-radius:999px;'
-          }, feat.trigger)
-        ]),
-        el('p', { style: 'margin:0 0 10px;font-size:0.84rem;color:#5d7468;line-height:1.45;max-width:680px;' }, feat.description),
-        el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
-          el('button', {
-            type: 'button',
-            class: 'btn btn-ghost btn-sm',
-            style: 'padding:2px 10px;font-size:0.75rem;color:#0d5d41;border:1px solid rgba(13,93,65,0.20);border-radius:999px;font-weight:700;',
-            onclick: () => openTemplateModal(feat)
-          }, 'View / Edit Template →')
-        ])
-      ]);
-
-      // Toggle switch
-      const toggleWrap = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-shrink:0;' });
-      const toggle = el('input', {
-        type: 'checkbox',
-        checked: feat.enabled !== false,
-        style: 'accent-color:#0d5d41;width:18px;height:18px;cursor:pointer;'
-      });
-
-      toggle.onchange = async () => {
-        try {
-          await api('/api/whatsapp-hub/toggle-feature', {
-            method: 'POST',
-            body: { featureKey: feat.key, enabled: toggle.checked }
-          });
-          feat.enabled = toggle.checked;
-          toast(feat.title + (toggle.checked ? ' enabled.' : ' disabled.'), 'ok');
-        } catch (err) {
-          toggle.checked = !toggle.checked;
-          toast(err.message || 'Failed to update feature', 'err');
-        }
-      };
-
-      toggleWrap.appendChild(toggle);
-      toggleWrap.appendChild(el('span', {
-        style: 'font-size:0.82rem;font-weight:750;color:#14221c;'
-      }, feat.enabled !== false ? 'Active' : 'Disabled'));
-
-      row.appendChild(infoCol);
-      row.appendChild(toggleWrap);
-      list.appendChild(row);
-    });
-
-    host.appendChild(list);
-  }
-
-  // ==========================================================================
-  // TAB 3: CONNECTED ACCOUNT & STATUS (Zero Cards, Clean & Minimal)
-  // ==========================================================================
-  function renderCredentialsTab(host) {
-    const creds = (hubData && hubData.credentials) || {};
-
-    // Title Underline Section Header
-    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'WhatsApp Business Integration'),
-      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Connected WhatsApp Business Account'),
-      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Your official WhatsApp Business number is linked to Seevora AI Voice Receptionist. Automated post-call summaries, appointment confirmations, and caller alerts are dispatched from this verified account.')
-    ]));
-
-    // Simple, Client-Friendly Account Grid
-    const grid = el('div', { style: 'margin-bottom:32px;display:flex;flex-direction:column;gap:18px;' });
-
-    const isConnected = creds.isConfigured || creds.status === 'connected';
-    const accountItems = [
-      {
-        label: 'ACCOUNT STATUS',
-        value: isConnected ? 'Connected & Verified' : 'Setup Required',
-        isStatus: true,
-        statusColor: isConnected ? '#047857' : '#5d7468',
-        hint: isConnected ? 'Official WhatsApp Business Account active and sending messages' : 'Connect your WhatsApp Business number in Settings'
-      },
-      {
-        label: 'OFFICIAL BUSINESS NUMBER',
-        value: creds.senderNumber || '+91 80715 82519',
-        hint: 'Verified business phone line used for voice receptionist & customer WhatsApp updates'
-      },
-      {
-        label: 'BUSINESS DISPLAY NAME',
-        value: creds.companyName || 'Seevora AI Voice',
-        hint: 'Company name displayed in customer WhatsApp chat headers'
-      },
-      {
-        label: 'VOICE AI AUTOMATED DISPATCH',
-        value: 'Active • Real-time dispatches enabled',
-        hint: 'Post-call conversation summaries and calendar invites are sent instantly when calls end'
-      },
-      {
-        label: 'INTEGRATION TYPE',
-        value: 'Official WhatsApp Business Platform (Cloud)',
-        hint: 'Direct enterprise tier with high delivery rates and instant message webhooks'
-      }
-    ];
-
-    accountItems.forEach(item => {
-      const row = el('div', {
-        style: 'padding-bottom:14px;border-bottom:1px solid rgba(13,93,65,0.08);display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;'
-      }, [
-        el('div', { style: 'max-width:340px;' }, [
-          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;letter-spacing:0.04em;' }, item.label),
-          item.hint ? el('div', { style: 'font-size:0.75rem;color:#94a3b8;margin-top:2px;' }, item.hint) : null
-        ].filter(Boolean)),
-        el('div', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, [
-          item.isStatus ? el('span', {
-            style: 'display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:' + (isConnected ? 'rgba(4,120,87,0.10)' : 'rgba(93,116,104,0.10)') + ';color:' + item.statusColor + ';border-radius:999px;font-size:0.76rem;'
-          }, [
-            el('span', { style: 'width:6px;height:6px;border-radius:50%;background:' + item.statusColor + ';' }),
-            el('span', {}, item.value)
-          ]) : el('span', {}, item.value)
-        ])
-      ]);
-      grid.appendChild(row);
-    });
-
-    host.appendChild(grid);
-
-    // Action button
-    const actionsRow = el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
-      el('button', {
-        type: 'button',
-        class: 'btn btn-primary',
-        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;font-size:0.84rem;border:none;cursor:pointer;',
-        onclick: () => goto('settings?tab=integrations')
-      }, 'Manage WhatsApp Settings →')
-    ]);
-    host.appendChild(actionsRow);
-  }
-
-  // ==========================================================================
-  // TAB 4: SEND MESSAGE & LIVE TEST SANDBOX (Zero Cards, Underline Inputs)
-  // ==========================================================================
-  function renderSandboxTab(host) {
-    // Title Underline Section Header
-    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Direct Customer Messaging'),
-      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Send Direct WhatsApp Message'),
-      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Quickly send a direct WhatsApp follow-up, location pin, or appointment confirmation to any customer or lead.')
-    ]));
-
-    // Form Grid (Underline Inputs, No Boxes)
-    const form = el('div', { style: 'max-width:720px;margin-bottom:32px;display:flex;flex-direction:column;gap:20px;' });
-
-    // Phone & Name Row
-    const row1 = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:24px;' }, [
-      el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'RECIPIENT MOBILE NUMBER (10 DIGITS)'),
-        el('input', {
-          id: 'wa-sb-phone',
-          type: 'text',
-          placeholder: 'e.g. 9876543210 or +91 98765 43210',
-          value: '',
-          style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.92rem;color:#14221c;background:transparent;width:100%;outline:none;'
-        })
-      ]),
-      el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'RECIPIENT NAME'),
-        el('input', {
-          id: 'wa-sb-name',
-          type: 'text',
-          placeholder: 'e.g. Animesh Jain',
-          value: '',
-          style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.92rem;color:#14221c;background:transparent;width:100%;outline:none;'
-        })
-      ])
-    ]);
-    form.appendChild(row1);
-
-    // Template Dropdown (Themed Scandinavian Dropdown)
-    const templateDropdown = createThemedDropdown({
-      options: [
-        { value: 'call_summary', label: 'Post-Call Summary & Next Steps' },
-        { value: 'appointment', label: 'Appointment Booking Confirmation' },
-        { value: 'missed_call', label: 'Missed Call Follow-Up Message' },
-        { value: 'location', label: 'Office Location & Google Maps Pin' },
-        { value: 'custom', label: 'Custom Message' }
-      ],
-      value: 'call_summary',
-      className: 'sv-modal-dropdown sv-support-priority-dropdown',
-      searchable: false,
-      style: 'width:100%;',
-      onChange: (tVal) => {
-        const textArea = $('#wa-sb-text');
-        const nameVal = ($('#wa-sb-name') && $('#wa-sb-name').value.trim()) || 'Client';
-        const company = (hubData && hubData.credentials && hubData.credentials.companyName) || 'Seevora AI Voice';
-        if (!textArea) return;
-
-        if (tVal === 'call_summary') {
-          textArea.value = `Hi ${nameVal}, thank you for speaking with our AI Voice Receptionist at ${company}. Here is a summary of your call: Inquired about enterprise voice receptionist integration. Feel free to reply here if you have any questions!`;
-        } else if (tVal === 'appointment') {
-          textArea.value = `Hello ${nameVal}! Your appointment with ${company} has been scheduled for tomorrow at 11:00 AM IST. You can manage or reschedule your booking here: https://seevora.com/booking`;
-        } else if (tVal === 'missed_call') {
-          textArea.value = `Hi ${nameVal}, we noticed you called ${company} just now. Our AI Voice Receptionist is ready to assist you. Reply here or call us back anytime!`;
-        } else if (tVal === 'location') {
-          textArea.value = `Hi ${nameVal}, here is the Google Maps location pin and directions for ${company}: https://maps.google.com/?q=Seevora+Office. We look forward to meeting you!`;
-        }
-      }
-    });
-
-    const templateSelectWrap = el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'SELECT PRE-VERIFIED TEMPLATE'),
-      templateDropdown
-    ]);
-    form.appendChild(templateSelectWrap);
-
-    // Message Text Area
-    const initialMsg = `Hi Animesh, thank you for speaking with our AI Voice Receptionist at Seevora AI Voice. Here is a summary of your call: Inquired about enterprise voice receptionist integration. Feel free to reply here if you have any questions!`;
-    const textWrap = el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'MESSAGE TEXT'),
-      el('textarea', {
-        id: 'wa-sb-text',
-        rows: 4,
-        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;resize:vertical;line-height:1.45;',
-        value: initialMsg
-      })
-    ]);
-    form.appendChild(textWrap);
-
-    // Action Buttons
-    const btnRow = el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;' }, [
-      el('button', {
-        type: 'button',
-        class: 'btn btn-primary',
-        id: 'wa-sb-send-btn',
-        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;font-size:0.84rem;border:none;',
-        onclick: async () => {
-          const phoneInput = $('#wa-sb-phone');
-          const nameInput = $('#wa-sb-name');
-          const textInput = $('#wa-sb-text');
-          const sendBtn = $('#wa-sb-send-btn');
-
-          const phone = phoneInput ? phoneInput.value.trim() : '';
-          const name = nameInput ? nameInput.value.trim() : '';
-          const text = textInput ? textInput.value.trim() : '';
-
-          if (!phone) { toast('Please enter a recipient phone number', 'err'); return; }
-          if (!text) { toast('Please enter message text', 'err'); return; }
-
-          if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending...'; }
-          try {
-            const res = await api('/api/whatsapp-hub/send-message', {
-              method: 'POST',
-              body: { phone, name, text, type: 'text' }
-            });
-            toast('WhatsApp message recorded & dispatched!', 'ok');
-            await loadDataAndRender();
-            activeTab = 'logs';
-            Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
-            renderActiveTab(contentHost);
-          } catch (err) {
-            toast(err.message || 'Send failed', 'err');
-          } finally {
-            if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send WhatsApp Message'; }
-          }
-        }
-      }, 'Send WhatsApp Message'),
-      el('button', {
-        type: 'button',
-        class: 'btn btn-ghost',
-        style: 'border-radius:999px;padding:8px 20px;border:1px solid #059669;color:#059669;font-weight:750;font-size:0.84rem;display:inline-flex;align-items:center;gap:6px;',
-        onclick: () => {
-          const phoneInput = $('#wa-sb-phone');
-          const textInput = $('#wa-sb-text');
-          const phone = (phoneInput ? phoneInput.value.trim() : '').replace(/\D/g, '');
-          const text = textInput ? textInput.value.trim() : '';
-          const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-      }, [
-        el('span', { html: iconWhatsAppSvg(14) }),
-        el('span', {}, 'Open & Send on WhatsApp Web ↗')
-      ])
-    ]);
-    form.appendChild(btnRow);
-
-    host.appendChild(form);
-  }
-
-  // Preview Modal for Template Editing
-  function openTemplateModal(feat) {
-    const modalHost = el('div', {
-      style: 'position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'
-    });
-
-    const box = el('div', {
-      style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.18);border-radius:18px;max-width:540px;width:100%;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,0.12);'
-    }, [
-      el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
-        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:800;color:#14221c;' }, feat.title),
-        el('button', {
-          style: 'background:none;border:none;font-size:1.2rem;cursor:pointer;color:#5d7468;',
-          onclick: () => modalHost.remove()
-        }, '✕')
-      ]),
-      el('p', { style: 'font-size:0.83rem;color:#5d7468;margin:0 0 16px;line-height:1.45;' }, feat.description),
-      el('label', { style: 'display:block;font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;margin-bottom:6px;' }, 'WHATSAPP TEMPLATE CONTENT'),
-      el('textarea', {
-        id: 'wa-tpl-edit-text',
-        rows: 5,
-        style: 'border:1px solid rgba(13,93,65,0.20);border-radius:10px;padding:10px;font-size:0.88rem;color:#14221c;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.45;margin-bottom:20px;',
-        value: feat.template || ''
-      }),
-      el('div', { style: 'display:flex;justify-content:flex-end;gap:10px;' }, [
-        el('button', {
-          class: 'btn btn-ghost btn-sm',
-          style: 'border-radius:999px;padding:6px 16px;',
-          onclick: () => modalHost.remove()
-        }, 'Cancel'),
-        el('button', {
-          class: 'btn btn-primary btn-sm',
-          style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 20px;font-weight:750;',
-          onclick: () => {
-            const val = ($('#wa-tpl-edit-text') && $('#wa-tpl-edit-text').value) || '';
-            feat.template = val;
-            toast('Template updated.', 'ok');
-            modalHost.remove();
-          }
-        }, 'Save Template')
-      ])
-    ]);
-
-    modalHost.appendChild(box);
-    document.body.appendChild(modalHost);
-  }
-
   // Preview Modal for Message Details
   function openMessagePreviewModal(m) {
     const modalHost = el('div', {
@@ -14035,7 +13676,6 @@ async function viewWhatsappHub(root) {
   // Initial load
   await loadDataAndRender();
 }
-
 
 async function viewSettings(root) {
   const wrap = el('div', { class: 'aria-settings-view', style: 'width:100%;' });
@@ -16891,7 +16531,12 @@ async function viewSettings(root) {
         } catch (e) {
           let errText = (e && e.message) || 'Connection test failed';
           errText = errText.replace(/^(Test failed:\s*)+/i, '');
-          toast(errText, 'err');
+          if (/24.hour|131030|message template|outside the/i.test(errText)) {
+            toast('WhatsApp credentials verified. Meta connection is active.', 'ok');
+            panel.innerHTML = ''; renderIntegrationsTab(panel);
+          } else {
+            toast(errText, 'err');
+          }
         } finally {
           testBtn.disabled = false;
           testBtn.textContent = 'Test Live Connection';

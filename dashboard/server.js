@@ -1495,34 +1495,55 @@ async function apiWsConnect(req, res, ctx) {
 }
 
 const CALLER_INTELLIGENCE_RULES = `
+# STRICT CALLER LANGUAGE MIRRORING (CRITICAL — NEVER BREAK THIS):
+- ALWAYS MIRROR THE CALLER'S LANGUAGE NATURALLY ON EVERY SINGLE TURN:
+  1. IF THE CALLER SPEAKS IN ENGLISH (e.g. "Hello", "Where are you located?", "What are your services?", "Can I book an appointment?"):
+     * YOU MUST RESPOND IN 100% PURE, NATURAL, POLITE ENGLISH!
+     * Example: Caller asks "Where are you from?" -> You reply: "We are based in Indore, Madhya Pradesh! How can I assist you today?"
+     * NEVER speak Hindi or Hinglish when the caller speaks English.
+  2. IF THE CALLER SPEAKS IN HINDI (e.g. "नमस्ते", "आप क्या क्या सर्विस देते हैं?", "मुझे जानकारी चाहिए"):
+     * YOU MUST RESPOND IN POLITE, NATURAL HINDI!
+     * Example: Caller asks "आपकी ऑफिस कहाँ है?" -> You reply: "जी, हमारा ऑफिस इंदौर, मध्य प्रदेश में है। बताइए, मैं आपकी क्या सहायता करूँ?"
+  3. IF THE CALLER SPEAKS IN NEUTRAL / HINGLISH (Mix of Hindi & English, e.g. "Pricing kya hai?", "Appointment book karni hai"):
+     * RESPOND IN BALANCED, WARM CONVERSATIONAL HINGLISH!
+     * Example: "Haanji bilkul! Hum appointment booking automation provide karte hain. Kya aapko team ke saath meeting schedule karni hai?"
+
+# ABSOLUTE SCRIPT & VOICE CONSISTENCY (NO MIXED SCRIPTS):
+- NEVER MIX Devanagari script and English Latin script in the same sentence or turn!
+  * Mixing scripts causes the speech engine to abruptly shift vocoder pitch and tone mid-sentence, making the voice sound like two different people.
+  * When speaking Hinglish: Use pure Roman Hinglish alphabet only (e.g. "Haanji bilkul", "Theek hai", "Accha, samajh gayi", "Sahi hai"). NEVER insert isolated Devanagari characters like "अच्छा".
+  * When speaking English: Use standard English words only.
+  * When speaking pure Hindi: Use consistent Hindi words.
+- PHONE NUMBERS & DIGITS:
+  * When speaking any phone number or digit sequence, ALWAYS space each digit out: e.g. "7 9 7 4 3 1 5 5 1 8" or "nine one, seven nine seven four, three one five, five one eight".
+  * NEVER output raw symbol strings like "+917974315518" as a single token, because the voice engine reads plus signs and unspaced numbers mechanically.
+
 # HUMAN SPOKEN CONVERSATIONAL DYNAMICS (CRITICAL FOR REALISTIC HUMAN VOICE):
 - TALK LIKE A REAL HUMAN RECEPTIONIST, NEVER AN AI BOT:
-  * NEVER use formal robotic filler phrases like: "Certainly! I'd be happy to assist you with...", "As an AI language model...", "Thank you for reaching out to us today.", "Is there anything else I can assist you with today?".
-  * Use warm, human everyday phrases: "Haanji bilkul!", "अच्छा, samajh gayi!", "Sure thing!", "Haanji boliye!", "Glad to help with that!".
+  * NEVER use formal robotic filler phrases like: "Certainly! I'd be happy to assist you with...", "As an AI language model...", "Thank you for reaching out to us today.".
+  * Use warm, human everyday phrases: "Haanji bilkul!", "Accha, samajh gayi!", "Sure thing!", "Haanji boliye!", "Glad to help with that!".
 - CONTRACTIONS ARE MANDATORY IN SPOKEN ENGLISH:
   * ALWAYS use contractions: "I'm", "we're", "don't", "can't", "that's", "it's", "we'll", "you'll". Humans never say "I am" or "do not" on a natural phone call.
 - NATURAL CONVERSATIONAL BACKCHANNELS & AFFIRMATIONS:
-  * In Hindi/Hinglish: Start turns naturally with "Haanji", "अच्छा", "Bilkul", "Sahi hai", or "Ji".
+  * In Hinglish: Start turns naturally with "Haanji", "Accha", "Bilkul", "Sahi hai", or "Ji".
   * In English: Start turns naturally with "Got it", "Right", "Sure", "Understood", or "Awesome".
 - BREVITY & BREATHING CADENCE:
   * Exactly ONE or TWO short spoken sentences per turn (12 to 20 words maximum).
   * Use commas for micro-pauses so the voice engine breathes naturally. Never speak in runaway compound sentences.
 - PHONETIC PRONUNCIATION FOR TELEPHONY TTS:
-  * NEVER write "accha", "achha", or "acha" in English letters! Speech engines mispronounce "accha" as "Aaka". ALWAYS write "अच्छा" in Devanagari script, or use "theek hai" / "bilkul" / "sahi hai".
   * Always pronounce "24/7" as "twenty-four seven" or "chaubees ghante".
   * Always pronounce "seevora.in" as "seevora dot in".
   * Pronounce "AI" clearly as "A I".
-  * When saying phone numbers, chunk digits naturally with spaces so the speech engine sounds like a person reading a number.
 
-# DYNAMIC CALLER IDENTITY & HINDI NAME RECOGNITION (CRITICAL):
+# DYNAMIC CALLER IDENTITY & NAME ACCURACY (CRITICAL):
 - In Hindi and Hinglish: "Mera naam [Name] hai" or "Mera name [Name]" means "My name is [Name]". "Mera" translates to "My".
 - "Mera" IS NEVER A PERSON'S NAME! Never call the user "Mira" or "Mera".
-- If the caller says "Mera naam [Name]", or if speech-to-text wrote "Mira naam [Name]" or "Mira [Name]", recognize that the caller's actual name is [Name]!
-- Accurately recognize and remember ANY caller's name dynamically (e.g. Bhavya Chaturvedi, Rahul, Priya, Vikram, Ananya, David, Sarah, etc.).
-- If the caller corrects you or states their name, immediately acknowledge it warmly and apologize for any mishearing.
+- If the caller says "Mera naam [Name]", recognize that the caller's actual name is [Name]! (e.g. Animesh Jain). Never mishear or replace their name with a generic word like "Anil".
+- If known caller context is provided (e.g. caller_name variable), prioritize that verified identity.
+- If the caller corrects you or states their name, immediately acknowledge it warmly with high respect.
 
 # CONVERSATIONAL POLITE BEHAVIOR & ANTI-LOOPING RULES (CRITICAL):
-- NEVER REPEAT INTRODUCTORY GREETINGS: Do NOT repeat your name ("Main Priya bol rahi hoon...") or the greeting line if the caller says "Hello", "Namaste", "Haan", or "Ji" during the call! Acknowledge naturally with "Haanji boliye, main sun rahi hoon" and answer their question or ask your follow-up.
+- NEVER REPEAT INTRODUCTORY GREETINGS: Do NOT repeat your name ("Main Ria bol rahi hoon...") or the greeting line if the caller says "Hello", "Namaste", "Haan", or "Ji" during the call! Acknowledge naturally with "Haanji boliye, main sun rahi hoon" (or in English: "Yes, I can hear you clearly! How can I help?") and answer their question.
 - DO NOT repeat the caller's name on every single turn! Greet them with their name ONCE upon introduction or when confirming details. In ongoing conversation, speak naturally without prefixing their name.
 - NEVER badger or loop asking for a phone number on every turn! If the caller greets you ("Hey"), makes a comment, or asks any question, ALWAYS answer their inquiry directly first.
 - Only request contact information when the caller wants to schedule a consultation, callback, pricing quote, or live demo.
@@ -2575,9 +2596,10 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
     ? `*${companyName} — Official AI Voice Update*\n*VoBiz Line:* ${senderNumber}\n─────────────────────\n${rawMessage}\n\n_Dispatched via ${companyName} Voice AI (${senderNumber})_`
     : rawMessage;
 
-  const messageId = 'wamid.HBgM' + Buffer.from(`${recipientIntl}_${Date.now()}`).toString('base64').replace(/=/g, '');
+  let waRecord_wamid = 'wamid.HBgM' + Buffer.from(`${recipientIntl}_${Date.now()}`).toString('base64').replace(/=/g, '');
   let gatewayProvider = `VoBiz WhatsApp Business (${senderNumber})`;
   let upstreamDelivered = false;
+  let metaDeliveryError = '';
 
   // 1. Try Meta WhatsApp Cloud API if credentials configured
   const metaToken = opts.metaToken || crmWa.metaToken || waConfig.metaToken || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || '';
@@ -2585,30 +2607,64 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
   if (metaToken && metaPhoneId) {
     try {
       const https = require('https');
-      await new Promise((resolve) => {
+      const bodyStr = JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: recipientIntl,
+        type: 'text',
+        text: { preview_url: false, body: formattedMessage }
+      });
+      const metaResult = await new Promise((resolve) => {
+        const bodyBuf = Buffer.from(bodyStr, 'utf8');
         const req = https.request({
           hostname: 'graph.facebook.com',
           path: `/v19.0/${metaPhoneId}/messages`,
           method: 'POST',
+          timeout: 12000,
           headers: {
             'Authorization': `Bearer ${metaToken}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Content-Length': String(bodyBuf.length)
           }
         }, (res) => {
-          if (res.statusCode >= 200 && res.statusCode < 300) upstreamDelivered = true;
-          resolve(res.statusCode);
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
         });
-        req.on('error', () => resolve(null));
-        req.write(JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: recipientIntl,
-          type: 'text',
-          text: { preview_url: false, body: formattedMessage }
-        }));
+        req.on('error', (e) => resolve({ status: 0, body: e.message }));
+        req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: 'timeout' }); });
+        req.write(bodyBuf);
         req.end();
       });
-      if (upstreamDelivered) gatewayProvider = `Meta Cloud WABA (${senderNumber})`;
+      if (metaResult.status >= 200 && metaResult.status < 300) {
+        // Parse real wamid from Meta response
+        try {
+          const parsed = JSON.parse(metaResult.body);
+          if (parsed && parsed.messages && parsed.messages[0] && parsed.messages[0].id) {
+            waRecord_wamid = parsed.messages[0].id;
+          }
+        } catch (_) {}
+        upstreamDelivered = true;
+        gatewayProvider = `Meta Cloud WABA (${senderNumber})`;
+      } else {
+        // Parse Meta error for meaningful message
+        try {
+          const parsed = JSON.parse(metaResult.body);
+          const metaErr = parsed && parsed.error;
+          if (metaErr) {
+            const code = metaErr.code;
+            if (code === 131030) {
+              metaDeliveryError = 'Meta 24-hour window: Use an approved WhatsApp message template for outbound messages. Configure a template in Meta Business Manager.';
+            } else if (code === 190) {
+              metaDeliveryError = 'Meta token expired or invalid. Regenerate a Permanent System User Token in Meta Business Manager.';
+            } else if (code === 100) {
+              metaDeliveryError = 'Invalid Meta Phone Number ID. Check Settings → Connected Apps → WhatsApp Business.';
+            } else {
+              metaDeliveryError = 'Meta API error ' + code + ': ' + (metaErr.message || metaResult.body.slice(0, 120));
+            }
+          }
+        } catch (_) {}
+      }
     } catch (_) { }
   }
 
@@ -2662,7 +2718,7 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
           to: recipientPhone,
           message: rawMessage,
           formattedMessage,
-          messageId,
+          messageId: waRecord_wamid,
           sentAt: new Date().toISOString()
         })
       });
@@ -2683,12 +2739,22 @@ async function dispatchWhatsAppViaVoBiz(opts = {}) {
     wabaId: waConfig.wabaId || 'waba_991204',
     message: rawMessage,
     formattedMessage,
-    messageId,
+    messageId: waRecord_wamid,
     provider: gatewayProvider,
     waMeUrl,
-    status: 'delivered',
+    status: upstreamDelivered ? 'delivered' : (metaDeliveryError ? 'failed' : 'pending'),
+    deliveryError: metaDeliveryError || null,
     sentAt
   };
+
+  // If Meta credentials exist but delivery failed, throw so chatbot shows the real error
+  if (!upstreamDelivered && metaDeliveryError && metaToken && metaPhoneId) {
+    await core.mutate((d) => {
+      if (!Array.isArray(d.whatsappMessages)) d.whatsappMessages = [];
+      d.whatsappMessages.push({ ...waRecord, status: 'failed' });
+    });
+    throw new Error(metaDeliveryError);
+  }
 
   await core.mutate((d) => {
     if (!Array.isArray(d.whatsappMessages)) d.whatsappMessages = [];
@@ -2744,14 +2810,23 @@ async function handleSendWhatsApp(text, ctx, db) {
       .trim() || `Hello! Your inquiry and appointment with ${companyName} have been confirmed by our AI Voice Receptionist.`;
   }
 
-  const waRecord = await dispatchWhatsAppViaVoBiz({
-    tenantId: ctx.tenant.id,
-    userId: ctx.user.id,
-    companyName,
-    senderNumber: crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
-    recipientPhone: phoneMatch[0],
-    message
-  });
+  let waRecord;
+  try {
+    waRecord = await dispatchWhatsAppViaVoBiz({
+      tenantId: ctx.tenant.id,
+      userId: ctx.user.id,
+      companyName,
+      senderNumber: crmWa.senderNumber || waConfig.senderNumber || waConfig.phoneNumber || '+91 80715 82519',
+      recipientPhone: phoneMatch[0],
+      message
+    });
+  } catch (dispatchErr) {
+    const errMsg = (dispatchErr && dispatchErr.message) || 'WhatsApp delivery failed.';
+    return {
+      reply: `**WhatsApp Delivery Failed**\n\n${errMsg}\n\n*Please check your WhatsApp settings in Settings → Connected Apps → WhatsApp Business.*`,
+      action: { type: 'open_modal', modal: 'whatsapp', channel: 'whatsapp', buttonText: 'Fix in Settings →' }
+    };
+  }
 
   const isEnglishWaSuccess = detectUserLanguage(text) === 'English';
   const reply = isEnglishWaSuccess
@@ -5850,7 +5925,21 @@ async function apiTelephonyDial(req, res, ctx) {
       code: 'needs_confirm',
     });
   }
-  let workflowId = ctx.tenant ? Number(resolveTenantWorkflowId(ctx.tenant.id)) : undefined;
+
+  // Multi-tenant Dynamic Credential Resolution from Settings (BYON + BYOK)
+  const tenantConnections = (core.db().byonConnections || [])
+    .filter((x) => ctx.tenant && x.tenantId === ctx.tenant.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
+  const activeConn = tenantConnections[0] || (core.db().byonConnections || []).find((x) => ctx.tenant && x.tenantId === ctx.tenant.id);
+
+  const fromNumber = (activeConn && activeConn.address) || (ctx.tenant && ctx.tenant.telephony && ctx.tenant.telephony.did) || process.env.VOBIZ_NUMBER;
+  if (!fromNumber) {
+    return core.sendJson(res, 400, {
+      error: 'Setup Required: Please connect your VoBiz phone number in Settings -> Voice Integrations to start calling.',
+      code: 'no_number_connected'
+    });
+  }
+
+  let workflowId = (activeConn && activeConn.workflowId) || (ctx.tenant ? Number(resolveTenantWorkflowId(ctx.tenant.id)) : undefined);
   if (ctx.tenant && ctx.tenant.privacyMode === 'no_recording') {
     workflowId = Number(process.env.DOGRAH_NO_RECORDING_WORKFLOW_ID || 0);
     if (!Number.isInteger(workflowId) || workflowId <= 0) {
@@ -5861,15 +5950,6 @@ async function apiTelephonyDial(req, res, ctx) {
     }
   }
 
-  // Look up tenant's assigned / connected VoBiz number
-  const tenantConnections = (core.db().byonConnections || [])
-    .filter((x) => ctx.tenant && x.tenantId === ctx.tenant.id && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
-  const activeConn = tenantConnections[0];
-
-  const authId = (activeConn && activeConn.authId) || process.env.VOBIZ_AUTH_ID;
-  const authToken = (activeConn && activeConn.authToken) || process.env.VOBIZ_AUTH_TOKEN;
-  const fromNumber = (activeConn && activeConn.address) || (ctx.tenant && ctx.tenant.telephony && ctx.tenant.telephony.did) || process.env.VOBIZ_NUMBER || '+918071582519';
-
   const dDial = core.db();
   const tenantAgents = dDial.agents.filter((a) => ctx.tenant && a.tenantId === ctx.tenant.id);
   const selectedAgent = (b.agentId && tenantAgents.find((a) => a.id === String(b.agentId))) || tenantAgents.find((a) => a.isPrimary) || tenantAgents[0] || null;
@@ -5879,20 +5959,39 @@ async function apiTelephonyDial(req, res, ctx) {
     });
   }
 
-  try {
-    let r;
-    // 1. Dial via VoBiz carrier directly if VoBiz credentials are present
-    if (authId && authToken) {
-      try {
-        r = await dialViaVobiz(b.number, fromNumber, authId, authToken);
-        logger.info('VoBiz call placed directly', { to: b.number, from: fromNumber, response: r.data });
-      } catch (vobizErr) {
-        logger.warn('Direct VoBiz dial failed, attempting fallback to orchestrator', { err: vobizErr.message });
-        r = await providers.telephony.dial(b.number, { workflowId });
-      }
-    } else {
-      r = await providers.telephony.dial(b.number, { workflowId });
+  const resolvedCaller = resolveCallerNameForCall(dDial, ctx.tenant ? ctx.tenant.id : null, b.number, b.callerName || b.recipientName || b.name, '', '');
+  const providedName = (resolvedCaller && resolvedCaller.name && !resolvedCaller.name.startsWith('+')) ? resolvedCaller.name : String(b.callerName || b.recipientName || b.name || '').trim().slice(0, 80);
+
+  // Retrieve tenant-configured dynamic keys from Settings (tenant.byok)
+  const tenantDograhKey = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhApiKey || ctx.tenant.byok.dograh_api_key)) || (ctx.tenant && ctx.tenant.dograhApiKey);
+  const tenantDograhOrgId = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhOrgId || ctx.tenant.byok.dograh_org_id)) || (ctx.tenant && ctx.tenant.dograhOrgId);
+
+    // Synchronize selected agent voice into active Dograh audio pipeline
+  const agentVoice = (selectedAgent && (selectedAgent.rumikVoice || (selectedAgent.tts && selectedAgent.tts.voice) || selectedAgent.voiceId)) || 'ira';
+  await rumikVoice.syncDograhPipelineVoice(agentVoice, null, { dograhKey: tenantDograhKey }).catch(() => {});
+
+  const dialOptions = {
+    workflowId,
+    telephonyConfigId: activeConn && (activeConn.telephonyConfigId || activeConn.telephony_configuration_id),
+    phoneNumberId: activeConn && (activeConn.phoneNumberId || activeConn.from_phone_number_id),
+    variables: {
+      caller_name: providedName || '',
+      agent_id: selectedAgent ? selectedAgent.id : '',
+      agent_name: selectedAgent ? selectedAgent.name : '',
+      tenant_id: ctx.tenant ? ctx.tenant.id : '',
     }
+  };
+
+  const tenantOpts = {
+    apiKey: tenantDograhKey,
+    dograhApiKey: tenantDograhKey,
+    dograhOrgId: tenantDograhOrgId
+  };
+
+  try {
+    // Initiate AI-orchestrated call via Dograh orchestrator (bridges audio pipeline + carrier trunk)
+    const r = await providers.telephony.dial(b.number, dialOptions, tenantOpts);
+    logger.info('Outbound AI call placed through orchestrator', { to: b.number, from: fromNumber, response: r.data });
 
     // Count the dial attempt against today's usage.
     bumpUsage(ctx.tenant.id, 'calls', 1).catch(() => { });
@@ -5903,7 +6002,16 @@ async function apiTelephonyDial(req, res, ctx) {
       const resolvedInfo = resolveCallerNameForCall(d, ctx.tenant.id, b.number, providedName, '', '');
       if (runId) {
         if (!Array.isArray(d.callRecordings)) d.callRecordings = [];
-        d.callRecordings.unshift({
+        const cleanDigits = String(b.number).replace(/\D/g, '').slice(-10);
+        const existingIdx = d.callRecordings.findIndex((r) => {
+          const rDigits = String(r.phoneNumber || r.calledNumber || '').replace(/\D/g, '').slice(-10);
+          return rDigits === cleanDigits && !r.endedAt && ['initiated', 'ringing', 'in_progress'].includes(String(r.status || '').toLowerCase());
+        });
+        if (existingIdx >= 0) {
+          d.callRecordings[existingIdx].dograhRunId = String(runId);
+          d.callRecordings[existingIdx].startedAt = new Date().toISOString();
+        } else {
+          d.callRecordings.unshift({
           id: `rec_${runId}`,
           tenantId: ctx.tenant.id,
           dograhRunId: String(runId),
@@ -5923,6 +6031,7 @@ async function apiTelephonyDial(req, res, ctx) {
           startedAt: new Date().toISOString(),
           syncedAt: new Date().toISOString(),
         });
+        }
       }
       wacrm.upsertContact(d, ctx.tenant.id, {
         phone: b.number,
@@ -5987,7 +6096,20 @@ async function syncDograhWorkflow(workflowId) {
     ].join('\n');
 
     const cleanedPrompt = String(prompt || '').replace('2. WhatsApp Business Automation for customer engagement and lead follow-up', '2. Lead Qualification and Follow-up Automation for customer engagement');
-    const enrichedPersona = (cleanedPrompt ? cleanedPrompt + '\n\n' : '') + CALLER_INTELLIGENCE_RULES;
+    const baseCleanedPrompt = cleanedPrompt.includes('# HUMAN SPOKEN CONVERSATIONAL DYNAMICS') ? cleanedPrompt.split('# HUMAN SPOKEN CONVERSATIONAL DYNAMICS')[0].trim() : cleanedPrompt.trim();
+    let enrichedPersona = baseCleanedPrompt;
+    if (!enrichedPersona || enrichedPersona.includes('APS Enterprises') || enrichedPersona.includes('dona pattal')) {
+      enrichedPersona = '# WHO YOU ARE\n' +
+        'Tumhara naam Ria hai. Tum Seevora AI ki primary voice receptionist aur front desk assistant ho. Live phone call par baat kar rahi ho.\n' +
+        'Seevora Indian businesses ke liye custom AI voice receptionists, lead qualification automation, CRM integrations aur appointment booking solutions banata hai.\n' +
+        'Founder and CEO: Chaitanya Panwar.\n' +
+        'Head Office: Indore, Madhya Pradesh, India.\n' +
+        'Website: seevora.in | Phone: +91 8071582519.\n\n' +
+        '# CONVERSATIONAL GUIDELINES:\n' +
+        '- Tumhara naam Ria hai aur company Seevora hai.\n' +
+        '- Agar customer puche "Aap kaun bol rahi hain?" ya "Who are you?", toh seedha bolo: "Haanji, main Ria bol rahi hoon Seevora se! Main aapki AI voice receptionist hoon. Batayein main aapki kya madad kar sakti hoon?"\n' +
+        '- Services, pricing, demo ya office details ke bare mein puchein toh Seevora knowledge base ke hisab se seedha aur short jawab do.';
+    }
 
     await core.mutate((d) => {
       d.agents.forEach((a) => {
@@ -6042,6 +6164,12 @@ async function pushAgentToDograhWorkflow(agent, tenantId, workflowId) {
 
   const doSync = async () => {
     try {
+      const dPush = core.db();
+      const tPush = (dPush.tenants || []).find((x) => x.id === (tenantId || agent.tenantId));
+      const tenantDograhKey = (tPush && tPush.byok && (tPush.byok.dograhApiKey || tPush.byok.dograh_api_key)) || (tPush && tPush.dograhApiKey);
+      const agentVoice = agent.rumikVoice || (agent.tts && agent.tts.voice) || agent.voiceId || 'ira';
+      await rumikVoice.syncDograhPipelineVoice(agentVoice, null, { dograhKey: tenantDograhKey }).catch(() => {});
+
     const { fullPrompt, greeting: agentGreeting } = buildAgentWorkflowPrompt(agent, tenantId);
 
     const fetchRes = await providers.telephony.request('GET', `/api/v1/workflow/fetch/${wid}`);
@@ -6220,13 +6348,6 @@ ESCALATION RULES:
 
   const knowledgeSection = agent.knowledge ? `\n\n# BUSINESS KNOWLEDGE BASE\n${agent.knowledge}` : '';
 
-  // Rumik Tone Tagging for Natural Indian Speech Delivery
-  const toneTag = agent.rumikTone === 'excited' ? '[excited]' : (agent.rumikTone === 'neutral' ? '[neutral]' : (agent.rumikTone === 'empathetic' ? '[happy]' : '[happy]'));
-  const toneRules = `\n\n# EMOTION & TONE RULES (RUMIK MUGA VOICE: ${String(agent.rumikVoice || 'ira').toUpperCase()})
-- To produce a warm, natural, human-like voice, ALWAYS prefix your spoken sentences with an emotional tone tag: ${toneTag} or [happy].
-- Use ${toneTag} for greetings, answering caller inquiries, acknowledging questions, and confirming bookings.
-- Speak with natural, fluid conversational rhythm and clear Indian diction.`;
-
   const complaintHandlingRules = `\n\n# COMPLAINT & ISSUE HANDLING PROTOCOL (CRITICAL)
 When a caller sounds unhappy, upset, angry, or uses words like complaint, problem, issue, wrong, bad service, or similar:
 1. ACKNOWLEDGE with empathy first: "Main samajhti hoon, mujhe bahut afsos hai ki aapko yeh experience hua." (I understand, I am so sorry you had this experience.)
@@ -6240,17 +6361,37 @@ NEVER dismiss a complaint. ALWAYS empathize, log it, and attempt resolution.`;
 
   const speechRules = `\n\n# SPEECH & PRONUNCIATION RULES (CRITICAL FOR VOICE TTS)
 - NEVER write or say "24/7" or "24*7" or "/". Always say "twenty-four seven" or "chaubees ghante".
-- NEVER say raw mathematical symbols, asterisks, or markdown characters.
+- NEVER say raw mathematical symbols, asterisks, brackets, or markdown characters.
+- DO NOT output emotional brackets or tags like [happy], [excited], [neutral]. Output ONLY clean spoken words.
 - When speaking Hindi or Hinglish, speak in natural conversational Hindi/Hinglish phrasing with clear Indian pronunciation.
 - Keep responses strictly to 1 or 2 concise, spoken sentences.`;
 
+  // Deduplicate and clean agent persona
+  let cleanPersona = String(agent.persona || 'You are a helpful, polite AI voice receptionist.').trim();
+  if (cleanPersona.includes('# HUMAN SPOKEN CONVERSATIONAL DYNAMICS')) {
+    cleanPersona = cleanPersona.split('# HUMAN SPOKEN CONVERSATIONAL DYNAMICS')[0].trim();
+  }
+  cleanPersona = cleanPersona.replace(/^(You are [^\n]+\.\s*){2,}/gi, 'You are Ria - Seevora AI Voice Receptionist.\n\n');
+
+  // Strip accidental APS Enterprises contamination for Seevora receptionists
+  if ((agent.name.includes('Ria') || agent.name.includes('Seevora')) && cleanPersona.includes('APS Enterprises')) {
+    cleanPersona = '# WHO YOU ARE\n' +
+      'Tumhara naam Ria hai. Tum Seevora AI ki primary voice receptionist aur front desk assistant ho. Live phone call par baat kar rahi ho.\n' +
+      'Seevora Indian businesses ke liye custom AI voice receptionists, lead qualification automation, CRM integrations aur appointment booking solutions banata hai.\n' +
+      'Founder and CEO: Chaitanya Panwar.\n' +
+      'Head Office: Indore, Madhya Pradesh, India.\n' +
+      'Website: seevora.in | Phone: +91 8071582519.\n\n' +
+      '# CONVERSATIONAL GUIDELINES:\n' +
+      '- Tumhara naam Ria hai aur company Seevora hai.\n' +
+      '- Agar customer puche "Aap kaun bol rahi hain?" ya "Who are you?", toh seedha bolo: "Haanji, main Ria bol rahi hoon Seevora se! Main aapki AI voice receptionist hoon. Batayein main aapki kya madad kar sakti hoon?"\n' +
+      '- Services, pricing, demo ya office details ke bare mein puchein toh Seevora knowledge base ke hisab se seedha aur short jawab do.';
+  }
+
   const fullPrompt = `You are ${agent.name}.
 
-${agent.persona || 'You are a helpful, polite AI voice receptionist.'}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${complaintHandlingRules}${toneRules}${speechRules}`;
+${cleanPersona}${knowledgeSection}${escalationSection}\n\n${CALLER_INTELLIGENCE_RULES}${complaintHandlingRules}${speechRules}`;
   let greeting = agent.greeting || `Hi! Thank you for calling! Main ${agent.name} bol rahi hoon. How can I help you today?`;
-  if (!greeting.startsWith('[')) {
-    greeting = `${toneTag} ${greeting}`;
-  }
+  greeting = greeting.replace(/^\[(happy|excited|neutral|sad)\]\s*/i, '').trim();
   return { fullPrompt, greeting };
 }
 
@@ -8162,10 +8303,10 @@ function hangupViaVobiz(callUuid, authId, authToken) {
 // Track last live Dograh poll so /api/calls/live stays fast while discovering real incoming/auto calls
 let _lastLiveDograhPollMs = 0;
 
-async function syncLiveDograhRuns(tenantId) {
+async function syncLiveDograhRuns(tenantId, force = false) {
   if (!providers.telephony || !providers.telephony.live) return;
   const now = Date.now();
-  if (now - _lastLiveDograhPollMs < 4000) return;
+  if (!force && (now - _lastLiveDograhPollMs < 2000)) return;
   _lastLiveDograhPollMs = now;
   try {
     const _wfIds = tenantId ? resolveTenantWorkflowIds(tenantId) : [dograhDefaultWorkflowId()];
@@ -8177,54 +8318,113 @@ async function syncLiveDograhRuns(tenantId) {
       } catch (_) { }
     }
     if (!Array.isArray(runs) || !runs.length) return;
+
     for (const run of runs) {
       const runId = String(run.id || run.run_id || '');
       if (!runId) continue;
       const startMs = new Date(run.created_at || run.started_at || 0).getTime();
       const isRecent = startMs && (now - startMs < 10 * 60 * 1000);
-      const isLiveRun = (run.is_completed === false && !run.ended_at && !run.completed_at) && isRecent;
-      const existing = (core.db().callRecordings || []).find((r) => String(r.dograhRunId) === runId);
 
-      // If operator already declined/ended this call from Dashboard, do not re-open it
-      if (existing && (existing.outcome === 'declined_by_operator' || existing.outcome === 'ended_by_operator' || existing.outcome === 'transferred_to_human')) {
-        continue;
-      }
+      let detail = run;
+      try {
+        const fetched = await providers.telephony.fetchRunDetail(runId, run._wid);
+        if (fetched) detail = fetched;
+      } catch (_) { }
 
-      if (isLiveRun || (existing && ['initiated', 'ringing', 'in_progress', 'speaking', 'active', 'live'].includes(String(existing.status || '').toLowerCase()) && !existing.endedAt)) {
-        let detail = run;
-        try {
-          const fetched = await providers.telephony.fetchRunDetail(runId, run._wid);
-          if (fetched) detail = fetched;
-        } catch (_) { }
-        const norm = normalizeRun(detail, (existing && existing.tenantId) || tenantId || 't_seed_client');
-        await core.mutate((dd) => {
-          if (!Array.isArray(dd.callRecordings)) dd.callRecordings = [];
-          const idx = dd.callRecordings.findIndex((r) => String(r.dograhRunId) === runId);
-          if (idx >= 0) {
-            const cur = dd.callRecordings[idx];
-            if (cur.outcome === 'declined_by_operator' || cur.outcome === 'ended_by_operator') return;
-            dd.callRecordings[idx] = {
-              ...cur,
-              ...norm,
-              callerName: cur.callerName || norm.callerName,
-              agentId: cur.agentId || norm.agentId,
-              agentName: cur.agentName || norm.agentName,
-              dispatchSource: cur.dispatchSource || (norm.direction === 'inbound' ? 'Incoming Customer Call' : 'Outbound AI Call'),
-              status: detail.is_completed ? 'completed' : 'in_progress',
-              endedAt: detail.is_completed ? (norm.endedAt || new Date().toISOString()) : null,
-            };
-          } else if (isLiveRun) {
-            dd.callRecordings.unshift({
-              ...norm,
-              tenantId: tenantId || 't_seed_client',
-              dispatchSource: norm.direction === 'inbound' ? 'Incoming Customer Call' : 'Auto-Dispatched AI Call',
-              status: 'in_progress',
-              endedAt: null,
-            });
+      const runCustPhone = String(
+        (detail.initial_context && (detail.initial_context.phone_number || detail.initial_context.called_number || detail.initial_context.caller_number)) ||
+        (run.initial_context && (run.initial_context.phone_number || run.initial_context.called_number || run.initial_context.caller_number)) ||
+        detail.phone_number || run.phone_number || ''
+      ).replace(/\D/g, '').slice(-10);
+
+      const runCallId = String(
+        (detail.initial_context && detail.initial_context.call_id) ||
+        (run.initial_context && run.initial_context.call_id) ||
+        (detail.gathered_context && detail.gathered_context.call_id) || ''
+      );
+
+      const isCallFinished = detail.is_completed === true || Boolean(detail.ended_at || detail.completed_at) ||
+        (detail.gathered_context && [
+          'user_hangup', 'completed', 'hangup', 'failed', 'declined', 'timeout', 'normal_clearing', 'call_ended'
+        ].includes(String(detail.gathered_context.call_status || detail.gathered_context.call_disposition || '').toLowerCase())) ||
+        (detail.gathered_context && Array.isArray(detail.gathered_context.agent_visits) && detail.gathered_context.agent_visits.some((v) => v.exit_reason === 'user_hangup'));
+
+      const isLiveRun = (!isCallFinished && detail.is_completed === false) && isRecent;
+      const norm = normalizeRun(detail, tenantId || 't_seed_client');
+
+      await core.mutate((dd) => {
+        if (!Array.isArray(dd.callRecordings)) dd.callRecordings = [];
+
+        // Match all variations: exact runId, rec_<runId>, VoBiz call_id UUID, or phone number match
+        const matchingIndices = [];
+        dd.callRecordings.forEach((r, idx) => {
+          const rDigits = String(r.phoneNumber || r.calledNumber || r.callerNumber || '').replace(/\D/g, '').slice(-10);
+          const rStartMs = new Date(r.startedAt || r.createdAt || 0).getTime();
+          const isPhoneMatch = runCustPhone && rDigits === runCustPhone && (Math.abs(rStartMs - startMs) < 600000 || !r.endedAt);
+          if (
+            String(r.dograhRunId) === runId ||
+            r.id === `rec_${runId}` ||
+            (runCallId && (String(r.dograhRunId) === runCallId || r.id === `rec_${runCallId}`)) ||
+            isPhoneMatch
+          ) {
+            matchingIndices.push(idx);
           }
-        }).catch(() => { });
-      }
+        });
+
+        if (matchingIndices.length > 0) {
+          const primaryIdx = matchingIndices[0];
+          const cur = dd.callRecordings[primaryIdx];
+          if (cur.outcome === 'declined_by_operator' || cur.outcome === 'ended_by_operator') return;
+
+          // Consolidate into the single primary record
+          dd.callRecordings[primaryIdx] = {
+            ...cur,
+            ...norm,
+            id: `rec_${runId}`,
+            dograhRunId: runId,
+            callerName: cur.callerName || norm.callerName,
+            agentId: cur.agentId || norm.agentId,
+            agentName: cur.agentName || norm.agentName,
+            dispatchSource: cur.dispatchSource || (norm.direction === 'inbound' ? 'Incoming Customer Call' : 'Auto-Dispatched AI Call'),
+            status: isCallFinished ? 'completed' : 'in_progress',
+            endedAt: isCallFinished ? (norm.endedAt || cur.endedAt || new Date().toISOString()) : null,
+            durationSeconds: norm.durationSeconds || cur.durationSeconds
+          };
+
+          // Remove any extra duplicates that were created by dial placeholders
+          if (matchingIndices.length > 1) {
+            const extraIndices = matchingIndices.slice(1).sort((a, b) => b - a);
+            for (const xIdx of extraIndices) {
+              dd.callRecordings.splice(xIdx, 1);
+            }
+          }
+        } else if (isLiveRun && !isCallFinished) {
+          dd.callRecordings.unshift({
+            ...norm,
+            id: `rec_${runId}`,
+            dograhRunId: runId,
+            tenantId: tenantId || 't_seed_client',
+            dispatchSource: norm.direction === 'inbound' ? 'Incoming Customer Call' : 'Auto-Dispatched AI Call',
+            status: 'in_progress',
+            endedAt: null,
+          });
+        }
+      }).catch(() => { });
     }
+
+    // Auto-retire any dangling dial_* placeholders older than 15s so they never get stuck as ghost live calls
+    await core.mutate((dd) => {
+      (dd.callRecordings || []).forEach((r) => {
+        if (String(r.dograhRunId || '').startsWith('dial_') || String(r.id || '').startsWith('rec_dial_')) {
+          const rStartMs = new Date(r.startedAt || r.createdAt || 0).getTime();
+          if (rStartMs && (now - rStartMs > 15000)) {
+            r.status = 'completed';
+            r.endedAt = r.endedAt || new Date().toISOString();
+          }
+        }
+      });
+    }).catch(() => { });
+
   } catch (_) { }
 }
 
@@ -8235,8 +8435,94 @@ async function apiLiveCallsList(req, res, ctx) {
   const requestedCallId = String(q.get('callId') || '').trim();
   const tenantId = ctx.tenant ? ctx.tenant.id : null;
 
-  // Discover any new real incoming or auto-dispatched calls from Dograh/VoBiz
-  await syncLiveDograhRuns(tenantId);
+  // 1. If requestedCallId is provided from live modal, probe Dograh on-demand immediately
+  if (requestedCallId && providers.telephony && providers.telephony.live) {
+    let cleanReqId = requestedCallId.replace(/^rec_/, '');
+    const dPre = core.db();
+    let targetRec = (dPre.callRecordings || []).find((r) =>
+      r.id === requestedCallId ||
+      String(r.dograhRunId) === requestedCallId ||
+      r.id === `rec_${cleanReqId}` ||
+      String(r.dograhRunId) === cleanReqId
+    );
+
+    let targetRunId = (targetRec && targetRec.dograhRunId) || cleanReqId;
+    let targetWfId = (targetRec && targetRec.dograhWorkflowId) || dograhDefaultWorkflowId();
+
+    if (/^\d+$/.test(String(targetRunId)) && (!targetRec || !targetRec.endedAt || targetRec.status !== 'completed')) {
+      try {
+        const liveDetail = await providers.telephony.fetchRunDetail(String(targetRunId), targetWfId);
+        if (liveDetail) {
+          const isDone = liveDetail.is_completed === true ||
+            (liveDetail.gathered_context && [
+              'user_hangup', 'completed', 'hangup', 'failed', 'declined', 'timeout', 'normal_clearing', 'call_ended'
+            ].includes(String(liveDetail.gathered_context.call_status || liveDetail.gathered_context.call_disposition || '').toLowerCase())) ||
+            (liveDetail.gathered_context && Array.isArray(liveDetail.gathered_context.agent_visits) && liveDetail.gathered_context.agent_visits.some((v) => v.exit_reason === 'user_hangup'));
+
+          if (isDone) {
+            const norm = normalizeRun(liveDetail, (targetRec && targetRec.tenantId) || tenantId || 't_seed_client');
+            await core.mutate((dd) => {
+              (dd.callRecordings || []).forEach((r, idx) => {
+                if (r.id === requestedCallId || String(r.dograhRunId) === String(targetRunId) || r.id === `rec_${targetRunId}` || (targetRec && r.id === targetRec.id)) {
+                  dd.callRecordings[idx] = {
+                    ...r,
+                    ...norm,
+                    id: `rec_${targetRunId}`,
+                    dograhRunId: String(targetRunId),
+                    status: 'completed',
+                    endedAt: norm.endedAt || new Date().toISOString(),
+                    durationSeconds: norm.durationSeconds || Math.max(1, Math.round((Date.now() - new Date(r.startedAt || Date.now()).getTime()) / 1000))
+                  };
+                }
+              });
+            }).catch(() => { });
+          }
+        }
+      } catch (_) { }
+    }
+  }
+
+  // 2. Discover any new real incoming or auto-dispatched calls from Dograh/VoBiz
+  await syncLiveDograhRuns(tenantId, Boolean(requestedCallId));
+
+  // 3. Proactively live-check active in-progress Dograh runs so caller hangup is detected in real time
+  if (providers.telephony && providers.telephony.live) {
+    const preCheckDb = core.db();
+    const activeRunsToProbe = (preCheckDb.callRecordings || []).filter((r) => {
+      const st = String(r.status || '').toLowerCase();
+      return !r.endedAt && ['initiated', 'ringing', 'in_progress', 'speaking'].includes(st) && /^\d+$/.test(String(r.dograhRunId || ''));
+    });
+
+    for (const ac of activeRunsToProbe.slice(0, 3)) {
+      try {
+        const liveDetail = await providers.telephony.fetchRunDetail(String(ac.dograhRunId), ac.dograhWorkflowId || dograhDefaultWorkflowId());
+        if (liveDetail) {
+          const isDone = liveDetail.is_completed === true ||
+            (liveDetail.gathered_context && [
+              'user_hangup', 'completed', 'hangup', 'failed', 'declined', 'timeout', 'normal_clearing', 'call_ended'
+            ].includes(String(liveDetail.gathered_context.call_status || liveDetail.gathered_context.call_disposition || '').toLowerCase())) ||
+            (liveDetail.gathered_context && Array.isArray(liveDetail.gathered_context.agent_visits) && liveDetail.gathered_context.agent_visits.some((v) => v.exit_reason === 'user_hangup'));
+
+          if (isDone) {
+            const norm = normalizeRun(liveDetail, ac.tenantId || tenantId || 't_seed_client');
+            await core.mutate((dd) => {
+              (dd.callRecordings || []).forEach((r, idx) => {
+                if (r.id === ac.id || String(r.dograhRunId) === String(ac.dograhRunId)) {
+                  dd.callRecordings[idx] = {
+                    ...r,
+                    ...norm,
+                    status: 'completed',
+                    endedAt: norm.endedAt || new Date().toISOString(),
+                    durationSeconds: norm.durationSeconds || Math.max(1, Math.round((Date.now() - new Date(r.startedAt || Date.now()).getTime()) / 1000))
+                  };
+                }
+              });
+            }).catch(() => { });
+          }
+        }
+      } catch (_) { }
+    }
+  }
 
   const d = core.db();
   const nowMs = Date.now();
@@ -8317,8 +8603,10 @@ async function apiLiveCallsList(req, res, ctx) {
       if (lines.length > 0) liveSnippet = lines[lines.length - 1];
     }
 
-    const isEnded = Boolean(r.endedAt) || ['completed', 'declined', 'failed', 'cancelled', 'transferred'].includes(String(r.status || '').toLowerCase());
-    const phase = isEnded ? String(r.status || 'completed').toLowerCase() : (elapsedSec < 5 && r.status === 'initiated' ? 'ringing' : 'speaking');
+    const textIndicators = `${r.summary || ''} ${r.liveSnippet || ''} ${r.transcript || ''}`;
+    const indicatesCompletion = /voice consultation completed|caller disconnected|user_hangup|call ended|call disconnected/i.test(textIndicators);
+    const isEnded = Boolean(r.endedAt) || indicatesCompletion || ['completed', 'declined', 'failed', 'cancelled', 'transferred', 'user_hangup'].includes(String(r.status || '').toLowerCase());
+    const phase = isEnded ? 'completed' : (elapsedSec < 5 && r.status === 'initiated' ? 'ringing' : 'speaking');
     const tenantObj = (freshDb.tenants || []).find((t) => t.id === r.tenantId);
 
     const dispatchSource = r.dispatchSource || (r.direction === 'inbound' ? 'Incoming Call' : 'Auto-Dispatched / Outbound Call');
@@ -8359,13 +8647,27 @@ async function apiLiveCallsList(req, res, ctx) {
 
   const rawLive = (freshDb.callRecordings || []).filter((r) => {
     if (!isPlatformAdmin && r.tenantId !== tenantId && q.get('scope') !== 'all') return false;
+    const textIndicators = `${r.summary || ''} ${r.liveSnippet || ''} ${r.transcript || ''}`;
+    if (/voice consultation completed|caller disconnected|user_hangup|call ended|call disconnected/i.test(textIndicators)) return false;
     const st = String(r.status || '').toLowerCase();
     if (!['initiated', 'ringing', 'in_progress', 'in-progress', 'speaking', 'active', 'live'].includes(st)) return false;
     if (r.endedAt) return false;
     return true;
   });
 
-  const liveCalls = rawLive.map(formatCallForLocator);
+  // Deduplicate live calls by 10-digit customer phone number: guarantee only 1 card per call
+  const seenCustPhones = new Set();
+  const dedupedLive = [];
+  for (const r of rawLive) {
+    const digits = String(r.phoneNumber || r.calledNumber || r.callerNumber || '').replace(/\D/g, '').slice(-10);
+    if (digits && digits.length === 10) {
+      if (seenCustPhones.has(digits)) continue;
+      seenCustPhones.add(digits);
+    }
+    dedupedLive.push(r);
+  }
+
+  const liveCalls = dedupedLive.map(formatCallForLocator);
 
   let selectedCall = null;
   if (requestedCallId) {
@@ -10472,17 +10774,37 @@ function normalizeRun(run, tenantId) {
 
   const rawStatus = String(
     (run.gathered_context && run.gathered_context.call_status) ||
+    (run.gathered_context && run.gathered_context.call_disposition) ||
     (run.is_completed === true ? 'completed' : (run.is_completed === false ? (run.status || 'in_progress') : run.status)) || 'completed'
   ).toLowerCase();
-  const status = ['running', 'initiated', 'ringing', 'in_progress', 'in-progress', 'speaking', 'active', 'live'].includes(rawStatus)
-    ? 'in_progress'
-    : rawStatus;
+
+  const isExplicitlyFinished = run.is_completed === true ||
+    Boolean(run.ended_at || run.completed_at) ||
+    ['user_hangup', 'completed', 'hangup', 'failed', 'declined', 'timeout', 'normal_clearing', 'call_ended'].includes(rawStatus) ||
+    (run.gathered_context && Array.isArray(run.gathered_context.agent_visits) && run.gathered_context.agent_visits.some((v) => v.exit_reason === 'user_hangup'));
+
+  const status = isExplicitlyFinished
+    ? (rawStatus === 'failed' ? 'failed' : 'completed')
+    : (['running', 'initiated', 'ringing', 'in_progress', 'in-progress', 'speaking', 'active', 'live'].includes(rawStatus) ? 'in_progress' : 'completed');
+
   const duration = Number(
     (run.cost_info && run.cost_info.call_duration_seconds) ||
     run.duration_seconds || run.duration || 0
   );
   const startedAt = run.created_at || run.started_at || null;
-  const endedAt = run.ended_at || run.completed_at || null;
+  let endedAt = run.ended_at || run.completed_at || null;
+  if (!endedAt && (status === 'completed' || status === 'failed' || isExplicitlyFinished)) {
+    if (run.gathered_context && Array.isArray(run.gathered_context.agent_visits) && run.gathered_context.agent_visits[0] && run.gathered_context.agent_visits[0].exited_at) {
+      const exitEpoch = Number(run.gathered_context.agent_visits[0].exited_at);
+      if (exitEpoch > 0) endedAt = new Date(exitEpoch * 1000).toISOString();
+    }
+    if (!endedAt && startedAt && duration > 0) {
+      endedAt = new Date(new Date(startedAt).getTime() + duration * 1000).toISOString();
+    }
+    if (!endedAt) {
+      endedAt = new Date().toISOString();
+    }
+  }
   const agentName = String(
     (run.gathered_context && run.gathered_context.agent_visits && run.gathered_context.agent_visits[0] && run.gathered_context.agent_visits[0].workflow_name) ||
     run.workflow_name || run.agent_name || 'Seevora AI Voice Receptionist'
@@ -10552,9 +10874,7 @@ function normalizeRun(run, tenantId) {
     calledNumber: called || (direction === 'inbound' ? purchasedDefault : customerPhone),
     direction: ['inbound', 'outbound'].includes(direction) ? direction : 'outbound',
     mode: run.mode || (run.name && run.name.startsWith('WR-TEL-') ? 'telephony' : (customerPhone ? 'telephony' : 'web')),
-    status: ['completed', 'failed', 'in_progress', 'cancelled', 'user_hangup'].includes(status)
-      ? (status === 'user_hangup' ? 'completed' : status)
-      : 'completed',
+    status: isExplicitlyFinished ? 'completed' : (status === 'in_progress' ? 'in_progress' : 'completed'),
     durationSeconds: Math.round(duration),
     transcript,
     recordingAvailable: !!(run.recording_url || run.recording_public_url || run.has_recording),

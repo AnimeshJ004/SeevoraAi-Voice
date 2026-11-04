@@ -463,7 +463,8 @@ const telVobiz = {
   get dashboard() { return dograhConnection().dashboard; },
 
   async request(method, pathname, payload, tenantOpts) {
-    if (!hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
+    const hasTenantKey = !!(tenantOpts && (tenantOpts.apiKey || tenantOpts.dograh_api_key || tenantOpts.dograhApiKey));
+    if (!hasTenantKey && !hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
     const connection = dograhConnection();
     const apiKey = (tenantOpts && (tenantOpts.dograh_api_key || tenantOpts.dograhApiKey)) || process.env.DOGRAH_API_KEY;
     const orgId = (tenantOpts && (tenantOpts.dograh_org_id || tenantOpts.dograhOrgId));
@@ -563,8 +564,8 @@ const telVobiz = {
     }
     const payload = {
       workflow_id: Number.isInteger(options.workflowId) && options.workflowId > 0 ? options.workflowId : positiveIntEnv('DOGRAH_WORKFLOW_ID'),
-      telephony_configuration_id: positiveIntEnv('DOGRAH_TELEPHONY_CONFIG_ID'),
-      from_phone_number_id: positiveIntEnv('DOGRAH_PHONE_NUMBER_ID'),
+      telephony_configuration_id: Number(options.telephonyConfigId || options.telephony_configuration_id || (tenantOpts && (tenantOpts.telephonyConfigId || tenantOpts.telephony_configuration_id))) || positiveIntEnv('DOGRAH_TELEPHONY_CONFIG_ID'),
+      from_phone_number_id: Number(options.phoneNumberId || options.from_phone_number_id || (tenantOpts && (tenantOpts.phoneNumberId || tenantOpts.from_phone_number_id))) || positiveIntEnv('DOGRAH_PHONE_NUMBER_ID'),
       phone_number: '+91' + num,
       record: true,
       record_call: true,

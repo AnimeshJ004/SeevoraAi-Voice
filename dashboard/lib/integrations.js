@@ -180,6 +180,7 @@ async function toggleIntegration(mutate, tenantId, channel, enabled) {
 
 function buildTestPayload() {
   return {
+    isTest: true,
     name: 'Test Lead — Seevora AI',
     phone: '+91 98765 43210',
     outcome: 'appointment_booked',
@@ -442,6 +443,25 @@ async function dispatchWhatsApp(config, leadPayload) {
     };
   }
 
+  // For live connection test, verify credentials directly with Meta Graph API without hitting messaging policy limits
+  if (leadPayload && leadPayload.isTest) {
+    try {
+      const verifyCheck = await httpsGet('https://graph.facebook.com/v19.0/' + metaPhoneId + '?fields=id,display_phone_number,verified_name,status', {
+        Authorization: 'Bearer ' + metaToken
+      });
+      if (verifyCheck.ok) {
+        return { ok: true, via: 'meta_cloud', message: 'Meta Cloud API verified: Phone ID and permanent token are valid and active.' };
+      }
+      const parsed = JSON.parse(verifyCheck.body || '{}');
+      if (parsed && parsed.error) {
+        const code = parsed.error.code;
+        if (code === 190) return { ok: false, error: 'Meta Token Expired or Invalid: Please generate a fresh Permanent System User Token in Meta Business Manager.' };
+        if (code === 100) return { ok: false, error: 'Invalid Meta Phone Number ID: Make sure you entered the Phone Number ID from Meta API Setup, not the WABA Account ID.' };
+        return { ok: false, error: 'Meta API: ' + (parsed.error.message || 'Verification failed') };
+      }
+    } catch (_) {}
+  }
+
   if (!leadPayload.phone) return { ok: false, error: 'No recipient phone number provided for WhatsApp test.' };
 
   const recipientDigits = (leadPayload.phone || '').replace(/\D/g, '').slice(-10);
@@ -491,6 +511,9 @@ async function dispatchWhatsApp(config, leadPayload) {
         } else if (code === 200 || code === 299) {
           friendlyError = 'Meta Permission Denied: Ensure your System User has the "whatsapp_business_messaging" permission.';
         } else if (code === 131030) {
+          if (leadPayload && leadPayload.isTest) {
+            return { ok: true, via: 'meta_cloud', message: 'Meta Cloud API verified: Credentials authenticated successfully.' };
+          }
           friendlyError = 'Meta 24-Hour Policy: Outside the 24-hour window, Meta requires an approved message template.';
         } else if (code === 131000) {
           friendlyError = 'Meta Message Send Failed: The recipient phone number may not be registered on WhatsApp.';

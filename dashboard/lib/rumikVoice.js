@@ -321,58 +321,131 @@ async function synthesizeRumikSpeech(options = {}) {
   }
 }
 
+const DOGRAH_PROVIDER_UUID = '6b18d881-8a19-49e7-868f-49908487a5e5';
+
+const DOGRAH_VOICE_MAP = {
+  ira: 'dg_voice_6e30d8477e1036594a34',      // Arushi - Hinglish Speaker (Bilingual Hindi/English/Hinglish native, seamless steady pitch)
+  arushi: 'dg_voice_6e30d8477e1036594a34',
+  janvi: 'dg_voice_1a8124dba11d9c9d2c90',    // Janvi - Steady Agent (Formal Indian English)
+  mia: 'dg_voice_6e30d8477e1036594a34',
+  priya: 'dg_voice_a1753028c332bcfb3f06',    // Priya - Trusted Operator (Patient, authoritative customer support)
+  riya: 'dg_voice_97d4516437fe6c87cc1b',     // Riya - College Roommate (Energetic, friendly Hindi female)
+  sophia: 'dg_voice_97d4516437fe6c87cc1b',
+  arav: 'dg_voice_ee5efd12f17797d0ff39',     // Aarav - Old Time Storyteller (Warm adult male, Indian accent)
+  aarav: 'dg_voice_ee5efd12f17797d0ff39',
+  lucas: 'dg_voice_ee5efd12f17797d0ff39',
+  dev: 'dg_voice_a50f13b2d8c083dd60e5',      // Dev - Friendly Host (Calm, genuine Hindi/Hinglish male helpdesk)
+  adam: 'dg_voice_a50f13b2d8c083dd60e5',
+  ananya: 'dg_voice_d59fce898d558485677b',   // Ananya - Process Facilitator (Articulate, sophisticated Hindi/English female)
+  emma: 'dg_voice_d59fce898d558485677b',
+  kabir: 'dg_voice_437a1f970729e529e3d3',    // Kabir - Service Integrator (Modern, approachable Hindi/Hinglish male)
+  noah: 'dg_voice_437a1f970729e529e3d3',
+  sanya: 'dg_voice_c00befaf7c6c41bed0a2'     // Sanya - Modern Communicator (Crisp, approachable Hindi female)
+};
+
 /**
- * Sync selected Rumik voice into Dograh Organization Model Configuration
+ * Sync selected client voice into Dograh Organization Model Configuration
+ * Updates the active Dograh Pipeline configuration with the mapped native Indian voice
+ * and configures multilingual STT with Hindi+English hints for flawless speech comprehension.
  */
 async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry', options = {}) {
-  const dograhKey = options.dograhKey || options.apiKey || process.env.DOGRAH_API_KEY || '';
+  const dograhKey = options.dograhKey || options.apiKey || options.dograhApiKey || process.env.DOGRAH_API_KEY || '';
   if (!dograhKey) return { ok: false, error: 'missing_dograh_key' };
 
-  const voiceMeta = VOICE_CATALOG.find((v) =>
-    v.id.toLowerCase() === String(voiceId).toLowerCase() ||
-    (v.rumikVoice && v.rumikVoice.toLowerCase() === String(voiceId).toLowerCase())
-  ) || VOICE_CATALOG[0];
-
-  const targetVoice = voiceMeta.rumikVoice || 'Mia';
-  const targetModel = model || voiceMeta.model || 'mulberry';
-
-  const payload = {
-    version: 2,
-    mode: 'byok',
-    byok: {
-      mode: 'pipeline',
-      pipeline: {
-        stt: {
-          provider: 'deepgram',
-          api_key: process.env.DEEPGRAM_API_KEY,
-          model: process.env.DEEPGRAM_MODEL || 'nova-3-general',
-          language: 'multi'
-        },
-        llm: {
-          provider: 'groq',
-          api_key: process.env.GROQ_API_KEY,
-          model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b'
-        },
-        tts: {
-          provider: 'rumik',
-          api_key: process.env.RUMIK_API_KEY,
-          model: targetModel,
-          voice: targetVoice
-        }
-      }
-    }
-  };
+  const vKey = String(voiceId || 'ira').toLowerCase().trim();
+  const targetVoice = DOGRAH_VOICE_MAP[vKey] || (vKey.startsWith('dg_voice_') ? vKey : 'dg_voice_1a8124dba11d9c9d2c90');
 
   try {
-    const res = await fetch('https://app.dograh.com/api/v1/organizations/model-configurations/v2', {
-      method: 'PUT',
+    let configUuid = options.modelConfigUuid;
+    let configName = 'Organization default';
+
+    // 1. Resolve active configuration UUID if not provided
+    if (!configUuid) {
+      try {
+        const listRes = await fetch('https://app.dograh.com/api/v1/model-connections/model-configurations', {
+          headers: { 'X-API-Key': dograhKey }
+        });
+        if (listRes.ok) {
+          const configs = await listRes.json();
+          const active = (Array.isArray(configs) && (configs.find((c) => c.is_active) || configs[0])) || null;
+          if (active && active.uuid) {
+            configUuid = active.uuid;
+            configName = active.name || configName;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!configUuid) {
+      configUuid = '5b1bc597-6ba0-4058-a342-9129ace7ecde';
+    }
+
+    // 2. Fetch current configuration to preserve provider connection uuids & STT settings
+    const getRes = await fetch('https://app.dograh.com/api/v1/model-connections/model-configurations/' + configUuid, {
+      headers: { 'X-API-Key': dograhKey }
+    });
+    if (!getRes.ok) {
+      return { ok: false, status: getRes.status, error: 'Dograh GET config returned ' + getRes.status };
+    }
+    const current = await getRes.json();
+    const cfg = current.configuration || {};
+
+    // Ensure Dograh provider connection is restored & active
+    try {
+      await fetch(`https://app.dograh.com/api/v1/model-connections/provider-connections/${DOGRAH_PROVIDER_UUID}/restore`, {
+        method: 'POST',
+        headers: { 'X-API-Key': dograhKey }
+      }).catch(() => {});
+    } catch (_) {}
+
+    // Configure Native Indian TTS Voice (human-like, authentic Indian cadence, natural Devanagari & English)
+    cfg.tts = {
+      settings: {
+        model: 'default',
+        voice: targetVoice,
+        speed: 1
+      },
+      provider_connection_uuid: DOGRAH_PROVIDER_UUID
+    };
+
+    // Configure Multilingual High-Accuracy Indian Speech Recognition
+    cfg.stt = {
+      settings: {
+        model: 'default',
+        language: 'multi',
+        language_hints: ['hi', 'en']
+      },
+      provider_connection_uuid: DOGRAH_PROVIDER_UUID
+    };
+
+    // Configure High-Throughput Conversational LLM with zero 413 token limit issues
+    cfg.llm = {
+      settings: {
+        model: 'default',
+        temperature: null
+      },
+      provider_connection_uuid: DOGRAH_PROVIDER_UUID
+    };
+
+    // 3. Patch Dograh configuration with target voice & model
+    const patchRes = await fetch('https://app.dograh.com/api/v1/model-connections/model-configurations/' + configUuid, {
+      method: 'PATCH',
       headers: {
         'X-API-Key': dograhKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        name: current.name || configName,
+        configuration: cfg
+      })
     });
-    return { ok: res.ok, status: res.status };
+
+    return {
+      ok: patchRes.ok,
+      status: patchRes.status,
+      targetVoice,
+      configUuid
+    };
   } catch (err) {
     return { ok: false, error: err.message };
   }
