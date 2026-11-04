@@ -784,15 +784,14 @@ async function boot() {
     const isEmployee = ['employee', 'member', 'manager'].includes(uBoot.role);
 
     // Employees and Admins NEVER do onboarding
+    const tBoot = (State.me && State.me.tenant) || {};
     let isCompleted = false;
-    if (isAdminUser || isEmployee) {
+    if (isAdminUser || isEmployee || uBoot.onboardingCompleted === true || tBoot.onboardingCompleted === true || tBoot.createdByAdmin || tBoot.createdFromAdmin) {
       isCompleted = true;
-    } else {
-      isCompleted = (uBoot.onboardingCompleted === true);
     }
 
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    if (isAdminUser || isEmployee) {
+    if (isAdminUser || isEmployee || isCompleted) {
       if (hash === 'onboarding' || hash === 'ai-creator' || !hash) {
         location.hash = '#/overview';
       }
@@ -854,29 +853,40 @@ function isPlatformAdmin() {
   return ['super_admin', 'admin'].includes(u.role);
 }
 
+function isFeatureAllowedForTenant(featKey) {
+  if (isPlatformAdmin()) return true;
+  const tFeats = (State.me && State.me.tenant && State.me.tenant.features) || {};
+  const coreFeatures = ['inbound', 'campaigns', 'recordings', 'teams'];
+  if (coreFeatures.includes(featKey)) {
+    return tFeats[featKey] !== false;
+  }
+  return tFeats[featKey] === true;
+}
+
 function getVisibleRoutes() {
   const u = (State.me && State.me.user) || {};
   const adminMode = isPlatformAdmin();
 
   if (!adminMode) {
-    const tFeats = (State.me && State.me.tenant && State.me.tenant.features) || {};
+    const isDis = (key) => !isFeatureAllowedForTenant(key);
     const routes = [
       { id: 'overview', label: 'Dashboard', icon: 'grid' },
-      { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle', disabled: tFeats.assistant === false },
-      { id: 'whatsapp-hub', label: 'WhatsApp Hub', icon: 'whatsapp', disabled: tFeats.whatsappHub === false },
-      { id: 'workflows', label: 'Workflows', icon: 'git-branch', disabled: tFeats.workflows === false },
-      { id: 'inbound', label: 'Inbound Calls', icon: 'phone', disabled: tFeats.inbound === false },
-      { id: 'campaigns', label: 'Outbound Calls', icon: 'send', disabled: tFeats.campaigns === false },
-      { id: 'recordings', label: 'Call Recordings', icon: 'record', disabled: tFeats.recordings === false },
-      { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: tFeats.crmPipeline === false },
-      { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
-      { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
-      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
+      { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle', disabled: isDis('assistant') },
+      { id: 'whatsapp-hub', label: 'WhatsApp Hub', icon: 'whatsapp', disabled: isDis('whatsappHub') },
+      { id: 'workflows', label: 'Workflows', icon: 'git-branch', disabled: isDis('workflows') },
+      { id: 'inbound', label: 'Inbound Calls', icon: 'phone', disabled: isDis('inbound') },
+      { id: 'campaigns', label: 'Outbound Calls', icon: 'send', disabled: isDis('campaigns') },
+      { id: 'recordings', label: 'Call Recordings', icon: 'record', disabled: isDis('recordings') },
+      { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: isDis('crmPipeline') },
+      { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: isDis('agents') },
+      { id: 'teams', label: 'Teams', icon: 'users', disabled: isDis('teams') },
+      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: isDis('talk') },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
-    const isClientOnboarded = (u && u.onboardingCompleted === true);
-    if (u && !isClientOnboarded && ['client', 'owner'].includes(u.role)) {
+    const tObj = (State.me && State.me.tenant) || {};
+    const isClientOnboarded = (u && u.onboardingCompleted === true) || (tObj && (tObj.onboardingCompleted === true || tObj.createdByAdmin || tObj.createdFromAdmin));
+    if (u && !isClientOnboarded && ['client', 'owner'].includes(u.role) && !isDis('agents')) {
       routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
     }
     return routes;
@@ -1425,8 +1435,7 @@ function createThemedDropdown(cfg) {
 
 
 function hasActiveTelephony() {
-  const u = (State.me && State.me.user) || {};
-  if (['super_admin', 'admin', 'owner'].includes(u.role)) return true;
+  if (isPlatformAdmin()) return true;
 
   // 1. Direct check on tenant from /api/me
   if (State.me && State.me.tenant) {
@@ -1471,8 +1480,8 @@ function updateNavLockStates() {
     if (!routeId) return;
 
     const featKey = ROUTE_FEATURE_MAP[routeId];
-    const isFeatureDisabled = !adminMode && featKey && (tFeats[featKey] === false);
-    const isPhoneMissing = !adminMode && !activeTel && voiceRoutes.includes(routeId);
+    const isFeatureDisabled = !adminMode && featKey && !isFeatureAllowedForTenant(featKey);
+    const isPhoneMissing = !adminMode && !activeTel && voiceRoutes.includes(routeId) && !isFeatureDisabled;
     const isLocked = isFeatureDisabled || isPhoneMissing;
 
     a.classList.toggle('nav-locked', isLocked);
@@ -1643,7 +1652,7 @@ function renderShell() {
     el('div', { class: 'nav-list' }, mainRoutes.map((r) => {
       const isVoiceRoute = ['inbound', 'campaigns', 'recordings', 'talk'].includes(r.id);
       const isFeatureDisabled = !adminUser && (r.disabled === true);
-      const isPhoneLocked = !adminUser && !hasActiveTelephony() && isVoiceRoute;
+      const isPhoneLocked = !adminUser && !hasActiveTelephony() && isVoiceRoute && !isFeatureDisabled;
       const isLocked = isFeatureDisabled || isPhoneLocked;
       const lockBadge = isLocked ? '<span class="nav-icon-lock-badge"><svg width="7.5" height="7.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' : '';
 
@@ -1868,11 +1877,10 @@ function currentRoute() {
   const uRoute = (State.me && State.me.user) || {};
   const isEmployee = ['employee', 'member', 'manager'].includes(uRoute.role);
 
+  const tRoute = (State.me && State.me.tenant) || {};
   let isCompleted = false;
-  if (adminMode || isEmployee) {
+  if (adminMode || isEmployee || uRoute.onboardingCompleted === true || tRoute.onboardingCompleted === true || tRoute.createdByAdmin || tRoute.createdFromAdmin) {
     isCompleted = true;
-  } else {
-    isCompleted = (uRoute.onboardingCompleted === true);
   }
 
   // If client/owner has not completed onboarding, strictly lock them to onboarding
@@ -1881,7 +1889,7 @@ function currentRoute() {
   }
 
   if (hash === 'ai-creator' || hash === 'onboarding') {
-    return (adminMode || isEmployee) ? 'overview' : 'onboarding';
+    return (adminMode || isEmployee || isCompleted) ? 'overview' : 'onboarding';
   }
 
   const allowed = ['overview', 'assistant', 'whatsapp-hub', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
@@ -1955,15 +1963,15 @@ function onRoute() {
     features: viewFeatureControls,
     workflows: viewWorkflows,
     settings: viewSettings,
-    kb: () => { location.hash = '#/settings?tab=knowledge-base'; },
-    'knowledge-base': () => { location.hash = '#/settings?tab=knowledge-base'; },
+    kb: () => { goto('agents'); },
+    'knowledge-base': () => { goto('agents'); },
     'crm-webhooks': () => { location.hash = '#/settings?tab=integrations'; },
-    dograh: () => { location.hash = '#/settings?tab=dograh'; },
-    'dograh-flows': () => { location.hash = '#/settings?tab=dograh'; },
+    dograh: () => { goto('agents'); },
+    'dograh-flows': () => { goto('agents'); },
     presets: () => { goto('agents'); },
     studio: () => { goto('talk'); },
     demos: () => { goto('agents'); },
-    telephony: () => { goto('settings'); },
+    telephony: () => { goto('settings?tab=vobiz'); },
     integrations: () => { goto('settings?tab=integrations'); },
     'agency-prompt': () => { goto('settings'); }
   }[id] || viewOverview)(wrap);
@@ -11488,7 +11496,7 @@ async function viewFeatureControls(root) {
 
       const inboundExpected = ['inbound', 'recordings', 'agents', 'talk', 'assistant', 'liveMonitor', 'didNumbers', 'workflows'];
       const outboundExpected = ['campaigns', 'recordings', 'crmPipeline', 'agents', 'teams', 'whatsappMessaging', 'workflows'];
-      const starterExpected = ['inbound', 'recordings', 'agents', 'talk', 'workflows'];
+      const starterExpected = ['inbound', 'campaigns', 'recordings', 'teams'];
 
       const checkMatch = (expectedKeys) => {
         return catalog.every((f) => {
@@ -13692,19 +13700,18 @@ async function viewSettings(root) {
   // Read URL query tab
   const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
   let currentTab = urlParams.get('tab') || 'general';
-  // Legacy tab redirects: rumik/vobiz/dograh -> voice-integrations
-  if (['rumik', 'vobiz', 'dograh'].includes(currentTab)) currentTab = 'voice-integrations';
-  if (currentTab === 'security') currentTab = 'general';
-  if (!['general', 'voice-integrations', 'integrations', 'knowledge-base'].includes(currentTab)) {
+  // Legacy tab redirects: rumik/dograh/voice-integrations/telephony -> vobiz
+  if (['rumik', 'dograh', 'voice-integrations', 'telephony'].includes(currentTab)) currentTab = 'vobiz';
+  if (['security', 'knowledge-base', 'rag'].includes(currentTab)) currentTab = 'general';
+  if (!['general', 'vobiz', 'integrations'].includes(currentTab)) {
     currentTab = 'general';
   }
 
   // Modern Horizontal Pill Tabs (Matching rest of Dashboard)
   const tabs = [
     { id: 'general', label: 'General Identity', icon: 'gear' },
-    { id: 'voice-integrations', label: 'Voice Integrations', icon: 'mic' },
+    { id: 'vobiz', label: 'VoBiz Numbers', icon: 'phone' },
     { id: 'integrations', label: 'Connected Apps', icon: 'link' },
-    { id: 'knowledge-base', label: 'Knowledge Base (RAG)', icon: 'template' }
   ];
 
   const tabNav = el('div', {
@@ -13740,13 +13747,9 @@ async function viewSettings(root) {
 
     contentHost.innerHTML = '';
     if (tabId === 'general') renderGeneralTab(contentHost);
-    else if (tabId === 'voice-integrations') renderVoiceIntegrationsTab(contentHost);
+    else if (tabId === 'vobiz') renderVoBizTab(contentHost);
     else if (tabId === 'integrations') renderIntegrationsTab(contentHost);
-    else if (tabId === 'knowledge-base') renderKnowledgeBaseTab(contentHost);
-    // Legacy aliases (keep functions alive for internal calls)
-    else if (tabId === 'rumik') renderVoiceIntegrationsTab(contentHost, 'voice');
-    else if (tabId === 'vobiz') renderVoiceIntegrationsTab(contentHost, 'phone');
-    else if (tabId === 'dograh') renderVoiceIntegrationsTab(contentHost, 'flows');
+    else renderGeneralTab(contentHost);
   }
 
   // Initial tab render
@@ -14359,705 +14362,11 @@ async function viewSettings(root) {
     }).catch(() => { });
   }
 
-    // ==========================================================================
-  // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
+      // ==========================================================================
+  // VOICE INTEGRATIONS ALIAS (Rumik & Dograh managed exclusively via .env)
   // ==========================================================================
-  async function renderVoiceIntegrationsTab(panel, _scrollToSection, targetTenantId) {
-    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
-    const curTenant = (State && State.me && State.me.tenant) || {};
-    const activeTenantId = targetTenantId || curTenant.id || '';
-
-    const wrap = el('div', { class: 'settings-tab-inner aria-voice-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 3));
-    panel.innerHTML = '';
-    panel.appendChild(wrap);
-
-    // ---- Load all data in parallel ----
-    let catalogData = null, flowsData = null, credsData = null, adminTenants = [];
-    try {
-      const q = activeTenantId ? ('?tenantId=' + encodeURIComponent(activeTenantId)) : '';
-      const promises = [
-        api('/api/voice/catalog' + q).catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
-        api('/api/dograh/flows' + q).catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' })),
-        api('/api/voice/credentials' + q).catch(() => ({ ok: true, hasDograh: false, hasRumik: false }))
-      ];
-      if (isPlatformAdmin) {
-        promises.push(api('/api/admin/tenants').catch(() => ({ tenants: [] })));
-      }
-      const results = await Promise.all(promises);
-      catalogData = results[0];
-      flowsData = results[1];
-      credsData = results[2];
-      if (results[3]) adminTenants = results[3].tenants || [];
-    } catch (_) {}
-
-    wrap.innerHTML = '';
-
-    const voices = (catalogData && catalogData.voices) || [];
-    const tones = (catalogData && catalogData.tones) || [];
-    const active = (catalogData && catalogData.activeVoice) || {};
-    const agentsCatalog = (catalogData && catalogData.agents) || [];
-    const activeWfId = (catalogData && catalogData.activeWorkflowId) || (flowsData && flowsData.activeWorkflowId) || '13027';
-    const flows = (flowsData && flowsData.flows) || [];
-    const activeFlow = flows.find(f => f.isActive) || flows[0];
-
-    // Credentials resolution
-    const catalogCreds = (catalogData && catalogData.credentials) || {};
-    const creds = Object.assign({}, catalogCreds, credsData || {});
-    const hasRumik = Boolean(creds.hasRumik);
-    const hasDograh = Boolean(creds.hasDograh);
-
-    let selectedVoiceId = active.voiceId || 'ira';
-    let selectedTone = active.tone || 'happy';
-    let selectedSpeed = active.speed || 1.0;
-    let selectedAgentId = active.agentId || (agentsCatalog[0] && agentsCatalog[0].id) || '';
-    let currentAudio = null;
-    let currentlyPlayingId = null;
-
-    // Common flat underline input style (identical to VoBiz)
-    const vobizInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
-
-    // ── PAGE HEADER ──────────────────────────────────────────────────────────
-    const pageHeader = el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
-      el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
-      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
-        'Complete voice pipeline in one place. Connect Rumik for ultra-realistic AI voice personas, Dograh for conversational call flows, and VoBiz for Indian (+91) virtual phone lines.'
-      ),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';display:inline-block;' }),
-          el('span', { id: 'vi-voice-pill' }, hasRumik ? ('Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik)') : 'Rumik: Needs Key')
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasDograh ? '#2563eb' : '#9ca3af') + ';display:inline-block;' }),
-          el('span', {}, hasDograh ? ('Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Core)')) : 'Dograh: Needs Key')
-        ]),
-        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
-          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
-          el('span', {}, 'VoBiz SIP Carrier: Ready')
-        ])
-      ])
-    ]);
-    wrap.appendChild(pageHeader);
-
-    // ── SECTION TAB BAR ───────────────────────────────────────────────────────
-    let activeSectionTab = _scrollToSection || 'voice';
-    const sectionTabs = [
-      { id: 'voice', label: 'Voice & Speech (Rumik)' },
-      { id: 'phone', label: 'Phone Numbers (VoBiz)' },
-      { id: 'flows', label: 'AI Call Flows (Dograh)' }
-    ];
-    const sectionBtnMap = {};
-    const sectionPanelMap = {};
-
-    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:28px;border-bottom:2px solid rgba(13,93,65,0.12);' });
-
-    function activateSectionTab(id) {
-      activeSectionTab = id;
-      sectionTabs.forEach(function(s) {
-        const btn = sectionBtnMap[s.id];
-        const sp = sectionPanelMap[s.id];
-        if (s.id === id) {
-          if (btn) {
-            btn.style.color = '#0d5d41';
-            btn.style.borderBottomColor = '#0d5d41';
-            btn.style.fontWeight = '800';
-          }
-          if (sp) sp.style.display = 'block';
-        } else {
-          if (btn) {
-            btn.style.color = '#5d7468';
-            btn.style.borderBottomColor = 'transparent';
-            btn.style.fontWeight = '600';
-          }
-          if (sp) sp.style.display = 'none';
-        }
-      });
-    }
-
-    sectionTabs.forEach(function(s) {
-      const sId = s.id;
-      const btn = el('button', {
-        type: 'button',
-        style: 'padding:10px 22px;font-size:0.88rem;font-weight:600;color:#5d7468;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;margin-bottom:-2px;white-space:nowrap;',
-        onclick: function() { activateSectionTab(sId); }
-      }, s.label);
-      sectionBtnMap[s.id] = btn;
-      sectionNav.appendChild(btn);
-    });
-    wrap.appendChild(sectionNav);
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 1: VOICE & SPEECH (RUMIK) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
-    // ══════════════════════════════════════════════════════════════════════════
-    const voicePanel = el('div', { style: 'display:none;' });
-    sectionPanelMap['voice'] = voicePanel;
-
-    // 1. Rumik KPI Bar (Identical to VoBiz KPI Bar)
-    const rumikKpis = el('div', {
-      class: 'settings-kpi-bar',
-      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
-    }, [
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SPEECH SYNTHESIS ENGINE'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Rumik (Mulberry)'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'High-Fidelity Neural Voice')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasRumik ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
-          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';' }),
-          el('span', {}, hasRumik ? 'Connected' : 'Not Connected')
-        ]),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'API Key Verified & Active' : 'API Key Required to Unlock')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE PERSONA'),
-        el('div', { id: 'rumik-kpi-active-persona', class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasRumik ? ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') : 'Locked'),
-        el('div', { id: 'rumik-kpi-active-persona-sub', style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'Assigned to reception desk' : 'Enter Rumik key below')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'STREAMING PROTOCOL'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Realtime Ultra-low Latency'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Direct SIP Trunk Audio Bridge')
-      ])
-    ]);
-    voicePanel.appendChild(rumikKpis);
-
-    // 2. Rumik Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
-    const rumikGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
-        el('div', {}, [
-          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Speech Synthesis Pipeline'),
-          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Rumik AI Streaming Voice Studio'),
-          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Rumik developer account to unlock ultra-natural human voices, streaming speech synthesis, and live sync with VoBiz phone lines.')
-        ]),
-        el('a', {
-          href: 'https://rumik.ai',
-          target: '_blank',
-          class: 'btn btn-primary btn-sm',
-          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
-        }, [
-          el('span', {}, 'Open Rumik Console'),
-          el('span', { html: uiIcon('arrowUpRight', 12) })
-        ])
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
-            el('span', {}, 'Acquire on Rumik Console')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on rumik.ai and obtain your developer API key.')
-        ]),
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
-            el('span', {}, 'Enter API Credentials')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Rumik API Key below to authenticate and link your account.')
-        ]),
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
-            el('span', {}, 'Instant Persona Sync')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Voice personas activate immediately and synchronize across all your AI voice agents and phone lines.')
-        ])
-      ])
-    ]);
-    voicePanel.appendChild(rumikGuideSection);
-
-    // 3. Rumik Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
-    const rumikKeyInp = el('input', {
-      type: 'password',
-      class: 'input',
-      placeholder: hasRumik ? '•••••••••••••••• (Connected - Enter new key to update)' : 'e.g. rmk_live_948f2c... (from rumik.ai)',
-      style: vobizInputStyle
-    });
-
-    const rumikTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
-    if (isPlatformAdmin) {
-      rumikTenantSelect.innerHTML = '';
-      const tenantOptions = [];
-      if (curTenant && curTenant.id) {
-        tenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
-      }
-      adminTenants.forEach((cl) => {
-        if (!tenantOptions.some((o) => o.id === cl.id)) {
-          tenantOptions.push({ id: cl.id, name: cl.name || cl.id });
-        }
-      });
-      tenantOptions.forEach((cl) => {
-        rumikTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
-      });
-      rumikTenantSelect.onchange = () => {
-        renderVoiceIntegrationsTab(panel, 'voice', rumikTenantSelect.value);
-      };
-    }
-
-    const connectRumikBtn = el('button', {
-      type: 'button',
-      class: 'btn btn-primary',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
-    }, hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account');
-
-    connectRumikBtn.onclick = async () => {
-      const keyVal = rumikKeyInp.value.trim();
-      if (!keyVal && !hasRumik) {
-        toast('Rumik Speech API Key is required.', 'err');
-        return;
-      }
-      connectRumikBtn.disabled = true;
-      connectRumikBtn.textContent = 'Connecting...';
-      const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
-      try {
-        const body = { rumikApiKey: keyVal };
-        if (selectedTenant) body.targetTenantId = selectedTenant;
-        const res = await api('/api/voice/credentials', { method: 'POST', body });
-        toast(res.message || 'Rumik account connected successfully!', 'ok');
-        rumikKeyInp.value = '';
-        await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
-      } catch (err) {
-        toast(err.message || 'Failed to connect Rumik account.', 'err');
-      } finally {
-        connectRumikBtn.disabled = false;
-        connectRumikBtn.textContent = hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account';
-      }
-    };
-
-    const disconnectRumikBtn = hasRumik ? el('button', {
-      type: 'button',
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;cursor:pointer;',
-      onclick: async () => {
-        disconnectRumikBtn.disabled = true;
-        disconnectRumikBtn.textContent = 'Disconnecting...';
-        const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
-        try {
-          const body = { disconnectRumik: true };
-          if (selectedTenant) body.targetTenantId = selectedTenant;
-          await api('/api/voice/credentials', { method: 'POST', body });
-          toast('Rumik account disconnected successfully.', 'ok');
-          await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
-        } catch (err) {
-          toast(err.message || 'Failed to disconnect.', 'err');
-          disconnectRumikBtn.disabled = false;
-          disconnectRumikBtn.textContent = 'Disconnect';
-        }
-      }
-    }, 'Disconnect') : null;
-
-    const rumikFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'margin-bottom:16px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
-        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Rumik Account')
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Rumik Speech API Key (Required)'),
-          rumikKeyInp
-        ]),
-        isPlatformAdmin ? el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
-          rumikTenantSelect
-        ]) : null
-      ].filter(Boolean)),
-      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectRumikBtn, disconnectRumikBtn].filter(Boolean))
-    ]);
-    voicePanel.appendChild(rumikFormSection);
-
-    // 4. Rumik Voice Personas Studio Section (Gated on hasRumik)
-    const rumikStudioSection = el('section', { style: 'margin-bottom:20px;' });
-    if (!hasRumik) {
-      rumikStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
-        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
-          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
-            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
-            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
-          ])
-        ]),
-        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Rumik Voice Studio is Locked'),
-        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
-          'Please enter your Rumik Speech API Key in the form above and click "Connect Rumik Account" to unlock voice personas, speech synthesis, and live sync with your phone lines.'
-        )
-      ]));
-    } else {
-      function stopPlayback() {
-        if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
-        currentlyPlayingId = null;
-        updatePlayButtons();
-      }
-      function playAudioUrl(url, id) {
-        stopPlayback();
-        currentlyPlayingId = id;
-        updatePlayButtons();
-        var a = new Audio(url);
-        currentAudio = a;
-        a.onended = function() { stopPlayback(); };
-        a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
-        a.play().catch(function() { stopPlayback(); });
-      }
-      var playBtnElements = new Map();
-      function updatePlayButtons() {
-        voices.forEach(function(v) {
-          var btn = playBtnElements.get(v.id);
-          if (!btn) return;
-          var isPlaying = currentlyPlayingId === v.id;
-          btn.innerHTML = isPlaying
-            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-          btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
-          btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
-        });
-      }
-
-      var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
-      voices.forEach(function(v) {
-        var isSelected = v.id === selectedVoiceId;
-        var card = el('div', {
-          'data-voice-card': v.id,
-          style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
-        });
-        card.onclick = function() {
-          selectedVoiceId = v.id;
-          selectedTone = v.defaultTone || 'happy';
-          voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
-            c.style.borderColor = c.dataset.voiceCard === v.id ? '#0d5d41' : 'rgba(13,93,65,0.14)';
-            c.style.background = c.dataset.voiceCard === v.id ? 'rgba(13,93,65,0.04)' : '#fff';
-          });
-          var pill = document.getElementById('vi-voice-pill');
-          if (pill) pill.textContent = 'Voice: ' + v.name + ' (Rumik)';
-        };
-
-        var previewBtn = el('button', {
-          type: 'button',
-          style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
-        }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
-        previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-        (function(voiceId, voiceMeta, btn) {
-          btn.onclick = async function(e) {
-            e.stopPropagation();
-            if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
-            btn.disabled = true;
-            btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
-            try {
-              var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
-              if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
-              else toast('No audio received.', 'err');
-            } catch (err) { toast('Preview error: ' + err.message, 'err'); }
-            finally { btn.disabled = false; }
-          };
-        })(v.id, v, previewBtn);
-        playBtnElements.set(v.id, previewBtn);
-
-        var selectedBadge = isSelected ? el('span', { style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '\u2713 Active') : null;
-        card.appendChild(el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
-          el('div', {}, [
-            el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
-            el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' \u00b7 ' + (v.gender === 'female' ? 'Female' : 'Male'))
-          ]),
-          selectedBadge
-        ].filter(Boolean)));
-        card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
-        card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
-          return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
-        })));
-        card.appendChild(previewBtn);
-        voiceGrid.appendChild(card);
-      });
-
-      var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
-      if (tones.length > 0) {
-        var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
-          tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
-        );
-        toneSel.onchange = function() { selectedTone = toneSel.value; };
-        toneRow.appendChild(el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
-          toneSel
-        ]));
-      }
-
-      var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
-      var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
-      speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
-      toneRow.appendChild(el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
-        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
-      ]));
-
-      var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
-        el('option', { value: '' }, 'Primary Agent (Default)'),
-        ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
-      ]);
-      agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
-      toneRow.appendChild(el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
-        agentSel2
-      ]));
-
-      var saveVoiceBtn = el('button', {
-        type: 'button',
-        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
-      }, 'Save Voice & Sync to All Phone Lines');
-      saveVoiceBtn.onclick = async function() {
-        saveVoiceBtn.disabled = true;
-        saveVoiceBtn.textContent = 'Saving & Syncing...';
-        try {
-          var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
-          toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
-          var pill = document.getElementById('vi-voice-pill');
-          var vMeta = voices.find(function(v) { return v.id === selectedVoiceId; });
-          if (pill && vMeta) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik)';
-        } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
-        finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
-      };
-
-      rumikStudioSection.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
-        el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Voice Catalog & Personas'),
-        el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
-        el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the persona that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
-      ]));
-      rumikStudioSection.appendChild(voiceGrid);
-      rumikStudioSection.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
-        el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
-        toneRow
-      ]));
-      rumikStudioSection.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
-    }
-    voicePanel.appendChild(rumikStudioSection);
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 2: PHONE NUMBERS (VOBIZ) — UNTOUCHED VOBIZ TAB
-    // ══════════════════════════════════════════════════════════════════════════
-    const phonePanel = el('div', { style: 'display:none;' });
-    sectionPanelMap['phone'] = phonePanel;
-    (async function() {
-      var vobizInner = el('div');
-      phonePanel.appendChild(vobizInner);
-      await renderVoBizTab(vobizInner);
-    })();
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 3: AI CALL FLOWS (DOGRAH) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
-    // ══════════════════════════════════════════════════════════════════════════
-    const flowsPanel = el('div', { style: 'display:none;' });
-    sectionPanelMap['flows'] = flowsPanel;
-
-    // 1. Dograh KPI Bar (Identical to VoBiz KPI Bar)
-    const dograhKpis = el('div', {
-      class: 'settings-kpi-bar',
-      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
-    }, [
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AI FLOW ENGINE'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Dograh Flows'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Multi-turn Call Logic')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasDograh ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
-          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasDograh ? '#047857' : '#9ca3af') + ';' }),
-          el('span', {}, hasDograh ? 'Connected' : 'Not Connected')
-        ]),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? 'API Key & Org ID Active' : 'API Key Required to Unlock')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE WORKFLOW'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasDograh ? ('#' + activeWfId) : 'Locked'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? (activeFlow ? activeFlow.name : 'Shared Core') : 'Enter Dograh key below')
-      ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SIP INTERCEPTOR'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'VoBiz Bi-directional'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Live SIP Trunk Audio Bridge')
-      ])
-    ]);
-    flowsPanel.appendChild(dograhKpis);
-
-    // 2. Dograh Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
-    const dograhGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
-        el('div', {}, [
-          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Conversational Engine Pipeline'),
-          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Dograh Conversational AI Flows'),
-          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Dograh developer account to build custom multi-turn conversational voice flows, visual flow builder, and workflow routing.')
-        ]),
-        el('a', {
-          href: 'https://console.dograh.com',
-          target: '_blank',
-          class: 'btn btn-primary btn-sm',
-          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
-        }, [
-          el('span', {}, 'Open Dograh Console'),
-          el('span', { html: uiIcon('arrowUpRight', 12) })
-        ])
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
-            el('span', {}, 'Acquire on Dograh Console')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on console.dograh.com and generate your developer API key.')
-        ]),
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
-            el('span', {}, 'Enter API Credentials')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Dograh API Key and Organization ID below to authenticate.')
-        ]),
-        el('div', { style: 'padding:8px 0;' }, [
-          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
-            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
-            el('span', {}, 'Build & Deploy Flows')
-          ]),
-          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create custom conversational voice trees, visual nodes, and deploy to your phone lines.')
-        ])
-      ])
-    ]);
-    flowsPanel.appendChild(dograhGuideSection);
-
-    // 3. Dograh Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
-    const dograhKeyInp = el('input', {
-      type: 'password',
-      class: 'input',
-      placeholder: hasDograh ? '•••••••••••••••• (Connected - Enter new key to update)' : 'e.g. dgr_live_839f... (from console.dograh.com)',
-      style: vobizInputStyle
-    });
-
-    const dograhOrgInp = el('input', {
-      type: 'text',
-      class: 'input',
-      value: creds.dograhOrgId || '',
-      placeholder: 'e.g. org_a83f9... (from Dograh Console)',
-      style: vobizInputStyle
-    });
-
-    const dograhTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
-    if (isPlatformAdmin) {
-      dograhTenantSelect.innerHTML = '';
-      const dograhTenantOptions = [];
-      if (curTenant && curTenant.id) {
-        dograhTenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
-      }
-      adminTenants.forEach((cl) => {
-        if (!dograhTenantOptions.some((o) => o.id === cl.id)) {
-          dograhTenantOptions.push({ id: cl.id, name: cl.name || cl.id });
-        }
-      });
-      dograhTenantOptions.forEach((cl) => {
-        dograhTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
-      });
-      dograhTenantSelect.onchange = () => {
-        renderVoiceIntegrationsTab(panel, 'flows', dograhTenantSelect.value);
-      };
-    }
-
-    const connectDograhBtn = el('button', {
-      type: 'button',
-      class: 'btn btn-primary',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
-    }, hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account');
-
-    connectDograhBtn.onclick = async () => {
-      const keyVal = dograhKeyInp.value.trim();
-      const orgVal = dograhOrgInp.value.trim();
-      if (!keyVal && !hasDograh) {
-        toast('Dograh Flow API Key is required.', 'err');
-        return;
-      }
-      connectDograhBtn.disabled = true;
-      connectDograhBtn.textContent = 'Connecting...';
-      const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
-      try {
-        const body = { dograhApiKey: keyVal, dograhOrgId: orgVal };
-        if (selectedTenant) body.targetTenantId = selectedTenant;
-        const res = await api('/api/voice/credentials', { method: 'POST', body });
-        toast(res.message || 'Dograh account connected successfully!', 'ok');
-        dograhKeyInp.value = '';
-        await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
-      } catch (err) {
-        toast(err.message || 'Failed to connect Dograh account.', 'err');
-      } finally {
-        connectDograhBtn.disabled = false;
-        connectDograhBtn.textContent = hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account';
-      }
-    };
-
-    const disconnectDograhBtn = hasDograh ? el('button', {
-      type: 'button',
-      class: 'btn btn-ghost btn-sm',
-      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;',
-      onclick: async () => {
-        if (!confirm('Are you sure you want to disconnect Dograh credentials? Custom call flows will be locked.')) return;
-        const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
-        try {
-          const body = { disconnectDograh: true };
-          if (selectedTenant) body.targetTenantId = selectedTenant;
-          await api('/api/voice/credentials', { method: 'POST', body });
-          toast('Dograh account disconnected.', 'ok');
-          await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
-        } catch (err) {
-          toast(err.message || 'Failed to disconnect.', 'err');
-        }
-      }
-    }, 'Disconnect') : null;
-
-    const dograhFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
-      el('div', { style: 'margin-bottom:16px;' }, [
-        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
-        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Dograh Account')
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Flow API Key (Required)'),
-          dograhKeyInp
-        ]),
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Organization ID (Required)'),
-          dograhOrgInp
-        ]),
-        isPlatformAdmin ? el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
-          dograhTenantSelect
-        ]) : null
-      ].filter(Boolean)),
-      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectDograhBtn, disconnectDograhBtn].filter(Boolean))
-    ]);
-    flowsPanel.appendChild(dograhFormSection);
-
-    // 4. Dograh Flow Studio / Flows List Section (Gated on hasDograh)
-    const dograhStudioSection = el('section', { style: 'margin-bottom:20px;' });
-    if (!hasDograh) {
-      dograhStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
-        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
-          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
-            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
-            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
-          ])
-        ]),
-        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Dograh AI Call Flows are Locked'),
-        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
-          'Please enter your Dograh API Key and Organization ID in the form above and click "Connect Dograh Account" to unlock custom conversational call flows, visual flow builder, and workflow routing.'
-        )
-      ]));
-    } else {
-      (async function() {
-        var dograhInner = el('div');
-        dograhStudioSection.appendChild(dograhInner);
-        await renderDograhTab(dograhInner);
-      })();
-    }
-    flowsPanel.appendChild(dograhStudioSection);
-
-    wrap.appendChild(voicePanel);
-    wrap.appendChild(phonePanel);
-    wrap.appendChild(flowsPanel);
-
-    activateSectionTab(activeSectionTab);
+  async function renderVoiceIntegrationsTab(panel) {
+    return renderVoBizTab(panel);
   }
 
   // ==========================================================================
@@ -15090,10 +14399,13 @@ async function viewSettings(root) {
         ]),
         el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Bi-directional live routing')
       ]),
-      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AI DIALOG ENGINE'),
-        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'Dograh #13027'),
-        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Automated speech handling')
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AI VOICE ENGINE'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#047857;' }),
+          el('span', {}, 'Active (Cloud ENV)')
+        ]),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Managed speech & dialog')
       ])
     ]);
     wrap.appendChild(kpis);
@@ -15310,921 +14622,12 @@ async function viewSettings(root) {
     wrap.appendChild(tableSection);
   }
 
-  // ==========================================================================
-  // TAB 3: DOGRAH AI FLOWS TAB (ORCHESTRATION PIPELINES & CUSTOM CLIENT FLOW BUILDER)
+    // ==========================================================================
+  // DOGRAH FLOWS ALIAS (Rumik & Dograh managed exclusively via .env)
   // ==========================================================================
   async function renderDograhTab(panel) {
-    const wrap = el('div', { class: 'settings-tab-inner aria-dograh-tab', style: 'width:100%;' }, skeleton('sk-card', 2));
-    panel.innerHTML = '';
-    panel.appendChild(wrap);
-
-    let currentTenantFilter = '';
-    const flowStudioState = { active: false, flow: null };
-
-    async function loadData(targetTenantId) {
-      const url = '/api/dograh/flows' + (targetTenantId ? `?tenantId=${encodeURIComponent(targetTenantId)}` : '');
-      return await api(url).catch(() => ({
-        flows: [],
-        agents: [],
-        tenants: [],
-        activeWorkflowId: '13027',
-        defaultWorkflowId: '13027',
-        usingShared: true,
-        live: true,
-        dashboardUrl: 'https://console.dograh.com',
-        isAdmin: false
-      }));
-    }
-
-    async function renderCurrent() {
-      wrap.innerHTML = '';
-      if (flowStudioState.active) {
-        const data = await loadData(currentTenantFilter);
-        wrap.appendChild(buildFlowStudioPage(flowStudioState.flow, () => {
-          flowStudioState.active = false;
-          flowStudioState.flow = null;
-          renderCurrent();
-        }, data, () => {
-          flowStudioState.active = false;
-          flowStudioState.flow = null;
-          renderCurrent();
-        }));
-      } else {
-        await renderFlowsListPage();
-      }
-    }
-
-    async function renderFlowsListPage() {
-      wrap.innerHTML = '';
-      wrap.appendChild(skeleton('sk-card', 2));
-      const data = await loadData(currentTenantFilter);
-      wrap.innerHTML = '';
-
-      const isAdmin = !!data.isAdmin;
-      const tenants = data.tenants || [];
-      const agents = data.agents || [];
-      let flows = data.flows || [];
-
-      // Top Action Buttons
-      const createFlowBtn = el('button', {
-        type: 'button',
-        class: 'btn btn-primary btn-sm',
-        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 20px;font-weight:750;border:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;'
-      }, [
-        el('span', { html: uiIcon('plus', 14) }),
-        el('span', {}, 'Create Voice Flow')
-      ]);
-      createFlowBtn.onclick = () => {
-        flowStudioState.active = true;
-        flowStudioState.flow = null;
-        renderCurrent();
-      };
-
-      const syncBtn = el('button', {
-        type: 'button',
-        class: 'btn btn-ghost btn-sm',
-        style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
-      }, [
-        el('span', { html: uiIcon('refresh', 14) }),
-        el('span', {}, 'Sync from Dograh')
-      ]);
-
-      syncBtn.onclick = async () => {
-        syncBtn.disabled = true;
-        syncBtn.textContent = 'Syncing...';
-        try {
-          const res = await api('/api/dograh/sync', { method: 'POST' });
-          toast('Synced with Dograh Workflow #' + ((res.workflow && res.workflow.workflowId) || 13027) + '! Updated receptionist persona.', 'ok');
-          renderCurrent();
-        } catch (err) {
-          syncBtn.disabled = false;
-          syncBtn.textContent = 'Sync from Dograh';
-          toast('Dograh sync note: ' + err.message, 'err');
-        }
-      };
-
-      const assignBtn = isAdmin ? el('button', {
-        type: 'button',
-        class: 'btn btn-ghost btn-sm',
-        style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;'
-      }, [
-        el('span', { html: uiIcon('git-branch', 14) }),
-        el('span', {}, 'Assign to Workspace')
-      ]) : null;
-      if (assignBtn) {
-        assignBtn.onclick = () => openAdminAssignModal(tenants);
-      }
-
-      const consoleLink = el('a', {
-        href: data.dashboardUrl || 'https://console.dograh.com',
-        target: '_blank',
-        class: 'btn btn-ghost btn-sm',
-        style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
-      }, [
-        el('span', {}, 'Dograh Console'),
-        el('span', { html: uiIcon('arrowUpRight', 12) })
-      ]);
-
-      // Header strip
-      const header = el('div', {
-        style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
-      }, [
-        el('div', {}, [
-          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony AI Orchestration'),
-          el('h3', { style: 'margin:0 0 6px 0;font-size:1.35rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, 'Dograh AI Voice Flows & Routing'),
-          el('p', { class: 'muted', style: 'margin:0;font-size:0.84rem;color:#5d7468;' }, 'Create, customize, and orchestrate neural conversational voice flows for your AI agents with real-time carrier dispatch.')
-        ]),
-        el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
-          createFlowBtn,
-          assignBtn,
-          syncBtn,
-          consoleLink
-        ].filter(Boolean))
-      ]);
-      wrap.appendChild(header);
-
-      // Admin Workspace Filter Bar (If Admin)
-      if (isAdmin && tenants.length > 0) {
-        const filterBar = el('div', {
-          style: 'display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(13,93,65,0.03);border:1px solid rgba(13,93,65,0.12);border-radius:12px;margin-bottom:24px;flex-wrap:wrap;'
-        }, [
-          el('span', { style: 'font-size:0.76rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#0d5d41;' }, 'Workspace Filter:'),
-          (() => {
-            const sel = el('select', {
-              class: 'select aria-select',
-              style: 'padding:6px 14px;font-size:0.86rem;font-weight:700;border-radius:999px;border:1.5px solid rgba(13,93,65,0.20);background:#fff;color:#14221c;min-width:240px;'
-            }, [
-              el('option', { value: '' }, 'All Workspaces (Admin View)'),
-              ...tenants.map(t => el('option', { value: t.id }, `${t.name} (${t.id})`))
-            ]);
-            sel.value = currentTenantFilter;
-            sel.onchange = async () => {
-              currentTenantFilter = sel.value;
-              renderCurrent();
-            };
-            return sel;
-          })(),
-          el('span', { class: 'muted', style: 'font-size:0.78rem;color:#5d7468;margin-left:auto;' }, 'Admin privilege: switch workspace to configure client voice flows.')
-        ]);
-        wrap.appendChild(filterBar);
-      }
-
-      // Flat 4-Column KPI Stats Row (Zero gaps, connected lines)
-      const activeFlow = flows.find(f => f.isActive) || flows[0];
-      const activeWfId = (activeFlow && activeFlow.workflowId) || data.activeWorkflowId || '13027';
-
-      const kpiRow = el('div', {
-        class: 'settings-kpi-bar',
-        style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:28px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
-      }, [
-        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE WORKFLOW'),
-          el('div', { class: 'kpi-value', id: 'dfl-kpi-active-wf', style: 'font-size:1.25rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, '#' + activeWfId),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, activeFlow ? (activeFlow.name || 'Custom Voice Flow') : 'Seevora Shared Core')
-        ]),
-        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'FLOWS CONFIGURED'),
-          el('div', { class: 'kpi-value', id: 'dfl-kpi-count', style: 'font-size:1.25rem;font-weight:850;color:#14221c;margin:4px 0;' }, String(flows.length)),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Available in workspace')
-        ]),
-        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'CARRIER INTEGRATION'),
-          el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, 'VoBiz Carrier'),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Bi-directional SIP trunking')
-        ]),
-        el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
-          el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ORCHESTRATOR STATUS'),
-          el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:800;color:#047857;margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
-            el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#047857;' }),
-            el('span', {}, 'Active & Live')
-          ]),
-          el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Sub-400ms SmallWebRTC')
-        ])
-      ]);
-      wrap.appendChild(kpiRow);
-
-      // Active Flow Spotlight Hero Box (Cardless, transparent canvas)
-      if (activeFlow) {
-        const hero = el('div', {
-          style: 'padding:22px 24px;background:rgba(13,93,65,0.025);border:1.5px solid rgba(13,93,65,0.15);border-radius:14px;margin-bottom:32px;box-sizing:border-box;'
-        }, [
-          el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;' }, [
-            el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
-              el('span', { style: 'width:34px;height:34px;border-radius:50%;background:#0d5d41;color:#fff;display:inline-flex;align-items:center;justify-content:center;' }, [
-                el('span', { html: uiIcon('sparkle', 16) })
-              ]),
-              el('div', {}, [
-                el('div', { style: 'font-size:1.10rem;font-weight:850;color:#14221c;' }, activeFlow.name || 'Primary Voice Flow'),
-                el('div', { style: 'font-size:0.76rem;color:#5d7468;margin-top:1px;' },
-                  `Dograh Pipeline #${activeFlow.workflowId} · Created by ${activeFlow.assignedBy || 'workspace'}`
-                )
-              ])
-            ]),
-            el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-              el('span', {
-                style: 'display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:750;padding:4px 12px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
-              }, [
-                el('span', { style: 'width:6px;height:6px;border-radius:50%;background:#047857;' }),
-                el('span', {}, 'LIVE ON PHONE LINES')
-              ]),
-              el('button', {
-                type: 'button',
-                class: 'btn btn-primary btn-sm',
-                style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 16px;font-weight:750;border:none;cursor:pointer;',
-                onclick: () => {
-                  flowStudioState.active = true;
-                  flowStudioState.flow = activeFlow;
-                  renderCurrent();
-                }
-              }, 'Edit Flow Details')
-            ])
-          ]),
-          el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;padding-top:14px;border-top:1px dashed rgba(13,93,65,0.14);' }, [
-            el('div', {}, [
-              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'First Spoken Greeting'),
-              el('div', { style: 'font-size:0.84rem;color:#14221c;font-style:italic;line-height:1.45;' }, `"${activeFlow.greeting || 'Namaste! How can I assist you today?'}"`)
-            ]),
-            el('div', {}, [
-              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'Assigned Voice Agent'),
-              el('div', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;' }, activeFlow.agentName || 'Default AI Receptionist')
-            ]),
-            el('div', {}, [
-              el('div', { style: 'font-size:0.70rem;font-weight:800;text-transform:uppercase;color:#5d7468;margin-bottom:3px;' }, 'Human Escalation Number'),
-              el('div', { style: 'font-size:0.86rem;font-weight:750;color:#14221c;font-family:var(--mono);' }, activeFlow.fallbackPhone || '+91 89822 00895')
-            ])
-          ])
-        ]);
-        wrap.appendChild(hero);
-      }
-
-      // Section: Flows Inventory Roster
-      const rosterSection = el('section', { style: 'margin-bottom:28px;' }, [
-        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;' }, [
-          el('div', {}, [
-            el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Route Inventory & Custom Flows'),
-            el('h4', { style: 'margin:0;font-size:1.18rem;font-weight:850;color:#14221c;' }, 'Workspace Voice Flows'),
-            el('p', { class: 'muted', style: 'margin:3px 0 0 0;font-size:0.82rem;color:#5d7468;' }, 'Each flow defines spoken greeting, behavioral prompts, dialog nodes, and escalation fallback. Click "Set as Active" to switch live call handling.')
-          ]),
-          el('button', {
-            type: 'button',
-            class: 'btn btn-primary btn-sm',
-            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 18px;font-weight:750;border:none;cursor:pointer;',
-            onclick: () => {
-              flowStudioState.active = true;
-              flowStudioState.flow = null;
-              renderCurrent();
-            }
-          }, '+ Add New Flow')
-        ])
-      ]);
-
-      if (!flows.length) {
-        rosterSection.appendChild(el('div', {
-          style: 'padding:32px 20px;text-align:center;border:1px dashed rgba(13,93,65,0.18);border-radius:12px;background:rgba(13,93,65,0.015);'
-        }, [
-          el('div', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;margin-bottom:6px;' }, 'No Voice Flows Found'),
-          el('p', { class: 'muted', style: 'font-size:0.84rem;max-width:440px;margin:0 auto 16px;color:#5d7468;' }, 'Create your first voice flow to customize the spoken persona, triage rules, and caller booking sequence.'),
-          el('button', {
-            type: 'button',
-            class: 'btn btn-primary btn-sm',
-            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:7px 20px;font-weight:750;border:none;cursor:pointer;',
-            onclick: () => {
-              flowStudioState.active = true;
-              flowStudioState.flow = null;
-              renderCurrent();
-            }
-          }, 'Create Flow Now')
-        ]));
-      } else {
-        const listWrap = el('div', {
-          style: 'display:flex;flex-direction:column;gap:0;border-top:1px solid rgba(13,93,65,0.12);'
-        });
-
-        flows.forEach((f) => {
-          const isLive = !!f.isActive;
-
-          const row = el('div', {
-            style: 'padding:16px 6px;border-bottom:1px solid rgba(13,93,65,0.10);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;transition:background 0.15s ease;'
-          }, [
-            // Column 1: Info & Badges
-            el('div', { style: 'flex:1;min-width:280px;' }, [
-              el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;' }, [
-                el('b', { style: 'font-size:0.98rem;color:#14221c;' }, f.name || 'Voice Flow'),
-                el('span', {
-                  style: 'font-family:var(--mono);font-size:0.74rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;'
-                }, '#' + f.workflowId),
-                el('span', {
-                  style: 'font-size:0.68rem;font-weight:750;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.05);color:#5d7468;'
-                }, f.kind || 'generated'),
-                isLive
-                  ? el('span', {
-                    style: 'font-size:0.70rem;font-weight:750;padding:2px 10px;border-radius:999px;background:rgba(16,185,129,0.14);color:#047857;'
-                  }, '● Active & Dialing')
-                  : el('span', {
-                    style: 'font-size:0.70rem;font-weight:750;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,0.06);color:#5d7468;'
-                  }, 'Standby')
-              ]),
-              el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-bottom:4px;' },
-                f.description || (f.greeting ? `Greeting: "${f.greeting.slice(0, 90)}..."` : 'Voice conversational flow')
-              ),
-              el('div', { style: 'font-size:0.75rem;color:#0d5d41;' },
-                `Assigned Agent: <strong>${f.agentName || 'Default Receptionist'}</strong> · Language: ${f.language || 'hi-IN'}`
-              )
-            ]),
-
-            // Column 2: Actions
-            el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, [
-              !isLive ? el('button', {
-                type: 'button',
-                class: 'btn btn-ghost btn-sm',
-                style: 'border-radius:999px;padding:5px 14px;border:1px solid rgba(13,93,65,0.25);color:#0d5d41;font-weight:750;font-size:0.78rem;',
-                onclick: async () => {
-                  try {
-                    await api('/api/dograh/flows/activate', { method: 'POST', body: { id: f.id } });
-                    toast(`"${f.name}" is now the active flow for calls!`, 'ok');
-                    renderCurrent();
-                  } catch (e) { toast(e.message, 'err'); }
-                }
-              }, 'Set as Active') : null,
-              el('button', {
-                type: 'button',
-                class: 'btn btn-ghost btn-sm',
-                style: 'border-radius:999px;padding:5px 14px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:750;font-size:0.78rem;',
-                onclick: () => {
-                  flowStudioState.active = true;
-                  flowStudioState.flow = f;
-                  renderCurrent();
-                }
-              }, 'Edit Flow'),
-              el('button', {
-                type: 'button',
-                class: 'btn btn-ghost btn-sm',
-                style: 'border-radius:999px;padding:5px 12px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.78rem;',
-                title: 'Push latest persona to Dograh upstream',
-                onclick: async () => {
-                  try {
-                    await api('/api/dograh/flows/sync', { method: 'POST', body: { id: f.id, agentId: f.agentId } });
-                    toast('Flow #' + f.workflowId + ' synced with upstream Dograh.', 'ok');
-                    renderCurrent();
-                  } catch (e) { toast(e.message, 'err'); }
-                }
-              }, 'Sync'),
-              flows.length > 1 ? el('button', {
-                type: 'button',
-                class: 'btn btn-ghost btn-sm',
-                style: 'border-radius:999px;padding:5px 12px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:700;font-size:0.78rem;',
-                onclick: () => confirmDeleteFlow(f, renderCurrent)
-              }, 'Delete') : null
-            ].filter(Boolean))
-          ]);
-          listWrap.appendChild(row);
-        });
-        rosterSection.appendChild(listWrap);
-      }
-      wrap.appendChild(rosterSection);
-    }
-
-    renderCurrent();
+    return renderVoBizTab(panel);
   }
-
-  // ==========================================================================
-  // VOICE FLOW STUDIO: FULL CARDLESS DASHBOARD CANVAS
-  // ==========================================================================
-  function buildFlowStudioPage(existing, onBack, data, onSaved) {
-    const isEdit = Boolean(existing && existing.id);
-    const flow = existing || {
-      name: '',
-      workflowId: (data && data.defaultWorkflowId) || '13027',
-      agentId: (data && data.agents && data.agents[0] && data.agents[0].id) || '',
-      greeting: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I assist you today?',
-      prompt: 'You are a warm, courteous AI voice receptionist. Speak in natural conversational Hindi/English. Inquire about caller requirements, answer FAQs concisely in 1 to 2 spoken sentences, qualify the lead, and collect caller name and callback number.',
-      fallbackPhone: '+91 89822 00895',
-      assignedPhone: '+91 80715 82519',
-      language: 'hi-IN',
-      isActive: true,
-      nodes: [
-        { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: 'Greet caller warmly and introduce company.' },
-        { id: '2', type: 'triage', title: 'Query & Qualification', prompt: 'Inquire caller needs, qualify urgency, and answer common questions.' },
-        { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture caller name, phone number, and preferred appointment time.' },
-        { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to specialist or confirm automated WhatsApp callback.' }
-      ]
-    };
-
-    const agents = (data && data.agents) || [];
-    const page = el('div', { class: 'aria-flow-studio-page', style: 'max-width:1080px;margin:0 auto;padding-bottom:60px;' });
-
-    // Top Breadcrumb & Action Buttons
-    const submitBtnTop = el('button', {
-      type: 'button',
-      class: 'btn btn-primary btn-sm',
-      style: 'border-radius:999px;padding:8px 22px;background:#0d5d41;color:#ffffff;font-weight:750;font-size:0.86rem;border:none;cursor:pointer;'
-    }, isEdit ? 'Save Changes' : 'Deploy Voice Flow');
-
-    const topBar = el('div', {
-      style: 'display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 0 16px 0;margin-bottom:24px;border-bottom:1.5px solid rgba(13,93,65,0.12);flex-wrap:wrap;'
-    }, [
-      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        el('button', {
-          type: 'button',
-          class: 'btn btn-ghost btn-sm',
-          style: 'border-radius:999px;padding:6px 14px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;display:inline-flex;align-items:center;gap:6px;',
-          onclick: onBack
-        }, [
-          el('span', {}, '← Back to Voice Flows')
-        ]),
-        el('span', { style: 'color:rgba(13,93,65,0.3);font-size:0.9rem;' }, '/'),
-        el('span', { style: 'font-weight:750;font-size:0.96rem;color:#14221c;' }, isEdit ? ('Edit Flow: ' + flow.name) : 'New Voice Flow Studio')
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        el('button', {
-          type: 'button',
-          class: 'btn btn-ghost btn-sm',
-          style: 'border-radius:999px;padding:7px 16px;border:1px solid rgba(13,93,65,0.2);color:#5d7468;font-weight:650;',
-          onclick: onBack
-        }, 'Cancel'),
-        submitBtnTop
-      ])
-    ]);
-    page.appendChild(topBar);
-
-    // Studio Header Kicker & Title
-    const headerSection = el('div', { style: 'margin-bottom:28px;' }, [
-      el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony AI Dialog Logic & Turn Sequence'),
-      el('h2', { style: 'margin:0 0 6px 0;font-size:1.45rem;font-weight:850;color:#14221c;letter-spacing:-0.02em;' }, isEdit ? ('Edit ' + flow.name) : 'Create Autonomous Voice Flow'),
-      el('p', { class: 'muted', style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Define conversational turn logic, configure neural spoken greeting, behavioral instructions, and carrier escalation fallback with zero cards.')
-    ]);
-    page.appendChild(headerSection);
-
-    // 3-Step Visual Progress Stepper (Zero cards)
-    const stepper = el('div', {
-      style: 'display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-bottom:36px;padding-bottom:20px;border-bottom:1px solid rgba(13,93,65,0.10);'
-    }, [
-      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '1'),
-        el('div', {}, [
-          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'IDENTITY & AGENT'),
-          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Name, persona & line')
-        ])
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '2'),
-        el('div', {}, [
-          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'GREETING & PERSONA'),
-          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Opener & turn rules')
-        ])
-      ]),
-      el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        el('div', { style: 'width:28px;height:28px;border-radius:50%;background:#0d5d41;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;' }, '3'),
-        el('div', {}, [
-          el('div', { style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'DIALOG STAGES & ESCALATION'),
-          el('div', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;' }, 'Sequential steps & transfer')
-        ])
-      ])
-    ]);
-    page.appendChild(stepper);
-
-    // Form Canvas (Zero Cards, pure clean layout)
-    const form = el('form', { class: 'aria-flow-studio-canvas' });
-
-    // Inputs:
-    const nameI = el('input', {
-      class: 'input',
-      type: 'text',
-      value: flow.name || '',
-      placeholder: 'e.g. 24/7 AI Receptionist & Triage',
-      maxlength: 100,
-      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
-    });
-
-    const agentSel = el('select', {
-      class: 'select aria-select',
-      style: 'width:100%;padding:10px 14px;font-size:0.90rem;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
-    }, [
-      el('option', { value: '' }, 'Default System Receptionist'),
-      ...agents.map(a => el('option', { value: a.id, selected: a.id === flow.agentId }, `${a.name}${a.isPrimary ? ' (Primary)' : ''}`))
-    ]);
-
-    const wfIdI = el('input', {
-      class: 'input',
-      type: 'text',
-      value: flow.workflowId || '13027',
-      placeholder: '13027',
-      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-family:var(--mono);box-sizing:border-box;'
-    });
-
-    const greetI = el('textarea', {
-      class: 'input textarea',
-      rows: '2',
-      placeholder: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I assist you today?',
-      style: 'width:100%;font-size:0.90rem;line-height:1.45;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
-    }, flow.greeting || '');
-
-    const personaI = el('textarea', {
-      class: 'input textarea',
-      rows: '5',
-      placeholder: 'Describe the agent tone, business facts, qualification questions, and speech rules...',
-      style: 'width:100%;font-size:0.88rem;line-height:1.5;padding:12px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;resize:vertical;box-sizing:border-box;'
-    }, flow.prompt || '');
-
-    const fallbackI = el('input', {
-      class: 'input',
-      type: 'text',
-      value: flow.fallbackPhone || '+91 89822 00895',
-      placeholder: '+91 89822 00895',
-      style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-family:var(--mono);box-sizing:border-box;'
-    });
-
-    const activeChk = el('input', {
-      type: 'checkbox',
-      id: 'flow_active_chk',
-      style: 'width:20px;height:20px;cursor:pointer;accent-color:#0d5d41;'
-    });
-    activeChk.checked = !isEdit ? true : !!flow.isActive;
-
-    // Fast Role Presets (Chips on plain canvas)
-    const presets = [
-      {
-        title: 'Front Desk Receptionist',
-        greeting: 'Namaste! Welcome to our office. Main aapki AI receptionist bol rahi hoon. How can I help you today?',
-        prompt: 'You are an AI voice receptionist. Be polite, warm, and helpful. Inquire about caller requirements, answer FAQs concisely in 1 to 2 spoken sentences, collect caller name and phone number, and book an appointment or callback.'
-      },
-      {
-        title: 'Clinic OPD & Patient Care',
-        greeting: 'Namaste! Welcome to the Clinic. Main OPD AI coordinator bol rahi hoon. Do you want to book a doctor appointment or lab test?',
-        prompt: 'You are a medical clinic voice receptionist. Triage patient concerns with empathy. Ask if they need doctor consultation or diagnostic testing, preferred time slot, and patient name. Never give medical diagnosis.'
-      },
-      {
-        title: 'Real Estate Buyer Screening',
-        greeting: 'Hello, thanks for calling! Are you looking for residential apartments or commercial properties?',
-        prompt: 'You are a luxury real estate AI consultant. Ask caller about BHK preference, budget range (e.g. 50 Lakhs to 2 Crores), location preference, and arrange a private site visit.'
-      },
-      {
-        title: 'Customer Support & Triage',
-        greeting: 'Hi, thank you for reaching out to support! Can you please tell me what issue you are experiencing?',
-        prompt: 'You are a technical support AI specialist. Identify caller account, troubleshoot common errors, and transfer to a human specialist if unresolved.'
-      }
-    ];
-
-    const presetChips = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' }, presets.map(p => {
-      return el('button', {
-        type: 'button',
-        class: 'admin-tab-btn',
-        style: 'font-size:0.78rem;padding:5px 14px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:rgba(13,93,65,0.03);color:#0d5d41;font-weight:700;',
-        onclick: () => {
-          greetI.value = p.greeting;
-          personaI.value = p.prompt;
-          if (!isEdit && !nameI.value.trim()) nameI.value = p.title;
-          toast(`Applied "${p.title}" template!`, 'ok');
-        }
-      }, p.title);
-    }));
-
-    agentSel.onchange = () => {
-      const ag = agents.find(a => a.id === agentSel.value);
-      if (ag) {
-        if (ag.greeting && !greetI.value.trim()) greetI.value = ag.greeting;
-        if (ag.persona && !personaI.value.trim()) personaI.value = ag.persona;
-      }
-    };
-
-    // ------------------------------------------------------------------------
-    // SECTION 1: FLOW IDENTITY & CARRIER LINE
-    // ------------------------------------------------------------------------
-    const sec1 = el('div', { style: 'margin-bottom:32px;' }, [
-      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
-        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '1.'),
-        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Flow Identity & Assigned Telephony Line'),
-        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Name, linked AI agent, and Dograh pipeline ID')
-      ]),
-      el('div', { style: 'display:grid;grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr);gap:20px;margin-bottom:18px;' }, [
-        el('div', { class: 'field' }, [
-          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'VOICE FLOW NAME *'),
-          nameI,
-          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Internal name shown on call logs and routing records.')
-        ]),
-        el('div', { class: 'field' }, [
-          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'ATTACHED VOICE AGENT'),
-          agentSel,
-          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Inherits voice timbre, TTS acoustic tone, and name.')
-        ]),
-        el('div', { class: 'field' }, [
-          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'DOGRAH PIPELINE ID'),
-          wfIdI,
-          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Upstream workflow orchestration pipeline.')
-        ])
-      ])
-    ]);
-    form.appendChild(sec1);
-
-    // Section Divider
-    form.appendChild(el('div', { style: 'height:1px;background:rgba(13,93,65,0.10);margin:32px 0;' }));
-
-    // ------------------------------------------------------------------------
-    // SECTION 2: GREETING & BEHAVIORAL PERSONA
-    // ------------------------------------------------------------------------
-    const sec2 = el('div', { style: 'margin-bottom:32px;' }, [
-      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
-        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '2.'),
-        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Spoken Greeting & Behavioral Persona'),
-        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Opener, conversational directives & quick templates')
-      ]),
-      el('div', { class: 'field', style: 'margin-bottom:20px;' }, [
-        el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'FIRST SPOKEN GREETING (CALL OPENER) *'),
-        greetI,
-        el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Spoken immediately upon live connection. Supports natural Hindi, Hinglish, and English.')
-      ]),
-      el('div', { class: 'field' }, [
-        el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;' }, [
-          el('label', { style: 'font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;' }, 'BEHAVIORAL DIRECTIVES (SYSTEM PROMPT) *'),
-          presetChips
-        ]),
-        personaI,
-        el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Detailed instructions for how the AI handles inquiries, qualifies leads, and resolves caller objections.')
-      ])
-    ]);
-    form.appendChild(sec2);
-
-    // Section Divider
-    form.appendChild(el('div', { style: 'height:1px;background:rgba(13,93,65,0.10);margin:32px 0;' }));
-
-    // ------------------------------------------------------------------------
-    // SECTION 3: DIALOG EXECUTION STAGES (ZERO CARDS, CLEAN NATIVE STEPPER)
-    // ------------------------------------------------------------------------
-    const initialNodes = (flow.nodes && flow.nodes.length) ? flow.nodes : [
-      { id: '1', type: 'greeting', title: 'Start & Greeting', prompt: 'Greet caller warmly and introduce company.' },
-      { id: '2', type: 'triage', title: 'Query & Qualification', prompt: 'Inquire caller needs, qualify urgency, and answer common questions.' },
-      { id: '3', type: 'booking', title: 'Action / Booking', prompt: 'Capture caller name, phone number, and preferred appointment time.' },
-      { id: '4', type: 'escalation', title: 'Human Transfer', prompt: 'Transfer to specialist or confirm automated WhatsApp callback.' }
-    ];
-
-    const stagesHost = el('div', { style: 'display:flex;flex-direction:column;gap:18px;margin-bottom:24px;' });
-
-    initialNodes.forEach((node, idx) => {
-      const stepRow = el('div', {
-        style: 'display:grid;grid-template-columns:36px minmax(200px, 1fr) minmax(320px, 2fr);align-items:center;gap:16px;padding:8px 0;border-bottom:1px solid rgba(13,93,65,0.08);'
-      }, [
-        // Number badge
-        el('div', {
-          style: 'width:32px;height:32px;border-radius:50%;background:#0d5d41;color:#fff;font-size:0.82rem;font-weight:800;display:flex;align-items:center;justify-content:center;'
-        }, String(idx + 1)),
-
-        // Stage Title Input (Cardless, transparent canvas)
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.70rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, `STAGE ${idx + 1} INTENT`),
-          el('input', {
-            class: 'input node-title-input',
-            value: node.title || `Stage ${idx + 1}`,
-            placeholder: 'Stage Title',
-            style: 'width:100%;font-weight:750;font-size:0.86rem;padding:9px 12px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
-          })
-        ]),
-
-        // Stage Prompt Input (Cardless, transparent canvas)
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.70rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:4px;' }, `TURN INSTRUCTIONS`),
-          el('input', {
-            class: 'input node-prompt-input',
-            value: node.prompt || '',
-            placeholder: 'Instructions for what the AI asks or resolves in this turn...',
-            style: 'width:100%;font-size:0.86rem;padding:9px 12px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;box-sizing:border-box;'
-          })
-        ])
-      ]);
-      stagesHost.appendChild(stepRow);
-    });
-
-    const sec3 = el('div', { style: 'margin-bottom:32px;' }, [
-      el('div', { style: 'display:flex;align-items:baseline;gap:8px;margin-bottom:16px;' }, [
-        el('span', { style: 'font-weight:850;font-size:1.05rem;color:#0d5d41;' }, '3.'),
-        el('span', { style: 'font-weight:800;font-size:1.05rem;color:#14221c;letter-spacing:-0.01em;' }, 'Dialog Execution Stages & Telephony Routing'),
-        el('span', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;margin-left:6px;' }, '— Sequential turn logic, carrier lines, and escalation fallback')
-      ]),
-      stagesHost,
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;margin-bottom:24px;' }, [
-        el('div', { class: 'field' }, [
-          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'HUMAN ESCALATION FALLBACK NUMBER *'),
-          fallbackI,
-          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Live transfers to this number if caller requests human or if AI is stuck.')
-        ]),
-        el('div', { class: 'field' }, [
-          el('label', { style: 'display:block;font-weight:750;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:#5d7468;' }, 'ACTIVE CARRIER LINE (DID)'),
-          (() => {
-            const didI = el('input', {
-              class: 'input',
-              type: 'text',
-              value: flow.assignedPhone || '+91 80715 82519',
-              readonly: true,
-              style: 'width:100%;font-size:0.90rem;padding:10px 14px;border:1.5px solid rgba(13,93,65,0.14);border-radius:8px;background:rgba(13,93,65,0.02);font-family:var(--mono);color:#5d7468;box-sizing:border-box;'
-            });
-            return didI;
-          })(),
-          el('small', { class: 'muted', style: 'display:block;margin-top:4px;font-size:0.76rem;color:#5d7468;' }, 'Managed in VoBiz virtual phone lines tab.')
-        ])
-      ]),
-      // Active Voice Flow Checkbox Row (Native, NO CARD)
-      el('div', {
-        style: 'display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px dashed rgba(13,93,65,0.15);margin-top:14px;'
-      }, [
-        activeChk,
-        el('label', { for: 'flow_active_chk', style: 'font-size:0.88rem;font-weight:750;color:#14221c;cursor:pointer;' },
-          'Set as active voice flow (Immediately routes live incoming & outbound calls through this logic)'
-        )
-      ])
-    ]);
-    form.appendChild(sec3);
-
-    // Bottom Action Bar
-    const bottomBar = el('div', {
-      style: 'display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-top:24px;border-top:1.5px solid rgba(13,93,65,0.12);'
-    }, [
-      el('button', {
-        type: 'button',
-        class: 'btn btn-ghost',
-        style: 'border-radius:999px;padding:8px 20px;border:1px solid rgba(13,93,65,0.2);color:#5d7468;font-weight:650;',
-        onclick: onBack
-      }, 'Cancel'),
-      el('button', {
-        type: 'button',
-        class: 'btn btn-primary',
-        style: 'border-radius:999px;padding:9px 26px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;cursor:pointer;',
-        onclick: async () => {
-          submitBtnTop.click();
-        }
-      }, isEdit ? 'Save Changes' : 'Deploy Voice Flow')
-    ]);
-    page.appendChild(form);
-    page.appendChild(bottomBar);
-
-    // Submit handler
-    submitBtnTop.onclick = async () => {
-      const name = nameI.value.trim();
-      if (!name) { toast('Please enter a voice flow name', 'err'); nameI.focus(); return; }
-
-      const greeting = greetI.value.trim();
-      if (!greeting) { toast('Please provide the first spoken greeting', 'err'); greetI.focus(); return; }
-
-      const prompt = personaI.value.trim();
-      if (!prompt) { toast('Please provide the voice agent instructions', 'err'); personaI.focus(); return; }
-
-      const agentId = agentSel.value;
-      const workflowId = wfIdI.value.trim() || '13027';
-      const fallbackPhone = fallbackI.value.trim() || '+91 89822 00895';
-      const isActive = activeChk.checked;
-
-      // Collect stages
-      const nodeRows = stagesHost.querySelectorAll('div[style*="grid-template-columns"]');
-      const nodes = [];
-      nodeRows.forEach((r, i) => {
-        const tInp = r.querySelector('.node-title-input');
-        const pInp = r.querySelector('.node-prompt-input');
-        if (tInp && pInp) {
-          nodes.push({
-            id: String(i + 1),
-            type: i === 0 ? 'greeting' : (i === nodeRows.length - 1 ? 'escalation' : 'triage'),
-            title: tInp.value.trim() || `Stage ${i + 1}`,
-            prompt: pInp.value.trim() || ''
-          });
-        }
-      });
-
-      submitBtnTop.disabled = true;
-      submitBtnTop.textContent = 'Deploying...';
-
-      const payload = {
-        name,
-        greeting,
-        prompt,
-        agentId,
-        workflowId,
-        fallbackPhone,
-        nodes,
-        activate: isActive,
-        isActive
-      };
-
-      try {
-        if (isEdit) {
-          payload.id = flow.id;
-          await api('/api/dograh/flows/update', { method: 'POST', body: payload });
-          toast('Voice flow updated and deployed successfully.', 'ok');
-        } else {
-          await api('/api/dograh/flows', { method: 'POST', body: payload });
-          toast('New voice flow created and deployed.', 'ok');
-        }
-        if (typeof onSaved === 'function') onSaved();
-      } catch (err) {
-        toast(err.message, 'err');
-      } finally {
-        submitBtnTop.disabled = false;
-        submitBtnTop.textContent = isEdit ? 'Save Changes' : 'Deploy Voice Flow';
-      }
-    };
-
-    return page;
-  }
-
-  // ==========================================================================
-  // ADMIN ASSIGN MODAL (ADMIN ONLY)
-  // ==========================================================================
-  function openAdminAssignModal(tenants) {
-    const body = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' });
-
-    body.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Select Client Workspace *'),
-      (() => {
-        const sel = el('select', {
-          class: 'select aria-select',
-          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;background:#fff;'
-        }, [
-          ...tenants.map(t => el('option', { value: t.id }, `${t.name} (${t.id})`))
-        ]);
-        sel.id = 'dfl-assign-tenant';
-        return sel;
-      })()
-    ]));
-
-    body.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Dograh Workflow ID (Numeric) *'),
-      (() => {
-        const inp = el('input', {
-          class: 'input',
-          placeholder: '13027',
-          value: '13027',
-          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;font-family:var(--mono);'
-        });
-        inp.id = 'dfl-assign-wfid';
-        return inp;
-      })()
-    ]));
-
-    body.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'Assigned Flow Label *'),
-      (() => {
-        const inp = el('input', {
-          class: 'input',
-          placeholder: 'e.g. Dedicated Enterprise Hindi Flow',
-          value: '',
-          style: 'padding:10px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;width:100%;'
-        });
-        inp.id = 'dfl-assign-name';
-        return inp;
-      })()
-    ]));
-
-    const activateChk = el('input', { type: 'checkbox', checked: true, style: 'width:18px;height:18px;accent-color:#0d5d41;' });
-    activateChk.id = 'dfl-assign-active';
-    body.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-      activateChk,
-      el('label', { for: 'dfl-assign-active', style: 'font-size:0.84rem;font-weight:750;color:#14221c;' }, 'Immediately activate this workflow for the client')
-    ]));
-
-    modal({
-      title: 'Assign Existing Dograh Flow to Client',
-      body,
-      confirmText: 'Assign Flow',
-      confirmKind: 'primary',
-      onConfirm: async () => {
-        const tenantId = ($('#dfl-assign-tenant') && $('#dfl-assign-tenant').value) || '';
-        const workflowId = ($('#dfl-assign-wfid') && $('#dfl-assign-wfid').value.trim()) || '';
-        const name = ($('#dfl-assign-name') && $('#dfl-assign-name').value.trim()) || `Flow #${workflowId}`;
-        const activate = !!($('#dfl-assign-active') && $('#dfl-assign-active').checked);
-
-        if (!tenantId) throw new Error('Please select a workspace');
-        if (!workflowId) throw new Error('Please enter a Dograh workflow ID');
-
-        await api('/api/dograh/flows/assign', {
-          method: 'POST',
-          body: { tenantId, workflowId, name, activate }
-        });
-        toast(`Workflow #${workflowId} assigned to workspace.`, 'ok');
-      }
-    });
-  }
-
-  // Confirm Delete Flow
-  function confirmDeleteFlow(flow, onDone) {
-    modal({
-      title: 'Delete Voice Flow',
-      body: el('div', { style: 'font-size:0.90rem;color:#14221c;line-height:1.5;' }, [
-        el('p', {}, `Are you sure you want to remove the flow "${flow.name}" (#${flow.workflowId})?`),
-        el('p', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;' }, 'This will unlink the flow from this workspace. If active, another flow will be set as active.')
-      ]),
-      confirmText: 'Delete Flow',
-      confirmKind: 'danger',
-      onConfirm: async () => {
-        await api('/api/dograh/flows/delete', { method: 'POST', body: { id: flow.id } });
-        toast(`Flow "${flow.name}" deleted.`, 'ok');
-        if (typeof onDone === 'function') onDone();
-      }
-    });
-  }
-
-  // ==========================================================================
-  // ==========================================================================
-  // ==========================================================================
-  // ==========================================================================
-  // TAB 4: INBOUND AUTO-CALL & INTEGRATIONS + CONNECTED APPS HUB
-  // ==========================================================================
 
   function renderWhatsAppQrRow(row, waCfg, onRefresh) {
     waCfg = waCfg || {};

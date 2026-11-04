@@ -773,7 +773,10 @@ function seedAllTenants(d) {
   if (!d || !Array.isArray(d.tenants)) return;
   if (process.env.RAPIDX_DB_FILE) return;
 
-  // Extra portfolio workspaces
+  const deletedIds = new Set(d.deletedTenantIds || []);
+  const deletedSlugs = new Set(d.deletedTenantSlugs || []);
+
+  // Extra portfolio workspaces - ONLY seed if workspace list is empty and they were never deleted
   const extraTenants = [
     { id: 't_apex_diag_demo', name: 'Apex Health & Diagnostics', slug: 'apex-health', plan: 'growth' },
     { id: 't_nexus_realty_demo', name: 'Nexus Prime Real Estate', slug: 'nexus-realty', plan: 'agency' },
@@ -781,29 +784,37 @@ function seedAllTenants(d) {
     { id: 't_horizon_law_demo', name: 'Horizon Advisory & Corporate Law', slug: 'horizon-law', plan: 'studio' }
   ];
 
-  extraTenants.forEach((et) => {
-    let ex = d.tenants.find((t) => t.id === et.id);
-    if (!ex) {
-      d.tenants.push({
-        id: et.id,
-        name: et.name,
-        slug: et.slug,
-        plan: et.plan,
-        status: 'active',
-        privacyMode: 'standard',
-        createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-        providers: { stt: 'deepgram', tts: 'rumik', llm: 'groq', telephony: 'vobiz' }
-      });
-    }
-  });
+  if (d.tenants.length <= 1) {
+    extraTenants.forEach((et) => {
+      if (deletedIds.has(et.id) || deletedSlugs.has(et.slug)) return;
+      let ex = d.tenants.find((t) => t.id === et.id);
+      if (!ex) {
+        d.tenants.push({
+          id: et.id,
+          name: et.name,
+          slug: et.slug,
+          plan: et.plan,
+          status: 'active',
+          privacyMode: 'standard',
+          createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+          providers: { stt: 'deepgram', tts: 'rumik', llm: 'groq', telephony: 'vobiz' }
+        });
+      }
+    });
+  }
 
   // Purge any stale invoices from platform admin host
   d.invoices = (d.invoices || []).filter((inv) => inv.tenantId !== 't_61cb4c3f0a845e2a' && inv.tenantId !== 't_admin');
 
+  // Filter out any deleted tenants if they somehow lingered
+  if (deletedIds.size > 0 || deletedSlugs.size > 0) {
+    d.tenants = d.tenants.filter(t => !deletedIds.has(t.id) && !deletedSlugs.has(t.slug));
+  }
+
   d.tenants.forEach((t) => {
     if (t.id.startsWith('t_test_rzp_')) return;
+    if (deletedIds.has(t.id) || deletedSlugs.has(t.slug)) return;
     if (!t.plan || t.plan === 'starter' || t.plan === 'client_starter') t.plan = 'growth';
-    t.status = 'active';
     seedTenantDataIfEmpty(d, t.id, t.name);
   });
 }

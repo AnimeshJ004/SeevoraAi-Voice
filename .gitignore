@@ -24,3 +24,6 @@ scratch/
 dashboard/scratch/
 
 
+
+.deleted_tenants.json
+dashboard/data/.deleted_tenants.json

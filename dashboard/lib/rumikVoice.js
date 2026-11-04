@@ -349,7 +349,8 @@ const DOGRAH_VOICE_MAP = {
  * and configures multilingual STT with Hindi+English hints for flawless speech comprehension.
  */
 async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry', options = {}) {
-  const dograhKey = options.dograhKey || options.apiKey || options.dograhApiKey || process.env.DOGRAH_API_KEY || '';
+  const rawKey = options.dograhKey || options.apiKey || options.dograhApiKey;
+  const dograhKey = (rawKey && !rawKey.startsWith('dk_')) ? rawKey : (process.env.DOGRAH_API_KEY || '');
   if (!dograhKey) return { ok: false, error: 'missing_dograh_key' };
 
   const vKey = String(voiceId || 'ira').toLowerCase().trim();

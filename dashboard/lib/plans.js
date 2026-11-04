@@ -435,7 +435,8 @@ function assertFeatureAllowed(tenant, featureKey, user) {
   }
 
   // Core features enabled by default across all tiers unless admin turned them off
-  const defaultCoreFeatures = ['inbound', 'campaigns', 'recordings', 'crmPipeline', 'agents', 'talk', 'assistant', 'teams', 'liveMonitor', 'didNumbers', 'voiceReceptionist', 'whatsappCrm', 'autoRepliesReminders', 'workflows', 'whatsappHub'];
+  // Core features enabled by default for all new client workspaces (Dashboard, Inbound, Outbound, Recordings, Teams, Support, Settings)
+  const defaultCoreFeatures = ['inbound', 'campaigns', 'recordings', 'teams'];
   if (defaultCoreFeatures.includes(featureKey)) {
     return { allowed: true };
   }
@@ -597,18 +598,18 @@ function getTenantUsageAndLimits(db, tenantId) {
       inbound: true,
       campaigns: true,
       recordings: true,
-      crmPipeline: true,
-      agents: true,
-      talk: true,
-      assistant: true,
       teams: true,
-      liveMonitor: true,
-      didNumbers: true,
-      whatsappMessaging: true,
-      workflows: true,
-      whatsappHub: true,
+      crmPipeline: false,
+      agents: false,
+      talk: false,
+      assistant: false,
+      workflows: false,
+      whatsappHub: false,
+      whatsappMessaging: false,
+      liveMonitor: false,
+      didNumbers: false,
       webhooksApi: false
-    }, plan.features || {}, tenant.features || {}),
+    }, tenant.features || {}),
     usage: {
       activeWorkflows,
       contacts,

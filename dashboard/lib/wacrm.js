@@ -306,6 +306,57 @@ function parseMoneyValue(val) {
   return Math.round(num);
 }
 
+function parseAppointmentTime(text) {
+  const str = String(text || '').toLowerCase();
+  const now = new Date();
+  let daysToAdd = 1;
+  let targetHour = 11;
+  let targetMinute = 0;
+
+  if (/parson|day after tomorrow/i.test(str)) {
+    daysToAdd = 2;
+  } else if (/aaj|today/i.test(str)) {
+    daysToAdd = 0;
+  } else if (/kal|tomorrow/i.test(str)) {
+    daysToAdd = 1;
+  }
+
+  const confirmedMatches = [
+    ...str.matchAll(/(?:confirm|appointment|booking|kal|tomorrow|scheduled|book)[^.\n!]*?(\d{1,2})(?::(\d{2}))?\s*(am|pm|baje)?/gi)
+  ];
+
+  let selectedMatch = null;
+  if (confirmedMatches.length > 0) {
+    selectedMatch = confirmedMatches[confirmedMatches.length - 1];
+  } else {
+    selectedMatch = str.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|baje)/i) ||
+                    str.match(/(\d{1,2})\s*baje/i) ||
+                    str.match(/(?:subah|shaam|dopahar|morning|evening|afternoon)\s*(\d{1,2})\s*baje/i) ||
+                    str.match(/at\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  }
+
+  if (selectedMatch) {
+    let h = parseInt(selectedMatch[1], 10);
+    let m = selectedMatch[2] ? parseInt(selectedMatch[2], 10) : 0;
+    const matchContext = selectedMatch[0] || '';
+    const isPm = /pm|shaam|raat|evening/i.test(matchContext) || (/pm|shaam|raat|evening/i.test(str) && !/subah|morning|am/i.test(matchContext));
+    if (isPm && h < 12) h += 12;
+    if (h >= 1 && h <= 23) targetHour = h;
+    if (m >= 0 && m <= 59) targetMinute = m;
+  }
+
+  const istOffsetMs = 5.5 * 3600 * 1000;
+  const currentIst = new Date(now.getTime() + istOffsetMs);
+  const targetIstYear = currentIst.getUTCFullYear();
+  const targetIstMonth = currentIst.getUTCMonth();
+  const targetIstDate = currentIst.getUTCDate() + daysToAdd;
+
+  const apptUtcMs = Date.UTC(targetIstYear, targetIstMonth, targetIstDate, targetHour, targetMinute, 0) - istOffsetMs;
+  const startTime = new Date(apptUtcMs).toISOString();
+  const endTime = new Date(apptUtcMs + 30 * 60000).toISOString();
+  return { startTime, endTime, targetHour, targetMinute, daysToAdd };
+}
+
 function extractMoneyFromText(text) {
   if (!text) return 0;
   // 1. Match explicit currency symbol: ₹ / Rs / INR / $
@@ -356,14 +407,26 @@ function extractLeadDataFromCall(callDetails = {}) {
   const transcript = String(callDetails.transcript || '').trim();
   const summary = String(callDetails.summary || callDetails.call_summary || '').trim();
 
-  // 1. Phone number
-  const phone = callDetails.callerNumber ||
-    callDetails.phoneNumber ||
-    callDetails.customerPhone ||
-    callDetails.to ||
-    callDetails.from ||
-    gathered.phone ||
-    gathered.phoneNumber || '';
+  // 1. Phone number (guarantee customer phone is returned, never the platform VoBiz line)
+  const isPurchased = (p) => {
+    const raw = String(p || '').replace(/\D/g, '');
+    const vobiz = String(process.env.VOBIZ_NUMBER || '+918071582519').replace(/\D/g, '');
+    return raw && (raw.endsWith(vobiz.slice(-10)) || raw.endsWith('8071582519'));
+  };
+
+  let phone = '';
+  const dir = String(callDetails.direction || '').toLowerCase();
+  if (dir === 'outbound') {
+    phone = [callDetails.calledNumber, callDetails.phoneNumber, callDetails.customerPhone, callDetails.to, gathered.phone, gathered.phoneNumber]
+      .find(p => p && !isPurchased(p)) || '';
+  } else if (dir === 'inbound') {
+    phone = [callDetails.callerNumber, callDetails.phoneNumber, callDetails.customerPhone, callDetails.from, gathered.phone, gathered.phoneNumber]
+      .find(p => p && !isPurchased(p)) || '';
+  }
+  if (!phone) {
+    phone = [callDetails.customerPhone, callDetails.phoneNumber, gathered.phone, gathered.phoneNumber, callDetails.calledNumber, callDetails.callerNumber]
+      .find(p => p && !isPurchased(p)) || callDetails.phoneNumber || callDetails.callerNumber || '';
+  }
 
   // 2. Caller Name
   let name = gathered.name || gathered.caller_name || gathered.customer_name || gathered.lead_name || gathered.user_name || gathered.contact_name || callDetails.callerName || callDetails.customerName || '';
@@ -504,10 +567,16 @@ function extractLeadDataFromCall(callDetails = {}) {
     'solve kar diya', 'fix kar diya', 'wapas kar diya', 'sorry bol diya', 'samajh gaya'
   ];
 
-  const complaintSource = (transcript + ' ' + summary).toLowerCase();
-  const isComplaint = gathered.is_complaint === true ||
+  // Avoid treating technical disconnect phrases or words like 'plate' (contains 'late') as complaints
+  const cleanSummary = summary.replace(/Brief call · Caller disconnected after greeting/gi, '').toLowerCase();
+  const complaintSource = (transcript + ' ' + cleanSummary).toLowerCase();
+  const isComplaint = (gathered.is_complaint === true ||
     gathered.complaint_detected === true ||
-    complaintKeywords.some(k => complaintSource.includes(k));
+    complaintKeywords.some(k => {
+      const safeKey = k.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const reg = new RegExp('\\b' + safeKey + '\\b', 'i');
+      return reg.test(complaintSource);
+    })) && !Boolean(appointment);
 
   let complaintDescription = gathered.complaint_description || gathered.issue_description || gathered.complaint || '';
   let complaintStatus = gathered.complaint_status || gathered.issue_status || '';
@@ -517,8 +586,8 @@ function extractLeadDataFromCall(callDetails = {}) {
     complaintDescription = summary.slice(0, 500);
   }
   if (isComplaint && !complaintDescription && transcript) {
-    const callerLines = transcript.match(/(?:Caller|User):\\s*([^\\r\\n]+)/gi) || [];
-    complaintDescription = callerLines.slice(0, 3).map(l => l.replace(/^(?:Caller|User):\\s*/i, '')).join(' ').slice(0, 500);
+    const callerLines = transcript.match(/(?:Caller|User):\s*([^\r\n]+)/gi) || [];
+    complaintDescription = callerLines.slice(0, 3).map(l => l.replace(/^(?:Caller|User):\s*/i, '')).join(' ').slice(0, 500);
   }
 
   if (!complaintStatus) {
@@ -821,23 +890,40 @@ async function processVoiceCallCompletion(db, tenantId, callDetails) {
   // 3. Automatically sync appointment into bookings collection if detected
   if (extracted.appointment) {
     if (!Array.isArray(db.bookings)) db.bookings = [];
-    const existing = db.bookings.find((b) => b.tenantId === tenantId && b.callerPhone === phone && b.status === 'confirmed');
-    if (!existing) {
-      const startTime = new Date(Date.now() + 24 * 3600000).toISOString();
-      const endTime = new Date(Date.now() + 24 * 3600000 + 30 * 60000).toISOString();
+    const apptTime = extracted.appointmentTime || parseAppointmentTime(callDetails.transcript + ' ' + summary);
+    const startTime = apptTime.startTime;
+    const endTime = apptTime.endTime;
+
+    const callerName = extracted.name || callDetails.callerName || contact.name || 'Voice Lead';
+    const agentName = callDetails.agentName || 'Agent Maya';
+    const notes = `Booked via Voice AI (${agentName}): ${extracted.appointment}. Scheduled for ${new Date(startTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST. Details: ${summary}`;
+
+    const existingIdx = db.bookings.findIndex((b) => b.tenantId === tenantId && (b.callerPhone === phone || (b.contactId && b.contactId === contact.id)));
+    if (existingIdx >= 0) {
+      db.bookings[existingIdx] = {
+        ...db.bookings[existingIdx],
+        callerName,
+        agentId: callDetails.agentId || db.bookings[existingIdx].agentId || 'ag_primary',
+        startTime,
+        endTime,
+        notes,
+        status: 'confirmed',
+        updatedAt: now
+      };
+    } else {
       db.bookings.unshift({
         id: 'bk_' + crypto.randomBytes(8).toString('hex'),
         tenantId,
-        contactId: contact.id,
         agentId: callDetails.agentId || 'ag_primary',
-        scheduleId: 'bsched_voice_auto',
+        serviceId: 'srv_consultation',
+        contactId: contact.id,
         startTime,
         endTime,
         durationMin: 30,
-        callerName: contact.name || 'Voice Lead',
+        callerName,
         callerPhone: phone,
         callerEmail: contact.email || '',
-        notes: `Booked via Voice AI: ${extracted.appointment}. Call summary: ${summary}`,
+        notes,
         source: 'voice_ai',
         status: 'confirmed',
         confirmationCode: 'VC-' + Math.floor(1000 + Math.random() * 9000),

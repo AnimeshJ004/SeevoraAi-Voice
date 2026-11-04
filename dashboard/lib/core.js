@@ -644,6 +644,10 @@ async function getSession(req) {
             });
           }
         } else if (!tenant) {
+          const isDeleted = (d.deletedTenantIds || []).includes(user.tenantId);
+          if (isDeleted) {
+            return { user, tenant: null };
+          }
           const tenantId = user.tenantId || genId('t_');
           tenant = {
             id: tenantId,

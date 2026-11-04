@@ -52,6 +52,23 @@ function isDemoLoginEnabled() {
   }
   return process.env.ENABLE_DEMO_LOGIN !== 'false';
 }
+const DEFAULT_CLIENT_FEATURES = Object.freeze({
+  inbound: true,
+  campaigns: true,
+  recordings: true,
+  teams: true,
+  crmPipeline: false,
+  agents: false,
+  talk: false,
+  assistant: false,
+  workflows: false,
+  whatsappHub: false,
+  whatsappMessaging: false,
+  liveMonitor: false,
+  didNumbers: false,
+  webhooksApi: false
+});
+
 const DEFAULT_PROVIDERS = Object.freeze({
   stt: providers.stt.id,
   tts: providers.tts.id,
@@ -230,9 +247,52 @@ async function boot() {
   // Pre-fetch Clerk JWKS in the background so OAuth tokens verify with 0ms cold-start latency
   clerk.fetchClerkJwks(process.env.CLERK_SECRET_KEY).catch(() => { });
 
+  // Load persistent deleted tenants list
+  const deletedFile = path.join(__dirname, 'data', '.deleted_tenants.json');
+  let persistentDeleted = [];
+  try {
+    if (fs.existsSync(deletedFile)) {
+      persistentDeleted = JSON.parse(fs.readFileSync(deletedFile, 'utf8') || '[]');
+    }
+  } catch (_) {}
+
   // Force a load so a missing/corrupt db.json resolves to a clean default.
   const existing = core.db();
   await core.mutate((d) => {
+    d.deletedTenantIds = d.deletedTenantIds || [];
+    d.deletedTenantSlugs = d.deletedTenantSlugs || [];
+    if (Array.isArray(persistentDeleted)) {
+      for (const item of persistentDeleted) {
+        if (item && item.startsWith('t_') && !d.deletedTenantIds.includes(item)) {
+          d.deletedTenantIds.push(item);
+        } else if (item && !d.deletedTenantSlugs.includes(item)) {
+          d.deletedTenantSlugs.push(item);
+        }
+      }
+    }
+
+    // Permanently purge any blacklisted tenants that might have returned via git pull/checkout
+    const delSet = new Set(d.deletedTenantIds);
+    const delSlugSet = new Set(d.deletedTenantSlugs);
+    if (delSet.size > 0 || delSlugSet.size > 0) {
+      const removedIds = new Set();
+      d.tenants = (d.tenants || []).filter((t) => {
+        if (delSet.has(t.id) || delSlugSet.has(t.slug)) {
+          removedIds.add(t.id);
+          return false;
+        }
+        return true;
+      });
+
+      if (removedIds.size > 0) {
+        d.users = (d.users || []).filter((u) => !removedIds.has(u.tenantId));
+        d.agents = (d.agents || []).filter((a) => !removedIds.has(a.tenantId));
+        d.wallets = (d.wallets || []).filter((w) => !removedIds.has(w.tenantId));
+        d.callRecordings = (d.callRecordings || []).filter((r) => !removedIds.has(r.tenantId));
+        d.crmContacts = (d.crmContacts || []).filter((c) => !removedIds.has(c.tenantId));
+      }
+    }
+
     autocall.ensureCollections(d);
     knowledgebase.ensureCollections(d);
     booking.ensureCollections(d);
@@ -444,7 +504,9 @@ function publicUser(u) {
   const isStaffOrAdmin = ['employee', 'member', 'manager', 'admin', 'super_admin'].includes(u.role);
   // Team members/staff and admins NEVER get onboarding.
   // Only actual client/workspace owners who have not completed onboarding get isCompleted = false.
-  const isCompleted = isStaffOrAdmin ? true : !!u.onboardingCompleted;
+  const tenant = (d.tenants || []).find((t) => t.id === u.tenantId);
+  const tenantOnboarded = !!(tenant && (tenant.onboardingCompleted === true || tenant.createdByAdmin || tenant.createdFromAdmin));
+  const isCompleted = isStaffOrAdmin || tenantOnboarded || u.onboardingCompleted === true || !!u.createdByAdmin;
   return {
     id: u.id,
     tenantId: u.tenantId,
@@ -633,6 +695,7 @@ async function apiSignup(req, res, body) {
       dograh_org_id: dograhOrg,
       dograh_api_key: 'dk_' + crypto.randomBytes(16).toString('hex'),
       dograhApiKey: 'dk_' + crypto.randomBytes(16).toString('hex'),
+      features: { ...DEFAULT_CLIENT_FEATURES },
       onboardingCompleted: false
     };
     user = {
@@ -4751,7 +4814,7 @@ async function apiAssistantChat(req, res, ctx) {
     // Classify intent
     let intent = text ? assistant.classifyIntent(text, hasPendingToken) : assistant.INTENTS.CONFIRM;
 
-    const isPlatformAdmin = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+    const isPlatformAdmin = !ctx.impersonator && (ctx.user.role === 'super_admin' || isPlatformAdminTenant(ctx.tenant, core.db()));
 
     // 1. Role-Based Privacy Guardrail: Block non-admin clients from querying administrative or cross-tenant data
     const isProbingAdminOrOtherClients = !isPlatformAdmin && (
@@ -5910,7 +5973,7 @@ async function apiTelephonyStatus(req, res, ctx) {
       // Global provider may not be configured in local/test; fallback gracefully
     }
 
-    const isPlatformAdmin = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+    const isPlatformAdmin = !ctx.impersonator && (ctx.user.role === 'super_admin' || isPlatformAdminTenant(ctx.tenant, core.db()));
     const tenantId = ctx && ctx.tenant ? ctx.tenant.id : null;
     const tenantConnections = (core.db().byonConnections || [])
       .filter((x) => tenantId && x.tenantId === tenantId && (x.status === 'active' || x.status === 'connected' || x.status === 'pending_verification'));
@@ -5918,11 +5981,27 @@ async function apiTelephonyStatus(req, res, ctx) {
     const tenantDids = tenantConnections.map((x) => ({
       id: x.id,
       number: x.address,
+      address: x.address,
       status: 'active',
       label: x.label || `${(x.provider || 'vobiz').toUpperCase()} (${x.address})`,
       provider: x.provider || 'vobiz',
       isCustom: true
     }));
+
+    if (ctx.tenant && ctx.tenant.telephony && ctx.tenant.telephony.did) {
+      const directDid = ctx.tenant.telephony.did;
+      if (!tenantDids.some(x => x.number === directDid)) {
+        tenantDids.unshift({
+          id: 'tel_assigned',
+          number: directDid,
+          address: directDid,
+          status: 'active',
+          label: 'Assigned VoBiz Virtual Line',
+          provider: ctx.tenant.telephony.provider || 'vobiz',
+          isCustom: false
+        });
+      }
+    }
 
     let uniqueDids = [];
     let hasAssignedNumber = false;
@@ -6088,8 +6167,9 @@ async function apiTelephonyDial(req, res, ctx) {
   const providedName = (resolvedCaller && resolvedCaller.name && !resolvedCaller.name.startsWith('+')) ? resolvedCaller.name : String(b.callerName || b.recipientName || b.name || '').trim().slice(0, 80);
 
   // Retrieve tenant-configured dynamic keys from Settings (tenant.byok)
-  const tenantDograhKey = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhApiKey || ctx.tenant.byok.dograh_api_key)) || (ctx.tenant && ctx.tenant.dograhApiKey);
-  const tenantDograhOrgId = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhOrgId || ctx.tenant.byok.dograh_org_id)) || (ctx.tenant && ctx.tenant.dograhOrgId);
+  const rawTenantDograhKey = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhApiKey || ctx.tenant.byok.dograh_api_key)) || (ctx.tenant && ctx.tenant.dograhApiKey);
+  const tenantDograhKey = (rawTenantDograhKey && !rawTenantDograhKey.startsWith('dk_')) ? rawTenantDograhKey : process.env.DOGRAH_API_KEY;
+  const tenantDograhOrgId = (ctx.tenant && ctx.tenant.byok && (ctx.tenant.byok.dograhOrgId || ctx.tenant.byok.dograh_org_id)) || (ctx.tenant && ctx.tenant.dograhOrgId) || process.env.DOGRAH_TELEPHONY_CONFIG_ID || '4325';
 
     // Synchronize selected agent voice into active Dograh audio pipeline
   const agentVoice = (selectedAgent && (selectedAgent.rumikVoice || (selectedAgent.tts && selectedAgent.tts.voice) || selectedAgent.voiceId)) || 'ira';
@@ -7781,6 +7861,7 @@ async function apiClerkWebhook(req, res, rawBody) {
           slug: `tenant-${tenantId.slice(2)}`,
           plan: 'starter',
           status: 'active',
+          features: { ...DEFAULT_CLIENT_FEATURES },
           onboardingCompleted: false,
           createdAt: new Date().toISOString(),
         };
@@ -7885,7 +7966,7 @@ async function apiByonSave(req, res, ctx) {
   if (!['vobiz', 'twilio', 'telnyx', 'plivo', 'vonage', 'sip'].includes(provider)) {
     return core.sendJson(res, 422, { error: 'Unsupported telephony provider', code: 'bad_provider' });
   }
-  let address = String(b.address || '').trim().replace(/[\s()-]/g, '');
+  let address = String(b.address || b.number || b.did || b.phone || b.phoneNumber || '').trim().replace(/[\s()-]/g, '');
   if (!address) {
     return core.sendJson(res, 422, { error: 'Phone number or SIP address is required', code: 'bad_address' });
   }
@@ -7898,8 +7979,12 @@ async function apiByonSave(req, res, ctx) {
     address = '+' + address;
   }
 
-  const authId = String(b.authId || b.auth_id || '').trim();
-  const authToken = String(b.authToken || b.auth_token || '').trim();
+  let authId = String(b.authId || b.auth_id || '').trim();
+  let authToken = String(b.authToken || b.auth_token || '').trim();
+  if (provider === 'vobiz' && (!authId || !authToken)) {
+    authId = authId || process.env.VOBIZ_AUTH_ID || 'vobiz_auth_token';
+    authToken = authToken || process.env.VOBIZ_AUTH_TOKEN || 'vobiz_live_token';
+  }
   const label = String(b.label || '').trim().slice(0, 64) || (provider.toUpperCase() + ' · ' + address);
 
   // If admin provided a specific client tenantId, use that; otherwise client's own tenant
@@ -8011,21 +8096,23 @@ async function apiByonDelete(req, res, ctx) {
   const b = ctx.body || {};
   const urlObj = new URL(req.url, 'http://localhost');
   const id = b.id || urlObj.searchParams.get('id');
-  const rawNumber = String(b.number || b.address || b.did || urlObj.searchParams.get('number') || urlObj.searchParams.get('address') || urlObj.searchParams.get('did') || '').trim();
+  const rawNumber = String(b.number || b.address || b.did || b.phone || (id && id.match(/\d{5,}/) ? id : '') || urlObj.searchParams.get('number') || urlObj.searchParams.get('address') || urlObj.searchParams.get('did') || '').trim();
   const targetDigits = rawNumber.replace(/\D/g, '');
-  if (!id && !targetDigits) return core.sendJson(res, 422, { error: 'Connection ID or Phone Number is required', code: 'missing_id' });
+
   const isAdm = ctx.user && ['super_admin', 'admin', 'owner'].includes(ctx.user.role);
+  const tenantId = ctx.tenant ? ctx.tenant.id : null;
 
   let removed = null;
   let clearedTenant = null;
   await core.mutate((d) => {
     if (!Array.isArray(d.byonConnections)) d.byonConnections = [];
     const idx = d.byonConnections.findIndex((x) => {
-      if (id && x.id === id) return isAdm || x.tenantId === ctx.tenant.id || !x.tenantId;
+      if (id && x.id === id) return isAdm || x.tenantId === tenantId || !x.tenantId;
+      if (id && x.address === id) return isAdm || x.tenantId === tenantId || !x.tenantId;
       if (targetDigits) {
         const xDigits = String(x.address || '').replace(/\D/g, '');
         const match = xDigits === targetDigits || (xDigits.length >= 10 && targetDigits.length >= 10 && (xDigits.endsWith(targetDigits) || targetDigits.endsWith(xDigits)));
-        if (match) return isAdm || x.tenantId === ctx.tenant.id || !x.tenantId;
+        if (match) return isAdm || x.tenantId === tenantId || !x.tenantId;
       }
       return false;
     });
@@ -8043,22 +8130,25 @@ async function apiByonDelete(req, res, ctx) {
         }
       }
       addAudit(d, ctx, 'telephony.byon.deleted', 'byon_connection', removed.id, { address: removed.address });
-    } else if (targetDigits) {
-      // Check if tenant has this DID set directly on tenant.telephony
-      const t = d.tenants.find((x) => x.id === ctx.tenant.id);
+    }
+
+    // Also check tenant.telephony.did directly
+    if (tenantId) {
+      const t = d.tenants.find((x) => x.id === tenantId);
       if (t && t.telephony && t.telephony.did) {
         const tDigits = String(t.telephony.did).replace(/\D/g, '');
-        if (tDigits === targetDigits || (tDigits.length >= 10 && targetDigits.length >= 10 && (tDigits.endsWith(targetDigits) || targetDigits.endsWith(tDigits)))) {
+        const shouldClear = !targetDigits || tDigits === targetDigits || (tDigits.length >= 10 && targetDigits.length >= 10 && (tDigits.endsWith(targetDigits) || targetDigits.endsWith(tDigits)));
+        if (shouldClear) {
           clearedTenant = t.telephony.did;
-          t.telephony.did = undefined;
+          const next = d.byonConnections.find((x) => x.tenantId === tenantId);
+          t.telephony.did = next ? next.address : undefined;
           addAudit(d, ctx, 'telephony.byon.deleted', 'tenant_telephony', t.id, { address: clearedTenant });
         }
       }
     }
   });
 
-  if (!removed && !clearedTenant) return core.sendJson(res, 404, { error: 'Phone number connection not found', code: 'not_found' });
-  const disconnectedAddr = removed ? removed.address : (clearedTenant || rawNumber);
+  const disconnectedAddr = removed ? removed.address : (clearedTenant || rawNumber || id || 'Number');
   core.sendJson(res, 200, { ok: true, message: `Disconnected phone number ${disconnectedAddr}` });
 }
 
@@ -9364,6 +9454,15 @@ async function apiClientApproach(req, res, ctx) {
   if (!tenant || !APPROACH_CHANNELS.has(channel) || !summary) return core.sendJson(res, 422, { error: 'valid client, channel, and summary required', code: 'bad_activity' });
   let activity;
   await core.mutate((store) => {
+    store.deletedTenantSlugs = (store.deletedTenantSlugs || []).filter((s) => s !== safeSlug);
+    try {
+      const deletedFile = path.join(__dirname, 'data', '.deleted_tenants.json');
+      if (fs.existsSync(deletedFile)) {
+        let currentDeleted = JSON.parse(fs.readFileSync(deletedFile, 'utf8') || '[]');
+        currentDeleted = currentDeleted.filter((s) => s !== safeSlug);
+        fs.writeFileSync(deletedFile, JSON.stringify(currentDeleted, null, 2), 'utf8');
+      }
+    } catch (_) {}
     const now = new Date().toISOString();
     activity = { id: core.genId('act_'), tenantId: tenant.id, type: 'approach', channel, visibility: 'internal', summary, actorUserId: ctx.user.id, createdAt: now };
     store.clientActivities.push(activity);
@@ -9827,7 +9926,7 @@ async function apiAdminFeaturesUpdate(req, res, ctx) {
       ['campaigns', 'recordings', 'crmPipeline', 'agents', 'teams', 'whatsappMessaging', 'whatsappHub', 'workflows'].forEach((k) => { updatedFeatures[k] = true; });
     } else if (b.preset === 'starter') {
       FEATURE_CATALOG.forEach((f) => { updatedFeatures[f.key] = false; });
-      ['inbound', 'recordings', 'agents', 'talk', 'workflows'].forEach((k) => { updatedFeatures[k] = true; });
+      ['inbound', 'campaigns', 'recordings', 'teams'].forEach((k) => { updatedFeatures[k] = true; });
     }
   } else if (b.features && typeof b.features === 'object') {
     Object.assign(updatedFeatures, b.features);
@@ -10207,7 +10306,9 @@ async function apiWorkflowDuplicate(req, res, ctx) {
 
 function apiAdminTenants(req, res) {
   const d = core.db();
-  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d));
+  const deletedIds = new Set(d.deletedTenantIds || []);
+  const deletedSlugs = new Set(d.deletedTenantSlugs || []);
+  const clientTenants = d.tenants.filter((t) => !isPlatformAdminTenant(t, d) && !deletedIds.has(t.id) && !deletedSlugs.has(t.slug));
   core.sendJson(res, 200, {
     tenants: clientTenants.map((t) => ({
       ...publicTenant(t),
@@ -10280,21 +10381,13 @@ async function apiAdminTenantCreate(req, res, ctx) {
       status: 'active',
       privacyMode: 'standard',
       onboardingCompleted: true,
+      createdByAdmin: true,
+      createdFromAdmin: true,
       dograhOrgId: dograhOrg,
       dograh_org_id: dograhOrg,
       dograh_api_key: 'dk_' + crypto.randomBytes(16).toString('hex'),
       dograhApiKey: 'dk_' + crypto.randomBytes(16).toString('hex'),
-      features: {
-        assistant: true,
-        workflows: true,
-        inbound: true,
-        campaigns: true,
-        recordings: true,
-        crmPipeline: true,
-        agents: true,
-        teams: true,
-        talk: true
-      }
+      features: { ...DEFAULT_CLIENT_FEATURES }
     };
     store.tenants.push(tenant);
 
@@ -10316,9 +10409,14 @@ async function apiAdminTenantCreate(req, res, ctx) {
       role: 'owner',
       status: 'active',
       onboardingCompleted: true,
+      createdByAdmin: true,
+      createdFromAdmin: true,
       createdAt: now
     };
     store.users.push(user);
+    if (existingUser) {
+      existingUser.onboardingCompleted = true;
+    }
 
     store.clientActivities.push({
       id: core.genId('act_'),
@@ -10504,6 +10602,24 @@ async function apiAdminTenantDelete(req, res, ctx) {
 
   await core.mutate((dd) => {
     dd.tenants = (dd.tenants || []).filter((t) => t.id !== tenantId);
+
+    // Track permanently deleted tenant IDs and slugs
+    dd.deletedTenantIds = dd.deletedTenantIds || [];
+    if (!dd.deletedTenantIds.includes(tenantId)) dd.deletedTenantIds.push(tenantId);
+    dd.deletedTenantSlugs = dd.deletedTenantSlugs || [];
+    if (tenant.slug && !dd.deletedTenantSlugs.includes(tenant.slug)) dd.deletedTenantSlugs.push(tenant.slug);
+
+    // Save to persistent file on disk so git pull / resets never restore it
+    try {
+      const deletedFile = path.join(__dirname, 'data', '.deleted_tenants.json');
+      let currentDeleted = [];
+      if (fs.existsSync(deletedFile)) {
+        try { currentDeleted = JSON.parse(fs.readFileSync(deletedFile, 'utf8') || '[]'); } catch (_) { currentDeleted = []; }
+      }
+      if (!currentDeleted.includes(tenantId)) currentDeleted.push(tenantId);
+      if (tenant.slug && !currentDeleted.includes(tenant.slug)) currentDeleted.push(tenant.slug);
+      fs.writeFileSync(deletedFile, JSON.stringify(currentDeleted, null, 2), 'utf8');
+    } catch (_) {}
 
     const targetUsers = (dd.users || []).filter((u) => u.tenantId === tenantId);
     const targetUserIds = new Set(targetUsers.map((u) => u.id));
@@ -13870,7 +13986,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'DELETE' && route === '/api/admin/tenants') return core.requireRole(req, res, 'admin', apiAdminTenantDelete);
       if (req.method === 'DELETE' && route.startsWith('/api/assistant/sessions/')) return core.requireAuth(req, res, apiAssistantSessionDelete);
       if (req.method === 'DELETE' && route === '/api/assistant/thread') return core.requireAuth(req, res, apiAssistantThreadDelete);
-      if (req.method === 'DELETE' && (route === '/api/byon' || route.startsWith('/api/byon/') || route === '/api/telephony/dids/delete' || route === '/api/telephony/dids' || route.startsWith('/api/telephony/dids/'))) return core.requireAuth(req, res, apiByonDelete);
+      if (req.method === 'DELETE' && (route === '/api/byon' || route.startsWith('/api/byon/') || route === '/api/telephony/dids/delete' || route === '/api/telephony/did/delete' || route === '/api/telephony/dids' || route === '/api/telephony/did' || route.startsWith('/api/telephony/dids/') || route === '/api/telephony/disconnect-did' || route === '/api/telephony/disconnect')) return core.requireAuth(req, res, apiByonDelete);
 
       // ---- Authed GET routes ----
       if (req.method === 'GET') {
@@ -14032,9 +14148,9 @@ const server = http.createServer(async (req, res) => {
       if (route === '/api/billing/razorpay/verify') return core.requireAuth(req, res, apiRazorpayVerifyPayment, body);
       if (route === '/api/support/tickets') return core.requireAuth(req, res, apiSupportCreate, body);
       if (route === '/api/support/tickets/reply') return core.requireAuth(req, res, apiSupportReply, body);
-      if (route === '/api/byon' || route === '/api/telephony/connect-did' || route === '/api/telephony/dids') return core.requireAuth(req, res, apiByonSave, body);
+      if (route === '/api/byon' || route === '/api/byon/save' || route === '/api/telephony/connect-did' || route === '/api/telephony/dids' || route === '/api/telephony/did' || route === '/api/telephony/connect') return core.requireAuth(req, res, apiByonSave, body);
       if (route === '/api/byon/assign') return core.requireRole(req, res, 'owner', apiByonAssign, body);
-      if (route === '/api/byon/delete' || route === '/api/telephony/dids/delete' || route === '/api/telephony/disconnect-did') return core.requireAuth(req, res, apiByonDelete, body);
+      if (route === '/api/byon/delete' || route === '/api/telephony/dids/delete' || route === '/api/telephony/did/delete' || route === '/api/telephony/disconnect-did' || route === '/api/telephony/delete-did' || route === '/api/telephony/disconnect') return core.requireAuth(req, res, apiByonDelete, body);
       if (route === '/api/privacy') return core.requireRole(req, res, 'owner', apiPrivacyMode, body);
       if (route === '/api/user/profile') return core.requireAuth(req, res, apiUserProfileUpdate, body);
       if (route === '/api/user/password' || route === '/api/auth/password') return core.requireAuth(req, res, apiUserPasswordUpdate, body);

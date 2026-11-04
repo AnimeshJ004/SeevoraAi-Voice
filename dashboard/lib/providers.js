@@ -463,10 +463,10 @@ const telVobiz = {
   get dashboard() { return dograhConnection().dashboard; },
 
   async request(method, pathname, payload, tenantOpts) {
-    const hasTenantKey = !!(tenantOpts && (tenantOpts.apiKey || tenantOpts.dograh_api_key || tenantOpts.dograhApiKey));
-    if (!hasTenantKey && !hasEnv(this.needs)) throw notConfigured(this.label, this.needs);
+    const rawKey = tenantOpts && (tenantOpts.apiKey || tenantOpts.dograh_api_key || tenantOpts.dograhApiKey);
+    const apiKey = (rawKey && !rawKey.startsWith('dk_')) ? rawKey : process.env.DOGRAH_API_KEY;
+    if (!apiKey) throw notConfigured(this.label, this.needs);
     const connection = dograhConnection();
-    const apiKey = (tenantOpts && (tenantOpts.dograh_api_key || tenantOpts.dograhApiKey)) || process.env.DOGRAH_API_KEY;
     const orgId = (tenantOpts && (tenantOpts.dograh_org_id || tenantOpts.dograhOrgId));
     const headers = { 'X-API-Key': apiKey };
     if (orgId) headers['X-Dograh-Org-Id'] = orgId;
