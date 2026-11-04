@@ -416,6 +416,7 @@ function assertFeatureAllowed(tenant, featureKey, user) {
         liveMonitor: 'Live Call Monitoring & Decline',
         didNumbers: 'Virtual DID Telephony Numbers',
         whatsappMessaging: 'Automated WhatsApp Messaging',
+        whatsappHub: 'WhatsApp Hub & Integration',
         webhooksApi: 'Webhooks & Developer APIs',
         workflows: 'Workflows & Multi-Step Call Automation',
         broadcasts: 'Broadcasts and automation flows',
@@ -434,7 +435,7 @@ function assertFeatureAllowed(tenant, featureKey, user) {
   }
 
   // Core features enabled by default across all tiers unless admin turned them off
-  const defaultCoreFeatures = ['inbound', 'campaigns', 'recordings', 'crmPipeline', 'agents', 'talk', 'assistant', 'teams', 'liveMonitor', 'didNumbers', 'voiceReceptionist', 'whatsappCrm', 'autoRepliesReminders', 'workflows'];
+  const defaultCoreFeatures = ['inbound', 'campaigns', 'recordings', 'crmPipeline', 'agents', 'talk', 'assistant', 'teams', 'liveMonitor', 'didNumbers', 'voiceReceptionist', 'whatsappCrm', 'autoRepliesReminders', 'workflows', 'whatsappHub'];
   if (defaultCoreFeatures.includes(featureKey)) {
     return { allowed: true };
   }
@@ -605,6 +606,7 @@ function getTenantUsageAndLimits(db, tenantId) {
       didNumbers: true,
       whatsappMessaging: true,
       workflows: true,
+      whatsappHub: true,
       webhooksApi: false
     }, plan.features || {}, tenant.features || {}),
     usage: {

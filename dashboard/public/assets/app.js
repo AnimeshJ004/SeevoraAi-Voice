@@ -779,26 +779,26 @@ async function boot() {
 
     State.me = me;
 
-    const cu = window.Clerk && window.Clerk.user;
-    const clerkOnboarded = cu ? (
-      (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) ||
-      (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) ||
-      (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true')
-    ) : false;
+    const uBoot = (State.me && State.me.user) || {};
+    const isAdminUser = ['admin', 'super_admin'].includes(uBoot.role);
+    const isEmployee = ['employee', 'member', 'manager'].includes(uBoot.role);
 
-    const isPlatformAdmin = State.me && State.me.user && ['admin', 'super_admin'].includes(State.me.user.role);
-    const isCompleted = isPlatformAdmin || (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-      (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
-      clerkOnboarded;
+    // Employees and Admins NEVER do onboarding
+    let isCompleted = false;
+    if (isAdminUser || isEmployee) {
+      isCompleted = true;
+    } else {
+      isCompleted = (uBoot.onboardingCompleted === true);
+    }
+
     const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    if (isPlatformAdmin) {
+    if (isAdminUser || isEmployee) {
       if (hash === 'onboarding' || hash === 'ai-creator' || !hash) {
         location.hash = '#/overview';
       }
     } else if (!isCompleted) {
+      // Must do onboarding wizard before dashboard!
       location.hash = '#/onboarding';
-    } else if (hash === 'onboarding' || hash === 'ai-creator') {
-      location.hash = '#/overview';
     }
 
     await Promise.all([
@@ -863,6 +863,7 @@ function getVisibleRoutes() {
     const routes = [
       { id: 'overview', label: 'Dashboard', icon: 'grid' },
       { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle', disabled: tFeats.assistant === false },
+      { id: 'whatsapp-hub', label: 'WhatsApp Hub', icon: 'whatsapp', disabled: tFeats.whatsappHub === false },
       { id: 'workflows', label: 'Workflows', icon: 'git-branch', disabled: tFeats.workflows === false },
       { id: 'inbound', label: 'Inbound Calls', icon: 'phone', disabled: tFeats.inbound === false },
       { id: 'campaigns', label: 'Outbound Calls', icon: 'send', disabled: tFeats.campaigns === false },
@@ -870,10 +871,12 @@ function getVisibleRoutes() {
       { id: 'crm-pipeline', label: 'Contacts', icon: 'users', disabled: tFeats.crmPipeline === false },
       { id: 'agents', label: 'My AI Agents', icon: 'mic', disabled: tFeats.agents === false },
       { id: 'teams', label: 'Teams', icon: 'users', disabled: tFeats.teams === false },
+      { id: 'talk', label: 'Talk to Agent', icon: 'wave', disabled: tFeats.talk === false },
       { id: 'support', label: 'Support', icon: 'support' },
       { id: 'settings', label: 'Settings', icon: 'gear' }
     ];
-    if (u && !u.onboardingCompleted && !['admin', 'super_admin', 'employee'].includes(u.role)) {
+    const isClientOnboarded = (u && u.onboardingCompleted === true);
+    if (u && !isClientOnboarded && ['client', 'owner'].includes(u.role)) {
       routes.unshift({ id: 'onboarding', label: 'AI Setup Wizard (7-Step)', icon: 'sparkle' });
     }
     return routes;
@@ -882,6 +885,7 @@ function getVisibleRoutes() {
   return [
     { id: 'overview', label: 'Admin Dashboard', icon: 'grid' },
     { id: 'assistant', label: 'AI Chatbot', icon: 'sparkle' },
+    { id: 'whatsapp-hub', label: 'WhatsApp Hub', icon: 'whatsapp' },
     { id: 'admin', label: 'Manage Clients', icon: 'shield' },
     { id: 'features', label: 'Feature Controls', icon: 'sliders' },
     { id: 'workflows', label: 'Client Workflows', icon: 'git-branch' },
@@ -1317,7 +1321,9 @@ function createThemedDropdown(cfg) {
       const triggerRect = triggerBtn.getBoundingClientRect();
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
-      if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+      const estMenuHeight = Math.min((options.length * 42) + (isSearchable ? 52 : 16), 260);
+      const menuHeight = menu.offsetHeight > 40 ? menu.offsetHeight : estMenuHeight;
+      if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
         menu.classList.add('open-upward');
       } else {
         menu.classList.remove('open-upward');
@@ -1455,7 +1461,8 @@ function updateNavLockStates() {
     talk: 'talk',
     assistant: 'assistant',
     teams: 'teams',
-    workflows: 'workflows'
+    workflows: 'workflows',
+    'whatsapp-hub': 'whatsappHub'
   };
   const tFeats = (State.me && State.me.tenant && State.me.tenant.features) || {};
 
@@ -1521,13 +1528,51 @@ function updateVoiceNavigationLocks() {
     talk: 'talk',
     assistant: 'assistant',
     teams: 'teams',
-    workflows: 'workflows'
+    workflows: 'workflows',
+    'whatsapp-hub': 'whatsappHub'
   };
   const featKey = ROUTE_FEATURE_MAP[id];
   const tFeatures = (State.me && State.me.tenant && State.me.tenant.features) || {};
   if (!isPlatformAdmin() && featKey && tFeatures[featKey] === false) {
     onRoute();
   }
+}
+
+function renderFeatureDisabledScreen(root, featureName, featKey) {
+  root.innerHTML = '';
+  const box = el('div', {
+    class: 'feature-disabled-screen',
+    style: 'max-width:760px;margin:36px auto;background:#ffffff;border:1px solid rgba(13,93,65,0.12);border-radius:22px;padding:40px 32px;box-shadow:0 8px 30px rgba(0,0,0,0.03);text-align:center;'
+  }, [
+    el('div', {
+      style: 'width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:rgba(93,116,104,0.12);display:flex;align-items:center;justify-content:center;color:#0d5d41;'
+    }, [
+      el('span', { html: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' })
+    ]),
+    el('span', {
+      class: 'pill',
+      style: 'background:rgba(93,116,104,0.10);color:#0d5d41;font-weight:750;font-size:0.75rem;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;display:inline-block;padding:3px 10px;border-radius:999px;'
+    }, 'Feature Locked • Admin Access Control'),
+    el('h2', { style: 'font-family:Manrope,sans-serif;font-size:1.55rem;font-weight:800;color:#14221c;margin:8px 0 10px 0;' }, `${featureName} is Disabled`),
+    el('p', { class: 'muted', style: 'max-width:540px;margin:0 auto 24px auto;font-size:0.90rem;line-height:1.6;color:#5d7468;' },
+      `Access to ${featureName} has been restricted for your workspace by the platform administrator. If your team requires this capability, please request your administrator to enable it in Feature Controls.`
+    ),
+    el('div', { style: 'display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;' }, [
+      el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'background:#0d5d41;color:#fff;font-weight:700;padding:10px 22px;border-radius:999px;font-size:0.88rem;border:none;cursor:pointer;',
+        onclick: () => goto('overview')
+      }, '← Return to Dashboard'),
+      el('button', {
+        type: 'button',
+        class: 'btn btn-ghost',
+        style: 'padding:10px 20px;border-radius:999px;font-size:0.88rem;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:650;cursor:pointer;',
+        onclick: () => goto('support')
+      }, 'Contact Support ↗')
+    ])
+  ]);
+  root.appendChild(box);
 }
 
 function renderPhoneNumberRequiredScreen(root, featureName) {
@@ -1813,35 +1858,35 @@ function currentRoute() {
     if (hash === 'ai-creator' || hash === 'onboarding' || !hash) {
       return 'overview';
     }
-    const adminAllowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'features', 'workflows', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'dograh', 'dograh-flows', 'kb', 'knowledge-base', 'crm-webhooks'];
+    const adminAllowed = ['overview', 'assistant', 'whatsapp-hub', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'features', 'workflows', 'talk', 'billing', 'support', 'admin', 'invoices', 'settings', 'dograh', 'dograh-flows', 'kb', 'knowledge-base', 'crm-webhooks'];
     if (hash && adminAllowed.includes(hash)) {
       return hash;
     }
     return 'overview';
   }
 
-  const cu = window.Clerk && window.Clerk.user;
-  const clerkOnboarded = cu ? (
-    (cu.unsafeMetadata && cu.unsafeMetadata.onboardingCompleted) ||
-    (cu.publicMetadata && cu.publicMetadata.onboardingCompleted) ||
-    (localStorage.getItem('seevora_onboarded_' + cu.id) === 'true')
-  ) : false;
+  const uRoute = (State.me && State.me.user) || {};
+  const isEmployee = ['employee', 'member', 'manager'].includes(uRoute.role);
 
-  const isCompleted = (State.me && State.me.user && State.me.user.onboardingCompleted) ||
-    (State.me && State.me.tenant && State.me.tenant.onboardingCompleted) ||
-    clerkOnboarded;
+  let isCompleted = false;
+  if (adminMode || isEmployee) {
+    isCompleted = true;
+  } else {
+    isCompleted = (uRoute.onboardingCompleted === true);
+  }
+
+  // If client/owner has not completed onboarding, strictly lock them to onboarding
+  if (!isCompleted && !adminMode && !isEmployee) {
+    return 'onboarding';
+  }
 
   if (hash === 'ai-creator' || hash === 'onboarding') {
-    return isCompleted ? 'overview' : 'onboarding';
+    return (adminMode || isEmployee) ? 'overview' : 'onboarding';
   }
 
-  const allowed = ['overview', 'assistant', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
+  const allowed = ['overview', 'assistant', 'whatsapp-hub', 'inbound', 'campaigns', 'recordings', 'crm-pipeline', 'contacts', 'agents', 'workflows', 'teams', 'talk', 'onboarding', 'support', 'settings', 'kb', 'knowledge-base', 'crm-webhooks'];
   if (hash && allowed.includes(hash)) {
     return hash;
-  }
-
-  if (!isCompleted) {
-    return 'onboarding';
   }
 
   return 'overview';
@@ -1875,7 +1920,8 @@ function onRoute() {
     talk: 'talk',
     assistant: 'assistant',
     teams: 'teams',
-    workflows: 'workflows'
+    workflows: 'workflows',
+    'whatsapp-hub': 'whatsappHub'
   };
   const featKey = ROUTE_FEATURE_MAP[id];
   const tFeatures = (State.me && State.me.tenant && State.me.tenant.features) || {};
@@ -1899,6 +1945,7 @@ function onRoute() {
     talk: viewTalk,
     recordings: viewRecordings,
     campaigns: viewCampaigns,
+    'whatsapp-hub': viewWhatsappHub,
     'crm-pipeline': viewCrmPipeline,
   'contacts': viewCrmPipeline,
     invoices: viewInvoices,
@@ -7691,7 +7738,7 @@ async function viewRecordings(root) {
   const wrap = el('div', { class: 'aria-recordings-view' });
   root.appendChild(wrap);
 
-  const head = viewHead('Call Recordings');
+  const head = viewHead('Call History & Recordings', 'Inspect caller logs, audio playback, call sentiments, and AI outcomes.');
   const syncBtn = el('button', {
     class: 'btn btn-ghost btn-sm flex items-center gap-2',
     style: 'border-radius:999px;font-size:0.80rem;padding:7px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;'
@@ -10893,15 +10940,18 @@ async function viewSupport(root) {
     placeholder: 'e.g. Hindi Voice Tone calibration query, Webhook latency issue...',
     style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;padding:11px 16px;font-size:0.90rem;width:100%;box-sizing:border-box;'
   });
-  const prioritySel = el('select', {
-    class: 'select aria-select',
-    style: 'background:#ffffff;border:1.5px solid rgba(13,93,65,0.20);border-radius:10px;padding:11px 16px;font-size:0.90rem;width:100%;box-sizing:border-box;'
-  }, [
-    el('option', { value: 'normal' }, 'Normal Priority (Standard SLA)'),
-    el('option', { value: 'high' }, 'High Priority (Expedited review)'),
-    el('option', { value: 'urgent' }, 'Urgent (Production block)'),
-    el('option', { value: 'low' }, 'Low Priority (Question / Feature inquiry)')
-  ]);
+  const prioritySel = createThemedDropdown({
+    options: [
+      { value: 'normal', label: 'Normal Priority (Standard SLA)' },
+      { value: 'high', label: 'High Priority (Expedited review)' },
+      { value: 'urgent', label: 'Urgent (Production block)' },
+      { value: 'low', label: 'Low Priority (Question / Feature inquiry)' }
+    ],
+    value: 'high',
+    className: 'sv-modal-dropdown sv-support-priority-dropdown',
+    searchable: false,
+    style: 'width:100%;'
+  });
   const message = el('textarea', {
     class: 'input textarea',
     rows: '3',
@@ -10965,6 +11015,7 @@ async function viewSupport(root) {
       });
       subject.value = '';
       message.value = '';
+      prioritySel.value = 'high';
       toast('Support ticket opened successfully.', 'ok');
       await loadTickets(list);
     } catch (e) {
@@ -10981,7 +11032,12 @@ async function viewSupport(root) {
 async function loadTickets(host) {
   try {
     const out = await api('/api/support/tickets');
-    _ticketsCache = out.tickets || [];
+    const rawTickets = out.tickets || [];
+    _ticketsCache = rawTickets.slice().sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
     host.innerHTML = '';
 
     // Update KPI counts
@@ -12094,7 +12150,12 @@ async function viewAdmin(root) {
     }
 
     ticketHost.innerHTML = '';
-    const openTicketsList = (tickets && tickets.tickets) || [];
+    const rawTickets = (tickets && tickets.tickets) || [];
+    const openTicketsList = rawTickets.slice().sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
     const bTickets = document.getElementById('tab-badge-tickets');
     if (bTickets) bTickets.textContent = String(openTicketsList.length);
     ticketHost.appendChild(el('div', { class: 'admin-client-head' }, [
@@ -12966,7 +13027,7 @@ function openTeamMemberModal(existing, teamState, onDone) {
   const m = existing || {};
   const nameI = el('input', { class: 'input', value: m.name || '', placeholder: 'e.g. Rahul Sharma' });
   const emailI = el('input', { class: 'input', type: 'email', value: m.email || '', placeholder: 'e.g. rahul@company.com' });
-  const phoneI = el('input', { class: 'input', type: 'tel', value: (m.phone || '').replace(/^\+91/, ''), placeholder: '10-digit mobile for call transfer (e.g. 9876543210)' });
+  const phoneI = el('input', { class: 'input', type: 'tel', value: (m.phone || '').replace(/^\+91/, ''), placeholder: '10-digit mobile (e.g. 9876543210)' });
   const deptOptions = [
     { value: 'General', label: 'General' },
     { value: 'Sales', label: 'Sales' },
@@ -12985,9 +13046,9 @@ function openTeamMemberModal(existing, teamState, onDone) {
     style: 'width:100%;'
   });
   const roleOptions = [
-    { value: 'employee', label: 'Employee (Manages Assigned Agent & Receives Escalated Calls)' },
-    { value: 'manager', label: 'Team Manager (Can Manage All Agents & Employees)' },
-    { value: 'owner', label: 'Workspace Co-Owner (Full Client Access)' }
+    { value: 'employee', label: 'Employee (Assigned Agent & Escalations)' },
+    { value: 'manager', label: 'Team Manager (All Agents & Team)' },
+    { value: 'owner', label: 'Workspace Co-Owner (Full Access)' }
   ];
   const roleS = createThemedDropdown({
     value: m.role || 'employee',
@@ -13001,37 +13062,67 @@ function openTeamMemberModal(existing, teamState, onDone) {
 
   const currentAssigned = new Set(Array.isArray(m.assignedAgentIds) ? m.assignedAgentIds : []);
   const agentChecks = (teamState.agents || []).map((ag) => {
-    const cb = el('input', { type: 'checkbox', value: ag.id, checked: currentAssigned.has(ag.id) });
-    return {
+    const isChecked = currentAssigned.has(ag.id);
+    const cb = el('input', { type: 'checkbox', value: ag.id, checked: isChecked });
+    const row = el('label', {
+      class: 'team-agent-pill',
+      style: 'display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid ' + (isChecked ? '#0d5d41' : 'rgba(13,93,65,0.16)') + ';border-radius:10px;cursor:pointer;background:' + (isChecked ? 'rgba(13,93,65,0.06)' : '#ffffff') + ';font-size:0.83rem;font-weight:600;color:#14221c;transition:all 0.18s ease;'
+    }, [
       cb,
-      row: el('label', { style: 'display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(13,93,65,0.16);border-radius:10px;cursor:pointer;background:#f8faf9;font-size:0.84rem;font-weight:600;color:#14221c;' }, [
-        cb,
-        el('span', {}, ag.name + (ag.isPrimary ? ' (● Active on Shared Number)' : ''))
+      el('span', { style: 'display:inline-flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' }, [
+        el('span', {}, ag.name),
+        ag.isPrimary ? el('span', { style: 'font-size:0.68rem;color:#0d5d41;font-weight:700;' }, '● Active') : null
       ])
-    };
+    ]);
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        row.style.borderColor = '#0d5d41';
+        row.style.background = 'rgba(13,93,65,0.06)';
+      } else {
+        row.style.borderColor = 'rgba(13,93,65,0.16)';
+        row.style.background = '#ffffff';
+      }
+    });
+    return { cb, row };
   });
 
-  const body = el('div', { class: 'invoice-form', style: 'display:flex;flex-direction:column;gap:12px;' }, [
-    field('Employee Full Name', nameI),
-    field('Employee Login Email', emailI),
-    field('Employee Mobile Number (+91) - For Live Call Transfer When AI Stuck', phoneI),
-    field('Department', deptS),
-    field('Access Role', roleS),
-    field(isEdit ? 'Reset Login Password (Optional)' : 'Temporary Login Password', passI),
-    el('div', {}, [
-      el('label', { class: 'field-label', style: 'display:block;margin-bottom:6px;font-weight:700;font-size:0.82rem;color:#14221c;' }, 'Assign AI Voice Agent(s) (Operates on Same Business Number)'),
-      agentChecks.length
-        ? el('div', { style: 'display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;' }, agentChecks.map((x) => x.row))
-        : el('div', { class: 'muted', style: 'font-size:0.82rem;' }, 'No agents created yet. Create an agent in My AI Agents first.')
+  const body = el('div', { class: 'team-member-modal-body', style: 'display:flex;flex-direction:column;gap:14px;' }, [
+    el('div', { class: 'team-form-grid' }, [
+      field('Employee Full Name', nameI),
+      field('Employee Login Email', emailI)
     ]),
-    el('label', { style: 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.84rem;font-weight:600;color:#0d5d41;margin-top:4px;' }, [
+    el('div', { class: 'team-form-grid' }, [
+      field('Mobile Number (+91) for Transfer', phoneI),
+      field('Department', deptS)
+    ]),
+    el('div', { class: 'team-form-grid' }, [
+      field('Access Role', roleS),
+      field(isEdit ? 'Reset Password (Optional)' : 'Temporary Login Password', passI)
+    ]),
+    el('div', { style: 'background:#fbfdfc;border:1.5px solid rgba(13,93,65,0.14);border-radius:14px;padding:12px 14px;' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;' }, [
+        el('label', { class: 'field-label', style: 'margin:0;font-weight:750;font-size:0.74rem;color:#0d5d41;text-transform:uppercase;letter-spacing:0.04em;' }, 'Assign AI Voice Agent(s) (Shared Line)'),
+        el('span', { class: 'soft', style: 'font-size:0.74rem;color:#5d7468;' }, `${agentChecks.length} agent(s) available`)
+      ]),
+      agentChecks.length
+        ? el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:8px;max-height:120px;overflow-y:auto;padding-right:4px;' }, agentChecks.map((x) => x.row))
+        : el('div', { class: 'muted', style: 'font-size:0.80rem;padding:6px 0;' }, 'No agents created yet. Create an agent in My AI Agents first.')
+    ]),
+    el('div', {
+      style: 'background:#fbfdfc;border:1.5px solid rgba(13,93,65,0.14);border-radius:12px;padding:10px 13px;display:flex;align-items:flex-start;gap:10px;'
+    }, [
       escCheck,
-      el('span', {}, 'Automatically escalate/transfer call to this employee if AI agent gets stuck or caller requests a human')
+      el('label', { style: 'cursor:pointer;margin:0;' }, [
+        el('div', { style: 'font-size:0.83rem;font-weight:700;color:#0d5d41;line-height:1.3;' }, 'Auto-transfer live calls to this employee'),
+        el('div', { style: 'font-size:0.75rem;color:#5d7468;margin-top:2px;line-height:1.35;font-weight:500;' }, 'When caller asks for a human specialist or AI detects an unresolved caller query on the shared line.')
+      ])
     ])
   ]);
 
   modal({
     title: isEdit ? ('Edit Employee: ' + m.name) : 'Add Team Member / Employee',
+    className: 'team-member-modal',
+    wide: true,
     body,
     confirmText: isEdit ? 'Save Changes' : '+ Add Employee & Assign Agent',
     confirmKind: 'primary',
@@ -13164,6 +13255,788 @@ function adjustWallet(t) {
 // Settings & Workspace Controls View (Redesigned: Scandinavian Sage Minimalist, Zero Cards)
 // ============================================================================
 
+// ============================================================================
+// WHATSAPP HUB & INTEGRATION VIEW (Pure Scandinavian Minimalist Theme, Zero Cards)
+// ============================================================================
+
+async function viewWhatsappHub(root) {
+  root.classList.add('aria-whatsapp-hub-view');
+
+  const head = viewHead('WhatsApp Hub & Integration', 'Centralized WhatsApp command center. View automated post-call summaries, manage follow-up workflows, and message leads directly on WhatsApp.');
+  
+  // Header Action Buttons
+  const headerActions = el('div', { style: 'display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;' }, [
+    el('button', {
+      type: 'button',
+      class: 'btn btn-primary btn-sm',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:7px 20px;font-weight:750;font-size:0.82rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;',
+      onclick: () => {
+        activeTab = 'sandbox';
+        Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
+        try { history.replaceState(null, '', '#/whatsapp-hub?tab=sandbox'); } catch (_) {}
+        renderActiveTab(contentHost);
+      }
+    }, [
+      el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' }),
+      el('span', {}, 'New WhatsApp Message')
+    ]),
+    el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:6px 16px;border:1px solid rgba(13,93,65,0.22);color:#0d5d41;font-weight:700;font-size:0.82rem;cursor:pointer;',
+      onclick: () => goto('settings?tab=integrations')
+    }, 'Settings →')
+  ]);
+  head.appendChild(headerActions);
+  root.appendChild(head);
+
+  // Loading skeleton
+  const loadingContainer = el('div', { id: 'wa-hub-loading' });
+  loadingContainer.appendChild(skeleton('sk-card', 2));
+  root.appendChild(loadingContainer);
+
+  const mainContainer = el('div', { id: 'wa-hub-main', style: 'display:none;' });
+  root.appendChild(mainContainer);
+
+  let hubData = null;
+  const urlParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+  const validTabs = ['logs', 'automations', 'credentials', 'sandbox'];
+  let activeTab = validTabs.includes(urlParams.get('tab')) ? urlParams.get('tab') : 'logs';
+  const validFilters = ['all', 'call_summary', 'outbound', 'inbound'];
+  let messageFilter = validFilters.includes(urlParams.get('filter')) ? urlParams.get('filter') : 'all';
+  let messageSearch = '';
+
+  async function loadDataAndRender() {
+    try {
+      hubData = await api('/api/whatsapp-hub/overview');
+    } catch (e) {
+      toast(e.message || 'Failed to load WhatsApp Hub data', 'err');
+      hubData = {
+        stats: { totalMessages: 0, autoSentCount: 0, outboundCount: 0, inboundCount: 0, deliveryRate: 100, senderNumber: '+91 80715 82519' },
+        credentials: { isConfigured: false, status: 'not_connected', senderNumber: '+91 80715 82519', metaPhoneId: '', hasToken: false, companyName: 'Seevora AI Voice' },
+        automatedFeatures: [],
+        messages: []
+      };
+    }
+
+    loadingContainer.style.display = 'none';
+    mainContainer.style.display = 'block';
+    renderHubContent();
+  }
+
+  function renderHubContent() {
+    mainContainer.innerHTML = '';
+    const stats = (hubData && hubData.stats) || {};
+    const creds = (hubData && hubData.credentials) || {};
+
+    // 1. KPI Bar (Open Horizontal Grid, Zero Cards)
+    const isConn = creds.status === 'connected' || creds.isConfigured;
+    const kpiBar = el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'CONNECTION STATUS'),
+        el('div', { style: 'font-size:1.10rem;font-weight:850;color:' + (isConn ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (isConn ? '#047857' : '#94a3b8') + ';display:inline-block;' }),
+          el('span', {}, isConn ? 'Live Connected' : 'Setup Required')
+        ]),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, isConn ? 'Verified & Active' : 'Add keys in Connected Apps')
+      ]),
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'TOTAL DISPATCHED'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, String(stats.totalMessages || 0)),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'All logged conversations')
+      ]),
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'POST-CALL SUMMARIES'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#047857;margin:4px 0;' }, String(stats.autoSentCount || 0)),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Caller summaries delivered')
+      ]),
+      el('div', { style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'DELIVERY RATE'),
+        el('div', { style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, (stats.deliveryRate || 100) + '%'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Successful WhatsApp dispatches')
+      ]),
+      el('div', { style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;' }, 'SENDER NUMBER'),
+        el('div', { style: 'font-size:1.05rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, stats.senderNumber || '+91 80715 82519'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Active business number')
+      ])
+    ]);
+    mainContainer.appendChild(kpiBar);
+
+    // 2. Underline Tab Navigation (Scandinavian Style)
+    const tabNav = el('div', { class: 'admin-tab-nav', style: 'margin-bottom:28px;' });
+    const tabs = [
+      { id: 'logs', label: 'Message History & Logs', count: (hubData.messages || []).length },
+      { id: 'automations', label: 'Automated Workflows', count: (hubData.automatedFeatures || []).length },
+      { id: 'credentials', label: 'Connected WhatsApp Account' },
+      { id: 'sandbox', label: 'Send WhatsApp Message' }
+    ];
+
+    const tabBtnMap = {};
+    tabs.forEach(t => {
+      const btn = el('button', {
+        class: 'admin-tab-btn' + (activeTab === t.id ? ' active' : ''),
+        onclick: () => {
+          activeTab = t.id;
+          Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
+          try {
+            const h = '#/whatsapp-hub?tab=' + activeTab + (activeTab === 'logs' && messageFilter !== 'all' ? '&filter=' + messageFilter : '');
+            history.replaceState(null, '', h);
+          } catch (_) {}
+          renderActiveTab(contentHost);
+        }
+      }, [
+        el('span', {}, t.label),
+        t.count !== undefined ? el('span', { style: 'margin-left:6px;font-size:0.72rem;padding:2px 7px;background:rgba(13,93,65,0.08);border-radius:999px;font-weight:750;color:#0d5d41;' }, String(t.count)) : null
+      ].filter(Boolean));
+      tabBtnMap[t.id] = btn;
+      tabNav.appendChild(btn);
+    });
+    mainContainer.appendChild(tabNav);
+
+    // 3. Tab Content Canvas Host
+    const contentHost = el('div', { class: 'wa-hub-tab-host', style: 'width:100%;' });
+    mainContainer.appendChild(contentHost);
+
+    renderActiveTab(contentHost);
+  }
+
+  function renderActiveTab(host) {
+    host.innerHTML = '';
+    if (activeTab === 'logs') renderLogsTab(host);
+    else if (activeTab === 'automations') renderAutomationsTab(host);
+    else if (activeTab === 'credentials') renderCredentialsTab(host);
+    else if (activeTab === 'sandbox') renderSandboxTab(host);
+  }
+
+  // ==========================================================================
+  // TAB 1: LIVE MESSAGE LOGS (Real-time Message Table, Zero Cards)
+  // ==========================================================================
+  function renderLogsTab(host) {
+    host.innerHTML = '';
+    const rawMessages = (hubData && hubData.messages) || [];
+
+    // Title Underline Section Header
+    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Dispatch Audit Trail'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Automated & Manual WhatsApp Dispatches'),
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Every WhatsApp message sent automatically upon call completion, appointment booking, or manual dispatch is recorded here with recipient details, trigger source, and delivery status.')
+    ]));
+
+    // Toolbar (Filter Pills + Search Bar)
+    const toolbar = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;' });
+
+    // Dynamic Filter Counts
+    const countAll = rawMessages.length;
+    const countCallSummary = rawMessages.filter(m => m.type === 'call_summary' || (m.triggerReason && m.triggerReason.includes('Post-Call')) || (m.metadata && (m.metadata.autoTriggered || m.metadata.callId))).length;
+    const countOutbound = rawMessages.filter(m => m.direction === 'outbound' || (m.metadata && m.metadata.manualDispatch) || (m.triggerReason && (m.triggerReason.includes('Direct') || m.triggerReason.includes('Outbound') || m.triggerReason.includes('Appointment') || m.triggerReason.includes('Missed')))).length;
+    const countInbound = rawMessages.filter(m => m.direction === 'inbound' || (m.triggerReason && m.triggerReason.includes('Inbound'))).length;
+
+    // Filter pills
+    const filterGroup = el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;' });
+    const filters = [
+      { id: 'all', label: 'All Messages', count: countAll },
+      { id: 'call_summary', label: 'Post-Call Summaries', count: countCallSummary },
+      { id: 'outbound', label: 'Direct Outbound', count: countOutbound },
+      { id: 'inbound', label: 'Inbound Chats', count: countInbound }
+    ];
+
+    const pillButtons = [];
+    filters.forEach(f => {
+      const active = messageFilter === f.id;
+      const countBadge = el('span', {
+        class: 'wa-pill-badge',
+        style: 'margin-left:6px;font-size:0.72rem;padding:2px 7px;background:' + (active ? 'rgba(255,255,255,0.22)' : 'rgba(13,93,65,0.08)') + ';border-radius:999px;font-weight:750;'
+      }, String(f.count));
+
+      const fBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-sm wa-filter-pill',
+        style: active
+          ? 'border-radius:999px;padding:6px 16px;background:#0d5d41;color:#fff;border:1px solid #0d5d41;font-weight:750;font-size:0.80rem;cursor:pointer;transition:all 0.15s ease;'
+          : 'border-radius:999px;padding:6px 16px;background:transparent;color:#14221c;border:1px solid rgba(13,93,65,0.20);font-weight:650;font-size:0.80rem;cursor:pointer;transition:all 0.15s ease;',
+        onclick: () => {
+          messageFilter = f.id;
+          pillButtons.forEach(item => {
+            const isAct = item.id === messageFilter;
+            item.btn.style.background = isAct ? '#0d5d41' : 'transparent';
+            item.btn.style.color = isAct ? '#fff' : '#14221c';
+            item.btn.style.borderColor = isAct ? '#0d5d41' : 'rgba(13,93,65,0.20)';
+            item.btn.style.fontWeight = isAct ? '750' : '650';
+            if (item.badge) {
+              item.badge.style.background = isAct ? 'rgba(255,255,255,0.22)' : 'rgba(13,93,65,0.08)';
+            }
+          });
+          try {
+            const h = '#/whatsapp-hub?tab=logs' + (f.id !== 'all' ? '&filter=' + f.id : '');
+            history.replaceState(null, '', h);
+          } catch (_) {}
+          renderMessageTable(tableHost);
+        }
+      }, [
+        el('span', {}, f.label),
+        countBadge
+      ]);
+
+      pillButtons.push({ id: f.id, btn: fBtn, badge: countBadge });
+      filterGroup.appendChild(fBtn);
+    });
+    toolbar.appendChild(filterGroup);
+
+    // Search Input (Underline Style)
+    const searchWrap = el('div', { style: 'display:flex;align-items:center;gap:8px;min-width:260px;' }, [
+      el('input', {
+        type: 'text',
+        placeholder: 'Search phone or recipient...',
+        value: messageSearch,
+        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:6px 0;font-size:0.86rem;color:#14221c;background:transparent;width:100%;outline:none;',
+        oninput: (e) => {
+          messageSearch = e.target.value.toLowerCase().trim();
+          renderMessageTable(tableHost);
+        }
+      })
+    ]);
+    toolbar.appendChild(searchWrap);
+    host.appendChild(toolbar);
+
+    // Table Host
+    const tableHost = el('div', { style: 'margin-bottom:40px;' });
+    host.appendChild(tableHost);
+
+    renderMessageTable(tableHost);
+
+    function renderMessageTable(target) {
+      target.innerHTML = '';
+
+      let filtered = rawMessages;
+      if (messageFilter === 'call_summary') {
+        filtered = filtered.filter(m => m.type === 'call_summary' || (m.triggerReason && m.triggerReason.includes('Post-Call')) || (m.metadata && (m.metadata.autoTriggered || m.metadata.callId)));
+      } else if (messageFilter === 'outbound') {
+        filtered = filtered.filter(m => m.direction === 'outbound' || (m.metadata && m.metadata.manualDispatch) || (m.triggerReason && (m.triggerReason.includes('Direct') || m.triggerReason.includes('Outbound') || m.triggerReason.includes('Appointment') || m.triggerReason.includes('Missed'))));
+      } else if (messageFilter === 'inbound') {
+        filtered = filtered.filter(m => m.direction === 'inbound' || (m.triggerReason && m.triggerReason.includes('Inbound')));
+      }
+
+      if (messageSearch) {
+        filtered = filtered.filter(m =>
+          (m.phone && m.phone.toLowerCase().includes(messageSearch)) ||
+          (m.recipientName && m.recipientName.toLowerCase().includes(messageSearch)) ||
+          (m.text && m.text.toLowerCase().includes(messageSearch))
+        );
+      }
+
+      if (!filtered.length) {
+        target.appendChild(el('div', {
+          style: 'padding:48px 16px;text-align:center;color:#5d7468;border-top:1px solid rgba(13,93,65,0.08);border-bottom:1px solid rgba(13,93,65,0.08);'
+        }, [
+          el('div', { style: 'font-weight:700;font-size:0.98rem;color:#14221c;margin-bottom:6px;' }, 'No WhatsApp messages found matching your filter'),
+          el('p', { style: 'font-size:0.84rem;margin:0 0 16px;' }, 'Dispatches will automatically appear here when voice calls end or when you send test messages.'),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+            style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 18px;',
+            onclick: () => { activeTab = 'sandbox'; Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab)); renderActiveTab(contentHost); }
+          }, 'Send Test WhatsApp Message →')
+        ]));
+        return;
+      }
+
+      // Flat Table Header
+      const table = el('div', { style: 'width:100%;border-top:1px solid rgba(13,93,65,0.12);' });
+      const thead = el('div', {
+        style: 'display:grid;grid-template-columns:180px 180px 1fr 110px 150px 120px;gap:12px;padding:12px 8px;font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid rgba(13,93,65,0.12);'
+      }, [
+        el('div', {}, 'RECIPIENT'),
+        el('div', {}, 'TRIGGER REASON'),
+        el('div', {}, 'MESSAGE CONTENT'),
+        el('div', {}, 'STATUS'),
+        el('div', {}, 'TIMESTAMP'),
+        el('div', { style: 'text-align:right;' }, 'ACTION')
+      ]);
+      table.appendChild(thead);
+
+      // Rows
+      filtered.forEach(m => {
+        const row = el('div', {
+          style: 'display:grid;grid-template-columns:180px 180px 1fr 110px 150px 120px;gap:12px;padding:14px 8px;font-size:0.85rem;color:#14221c;border-bottom:1px solid rgba(13,93,65,0.06);align-items:center;transition:background 0.1s ease;'
+        });
+
+        // Recipient (Name & Phone)
+        const recipientCell = el('div', {}, [
+          el('div', { style: 'font-weight:750;color:#14221c;' }, m.recipientName || 'Lead Contact'),
+          el('div', { style: 'font-size:0.76rem;color:#5d7468;margin-top:2px;font-family:monospace;' }, m.phone || '--')
+        ]);
+
+        // Trigger Reason
+        const isPostCall = m.type === 'call_summary' || (m.triggerReason && m.triggerReason.includes('Post-Call'));
+        const triggerCell = el('div', {}, [
+          el('span', {
+            style: isPostCall
+              ? 'display:inline-flex;align-items:center;padding:2px 8px;background:rgba(13,93,65,0.08);color:#0d5d41;font-size:0.74rem;font-weight:750;border-radius:999px;'
+              : 'display:inline-flex;align-items:center;padding:2px 8px;background:rgba(93,116,104,0.08);color:#5d7468;font-size:0.74rem;font-weight:750;border-radius:999px;'
+          }, m.triggerReason || 'Automated Update')
+        ]);
+
+        // Message text snippet
+        const snippet = (m.text || '').replace(/\n+/g, ' ').slice(0, 95);
+        const textCell = el('div', {
+          style: 'color:#334155;line-height:1.4;cursor:pointer;',
+          title: 'Click to view full message',
+          onclick: () => openMessagePreviewModal(m)
+        }, [
+          el('span', {}, snippet + ((m.text || '').length > 95 ? '...' : '')),
+          el('span', { style: 'margin-left:6px;font-size:0.74rem;color:#0d5d41;font-weight:700;' }, 'View')
+        ]);
+
+        // Status Pill
+        const statusCell = el('div', {}, [
+          el('span', {
+            style: 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(4,120,87,0.10);color:#047857;font-size:0.72rem;font-weight:750;border-radius:999px;'
+          }, [
+            el('span', { style: 'width:5px;height:5px;border-radius:50%;background:#047857;' }),
+            el('span', {}, m.status === 'delivered' ? 'Delivered' : (m.status === 'read' ? 'Read' : 'Sent'))
+          ])
+        ]);
+
+        // Timestamp
+        const dateStr = m.createdAt ? new Date(m.createdAt).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+        }) : '--';
+        const timeCell = el('div', { style: 'font-size:0.78rem;color:#5d7468;' }, dateStr);
+
+        // Action: Chat on WhatsApp
+        const digits = (m.phone || '').replace(/\D/g, '');
+        const waUrl = m.waLink || `https://wa.me/${digits}`;
+        const actionCell = el('div', { style: 'text-align:right;' }, [
+          el('a', {
+            href: waUrl,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            class: 'btn btn-ghost btn-sm',
+            style: 'border-radius:999px;padding:3px 10px;font-size:0.74rem;color:#059669;border:1px solid rgba(5,150,105,0.25);font-weight:700;display:inline-flex;align-items:center;gap:4px;'
+          }, [
+            el('span', { html: iconWhatsAppSvg(12) }),
+            el('span', {}, 'Chat ↗')
+          ])
+        ]);
+
+        row.appendChild(recipientCell);
+        row.appendChild(triggerCell);
+        row.appendChild(textCell);
+        row.appendChild(statusCell);
+        row.appendChild(timeCell);
+        row.appendChild(actionCell);
+        table.appendChild(row);
+      });
+
+      target.appendChild(table);
+    }
+  }
+
+  // ==========================================================================
+  // TAB 2: AUTOMATED WORKFLOWS & TRIGGERS (Zero Cards, Title Underline)
+  // ==========================================================================
+  function renderAutomationsTab(host) {
+    const features = (hubData && hubData.automatedFeatures) || [];
+
+    // Title Underline Section Header
+    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Autonomous Post-Call Pipeline'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Automated Voice-to-WhatsApp Workflows'),
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Configure which automated WhatsApp messages are automatically dispatched by Seevora AI Voice when telephony calls terminate or when caller qualification occurs.')
+    ]));
+
+    // Automation Rows List (Clean Dividers, No Boxes)
+    const list = el('div', { style: 'margin-bottom:40px;' });
+
+    features.forEach((feat) => {
+      const row = el('div', {
+        style: 'padding:22px 0;border-bottom:1px solid rgba(13,93,65,0.09);display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;'
+      });
+
+      const infoCol = el('div', { style: 'flex:1;min-width:280px;' }, [
+        el('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;' }, [
+          el('h4', { style: 'margin:0;font-size:1.02rem;font-weight:800;color:#14221c;' }, feat.title),
+          el('span', {
+            style: 'padding:2px 8px;background:rgba(13,93,65,0.08);color:#0d5d41;font-size:0.70rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;border-radius:999px;'
+          }, feat.trigger)
+        ]),
+        el('p', { style: 'margin:0 0 10px;font-size:0.84rem;color:#5d7468;line-height:1.45;max-width:680px;' }, feat.description),
+        el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [
+          el('button', {
+            type: 'button',
+            class: 'btn btn-ghost btn-sm',
+            style: 'padding:2px 10px;font-size:0.75rem;color:#0d5d41;border:1px solid rgba(13,93,65,0.20);border-radius:999px;font-weight:700;',
+            onclick: () => openTemplateModal(feat)
+          }, 'View / Edit Template →')
+        ])
+      ]);
+
+      // Toggle switch
+      const toggleWrap = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-shrink:0;' });
+      const toggle = el('input', {
+        type: 'checkbox',
+        checked: feat.enabled !== false,
+        style: 'accent-color:#0d5d41;width:18px;height:18px;cursor:pointer;'
+      });
+
+      toggle.onchange = async () => {
+        try {
+          await api('/api/whatsapp-hub/toggle-feature', {
+            method: 'POST',
+            body: { featureKey: feat.key, enabled: toggle.checked }
+          });
+          feat.enabled = toggle.checked;
+          toast(feat.title + (toggle.checked ? ' enabled.' : ' disabled.'), 'ok');
+        } catch (err) {
+          toggle.checked = !toggle.checked;
+          toast(err.message || 'Failed to update feature', 'err');
+        }
+      };
+
+      toggleWrap.appendChild(toggle);
+      toggleWrap.appendChild(el('span', {
+        style: 'font-size:0.82rem;font-weight:750;color:#14221c;'
+      }, feat.enabled !== false ? 'Active' : 'Disabled'));
+
+      row.appendChild(infoCol);
+      row.appendChild(toggleWrap);
+      list.appendChild(row);
+    });
+
+    host.appendChild(list);
+  }
+
+  // ==========================================================================
+  // TAB 3: CONNECTED ACCOUNT & STATUS (Zero Cards, Clean & Minimal)
+  // ==========================================================================
+  function renderCredentialsTab(host) {
+    const creds = (hubData && hubData.credentials) || {};
+
+    // Title Underline Section Header
+    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'WhatsApp Business Integration'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Connected WhatsApp Business Account'),
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Your official WhatsApp Business number is linked to Seevora AI Voice Receptionist. Automated post-call summaries, appointment confirmations, and caller alerts are dispatched from this verified account.')
+    ]));
+
+    // Simple, Client-Friendly Account Grid
+    const grid = el('div', { style: 'margin-bottom:32px;display:flex;flex-direction:column;gap:18px;' });
+
+    const isConnected = creds.isConfigured || creds.status === 'connected';
+    const accountItems = [
+      {
+        label: 'ACCOUNT STATUS',
+        value: isConnected ? 'Connected & Verified' : 'Setup Required',
+        isStatus: true,
+        statusColor: isConnected ? '#047857' : '#5d7468',
+        hint: isConnected ? 'Official WhatsApp Business Account active and sending messages' : 'Connect your WhatsApp Business number in Settings'
+      },
+      {
+        label: 'OFFICIAL BUSINESS NUMBER',
+        value: creds.senderNumber || '+91 80715 82519',
+        hint: 'Verified business phone line used for voice receptionist & customer WhatsApp updates'
+      },
+      {
+        label: 'BUSINESS DISPLAY NAME',
+        value: creds.companyName || 'Seevora AI Voice',
+        hint: 'Company name displayed in customer WhatsApp chat headers'
+      },
+      {
+        label: 'VOICE AI AUTOMATED DISPATCH',
+        value: 'Active • Real-time dispatches enabled',
+        hint: 'Post-call conversation summaries and calendar invites are sent instantly when calls end'
+      },
+      {
+        label: 'INTEGRATION TYPE',
+        value: 'Official WhatsApp Business Platform (Cloud)',
+        hint: 'Direct enterprise tier with high delivery rates and instant message webhooks'
+      }
+    ];
+
+    accountItems.forEach(item => {
+      const row = el('div', {
+        style: 'padding-bottom:14px;border-bottom:1px solid rgba(13,93,65,0.08);display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;'
+      }, [
+        el('div', { style: 'max-width:340px;' }, [
+          el('div', { style: 'font-size:0.72rem;font-weight:800;color:#5d7468;letter-spacing:0.04em;' }, item.label),
+          item.hint ? el('div', { style: 'font-size:0.75rem;color:#94a3b8;margin-top:2px;' }, item.hint) : null
+        ].filter(Boolean)),
+        el('div', { style: 'font-weight:750;font-size:0.92rem;color:#14221c;' }, [
+          item.isStatus ? el('span', {
+            style: 'display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:' + (isConnected ? 'rgba(4,120,87,0.10)' : 'rgba(93,116,104,0.10)') + ';color:' + item.statusColor + ';border-radius:999px;font-size:0.76rem;'
+          }, [
+            el('span', { style: 'width:6px;height:6px;border-radius:50%;background:' + item.statusColor + ';' }),
+            el('span', {}, item.value)
+          ]) : el('span', {}, item.value)
+        ])
+      ]);
+      grid.appendChild(row);
+    });
+
+    host.appendChild(grid);
+
+    // Action button
+    const actionsRow = el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;' }, [
+      el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;font-size:0.84rem;border:none;cursor:pointer;',
+        onclick: () => goto('settings?tab=integrations')
+      }, 'Manage WhatsApp Settings →')
+    ]);
+    host.appendChild(actionsRow);
+  }
+
+  // ==========================================================================
+  // TAB 4: SEND MESSAGE & LIVE TEST SANDBOX (Zero Cards, Underline Inputs)
+  // ==========================================================================
+  function renderSandboxTab(host) {
+    // Title Underline Section Header
+    host.appendChild(el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Direct Customer Messaging'),
+      el('h3', { style: 'margin:0 0 6px;font-size:1.35rem;font-weight:850;color:#14221c;' }, 'Send Direct WhatsApp Message'),
+      el('p', { style: 'margin:0;font-size:0.86rem;color:#5d7468;max-width:760px;' }, 'Quickly send a direct WhatsApp follow-up, location pin, or appointment confirmation to any customer or lead.')
+    ]));
+
+    // Form Grid (Underline Inputs, No Boxes)
+    const form = el('div', { style: 'max-width:720px;margin-bottom:32px;display:flex;flex-direction:column;gap:20px;' });
+
+    // Phone & Name Row
+    const row1 = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:24px;' }, [
+      el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'RECIPIENT MOBILE NUMBER (10 DIGITS)'),
+        el('input', {
+          id: 'wa-sb-phone',
+          type: 'text',
+          placeholder: 'e.g. 9876543210 or +91 98765 43210',
+          value: '',
+          style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.92rem;color:#14221c;background:transparent;width:100%;outline:none;'
+        })
+      ]),
+      el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'RECIPIENT NAME'),
+        el('input', {
+          id: 'wa-sb-name',
+          type: 'text',
+          placeholder: 'e.g. Animesh Jain',
+          value: '',
+          style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.92rem;color:#14221c;background:transparent;width:100%;outline:none;'
+        })
+      ])
+    ]);
+    form.appendChild(row1);
+
+    // Template Dropdown (Themed Scandinavian Dropdown)
+    const templateDropdown = createThemedDropdown({
+      options: [
+        { value: 'call_summary', label: 'Post-Call Summary & Next Steps' },
+        { value: 'appointment', label: 'Appointment Booking Confirmation' },
+        { value: 'missed_call', label: 'Missed Call Follow-Up Message' },
+        { value: 'location', label: 'Office Location & Google Maps Pin' },
+        { value: 'custom', label: 'Custom Message' }
+      ],
+      value: 'call_summary',
+      className: 'sv-modal-dropdown sv-support-priority-dropdown',
+      searchable: false,
+      style: 'width:100%;',
+      onChange: (tVal) => {
+        const textArea = $('#wa-sb-text');
+        const nameVal = ($('#wa-sb-name') && $('#wa-sb-name').value.trim()) || 'Client';
+        const company = (hubData && hubData.credentials && hubData.credentials.companyName) || 'Seevora AI Voice';
+        if (!textArea) return;
+
+        if (tVal === 'call_summary') {
+          textArea.value = `Hi ${nameVal}, thank you for speaking with our AI Voice Receptionist at ${company}. Here is a summary of your call: Inquired about enterprise voice receptionist integration. Feel free to reply here if you have any questions!`;
+        } else if (tVal === 'appointment') {
+          textArea.value = `Hello ${nameVal}! Your appointment with ${company} has been scheduled for tomorrow at 11:00 AM IST. You can manage or reschedule your booking here: https://seevora.com/booking`;
+        } else if (tVal === 'missed_call') {
+          textArea.value = `Hi ${nameVal}, we noticed you called ${company} just now. Our AI Voice Receptionist is ready to assist you. Reply here or call us back anytime!`;
+        } else if (tVal === 'location') {
+          textArea.value = `Hi ${nameVal}, here is the Google Maps location pin and directions for ${company}: https://maps.google.com/?q=Seevora+Office. We look forward to meeting you!`;
+        }
+      }
+    });
+
+    const templateSelectWrap = el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'SELECT PRE-VERIFIED TEMPLATE'),
+      templateDropdown
+    ]);
+    form.appendChild(templateSelectWrap);
+
+    // Message Text Area
+    const initialMsg = `Hi Animesh, thank you for speaking with our AI Voice Receptionist at Seevora AI Voice. Here is a summary of your call: Inquired about enterprise voice receptionist integration. Feel free to reply here if you have any questions!`;
+    const textWrap = el('div', {}, [
+      el('label', { style: 'display:block;font-size:0.74rem;font-weight:750;text-transform:uppercase;color:#5d7468;margin-bottom:6px;' }, 'MESSAGE TEXT'),
+      el('textarea', {
+        id: 'wa-sb-text',
+        rows: 4,
+        style: 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;resize:vertical;line-height:1.45;',
+        value: initialMsg
+      })
+    ]);
+    form.appendChild(textWrap);
+
+    // Action Buttons
+    const btnRow = el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;' }, [
+      el('button', {
+        type: 'button',
+        class: 'btn btn-primary',
+        id: 'wa-sb-send-btn',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:8px 24px;font-weight:750;font-size:0.84rem;border:none;',
+        onclick: async () => {
+          const phoneInput = $('#wa-sb-phone');
+          const nameInput = $('#wa-sb-name');
+          const textInput = $('#wa-sb-text');
+          const sendBtn = $('#wa-sb-send-btn');
+
+          const phone = phoneInput ? phoneInput.value.trim() : '';
+          const name = nameInput ? nameInput.value.trim() : '';
+          const text = textInput ? textInput.value.trim() : '';
+
+          if (!phone) { toast('Please enter a recipient phone number', 'err'); return; }
+          if (!text) { toast('Please enter message text', 'err'); return; }
+
+          if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending...'; }
+          try {
+            const res = await api('/api/whatsapp-hub/send-message', {
+              method: 'POST',
+              body: { phone, name, text, type: 'text' }
+            });
+            toast('WhatsApp message recorded & dispatched!', 'ok');
+            await loadDataAndRender();
+            activeTab = 'logs';
+            Object.keys(tabBtnMap).forEach(k => tabBtnMap[k].classList.toggle('active', k === activeTab));
+            renderActiveTab(contentHost);
+          } catch (err) {
+            toast(err.message || 'Send failed', 'err');
+          } finally {
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send WhatsApp Message'; }
+          }
+        }
+      }, 'Send WhatsApp Message'),
+      el('button', {
+        type: 'button',
+        class: 'btn btn-ghost',
+        style: 'border-radius:999px;padding:8px 20px;border:1px solid #059669;color:#059669;font-weight:750;font-size:0.84rem;display:inline-flex;align-items:center;gap:6px;',
+        onclick: () => {
+          const phoneInput = $('#wa-sb-phone');
+          const textInput = $('#wa-sb-text');
+          const phone = (phoneInput ? phoneInput.value.trim() : '').replace(/\D/g, '');
+          const text = textInput ? textInput.value.trim() : '';
+          const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      }, [
+        el('span', { html: iconWhatsAppSvg(14) }),
+        el('span', {}, 'Open & Send on WhatsApp Web ↗')
+      ])
+    ]);
+    form.appendChild(btnRow);
+
+    host.appendChild(form);
+  }
+
+  // Preview Modal for Template Editing
+  function openTemplateModal(feat) {
+    const modalHost = el('div', {
+      style: 'position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'
+    });
+
+    const box = el('div', {
+      style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.18);border-radius:18px;max-width:540px;width:100%;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,0.12);'
+    }, [
+      el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;' }, [
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:800;color:#14221c;' }, feat.title),
+        el('button', {
+          style: 'background:none;border:none;font-size:1.2rem;cursor:pointer;color:#5d7468;',
+          onclick: () => modalHost.remove()
+        }, '✕')
+      ]),
+      el('p', { style: 'font-size:0.83rem;color:#5d7468;margin:0 0 16px;line-height:1.45;' }, feat.description),
+      el('label', { style: 'display:block;font-size:0.72rem;font-weight:800;color:#5d7468;text-transform:uppercase;margin-bottom:6px;' }, 'WHATSAPP TEMPLATE CONTENT'),
+      el('textarea', {
+        id: 'wa-tpl-edit-text',
+        rows: 5,
+        style: 'border:1px solid rgba(13,93,65,0.20);border-radius:10px;padding:10px;font-size:0.88rem;color:#14221c;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.45;margin-bottom:20px;',
+        value: feat.template || ''
+      }),
+      el('div', { style: 'display:flex;justify-content:flex-end;gap:10px;' }, [
+        el('button', {
+          class: 'btn btn-ghost btn-sm',
+          style: 'border-radius:999px;padding:6px 16px;',
+          onclick: () => modalHost.remove()
+        }, 'Cancel'),
+        el('button', {
+          class: 'btn btn-primary btn-sm',
+          style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:6px 20px;font-weight:750;',
+          onclick: () => {
+            const val = ($('#wa-tpl-edit-text') && $('#wa-tpl-edit-text').value) || '';
+            feat.template = val;
+            toast('Template updated.', 'ok');
+            modalHost.remove();
+          }
+        }, 'Save Template')
+      ])
+    ]);
+
+    modalHost.appendChild(box);
+    document.body.appendChild(modalHost);
+  }
+
+  // Preview Modal for Message Details
+  function openMessagePreviewModal(m) {
+    const modalHost = el('div', {
+      style: 'position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'
+    });
+
+    const box = el('div', {
+      style: 'background:#ffffff;border:1px solid rgba(13,93,65,0.18);border-radius:18px;max-width:520px;width:100%;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,0.12);'
+    }, [
+      el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;' }, [
+        el('div', {}, [
+          el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:800;color:#14221c;' }, m.recipientName || 'Message Details'),
+          el('div', { style: 'font-size:0.78rem;color:#5d7468;margin-top:2px;' }, m.phone || '')
+        ]),
+        el('button', {
+          style: 'background:none;border:none;font-size:1.2rem;cursor:pointer;color:#5d7468;',
+          onclick: () => modalHost.remove()
+        }, '✕')
+      ]),
+      el('div', {
+        style: 'background:#f0fdf4;border:1px solid rgba(5,150,105,0.20);border-radius:12px;padding:14px;font-size:0.88rem;color:#14221c;line-height:1.5;white-space:pre-wrap;margin-bottom:20px;font-family:inherit;'
+      }, m.text || ''),
+      el('div', { style: 'font-size:0.76rem;color:#5d7468;margin-bottom:20px;display:flex;justify-content:space-between;' }, [
+        el('span', {}, 'Trigger: ' + (m.triggerReason || 'Automated')),
+        el('span', {}, m.createdAt ? new Date(m.createdAt).toLocaleString('en-IN') : '')
+      ]),
+      el('div', { style: 'display:flex;justify-content:flex-end;gap:10px;' }, [
+        el('a', {
+          href: m.waLink || `https://wa.me/${(m.phone || '').replace(/\D/g, '')}`,
+          target: '_blank',
+          class: 'btn btn-primary btn-sm',
+          style: 'background:#059669;color:#fff;border-radius:999px;padding:6px 18px;text-decoration:none;font-weight:750;'
+        }, 'Open in WhatsApp Web ↗'),
+        el('button', {
+          class: 'btn btn-ghost btn-sm',
+          style: 'border-radius:999px;padding:6px 16px;',
+          onclick: () => modalHost.remove()
+        }, 'Close')
+      ])
+    ]);
+
+    modalHost.appendChild(box);
+    document.body.appendChild(modalHost);
+  }
+
+  // Initial load
+  await loadDataAndRender();
+}
+
+
 async function viewSettings(root) {
   const wrap = el('div', { class: 'aria-settings-view', style: 'width:100%;' });
   root.appendChild(wrap);
@@ -13195,8 +14068,7 @@ async function viewSettings(root) {
   ];
 
   const tabNav = el('div', {
-    class: 'admin-tab-nav aria-settings-tab-bar',
-    style: 'display:flex;align-items:center;gap:8px;padding:8px 0 16px;border-bottom:1.5px solid rgba(13,93,65,0.12);margin-bottom:28px;flex-wrap:wrap;'
+    class: 'admin-tab-nav aria-settings-tab-bar'
   });
 
   const tabButtons = [];
@@ -13204,9 +14076,6 @@ async function viewSettings(root) {
     const btn = el('button', {
       type: 'button',
       class: 'admin-tab-btn' + (currentTab === tab.id ? ' active' : ''),
-      style: currentTab === tab.id
-        ? 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;'
-        : 'border-radius:999px;padding:8px 20px;background:transparent;color:#5d7468;font-weight:650;border:1px solid transparent;cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;',
       onclick: () => switchTab(tab.id)
     }, [
       el('span', { html: navIcon(tab.icon) }),
@@ -13227,9 +14096,6 @@ async function viewSettings(root) {
     tabButtons.forEach(item => {
       const active = item.id === tabId;
       item.btn.className = 'admin-tab-btn' + (active ? ' active' : '');
-      item.btn.style.cssText = active
-        ? 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#ffffff;font-weight:750;border:none;box-shadow:0 2px 6px rgba(13,93,65,0.20);cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;'
-        : 'border-radius:999px;padding:8px 20px;background:transparent;color:#5d7468;font-weight:650;border:1px solid transparent;cursor:pointer;font-size:0.86rem;display:inline-flex;align-items:center;gap:8px;';
     });
 
     contentHost.innerHTML = '';
@@ -13519,7 +14385,7 @@ async function viewSettings(root) {
     const userNameInput = el('input', { class: 'input', id: 'prof_name', type: 'text', value: u.name || '', placeholder: 'Your Full Name' });
     const userEmailInput = el('input', { class: 'input', id: 'prof_email', type: 'email', value: u.email || '', placeholder: 'name@company.com' });
     const userPhoneInput = el('input', { class: 'input', id: 'prof_phone', type: 'tel', value: u.phone || '', placeholder: '+91 98765 43210' });
-    const userDesignationInput = el('input', { class: 'input', id: 'prof_designation', type: 'text', value: u.designation || '', placeholder: 'e.g. Managing Director / Operations Lead' });
+
 
     const tzSelect = createThemedDropdown({
       value: u.timezone || 'Asia/Kolkata',
@@ -13558,7 +14424,7 @@ async function viewSettings(root) {
       const newName = userNameInput.value.trim();
       const newEmail = userEmailInput.value.trim().toLowerCase();
       const newPhone = userPhoneInput.value.trim();
-      const newDesignation = userDesignationInput.value.trim();
+      const newDesignation = u.designation || '';
       const newTimezone = tzSelect.value;
       const newLanguage = langSelect.value;
 
@@ -13645,10 +14511,7 @@ async function viewSettings(root) {
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Mobile / Phone Number (For Escalations & SMS)'),
           userPhoneInput
         ]),
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Job Title / Designation'),
-          userDesignationInput
-        ]),
+
         el('div', {}, [
           el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Preferred Timezone'),
           tzSelect
@@ -13710,10 +14573,6 @@ async function viewSettings(root) {
     tenantDescInput.value = t.description || '';
 
     const colorVal = (t.branding && t.branding.color) || '#0d5d41';
-    const colorI = el('input', { type: 'color', id: 'set_color', value: colorVal, style: 'width:42px;height:42px;border:1px solid rgba(13,93,65,0.2);border-radius:8px;padding:2px;cursor:pointer;background:transparent;' });
-    const colorHex = el('input', { class: 'input', id: 'set_color_hex', value: colorVal, style: 'max-width:140px;font-family:var(--mono);' });
-    colorI.addEventListener('input', () => { colorHex.value = colorI.value; });
-    colorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorI.value = colorHex.value; });
 
     const saveTenantBtn = el('button', {
       class: 'btn btn-primary',
@@ -13726,7 +14585,7 @@ async function viewSettings(root) {
       try {
         const payload = {
           name: tenantNameInput.value.trim(),
-          color: colorI.value,
+          color: colorVal,
           industry: tenantIndustrySelect.value,
           website: tenantWebsiteInput.value.trim(),
           supportEmail: tenantSupportEmailInput.value.trim().toLowerCase(),
@@ -13803,10 +14662,7 @@ async function viewSettings(root) {
           tenantDescInput,
           el('span', { class: 'muted', style: 'font-size:0.74rem;color:#5d7468;margin-top:4px;display:block;' }, 'Your AI Voice Receptionist automatically uses this summary when callers ask "What does your company do?" or ask about available services.')
         ]),
-        el('div', {}, [
-          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Brand Accent Color'),
-          el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [colorI, colorHex])
-        ])
+
       ]),
       el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:8px;' }, [saveTenantBtn])
     ]);
@@ -13866,18 +14722,32 @@ async function viewSettings(root) {
     // ==========================================================================
   // UNIFIED: VOICE INTEGRATIONS TAB (Rumik + VoBiz + Dograh in one page)
   // ==========================================================================
-  async function renderVoiceIntegrationsTab(panel, _scrollToSection) {
+  async function renderVoiceIntegrationsTab(panel, _scrollToSection, targetTenantId) {
+    const isPlatformAdmin = ['super_admin', 'admin'].includes(u.role);
+    const curTenant = (State && State.me && State.me.tenant) || {};
+    const activeTenantId = targetTenantId || curTenant.id || '';
+
     const wrap = el('div', { class: 'settings-tab-inner aria-voice-integrations-tab', style: 'width:100%;' }, skeleton('sk-card', 3));
     panel.innerHTML = '';
     panel.appendChild(wrap);
 
     // ---- Load all data in parallel ----
-    let catalogData = null, flowsData = null;
+    let catalogData = null, flowsData = null, credsData = null, adminTenants = [];
     try {
-      [catalogData, flowsData] = await Promise.all([
-        api('/api/voice/catalog').catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
-        api('/api/dograh/flows').catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' }))
-      ]);
+      const q = activeTenantId ? ('?tenantId=' + encodeURIComponent(activeTenantId)) : '';
+      const promises = [
+        api('/api/voice/catalog' + q).catch(() => ({ voices: [], tones: [], activeVoice: {}, agents: [], activeWorkflowId: '13027' })),
+        api('/api/dograh/flows' + q).catch(() => ({ flows: [], agents: [], activeWorkflowId: '13027', usingShared: true, live: true, dashboardUrl: 'https://console.dograh.com' })),
+        api('/api/voice/credentials' + q).catch(() => ({ ok: true, hasDograh: false, hasRumik: false }))
+      ];
+      if (isPlatformAdmin) {
+        promises.push(api('/api/admin/tenants').catch(() => ({ tenants: [] })));
+      }
+      const results = await Promise.all(promises);
+      catalogData = results[0];
+      flowsData = results[1];
+      credsData = results[2];
+      if (results[3]) adminTenants = results[3].tenants || [];
     } catch (_) {}
 
     wrap.innerHTML = '';
@@ -13890,6 +14760,12 @@ async function viewSettings(root) {
     const flows = (flowsData && flowsData.flows) || [];
     const activeFlow = flows.find(f => f.isActive) || flows[0];
 
+    // Credentials resolution
+    const catalogCreds = (catalogData && catalogData.credentials) || {};
+    const creds = Object.assign({}, catalogCreds, credsData || {});
+    const hasRumik = Boolean(creds.hasRumik);
+    const hasDograh = Boolean(creds.hasDograh);
+
     let selectedVoiceId = active.voiceId || 'ira';
     let selectedTone = active.tone || 'happy';
     let selectedSpeed = active.speed || 1.0;
@@ -13897,30 +14773,64 @@ async function viewSettings(root) {
     let currentAudio = null;
     let currentlyPlayingId = null;
 
+    // Common flat underline input style (identical to VoBiz)
+    const vobizInputStyle = 'border:none;border-bottom:1.5px solid rgba(13,93,65,0.22);border-radius:0;padding:8px 0;font-size:0.90rem;color:#14221c;background:transparent;width:100%;outline:none;box-sizing:border-box;box-shadow:none;';
+
+    // ── PAGE HEADER ──────────────────────────────────────────────────────────
+    const pageHeader = el('div', { style: 'margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.12);' }, [
+      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Telephony · Speech · AI Flow Engine'),
+      el('h2', { style: 'margin:0 0 6px;font-size:1.55rem;font-weight:850;color:#14221c;letter-spacing:-0.03em;' }, 'Voice Integrations'),
+      el('p', { style: 'margin:0 0 16px;font-size:0.86rem;color:#5d7468;max-width:820px;line-height:1.55;' },
+        'Complete voice pipeline in one place. Connect Rumik for ultra-realistic AI voice personas, Dograh for conversational call flows, and VoBiz for Indian (+91) virtual phone lines.'
+      ),
+      el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' }, [
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(13,93,65,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#0d5d41;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';display:inline-block;' }),
+          el('span', { id: 'vi-voice-pill' }, hasRumik ? ('Voice: ' + ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') + ' (Rumik)') : 'Rumik: Needs Key')
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(37,99,235,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#2563eb;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (hasDograh ? '#2563eb' : '#9ca3af') + ';display:inline-block;' }),
+          el('span', {}, hasDograh ? ('Dograh AI Flow: #' + activeWfId + (activeFlow ? ' (' + activeFlow.name + ')' : ' (Core)')) : 'Dograh: Needs Key')
+        ]),
+        el('div', { style: 'display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(16,185,129,0.08);border-radius:999px;font-size:0.76rem;font-weight:750;color:#059669;' }, [
+          el('span', { style: 'width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;' }),
+          el('span', {}, 'VoBiz SIP Carrier: Ready')
+        ])
+      ])
+    ]);
+    wrap.appendChild(pageHeader);
+
     // ── SECTION TAB BAR ───────────────────────────────────────────────────────
     let activeSectionTab = _scrollToSection || 'voice';
     const sectionTabs = [
-      { id: 'voice', label: 'Voice & Speech' },
-      { id: 'phone', label: 'Phone Numbers' },
-      { id: 'flows', label: 'AI Call Flows' }
+      { id: 'voice', label: 'Voice & Speech (Rumik)' },
+      { id: 'phone', label: 'Phone Numbers (VoBiz)' },
+      { id: 'flows', label: 'AI Call Flows (Dograh)' }
     ];
     const sectionBtnMap = {};
     const sectionPanelMap = {};
 
-    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:32px;border-bottom:2px solid rgba(13,93,65,0.12);' });
+    const sectionNav = el('div', { style: 'display:flex;align-items:center;gap:0;margin-bottom:28px;border-bottom:2px solid rgba(13,93,65,0.12);' });
 
     function activateSectionTab(id) {
       activeSectionTab = id;
       sectionTabs.forEach(function(s) {
         const btn = sectionBtnMap[s.id];
         const sp = sectionPanelMap[s.id];
-        if (!btn || !sp) return;
         if (s.id === id) {
-          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:750;color:#0d5d41;background:transparent;border:none;border-bottom:2.5px solid #0d5d41;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
-          sp.style.display = 'block';
+          if (btn) {
+            btn.style.color = '#0d5d41';
+            btn.style.borderBottomColor = '#0d5d41';
+            btn.style.fontWeight = '800';
+          }
+          if (sp) sp.style.display = 'block';
         } else {
-          btn.style.cssText = 'padding:10px 22px;font-size:0.88rem;font-weight:600;color:#5d7468;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;margin-bottom:-2px;white-space:nowrap;';
-          sp.style.display = 'none';
+          if (btn) {
+            btn.style.color = '#5d7468';
+            btn.style.borderBottomColor = 'transparent';
+            btn.style.fontWeight = '600';
+          }
+          if (sp) sp.style.display = 'none';
         }
       });
     }
@@ -13938,182 +14848,350 @@ async function viewSettings(root) {
     wrap.appendChild(sectionNav);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 1: VOICE & SPEECH (RUMIK)
+    // SECTION 1: VOICE & SPEECH (RUMIK) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
     // ══════════════════════════════════════════════════════════════════════════
     const voicePanel = el('div', { style: 'display:none;' });
     sectionPanelMap['voice'] = voicePanel;
 
-    function stopPlayback() {
-      if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
-      currentlyPlayingId = null;
-      updatePlayButtons();
-    }
-    function playAudioUrl(url, id) {
-      stopPlayback();
-      currentlyPlayingId = id;
-      updatePlayButtons();
-      var a = new Audio(url);
-      currentAudio = a;
-      a.onended = function() { stopPlayback(); };
-      a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
-      a.play().catch(function() { stopPlayback(); });
-    }
-    var playBtnElements = new Map();
-    function updatePlayButtons() {
-      voices.forEach(function(v) {
-        var btn = playBtnElements.get(v.id);
-        if (!btn) return;
-        var isPlaying = currentlyPlayingId === v.id;
-        btn.innerHTML = isPlaying
-          ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-          : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-        btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
-        btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
-      });
-    }
-
-    // Voice Selection Grid
-    var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
-    voices.forEach(function(v) {
-      var isSelected = v.id === selectedVoiceId;
-      var card = el('div', {
-        'data-voice-card': v.id,
-        style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
-      });
-      card.onclick = function() {
-        selectedVoiceId = v.id;
-        selectedTone = v.defaultTone || 'happy';
-        voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
-          c.style.borderColor = c.dataset.voiceCard === v.id ? '#0d5d41' : 'rgba(13,93,65,0.14)';
-          c.style.background = c.dataset.voiceCard === v.id ? 'rgba(13,93,65,0.04)' : '#fff';
-        });
-        var pill = document.getElementById('vi-voice-pill');
-        if (pill) pill.textContent = 'Voice: ' + v.name + ' (Rumik Mulberry)';
-      };
-
-      var previewBtn = el('button', {
-        type: 'button',
-        style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
-      }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
-      previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
-      (function(voiceId, voiceMeta, btn) {
-        btn.onclick = async function(e) {
-          e.stopPropagation();
-          if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
-          btn.disabled = true;
-          btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
-          try {
-            var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
-            if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
-            else toast('No audio received.', 'err');
-          } catch (err) { toast('Preview error: ' + err.message, 'err'); }
-          finally { btn.disabled = false; }
-        };
-      })(v.id, v, previewBtn);
-      playBtnElements.set(v.id, previewBtn);
-
-      var selectedBadge = isSelected ? el('span', { style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '\u2713 Active') : null;
-      card.appendChild(el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
-        el('div', {}, [
-          el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
-          el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' \u00b7 ' + (v.gender === 'female' ? 'Female' : 'Male'))
+    // 1. Rumik KPI Bar (Identical to VoBiz KPI Bar)
+    const rumikKpis = el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SPEECH SYNTHESIS ENGINE'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Rumik (Mulberry)'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'High-Fidelity Neural Voice')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasRumik ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasRumik ? '#047857' : '#9ca3af') + ';' }),
+          el('span', {}, hasRumik ? 'Connected' : 'Not Connected')
         ]),
-        selectedBadge
-      ].filter(Boolean)));
-      card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
-      card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
-        return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
-      })));
-      card.appendChild(previewBtn);
-      voiceGrid.appendChild(card);
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'API Key Verified & Active' : 'API Key Required to Unlock')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE PERSONA'),
+        el('div', { id: 'rumik-kpi-active-persona', class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasRumik ? ((voices.find(v => v.id === selectedVoiceId) && voices.find(v => v.id === selectedVoiceId).name) || 'Ira') : 'Locked'),
+        el('div', { id: 'rumik-kpi-active-persona-sub', style: 'font-size:0.72rem;color:#5d7468;' }, hasRumik ? 'Assigned to reception desk' : 'Enter Rumik key below')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'STREAMING PROTOCOL'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Realtime Ultra-low Latency'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Direct SIP Trunk Audio Bridge')
+      ])
+    ]);
+    voicePanel.appendChild(rumikKpis);
+
+    // 2. Rumik Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
+    const rumikGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
+        el('div', {}, [
+          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Speech Synthesis Pipeline'),
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Rumik AI Streaming Voice Studio'),
+          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Rumik developer account to unlock ultra-natural human voices, streaming speech synthesis, and live sync with VoBiz phone lines.')
+        ]),
+        el('a', {
+          href: 'https://rumik.ai',
+          target: '_blank',
+          class: 'btn btn-primary btn-sm',
+          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
+        }, [
+          el('span', {}, 'Open Rumik Console'),
+          el('span', { html: uiIcon('arrowUpRight', 12) })
+        ])
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
+            el('span', {}, 'Acquire on Rumik Console')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on rumik.ai and obtain your developer API key.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
+            el('span', {}, 'Enter API Credentials')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Rumik API Key below to authenticate and link your account.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
+            el('span', {}, 'Instant Persona Sync')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Voice personas activate immediately and synchronize across all your AI voice agents and phone lines.')
+        ])
+      ])
+    ]);
+    voicePanel.appendChild(rumikGuideSection);
+
+    // 3. Rumik Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
+    const rumikKeyInp = el('input', {
+      type: 'password',
+      class: 'input',
+      placeholder: hasRumik ? '•••••••••••••••• (Connected - Enter new key to update)' : 'e.g. rmk_live_948f2c... (from rumik.ai)',
+      style: vobizInputStyle
     });
 
-    // Tone & Speed Controls
-    var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
-    if (tones.length > 0) {
-      var toneOptions = tones.map(function(t) {
-        return {
-          value: t.id,
-          label: t.label + (t.desc ? ' - ' + t.desc : '')
-        };
+    const rumikTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
+    if (isPlatformAdmin) {
+      rumikTenantSelect.innerHTML = '';
+      const tenantOptions = [];
+      if (curTenant && curTenant.id) {
+        tenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
+      }
+      adminTenants.forEach((cl) => {
+        if (!tenantOptions.some((o) => o.id === cl.id)) {
+          tenantOptions.push({ id: cl.id, name: cl.name || cl.id });
+        }
       });
-      var toneSel = createThemedDropdown({
-        value: selectedTone,
-        options: toneOptions,
-        searchable: false,
-        className: 'w-full',
-        style: 'width:100%;',
-        onChange: function(val) { selectedTone = val; }
+      tenantOptions.forEach((cl) => {
+        rumikTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
       });
-      toneRow.appendChild(el('div', {}, [
-        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
-        toneSel
-      ]));
+      rumikTenantSelect.onchange = () => {
+        renderVoiceIntegrationsTab(panel, 'voice', rumikTenantSelect.value);
+      };
     }
 
-    var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
-    var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
-    speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
-    toneRow.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
-      el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
-    ]));
-
-    var agentOptions = [
-      { value: '', label: 'Primary Agent (Default)' },
-      ...agentsCatalog.map(function(a) {
-        return {
-          value: a.id,
-          label: a.name + (a.isPrimary ? ' (Primary)' : '')
-        };
-      })
-    ];
-    var agentSel2 = createThemedDropdown({
-      value: selectedAgentId,
-      options: agentOptions,
-      searchable: false,
-      className: 'w-full',
-      style: 'width:100%;',
-      onChange: function(val) { selectedAgentId = val; }
-    });
-    toneRow.appendChild(el('div', {}, [
-      el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
-      agentSel2
-    ]));
-
-    var saveVoiceBtn = el('button', {
+    const connectRumikBtn = el('button', {
       type: 'button',
-      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
-    }, 'Save Voice & Sync to All Phone Lines');
-    saveVoiceBtn.onclick = async function() {
-      saveVoiceBtn.disabled = true;
-      saveVoiceBtn.textContent = 'Saving & Syncing...';
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
+    }, hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account');
+
+    connectRumikBtn.onclick = async () => {
+      const keyVal = rumikKeyInp.value.trim();
+      if (!keyVal && !hasRumik) {
+        toast('Rumik Speech API Key is required.', 'err');
+        return;
+      }
+      connectRumikBtn.disabled = true;
+      connectRumikBtn.textContent = 'Connecting...';
+      const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
       try {
-        var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
-        toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
-        var pill = document.getElementById('vi-voice-pill');
-        var vMeta = voices.find(function(v) { return v.id === selectedVoiceId; });
-        if (pill && vMeta) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik Mulberry)';
-      } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
-      finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
+        const body = { rumikApiKey: keyVal };
+        if (selectedTenant) body.targetTenantId = selectedTenant;
+        const res = await api('/api/voice/credentials', { method: 'POST', body });
+        toast(res.message || 'Rumik account connected successfully!', 'ok');
+        rumikKeyInp.value = '';
+        await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
+      } catch (err) {
+        toast(err.message || 'Failed to connect Rumik account.', 'err');
+      } finally {
+        connectRumikBtn.disabled = false;
+        connectRumikBtn.textContent = hasRumik ? 'Update Rumik Key' : 'Connect Rumik Account';
+      }
     };
 
-    voicePanel.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
-      el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'AI Streaming Speech Engine (Rumik Mulberry)'),
-      el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
-      el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the one that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
-    ]));
-    voicePanel.appendChild(voiceGrid);
-    voicePanel.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
-      el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
-      toneRow
-    ]));
-    voicePanel.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
+    const disconnectRumikBtn = hasRumik ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;cursor:pointer;',
+      onclick: async () => {
+        disconnectRumikBtn.disabled = true;
+        disconnectRumikBtn.textContent = 'Disconnecting...';
+        const selectedTenant = (isPlatformAdmin && rumikTenantSelect.value) ? rumikTenantSelect.value : activeTenantId;
+        try {
+          const body = { disconnectRumik: true };
+          if (selectedTenant) body.targetTenantId = selectedTenant;
+          await api('/api/voice/credentials', { method: 'POST', body });
+          toast('Rumik account disconnected successfully.', 'ok');
+          await renderVoiceIntegrationsTab(panel, 'voice', selectedTenant);
+        } catch (err) {
+          toast(err.message || 'Failed to disconnect.', 'err');
+          disconnectRumikBtn.disabled = false;
+          disconnectRumikBtn.textContent = 'Disconnect';
+        }
+      }
+    }, 'Disconnect') : null;
+
+    const rumikFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:16px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Rumik Account')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Rumik Speech API Key (Required)'),
+          rumikKeyInp
+        ]),
+        isPlatformAdmin ? el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
+          rumikTenantSelect
+        ]) : null
+      ].filter(Boolean)),
+      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectRumikBtn, disconnectRumikBtn].filter(Boolean))
+    ]);
+    voicePanel.appendChild(rumikFormSection);
+
+    // 4. Rumik Voice Personas Studio Section (Gated on hasRumik)
+    const rumikStudioSection = el('section', { style: 'margin-bottom:20px;' });
+    if (!hasRumik) {
+      rumikStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
+        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
+          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+          ])
+        ]),
+        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Rumik Voice Studio is Locked'),
+        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
+          'Please enter your Rumik Speech API Key in the form above and click "Connect Rumik Account" to unlock voice personas, speech synthesis, and live sync with your phone lines.'
+        )
+      ]));
+    } else {
+      function stopPlayback() {
+        if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {} currentAudio = null; }
+        currentlyPlayingId = null;
+        updatePlayButtons();
+      }
+      function playAudioUrl(url, id) {
+        stopPlayback();
+        currentlyPlayingId = id;
+        updatePlayButtons();
+        var a = new Audio(url);
+        currentAudio = a;
+        a.onended = function() { stopPlayback(); };
+        a.onerror = function() { stopPlayback(); toast('Unable to play audio sample.', 'err'); };
+        a.play().catch(function() { stopPlayback(); });
+      }
+      var playBtnElements = new Map();
+      function updatePlayButtons() {
+        voices.forEach(function(v) {
+          var btn = playBtnElements.get(v.id);
+          if (!btn) return;
+          var isPlaying = currentlyPlayingId === v.id;
+          btn.innerHTML = isPlaying
+            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+          btn.style.color = isPlaying ? '#dc2626' : '#0d5d41';
+          btn.style.borderColor = isPlaying ? '#dc2626' : 'rgba(13,93,65,0.22)';
+        });
+      }
+
+      var voiceGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;' });
+      voices.forEach(function(v) {
+        var isSelected = v.id === selectedVoiceId;
+        var card = el('div', {
+          'data-voice-card': v.id,
+          style: 'padding:16px 18px;border:2px solid ' + (isSelected ? '#0d5d41' : 'rgba(13,93,65,0.14)') + ';border-radius:14px;background:' + (isSelected ? 'rgba(13,93,65,0.04)' : '#fff') + ';cursor:pointer;transition:all 0.18s;'
+        });
+        card.onclick = function() {
+          selectedVoiceId = v.id;
+          selectedTone = v.defaultTone || 'happy';
+          voiceGrid.querySelectorAll('[data-voice-card]').forEach(function(c) {
+            c.style.borderColor = c.dataset.voiceCard === v.id ? '#0d5d41' : 'rgba(13,93,65,0.14)';
+            c.style.background = c.dataset.voiceCard === v.id ? 'rgba(13,93,65,0.04)' : '#fff';
+          });
+          var pill = document.getElementById('vi-voice-pill');
+          if (pill) pill.textContent = 'Voice: ' + v.name + ' (Rumik)';
+        };
+
+        var previewBtn = el('button', {
+          type: 'button',
+          style: 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1px solid rgba(13,93,65,0.22);background:transparent;color:#0d5d41;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:10px;'
+        }, '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview');
+        previewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview';
+        (function(voiceId, voiceMeta, btn) {
+          btn.onclick = async function(e) {
+            e.stopPropagation();
+            if (currentlyPlayingId === voiceId) { stopPlayback(); return; }
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid #0d5d41;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:4px;"></span> Loading';
+            try {
+              var res = await api('/api/voice/preview', { method: 'POST', body: { voiceId: voiceId, model: 'mulberry', tone: voiceMeta.defaultTone || 'happy', speed: 1.0, text: voiceMeta.sampleGreeting || '' } });
+              if (res && res.dataUrl) playAudioUrl(res.dataUrl, voiceId);
+              else toast('No audio received.', 'err');
+            } catch (err) { toast('Preview error: ' + err.message, 'err'); }
+            finally { btn.disabled = false; }
+          };
+        })(v.id, v, previewBtn);
+        playBtnElements.set(v.id, previewBtn);
+
+        var selectedBadge = isSelected ? el('span', { style: 'font-size:0.68rem;font-weight:750;padding:2px 8px;border-radius:999px;background:#0d5d41;color:#fff;white-space:nowrap;' }, '\u2713 Active') : null;
+        card.appendChild(el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;' }, [
+          el('div', {}, [
+            el('div', { style: 'font-weight:800;font-size:0.96rem;color:#14221c;' }, v.name),
+            el('div', { style: 'font-size:0.74rem;color:#5d7468;margin-top:1px;' }, v.accent + ' \u00b7 ' + (v.gender === 'female' ? 'Female' : 'Male'))
+          ]),
+          selectedBadge
+        ].filter(Boolean)));
+        card.appendChild(el('div', { style: 'font-size:0.78rem;color:#5d7468;line-height:1.45;margin-bottom:6px;' }, v.recommendedFor));
+        card.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;' }, (v.tags || []).map(function(t) {
+          return el('span', { style: 'font-size:0.68rem;padding:2px 7px;border-radius:999px;background:rgba(13,93,65,0.08);color:#0d5d41;font-weight:700;' }, t);
+        })));
+        card.appendChild(previewBtn);
+        voiceGrid.appendChild(card);
+      });
+
+      var toneRow = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;margin-bottom:28px;' });
+      if (tones.length > 0) {
+        var toneSel = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' },
+          tones.map(function(t) { return el('option', { value: t.id, selected: t.id === selectedTone }, t.label + ' \u2014 ' + t.desc); })
+        );
+        toneSel.onchange = function() { selectedTone = toneSel.value; };
+        toneRow.appendChild(el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'CALL TONE'),
+          toneSel
+        ]));
+      }
+
+      var speedDisplay = el('span', { style: 'font-size:0.86rem;font-weight:750;color:#0d5d41;margin-left:10px;white-space:nowrap;' }, selectedSpeed + 'x');
+      var speedRange = el('input', { type: 'range', min: '0.75', max: '1.35', step: '0.05', value: String(selectedSpeed), style: 'flex:1;accent-color:#0d5d41;' });
+      speedRange.oninput = function() { selectedSpeed = parseFloat(speedRange.value); speedDisplay.textContent = parseFloat(speedRange.value).toFixed(2) + 'x'; };
+      toneRow.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'SPEECH SPEED'),
+        el('div', { style: 'display:flex;align-items:center;gap:8px;' }, [speedRange, speedDisplay])
+      ]));
+
+      var agentSel2 = el('select', { class: 'select', style: 'width:100%;padding:9px 14px;border:1.5px solid rgba(13,93,65,0.20);border-radius:8px;background:#fff;font-size:0.88rem;' }, [
+        el('option', { value: '' }, 'Primary Agent (Default)'),
+        ...agentsCatalog.map(function(a) { return el('option', { value: a.id, selected: a.id === selectedAgentId }, a.name + (a.isPrimary ? ' (Primary)' : '')); })
+      ]);
+      agentSel2.onchange = function() { selectedAgentId = agentSel2.value; };
+      toneRow.appendChild(el('div', {}, [
+        el('label', { style: 'display:block;font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:8px;' }, 'APPLY VOICE TO AGENT'),
+        agentSel2
+      ]));
+
+      var saveVoiceBtn = el('button', {
+        type: 'button',
+        style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:11px 30px;font-weight:750;border:none;cursor:pointer;font-size:0.90rem;'
+      }, 'Save Voice & Sync to All Phone Lines');
+      saveVoiceBtn.onclick = async function() {
+        saveVoiceBtn.disabled = true;
+        saveVoiceBtn.textContent = 'Saving & Syncing...';
+        try {
+          var res = await api('/api/voice/save', { method: 'POST', body: { voiceId: selectedVoiceId, tone: selectedTone, speed: selectedSpeed, agentId: selectedAgentId, model: 'muga' } });
+          toast(res.message || 'Voice saved and synced to all phone lines!', 'ok');
+          var pill = document.getElementById('vi-voice-pill');
+          var vMeta = voices.find(function(v) { return v.id === selectedVoiceId; });
+          if (pill && vMeta) pill.textContent = 'Voice: ' + vMeta.name + ' (Rumik)';
+        } catch (err) { toast(err.message || 'Failed to save voice.', 'err'); }
+        finally { saveVoiceBtn.disabled = false; saveVoiceBtn.textContent = 'Save Voice & Sync to All Phone Lines'; }
+      };
+
+      rumikStudioSection.appendChild(el('div', { style: 'margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid rgba(13,93,65,0.08);' }, [
+        el('div', { style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Voice Catalog & Personas'),
+        el('h3', { style: 'margin:0 0 5px;font-size:1.20rem;font-weight:850;color:#14221c;' }, 'Select Voice Persona for Your AI Receptionist'),
+        el('p', { style: 'margin:0;font-size:0.84rem;color:#5d7468;max-width:760px;line-height:1.5;' }, 'Click Preview to hear each voice. Select the persona that fits your business. Click Save to deploy it live — Dograh AI flows and VoBiz lines update instantly.')
+      ]));
+      rumikStudioSection.appendChild(voiceGrid);
+      rumikStudioSection.appendChild(el('div', { style: 'padding-top:4px;margin-bottom:24px;' }, [
+        el('h4', { style: 'margin:0 0 16px;font-size:1.0rem;font-weight:800;color:#14221c;' }, 'Tone, Speed & Agent Assignment'),
+        toneRow
+      ]));
+      rumikStudioSection.appendChild(el('div', { style: 'margin-top:8px;' }, [saveVoiceBtn]));
+    }
+    voicePanel.appendChild(rumikStudioSection);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 2: PHONE NUMBERS (VOBIZ) — renders existing VoBiz UI
+    // SECTION 2: PHONE NUMBERS (VOBIZ) — UNTOUCHED VOBIZ TAB
     // ══════════════════════════════════════════════════════════════════════════
-    var phonePanel = el('div', { style: 'display:none;' });
+    const phonePanel = el('div', { style: 'display:none;' });
     sectionPanelMap['phone'] = phonePanel;
     (async function() {
       var vobizInner = el('div');
@@ -14122,15 +15200,218 @@ async function viewSettings(root) {
     })();
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 3: AI CALL FLOWS (DOGRAH) — renders existing Dograh UI
+    // SECTION 3: AI CALL FLOWS (DOGRAH) — INDIVIDUAL THEME IDENTICAL TO VOBIZ
     // ══════════════════════════════════════════════════════════════════════════
-    var flowsPanel = el('div', { style: 'display:none;' });
+    const flowsPanel = el('div', { style: 'display:none;' });
     sectionPanelMap['flows'] = flowsPanel;
-    (async function() {
-      var dograhInner = el('div');
-      flowsPanel.appendChild(dograhInner);
-      await renderDograhTab(dograhInner);
-    })();
+
+    // 1. Dograh KPI Bar (Identical to VoBiz KPI Bar)
+    const dograhKpis = el('div', {
+      class: 'settings-kpi-bar',
+      style: 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:0;padding:0;margin-bottom:32px;border-top:1px solid rgba(13,93,65,0.12);border-bottom:1px solid rgba(13,93,65,0.12);background:rgba(13,93,65,0.02);box-sizing:border-box;'
+    }, [
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'AI FLOW ENGINE'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'Dograh Flows'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Multi-turn Call Logic')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACCOUNT STATUS'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:' + (hasDograh ? '#047857' : '#5d7468') + ';margin:4px 0;display:flex;align-items:center;gap:6px;' }, [
+          el('span', { style: 'width:8px;height:8px;border-radius:50%;background:' + (hasDograh ? '#047857' : '#9ca3af') + ';' }),
+          el('span', {}, hasDograh ? 'Connected' : 'Not Connected')
+        ]),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? 'API Key & Org ID Active' : 'API Key Required to Unlock')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;border-right:1px solid rgba(13,93,65,0.12);display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'ACTIVE WORKFLOW'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#14221c;margin:4px 0;' }, hasDograh ? ('#' + activeWfId) : 'Locked'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, hasDograh ? (activeFlow ? activeFlow.name : 'Shared Core') : 'Enter Dograh key below')
+      ]),
+      el('div', { class: 'settings-kpi-item', style: 'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;' }, [
+        el('div', { class: 'kpi-label', style: 'font-size:0.70rem;font-weight:800;color:#5d7468;text-transform:uppercase;' }, 'SIP INTERCEPTOR'),
+        el('div', { class: 'kpi-value', style: 'font-size:1.15rem;font-weight:850;color:#0d5d41;margin:4px 0;' }, 'VoBiz Bi-directional'),
+        el('div', { style: 'font-size:0.72rem;color:#5d7468;' }, 'Live SIP Trunk Audio Bridge')
+      ])
+    ]);
+    flowsPanel.appendChild(dograhKpis);
+
+    // 2. Dograh Setup Architecture Guide (3-Step Flat Grid - Zero Cards)
+    const dograhGuideSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;' }, [
+        el('div', {}, [
+          el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Conversational Engine Pipeline'),
+          el('h3', { style: 'margin:0;font-size:1.25rem;font-weight:850;color:#14221c;letter-spacing:-0.01em;' }, 'Dograh Conversational AI Flows'),
+          el('p', { class: 'muted', style: 'margin:4px 0 0 0;font-size:0.84rem;color:#5d7468;' }, 'Connect your Dograh developer account to build custom multi-turn conversational voice flows, visual flow builder, and workflow routing.')
+        ]),
+        el('a', {
+          href: 'https://console.dograh.com',
+          target: '_blank',
+          class: 'btn btn-primary btn-sm',
+          style: 'border-radius:999px;padding:8px 20px;background:#0d5d41;color:#fff;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;gap:6px;'
+        }, [
+          el('span', {}, 'Open Dograh Console'),
+          el('span', { html: uiIcon('arrowUpRight', 12) })
+        ])
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;' }, [
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '1'),
+            el('span', {}, 'Acquire on Dograh Console')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create an account on console.dograh.com and generate your developer API key.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '2'),
+            el('span', {}, 'Enter API Credentials')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Provide your Dograh API Key and Organization ID below to authenticate.')
+        ]),
+        el('div', { style: 'padding:8px 0;' }, [
+          el('div', { style: 'display:flex;align-items:center;gap:8px;font-weight:800;color:#0d5d41;font-size:0.88rem;margin-bottom:4px;' }, [
+            el('span', { style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0d5d41;color:#fff;font-size:11px;font-weight:800;' }, '3'),
+            el('span', {}, 'Build & Deploy Flows')
+          ]),
+          el('div', { class: 'muted', style: 'font-size:0.80rem;color:#5d7468;line-height:1.45;' }, 'Create custom conversational voice trees, visual nodes, and deploy to your phone lines.')
+        ])
+      ])
+    ]);
+    flowsPanel.appendChild(dograhGuideSection);
+
+    // 3. Dograh Connect Form (Strictly Flat Underline - Zero Cards/Boxes)
+    const dograhKeyInp = el('input', {
+      type: 'password',
+      class: 'input',
+      placeholder: hasDograh ? '•••••••••••••••• (Connected - Enter new key to update)' : 'e.g. dgr_live_839f... (from console.dograh.com)',
+      style: vobizInputStyle
+    });
+
+    const dograhOrgInp = el('input', {
+      type: 'text',
+      class: 'input',
+      value: creds.dograhOrgId || '',
+      placeholder: 'e.g. org_a83f9... (from Dograh Console)',
+      style: vobizInputStyle
+    });
+
+    const dograhTenantSelect = el('select', { class: 'select aria-select', style: vobizInputStyle });
+    if (isPlatformAdmin) {
+      dograhTenantSelect.innerHTML = '';
+      const dograhTenantOptions = [];
+      if (curTenant && curTenant.id) {
+        dograhTenantOptions.push({ id: curTenant.id, name: (curTenant.name || 'Your Workspace') + ' (Your Workspace)' });
+      }
+      adminTenants.forEach((cl) => {
+        if (!dograhTenantOptions.some((o) => o.id === cl.id)) {
+          dograhTenantOptions.push({ id: cl.id, name: cl.name || cl.id });
+        }
+      });
+      dograhTenantOptions.forEach((cl) => {
+        dograhTenantSelect.appendChild(el('option', { value: cl.id, selected: cl.id === activeTenantId }, cl.name));
+      });
+      dograhTenantSelect.onchange = () => {
+        renderVoiceIntegrationsTab(panel, 'flows', dograhTenantSelect.value);
+      };
+    }
+
+    const connectDograhBtn = el('button', {
+      type: 'button',
+      class: 'btn btn-primary',
+      style: 'background:#0d5d41;color:#fff;border-radius:999px;padding:9px 24px;font-weight:750;border:none;'
+    }, hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account');
+
+    connectDograhBtn.onclick = async () => {
+      const keyVal = dograhKeyInp.value.trim();
+      const orgVal = dograhOrgInp.value.trim();
+      if (!keyVal && !hasDograh) {
+        toast('Dograh Flow API Key is required.', 'err');
+        return;
+      }
+      connectDograhBtn.disabled = true;
+      connectDograhBtn.textContent = 'Connecting...';
+      const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
+      try {
+        const body = { dograhApiKey: keyVal, dograhOrgId: orgVal };
+        if (selectedTenant) body.targetTenantId = selectedTenant;
+        const res = await api('/api/voice/credentials', { method: 'POST', body });
+        toast(res.message || 'Dograh account connected successfully!', 'ok');
+        dograhKeyInp.value = '';
+        await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
+      } catch (err) {
+        toast(err.message || 'Failed to connect Dograh account.', 'err');
+      } finally {
+        connectDograhBtn.disabled = false;
+        connectDograhBtn.textContent = hasDograh ? 'Update Dograh Credentials' : 'Connect Dograh Account';
+      }
+    };
+
+    const disconnectDograhBtn = hasDograh ? el('button', {
+      type: 'button',
+      class: 'btn btn-ghost btn-sm',
+      style: 'border-radius:999px;padding:8px 18px;border:1px solid rgba(220,38,38,0.25);color:#dc2626;font-weight:750;',
+      onclick: async () => {
+        if (!confirm('Are you sure you want to disconnect Dograh credentials? Custom call flows will be locked.')) return;
+        const selectedTenant = (isPlatformAdmin && dograhTenantSelect.value) ? dograhTenantSelect.value : activeTenantId;
+        try {
+          const body = { disconnectDograh: true };
+          if (selectedTenant) body.targetTenantId = selectedTenant;
+          await api('/api/voice/credentials', { method: 'POST', body });
+          toast('Dograh account disconnected.', 'ok');
+          await renderVoiceIntegrationsTab(panel, 'flows', selectedTenant);
+        } catch (err) {
+          toast(err.message || 'Failed to disconnect.', 'err');
+        }
+      }
+    }, 'Disconnect') : null;
+
+    const dograhFormSection = el('section', { style: 'margin-bottom:32px;padding-bottom:28px;border-bottom:1.5px solid rgba(13,93,65,0.10);' }, [
+      el('div', { style: 'margin-bottom:16px;' }, [
+        el('div', { class: 'aria-section-kicker', style: 'font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0d5d41;margin-bottom:4px;' }, 'Account Authentication'),
+        el('h4', { style: 'margin:0;font-size:1.15rem;font-weight:850;color:#14221c;' }, 'Connect Your Dograh Account')
+      ]),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;max-width:840px;margin-bottom:20px;' }, [
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Flow API Key (Required)'),
+          dograhKeyInp
+        ]),
+        el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Dograh Organization ID (Required)'),
+          dograhOrgInp
+        ]),
+        isPlatformAdmin ? el('div', {}, [
+          el('label', { style: 'display:block;font-size:0.76rem;font-weight:750;text-transform:uppercase;letter-spacing:0.04em;color:#5d7468;margin-bottom:6px;' }, 'Assign to Client Workspace'),
+          dograhTenantSelect
+        ]) : null
+      ].filter(Boolean)),
+      el('div', { style: 'display:flex;align-items:center;gap:12px;' }, [connectDograhBtn, disconnectDograhBtn].filter(Boolean))
+    ]);
+    flowsPanel.appendChild(dograhFormSection);
+
+    // 4. Dograh Flow Studio / Flows List Section (Gated on hasDograh)
+    const dograhStudioSection = el('section', { style: 'margin-bottom:20px;' });
+    if (!hasDograh) {
+      dograhStudioSection.appendChild(el('div', { style: 'padding:36px 0;text-align:center;' }, [
+        el('div', { style: 'width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:rgba(13,93,65,0.08);display:flex;align-items:center;justify-content:center;color:#0d5d41;' }, [
+          el('svg', { viewBox: '0 0 24 24', width: '22', height: '22', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+            el('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+            el('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+          ])
+        ]),
+        el('h4', { style: 'margin:0 0 6px;font-size:1.10rem;font-weight:850;color:#14221c;' }, 'Dograh AI Call Flows are Locked'),
+        el('p', { style: 'margin:0 auto 14px;font-size:0.84rem;color:#5d7468;max-width:520px;line-height:1.5;' },
+          'Please enter your Dograh API Key and Organization ID in the form above and click "Connect Dograh Account" to unlock custom conversational call flows, visual flow builder, and workflow routing.'
+        )
+      ]));
+    } else {
+      (async function() {
+        var dograhInner = el('div');
+        dograhStudioSection.appendChild(dograhInner);
+        await renderDograhTab(dograhInner);
+      })();
+    }
+    flowsPanel.appendChild(dograhStudioSection);
 
     wrap.appendChild(voicePanel);
     wrap.appendChild(phonePanel);
@@ -14139,7 +15420,6 @@ async function viewSettings(root) {
     activateSectionTab(activeSectionTab);
   }
 
-  // ==========================================================================
   // ==========================================================================
   // VOBIZ TELEPHONY & CARRIER INTEGRATIONS
   // ==========================================================================

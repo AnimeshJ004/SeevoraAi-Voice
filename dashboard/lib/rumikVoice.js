@@ -187,7 +187,7 @@ async function synthesizeRumikSpeech(options = {}) {
     return audioCache.get(cacheKey);
   }
 
-  const apiKey = process.env.RUMIK_API_KEY || '';
+  const apiKey = options.apiKey || process.env.RUMIK_API_KEY || '';
   if (!apiKey) {
     const fallbackWav = generateSyntheticFallbackWav(cleanText);
     const result = {
@@ -324,8 +324,8 @@ async function synthesizeRumikSpeech(options = {}) {
 /**
  * Sync selected Rumik voice into Dograh Organization Model Configuration
  */
-async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry') {
-  const dograhKey = process.env.DOGRAH_API_KEY || '';
+async function syncDograhPipelineVoice(voiceId = 'ira', model = 'mulberry', options = {}) {
+  const dograhKey = options.dograhKey || options.apiKey || process.env.DOGRAH_API_KEY || '';
   if (!dograhKey) return { ok: false, error: 'missing_dograh_key' };
 
   const voiceMeta = VOICE_CATALOG.find((v) =>

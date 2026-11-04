@@ -1,42 +1,43 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Seevora AI Voice - Autonomous Conversational AI Receptionist</title>
-  <meta name="description" content="Seevora AI Voice Receptionist. Human-parity conversational phone calls in English, Hindi, and Hinglish for ~₹2/minute." />
-  <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
-  <link rel="apple-touch-icon" href="/assets/seevora-logo.png" />
-  <meta name="theme-color" content="#f7f8fa" />
-  <link rel="stylesheet" href="/assets/site.css" />
-  <script src="/assets/site.js" defer></script>
-</head>
-<body>
-  <div class="noise" aria-hidden="true"></div>
-
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Seevora AI Voice &mdash; Autonomous AI Receptionist & Phone Agent</title>
+  <meta name="description" content="Autonomous, human-parity conversational voice agents answering inbound and placing outbound calls for ~₹2/minute. Real phone numbers, under 800ms latency, fluent Indian Hinglish." />
+  <link rel="icon" href="/assets/seevora-logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/assets/seevora-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <script defer src="/assets/site.js"></script>
+</head>
+<body>
+
   <!-- Shared Site Navigation Header -->
   <header class="site-nav">
     <div class="site-nav-inner">
       <a href="/" class="site-brand">
-        <img src="/assets/seevora-logo.png" alt="Seevora" class="site-brand-logo" />
+        <img src="/assets/seevora-logo.png" alt="Seevora Logo" class="site-brand-logo" />
         <span class="site-brand-name">Seevora<span>Voice</span></span>
-        <span class="site-brand-badge">AI Receptionist</span>
       </a>
 
-      <ul class="site-nav-links">
-        <li><a href="/" class="site-nav-link active">Home</a></li>
-        <li><a href="/features.html" class="site-nav-link">Features</a></li>
-        <li><a href="/pricing.html" class="site-nav-link">Pricing</a></li>
-        <li><a href="/contact.html" class="site-nav-link">Contact Us</a></li>
-        <li><a href="/privacy.html" class="site-nav-link">Privacy</a></li>
-        <li><a href="/terms.html" class="site-nav-link">Terms</a></li>
-      </ul>
+      <!-- Desktop Links: Clean SaaS Navigation (Home, Features, Pricing, Contact Us) -->
+      <nav class="site-nav-links">
+        <a href="/" class="site-nav-link active">Home</a>
+        <a href="/features.html" class="site-nav-link">Features</a>
+        <a href="/pricing.html" class="site-nav-link">Pricing</a>
+        <a href="/contact.html" class="site-nav-link">Contact Us</a>
+      </nav>
 
+      <!-- Auth Actions -->
       <div class="site-nav-actions">
         <a href="/login.html" class="btn-ghost link-auth-signin">Sign In</a>
-        <a href="/login.html" class="btn-primary btn-auth-entry">Get Started Free</a>
+        <a href="/login.html" class="btn-primary btn-auth-entry">Deploy Free &rarr;</a>
       </div>
 
+      <!-- Mobile Toggle Button -->
       <button id="siteNavToggle" class="site-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" type="button">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
@@ -55,269 +56,588 @@
         <a href="/login.html" class="btn-primary btn-auth-entry" style="width:100%;text-align:center;">Get Started Free</a>
       </div>
     </div>
-  </header>
+  </header>
+
+  <!-- Main Container -->
 
-  <!-- Hero Section -->
-  <main class="site-container" style="padding-top:20px;">
-    <div class="site-hero">
-      <span class="badge-pill">⚡ Sub-Second AI Telephony &middot; Dedicated Indian Numbers (+91)</span>
-      <h1>Your 24/7 AI Voice Receptionist. Real Phone Calls for <span class="highlight">~₹2 a Minute</span>.</h1>
-      <p class="site-hero-sub">
-        Never miss another customer call. Seevora answers in under 800ms, speaks fluent English, Hindi, and Hinglish with zero robotic delay, schedules bookings on Cal.com, and extracts qualified leads straight into your CRM.
-      </p>
-      
-      <div class="site-hero-actions">
-        <a href="/login.html" class="btn-primary btn-auth-entry" style="padding:13px 28px;font-size:15px;">Launch Your Agent Free &rarr;</a>
-        <a href="tel:+918071582519" class="btn-secondary" style="padding:13px 24px;font-size:15px;">Call Live Demo (+91 80715 82519)</a>
-      </div>
+  <!-- Full-Bleed Hero (outside site-container for true full-width) -->
+  <div class="hero-fullbleed">
+      <section class="site-hero" style="padding-top:36px;padding-bottom:54px;text-align:center;position:relative;z-index:1;max-width:860px;margin:0 auto;">
+        <h1 style="font-size:clamp(36px, 5.5vw, 60px);letter-spacing:-0.04em;line-height:1.12;margin-top:0;margin-bottom:18px;">
+          Your 24/7 AI Voice Receptionist.<br />
+          <span class="hero-gradient-text">Real Phone Calls for ~&#x20b9;2 a Minute.</span>
+        </h1>
 
-      <div class="site-trust-row">
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Under 800ms Latency</span>
-        </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Natural Indian Hinglish</span>
-        </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>₹2/min vs ₹18/min</span>
-        </div>
-        <div class="site-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Instant Cal.com Booking</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Interactive Live Receptionist Simulation Card -->
-    <div class="simulator-card">
-      <div class="sim-header">
-        <div class="sim-caller-info">
-          <div class="sim-avatar">R</div>
-          <div class="sim-details">
-            <h4>Ria &mdash; Seevora AI Receptionist</h4>
-            <span>Serving Northstar Dental & Clinic Group (+91 80715 82519)</span>
-          </div>
-        </div>
-        <div class="sim-live-badge">
-          <span class="sim-live-dot"></span>
-          Call in Progress
-        </div>
-      </div>
-
-      <div class="sim-bubble-row">
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Namaste! Northstar Dental Clinic me call karne ke liye dhanyawad. Mera naam Ria hai. Mai aapki kya madad kar sakti hoon?"
-        </div>
-
-        <div class="sim-bubble caller">
-          <strong>Caller (Vikramaditya):</strong><br />
-          "Hello Ria, mujhe kal root canal consultation ke liye doctor appointment schedule karni hai."
-        </div>
-
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Bilkul Vikramaditya ji. Kal Dr. Sharma ke paas subah 11:30 AM aur dopahar 3:00 PM ke slots open hain. Kaunsa time aapke liye convenient rahega?"
-        </div>
-
-        <div class="sim-bubble caller">
-          <strong>Caller (Vikramaditya):</strong><br />
-          "11:30 AM wala slot confirm kar dijiye."
-        </div>
-
-        <div class="sim-bubble agent">
-          <strong>Ria (AI Receptionist):</strong><br />
-          "Great! Kal subah 11:30 AM ka consultation lock ho gaya hai. Confirmation SMS aur location details aapke phone par bhej di gayi hain. Have a great day!"
-        </div>
-      </div>
-
-      <div class="sim-stats-bar">
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Response Time</div>
-          <div class="sim-stat-val" style="color:#0d5d41;">0.78s</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Language Mode</div>
-          <div class="sim-stat-val">Hindi / Hinglish</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Action Outcome</div>
-          <div class="sim-stat-val" style="color:#059669;">Cal.com Booked ✔</div>
-        </div>
-        <div class="sim-stat-item">
-          <div class="sim-stat-label">Measured Cost</div>
-          <div class="sim-stat-val">₹1.80 / min</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3 Core Pillars Bento Grid -->
-    <div style="margin-top:70px;">
-      <div style="text-align:center;max-width:680px;margin:0 auto 32px;">
-        <span class="badge-pill">Built for Business Results</span>
-        <h2 style="font-size:30px;margin-top:10px;margin-bottom:8px;">Why Indian Businesses Choose Seevora</h2>
-        <p style="font-size:15px;color:var(--muted);">
-          Traditional voice bots sound robotic, lag by 3-4 seconds, and cost 10x more. Seevora fixes all three flaws simultaneously.
+        <p class="site-hero-sub" style="max-width:680px;margin:0 auto 32px;font-size:clamp(16px, 1.8vw, 18px);line-height:1.65;color:var(--muted);">
+          Never miss another revenue call. Seevora answers in under 800ms, speaks fluent English, Hindi, and Hinglish with zero robotic delay, schedules bookings on Cal.com, and extracts qualified leads straight into your CRM.
         </p>
-      </div>
 
-      <div class="bento-grid">
-        <div class="bento-card">
-          <div class="bento-icon-wrap">⚡</div>
-          <div class="bento-title">Sub-Second Conversational Turn-Taking</div>
-          <div class="bento-desc">
-            Deepgram Nova-3 speech recognition meets Groq LPU inference. Callers talk naturally with mid-sentence interruptions (barge-in) and zero awkward waiting.
+        <div class="site-hero-actions" style="justify-content:center;margin-bottom:30px;">
+          <a href="/login.html" class="btn-primary btn-auth-entry" style="padding:15px 36px;font-size:16.5px;">Launch Agent Free &rarr;</a>
+          <a href="tel:+918071582519" class="btn-secondary" style="padding:15px 28px;font-size:16.5px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);">
+            <span style="display:inline-block;animation:pulseDot 1.8s infinite;margin-right:6px;">📞</span>
+            Call Demo: +91 80715 82519
+          </a>
+        </div>
+
+        <div class="site-trust-row" style="justify-content:center;margin-bottom:28px;">
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Under 800ms Latency</span>
+          </div>
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Native Hinglish Cadence</span>
+          </div>
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>90% Cheaper vs Legacy</span>
           </div>
         </div>
 
-        <div class="bento-card">
-          <div class="bento-icon-wrap">🎙️</div>
-          <div class="bento-title">Rumik Silk Muga Voice Engine</div>
-          <div class="bento-desc">
-            Expressive Indian female voice persona ("Ira") with natural inflection, native Hindi phoneme pronunciation, and tailored vocal directions.
+        <!-- Social Proof Avatar Stack -->
+        <div class="hero-social-proof" style="justify-content:center;border-top:none;padding-top:0;">
+          <div class="avatar-stack">
+            <img src="/assets/face/face_49.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_70.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_81.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_92.png" alt="Client" class="avatar-stack-item" />
+          </div>
+          <div class="social-proof-meta" style="text-align:left;">
+            <div class="social-proof-stars">★★★★★</div>
+            <div class="social-proof-text">Trusted by <strong>1,200+ Indian Businesses &amp; Clinics</strong></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+
+  <main class="site-container" style="padding-top:40px;">
+    
+                <!-- 1. Full-Bleed Hero with Acoustic Background Artwork -->
+
+        <div class="site-trust-row" style="justify-content:center;margin-bottom:28px;">
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Under 800ms Latency</span>
+          </div>
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Native Hinglish Cadence</span>
+          </div>
+          <div class="site-trust-item" style="background:rgba(255,255,255,0.88);backdrop-filter:blur(6px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>90% Cheaper vs Legacy</span>
           </div>
         </div>
 
-        <div class="bento-card">
-          <div class="bento-icon-wrap">💰</div>
-          <div class="bento-title">~₹2 / Minute Transparent Pricing</div>
-          <div class="bento-desc">
-            Stop paying ₹15 to ₹22 per minute on ElevenLabs + Twilio. Seevora delivers full human parity at ~₹2/min with instant UPI wallet recharges.
+        <!-- Social Proof Avatar Stack -->
+        <div class="hero-social-proof" style="justify-content:center;border-top:none;padding-top:0;">
+          <div class="avatar-stack">
+            <img src="/assets/face/face_49.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_70.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_81.png" alt="Client" class="avatar-stack-item" />
+            <img src="/assets/face/face_92.png" alt="Client" class="avatar-stack-item" />
+          </div>
+          <div class="social-proof-meta" style="text-align:left;">
+            <div class="social-proof-stars">★★★★★</div>
+            <div class="social-proof-text">Trusted by <strong>1,200+ Indian Businesses &amp; Clinics</strong></div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
 
-    <!-- Preset Library Showcase -->
-    <div class="site-card" style="margin-top:60px;">
-      <div style="text-align:center;max-width:700px;margin:0 auto 36px;">
-        <span class="badge-pill">Ready-To-Deploy Personas</span>
-        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">8 Pre-Trained Receptionist Blueprints</h2>
-        <p style="font-size:14.5px;color:var(--muted);">
-          Launch a battle-tested agent in one click. Customize instructions, business FAQs, and phone routing from the Studio.
-        </p>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px;">
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">🦷</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Dental & Medical Intake</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Patient triage, dental symptom intake, Cal.com slot booking, and emergency dentist dispatch.</p>
-        </div>
-
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">🏡</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Real Estate Lead Qualifier</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Buyer budget qualification, BHK preferences, site-visit scheduling, and WhatsApp brochure dispatch.</p>
-        </div>
-
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">⚖️</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Legal & Injury Intake</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Accident date validation, liability qualification, attorney calendar locking, and zero-recording privacy.</p>
-        </div>
-
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">❄️</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">HVAC & Field Dispatch</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Emergency cooling/heating triage, technician dispatch booking, address capture, and job routing.</p>
-        </div>
-
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">🍽️</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">Restaurant Reservations</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Party size verification, table availability, dietary allergy notes, and confirmation WhatsApp SMS.</p>
-        </div>
-
-        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
-          <div style="font-size:22px;margin-bottom:8px;">🎧</div>
-          <h4 style="font-size:16px;font-weight:750;color:var(--ink);">24/7 Front-Desk Support</h4>
-          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Hours, location, pricing FAQs, order tracking, and warm handoff to human staff when requested.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Final Call to Action -->
-    <div style="background:var(--primary);color:#ffffff;border-radius:24px;padding:50px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
-      <h2 style="font-size:clamp(26px, 4vw, 36px);color:#ffffff;margin-bottom:12px;">Stop Losing Revenue to Missed Calls</h2>
-      <p style="font-size:16px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.6;">
-        Set up your first AI receptionist in 5 minutes. Sign up today and get ₹10 in free test call credits instantly.
-      </p>
-      <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
-        <a href="/login.html" class="btn-secondary" style="background:#ffffff;color:var(--primary)!important;border:none;padding:12px 28px;font-size:15px;">Create Free Account &rarr;</a>
-        <a href="/contact.html" class="btn-primary" style="background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.4);padding:12px 24px;font-size:15px;">Schedule Demo</a>
-      </div>
-    </div>
-  </main>
-
-  <!-- Shared Site Footer -->
-  <footer class="site-footer">
-    <div class="site-footer-inner">
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <img src="/assets/seevora-logo.png" alt="Seevora" width="32" height="32" style="border-radius:8px;" />
-          <span style="font-family:var(--font-heading);font-weight:800;font-size:18px;">Seevora<span style="color:var(--primary);">Voice</span></span>
-        </div>
-        <p style="font-size:13.5px;color:var(--muted);max-width:320px;line-height:1.55;">
-          Autonomous, human-parity conversational voice agents answering inbound and placing outbound calls for ~₹2/minute.
-        </p>
-        <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--primary);">
-          <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.25);"></span>
-          All Systems Operational
-        </div>
-      </div>
-
-      <div>
-        <h4 class="footer-col-title">Product</h4>
-        <ul class="footer-links-list">
-          <li><a href="/features.html">Features</a></li>
-          <li><a href="/pricing.html">Pricing Plans</a></li>
-          <li><a href="/demo.html">Web Voice Dialer</a></li>
-          <li><a href="/app.html">Voice Studio Console</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <h4 class="footer-col-title">Solutions</h4>
-        <ul class="footer-links-list">
-          <li><a href="/features.html#dental">Dental & Medical Clinics</a></li>
-          <li><a href="/features.html#realestate">Real Estate Lead Qual</a></li>
-          <li><a href="/features.html#hvac">HVAC & Field Dispatch</a></li>
-          <li><a href="/features.html#support">24/7 Front-Desk Support</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <h4 class="footer-col-title">Company & Legal</h4>
-        <ul class="footer-links-list">
-          <li><a href="/contact.html">Contact Us</a></li>
-          <li><a href="/privacy.html">Privacy Policy</a></li>
-          <li><a href="/terms.html">Terms of Service</a></li>
-          <li><a href="/data-deletion.html">Data Deletion</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <div>&copy; 2026 Seevora Pvt Ltd. All rights reserved.</div>
-      <div>Deepgram Nova-3 &middot; Groq &middot; Rumik Silk &middot; Vobiz Telephony</div>
-    </div>
-  </footer>
-
-  <script>
-    // Automatic logout parameter clearing
-    (function() {
-      const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
-      if (isLoggedOut) {
-        document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
-        document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
-        try { localStorage.clear(); sessionStorage.clear(); } catch (_) { }
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    })();
-  </script>
-</body>
+    <!-- 2. Hero Showcase Visual Banner with Floating Telemetry Pills -->
+    <div class="hero-visual-card">
+      <img src="/assets/receptionist.jpg" alt="Seevora AI Voice Front-Desk Receptionist" class="hero-bg-img" />
+      
+      <!-- Floating Live Intelligence Pills -->
+      <div class="hero-float-pill pill-top-left">
+        <span class="sim-live-dot"></span>
+        <div>
+          <strong style="color:var(--ink);">Inbound Call: +91 80715 82519</strong>
+          <div style="font-size:11px;color:var(--muted);">Northstar Dental &middot; Connected (0.2s)</div>
+        </div>
+      </div>
+
+      <div class="hero-float-pill pill-top-right">
+        <span style="font-size:16px;">⚡</span>
+        <div>
+          <strong style="color:var(--primary);">280ms First-Token Latency</strong>
+          <div style="font-size:11px;color:var(--muted);">Groq LPU &middot; Deepgram Nova-3 Stream</div>
+        </div>
+      </div>
+
+      <div class="hero-floating-badge">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="badge-brand-box">
+            <img src="/assets/seevora-logo.png" alt="Seevora" class="badge-logo-img" />
+          </div>
+          <div class="badge-meta">
+            <div class="badge-title">Autonomous Front-Desk & Voice Intake</div>
+            <div class="badge-sub">Deepgram Nova-3 &middot; Groq LPU &middot; Rumik Silk &middot; VoBiz Indian DID</div>
+          </div>
+        </div>
+        <div class="badge-pill-status">
+          <span class="sim-live-dot"></span>
+          Live Inbound Ready
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Integration & Technology Ecosystem Strip -->
+    <div class="ecosystem-strip">
+      <span style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-right:8px;">Powered By:</span>
+      <div class="eco-item">⚡ <span>Deepgram Nova-3</span></div>
+      <div class="eco-item">🚀 <span>Groq LPUs</span></div>
+      <div class="eco-item">🎙️ <span>Rumik Silk Muga</span></div>
+      <div class="eco-item">📱 <span>VoBiz +91 Telecom</span></div>
+      <div class="eco-item">📅 <span>Cal.com Scheduling</span></div>
+      <div class="eco-item">💬 <span>WhatsApp Business</span></div>
+      <div class="eco-item">📊 <span>CRM Webhooks</span></div>
+    </div>
+
+    <!-- 4. Interactive Voice Personas Showcase -->
+    <div style="margin-top:50px;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 28px;">
+        <span class="badge-pill">Natural Vocal Nuance</span>
+        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">Listen to Our Production Voice Personas</h2>
+        <p style="font-size:15px;color:var(--muted);">
+          Each voice persona is fine-tuned for native Hindi and Indian English pronunciations with human-level cadence.
+        </p>
+      </div>
+
+      <div class="persona-selector-grid">
+        <div class="persona-select-card active">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_49.png" alt="Ria" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Ria</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Front-Desk & Intake</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Warm, patient, and welcoming. Ideal for clinics, dental practices, and front offices.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>English / Hinglish</span>
+            <span class="sim-live-dot"></span>
+          </div>
+        </div>
+
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_81.png" alt="Aryan" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Aryan</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">High-Ticket Sales</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Assertive, confident, and persuasive. Built for real estate buyer qualification and B2B SaaS leads.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Fluent Hinglish</span>
+            <span class="sim-live-dot"></span>
+          </div>
+        </div>
+
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_71.png" alt="Ananya" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Ananya</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Hospitality & Bookings</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Upbeat and attentive. Perfect for restaurant table reservations, salon appointments, and hotels.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Hindi / English</span>
+            <span class="sim-live-dot"></span>
+          </div>
+        </div>
+
+        <div class="persona-select-card">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="/assets/face/face_50.png" alt="Vikram" class="preset-avatar-img" />
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--ink);">Vikram</div>
+              <div style="font-size:11.5px;color:var(--primary);font-weight:700;">Support & Auto Service</div>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.45;">Calm, technical, and methodical. Designed for vehicle service booking, insurance, and warranty intake.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle);font-size:11.5px;color:var(--primary);font-weight:700;">
+            <span>Conversational</span>
+            <span class="sim-live-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 3 Core Animated Bento Tech Cards -->
+    <div style="margin-top:70px;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 32px;">
+        <span class="badge-pill">Built for Business Results</span>
+        <h2 style="font-size:30px;margin-top:10px;margin-bottom:8px;">Why Indian Businesses Choose Seevora</h2>
+        <p style="font-size:15px;color:var(--muted);">
+          Traditional voice bots sound robotic, lag by 3-4 seconds, and cost 10x more. Seevora fixes all three flaws simultaneously.
+        </p>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card">
+          <div class="bento-visual-box latency-stream-box">
+            <div class="stream-top-bar">
+              <span class="stream-pill"><span class="sim-live-dot"></span> Streaming STT</span>
+              <span class="stream-tech-tag">Deepgram + Groq</span>
+            </div>
+            <div class="waveform-stream-display">
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+              <span class="stream-bar"></span>
+            </div>
+            <div class="stream-bottom-stats">
+              <span>First Token: <strong class="stream-stat-highlight">280ms</strong></span>
+              <span>Barge-in: <strong class="stream-stat-highlight">Active ✔</strong></span>
+              <span>Total: <strong class="stream-stat-highlight">0.74s</strong></span>
+            </div>
+          </div>
+          <div class="bento-icon-wrap">⚡</div>
+          <div class="bento-title">Sub-Second Turn-Taking</div>
+          <div class="bento-desc">
+            Deepgram Nova-3 streaming audio meets Groq LPU inference. Callers experience natural turn-taking with mid-sentence barge-in under 800ms.
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-visual-box persona-audio-box">
+            <div class="persona-profile-row">
+              <div class="persona-avatar-wrap">
+                <div class="persona-avatar-aura"></div>
+                <img src="/assets/face/face_49.png" alt="Ira Persona" />
+              </div>
+              <div class="persona-meta-wrap">
+                <div class="persona-title-row">
+                  <span class="persona-name-text">Ira</span>
+                  <span class="p-tag" style="background:#059669;color:#ffffff;border:none;">Silk Muga</span>
+                </div>
+                <div class="persona-sub-text">
+                  <span class="sim-live-dot" style="width:6px;height:6px;"></span> Conversational Hinglish Voice
+                </div>
+              </div>
+            </div>
+            <div class="persona-audio-track">
+              <button type="button" class="play-bubble-btn" aria-label="Audio Wave Activity">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </button>
+              <div class="audio-track-wave">
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+                <span class="track-bar"></span>
+              </div>
+            </div>
+            <div class="persona-chip-tags">
+              <span class="p-tag">Native Accents</span>
+              <span class="p-tag">24kHz Silk Audio</span>
+              <span class="p-tag">Zero Monotone</span>
+            </div>
+          </div>
+          <div class="bento-icon-wrap">🎙️</div>
+          <div class="bento-title">Rumik Silk Muga Voice</div>
+          <div class="bento-desc">
+            Warm, expressive Indian vocal persona ("Ira") with natural inflection, native Hindi phoneme pronunciation, and dynamic tone adaptation.
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-visual-box pricing-roi-box">
+            <div class="roi-top-bar">
+              <span style="font-size:11px;font-weight:750;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;">Cost per Minute</span>
+              <span class="roi-badge-save">90% Cost Cut</span>
+            </div>
+            <div class="cost-comparison-bars">
+              <div class="cost-bar-row">
+                <div class="cost-bar-meta">
+                  <span>Legacy (Twilio + 11Labs)</span>
+                  <span style="color:#f87171;font-weight:700;">₹18.50 / min</span>
+                </div>
+                <div class="cost-progress-track">
+                  <div class="cost-progress-fill-competitor"></div>
+                </div>
+              </div>
+              <div class="cost-bar-row">
+                <div class="cost-bar-meta">
+                  <span style="color:#ffffff;font-weight:700;">Seevora AI Voice</span>
+                  <span style="color:#34d399;font-weight:800;">₹1.80 / min</span>
+                </div>
+                <div class="cost-progress-track">
+                  <div class="cost-progress-fill-seevora"></div>
+                </div>
+              </div>
+            </div>
+            <div class="cost-bottom-features">
+              <span>Instant UPI Top-up</span>
+              <span>&middot;</span>
+              <span>No Expiry</span>
+              <span>&middot;</span>
+              <span>Paise Billing</span>
+            </div>
+          </div>
+          <div class="bento-icon-wrap">💰</div>
+          <div class="bento-title">~₹2 / Minute Pricing</div>
+          <div class="bento-desc">
+            Stop paying ₹15 to ₹22 per minute on legacy stacks. Seevora delivers full human parity at ~₹2/min with instant UPI wallet recharges.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Preset Library Showcase with Photo Avatars -->
+    <div class="site-card" style="margin-top:60px;">
+      <div style="text-align:center;max-width:700px;margin:0 auto 36px;">
+        <span class="badge-pill">Ready-To-Deploy Personas</span>
+        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">8 Pre-Trained Receptionist Blueprints</h2>
+        <p style="font-size:14.5px;color:var(--muted);">
+          Launch a battle-tested agent in one click. Customize instructions, business FAQs, and phone routing from the Studio.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px;">
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_70.png" alt="Dr. Priya" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Dental & Medical Intake</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Dr. Priya &middot; Healthcare</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Patient triage, dental symptom intake, Cal.com slot booking, and emergency doctor dispatch.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_81.png" alt="Aryan" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Real Estate Lead Qualifier</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Aryan &middot; Property Intake</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Buyer budget qualification, BHK preferences, site-visit scheduling, and WhatsApp brochure dispatch.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_63.png" alt="Rohan" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Legal & Injury Intake</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Rohan &middot; Legal Practice</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Accident date validation, liability qualification, attorney calendar locking, and zero-recording privacy.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_92.png" alt="Kabir" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">HVAC & Field Dispatch</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Kabir &middot; Field Services</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Emergency cooling/heating triage, technician dispatch booking, address capture, and job routing.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_71.png" alt="Ananya" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Restaurant Reservations</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Ananya &middot; Hospitality</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Party size verification, table availability, dietary allergy notes, and confirmation WhatsApp SMS.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_49.png" alt="Ria" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">24/7 Front-Desk Support</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Ria &middot; Front-Desk General</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Hours, location, pricing FAQs, order tracking, and warm handoff to human staff when requested.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_50.png" alt="Vikram" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Automobile & Test Drive</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Vikram &middot; Dealership Service</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Test drive scheduling, service maintenance booking, insurance renewal intake, and quotation follow-up.</p>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:20px;">
+          <div class="preset-card-header">
+            <img src="/assets/face/face_81.png" alt="Sunita" class="preset-avatar-img" />
+            <div>
+              <h4 style="font-size:15px;font-weight:750;color:var(--ink);">Education & Admissions</h4>
+              <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Sunita &middot; Academic Counselor</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Course curriculum inquiries, eligibility validation, campus visit booking, and scholarship information.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Verified Customer Testimonials with Photo Avatars -->
+    <div style="margin-top:64px;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 28px;">
+        <span class="badge-pill">Proven Production Impact</span>
+        <h2 style="font-size:28px;margin-top:10px;margin-bottom:8px;">Trusted by 100+ Indian Businesses</h2>
+        <p style="font-size:14.5px;color:var(--muted);">
+          Real businesses answering 10,000+ customer inquiries monthly with zero missed calls.
+        </p>
+      </div>
+
+      <div class="testimonial-grid">
+        <div class="testimonial-card">
+          <div style="color:#f59e0b;font-size:14px;margin-bottom:10px;">★★★★★</div>
+          <p style="font-size:14px;color:var(--ink-secondary);line-height:1.6;font-style:italic;">
+            "We were losing 35% of patient calls during peak surgical hours. Seevora's Ria answers on the second ring, qualifies patient urgency, and syncs directly into our clinic calendar."
+          </p>
+          <div class="testimonial-author">
+            <img src="/assets/face/face_70.png" alt="Dr. Alok Verma" class="testimonial-avatar" />
+            <div>
+              <div style="font-size:13.5px;font-weight:750;color:var(--ink);">Dr. Alok Verma</div>
+              <div style="font-size:12px;color:var(--muted);">Founder, Apex Dental Group &middot; Mumbai</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div style="color:#f59e0b;font-size:14px;margin-bottom:10px;">★★★★★</div>
+          <p style="font-size:14px;color:var(--ink-secondary);line-height:1.6;font-style:italic;">
+            "Speed to lead is everything in luxury real estate. The instant a portal inquiry arrives, our Seevora voice agent dials the buyer, checks budget qualification, and schedules site visits."
+          </p>
+          <div class="testimonial-author">
+            <img src="/assets/face/face_71.png" alt="Meera Kapoor" class="testimonial-avatar" />
+            <div>
+              <div style="font-size:13.5px;font-weight:750;color:var(--ink);">Meera Kapoor</div>
+              <div style="font-size:12px;color:var(--muted);">Head of Sales, Prime Urban Spaces &middot; Bengaluru</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div style="color:#f59e0b;font-size:14px;margin-bottom:10px;">★★★★★</div>
+          <p style="font-size:14px;color:var(--ink-secondary);line-height:1.6;font-style:italic;">
+            "Replacing our overseas call center with Seevora cut our telephony bill from ₹18/min to under ₹2/min, while our customers constantly compliment how polite and responsive our agent is."
+          </p>
+          <div class="testimonial-author">
+            <img src="/assets/face/face_92.png" alt="Rajesh Singhania" class="testimonial-avatar" />
+            <div>
+              <div style="font-size:13.5px;font-weight:750;color:var(--ink);">Rajesh Singhania</div>
+              <div style="font-size:12px;color:var(--muted);">Director, Singhania Logistics & HVAC &middot; Delhi NCR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Final Call to Action with Visual Background Overlay -->
+    <div style="position:relative;overflow:hidden;background:linear-gradient(135deg, rgba(13,93,65,0.94) 0%, rgba(9,69,48,0.92) 100%), url('/assets/receptionist.jpg') center/cover;color:#ffffff;border-radius:24px;padding:60px 32px;text-align:center;margin-top:60px;box-shadow:0 20px 50px rgba(13,93,65,0.25);">
+      <h2 style="font-size:clamp(26px, 4vw, 36px);color:#ffffff;margin-bottom:12px;">Stop Losing Revenue to Missed Calls</h2>
+      <p style="font-size:16px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.6;">
+        Set up your first AI receptionist in 5 minutes. Sign up today and get ₹10 in free test call credits instantly.
+      </p>
+      <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+        <a href="/login.html" class="btn-secondary" style="background:#ffffff;color:var(--primary)!important;border:none;padding:12px 28px;font-size:15px;">Create Free Account &rarr;</a>
+        <a href="/contact.html" class="btn-primary" style="background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.4);padding:12px 24px;font-size:15px;">Schedule Demo</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Shared Site Footer -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="/assets/seevora-logo.png" alt="Seevora" width="32" height="32" style="border-radius:8px;" />
+          <span style="font-family:var(--font-heading);font-weight:800;font-size:18px;">Seevora<span style="color:var(--primary);">Voice</span></span>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);max-width:320px;line-height:1.55;">
+          Autonomous, human-parity conversational voice agents answering inbound and placing outbound calls for ~₹2/minute.
+        </p>
+        <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--primary);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.25);"></span>
+          All Systems Operational
+        </div>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Product</h4>
+        <ul class="footer-links-list">
+          <li><a href="/features.html">Features</a></li>
+          <li><a href="/pricing.html">Pricing Plans</a></li>
+          <li><a href="/demo.html">Web Voice Dialer</a></li>
+          <li><a href="/app.html">Voice Studio Console</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Solutions</h4>
+        <ul class="footer-links-list">
+          <li><a href="/features.html#dental">Dental & Medical Clinics</a></li>
+          <li><a href="/features.html#realestate">Real Estate Lead Qual</a></li>
+          <li><a href="/features.html#hvac">HVAC & Field Dispatch</a></li>
+          <li><a href="/features.html#support">24/7 Front-Desk Support</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Company & Legal</h4>
+        <ul class="footer-links-list">
+          <li><a href="/contact.html">Contact Us</a></li>
+          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/terms.html">Terms of Service</a></li>
+          <li><a href="/data-deletion.html">Data Deletion</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>&copy; 2026 Seevora Pvt Ltd. All rights reserved.</div>
+      <div>Deepgram Nova-3 &middot; Groq &middot; Rumik Silk &middot; Vobiz Telephony</div>
+    </div>
+  </footer>
+
+  <script>
+    // Automatic logout parameter clearing
+    (function() {
+      const isLoggedOut = new URLSearchParams(window.location.search).has('logout');
+      if (isLoggedOut) {
+        document.cookie = 'rxv_sess=; Path=/; Max-Age=0; SameSite=Lax';
+        document.cookie = '__session=; Path=/; Max-Age=0; SameSite=Lax';
+        try { localStorage.clear(); sessionStorage.clear(); } catch (_) { }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    })();
+  </script>
+</body>
 </html>

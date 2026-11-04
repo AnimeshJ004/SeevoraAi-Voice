@@ -3052,7 +3052,6 @@ tr:hover td { background: #F8FAFC; }
 .agent-form-box,
 .campaign-dialer-card,
 .live-progress-banner,
-.onboard-step-card,
 .wh-card,
 .dev-card,
 .pref-card,
@@ -14215,41 +14214,54 @@ button:disabled {
 .aria-settings-tab-bar {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
-  padding: 8px 0 16px !important;
-  border-bottom: 1.5px solid rgba(13, 93, 65, 0.12) !important;
-  margin-bottom: 28px !important;
-  flex-wrap: wrap !important;
+  gap: 4px !important;
+  padding: 0 !important;
+  margin-bottom: 24px !important;
+  border-bottom: 2px solid rgba(13, 93, 65, 0.12) !important;
   overflow-x: auto !important;
+  white-space: nowrap !important;
+  scrollbar-width: none !important;
+  position: relative !important;
+}
+
+.aria-settings-tab-bar::-webkit-scrollbar {
+  display: none !important;
 }
 
 .aria-settings-tab-bar .admin-tab-btn {
-  border-radius: 999px !important;
-  padding: 8px 20px !important;
-  font-size: 0.86rem !important;
-  font-weight: 650 !important;
-  color: #5d7468 !important;
   background: transparent !important;
-  border: 1px solid transparent !important;
-  cursor: pointer !important;
+  color: #5d7468 !important;
+  border: none !important;
+  border-bottom: 2.5px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 10px 18px 12px 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px !important;
+  cursor: pointer !important;
   transition: all 0.16s ease !important;
-  white-space: nowrap !important;
+  user-select: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  margin-bottom: -2px !important;
 }
 
 .aria-settings-tab-bar .admin-tab-btn:hover {
-  background: rgba(13, 93, 65, 0.05) !important;
+  background: transparent !important;
   color: #0d5d41 !important;
+  border-bottom-color: rgba(13, 93, 65, 0.35) !important;
 }
 
 .aria-settings-tab-bar .admin-tab-btn.active {
-  background: #0d5d41 !important;
-  color: #ffffff !important;
-  font-weight: 750 !important;
+  background: transparent !important;
+  color: #0d5d41 !important;
   border: none !important;
-  box-shadow: 0 2px 6px rgba(13, 93, 65, 0.20) !important;
+  border-bottom: 2.5px solid #0d5d41 !important;
+  border-radius: 0 !important;
+  font-weight: 750 !important;
+  box-shadow: none !important;
 }
 
 .aria-settings-view input,
@@ -16716,9 +16728,6 @@ body > .sv-quick-call-popover {
   overflow: visible !important;
 }
 
-.modal:has(.aria-custom-dropdown.open),
-.modal:has(.aria-custom-dropdown.open) > div:not(.modal-actions),
-.modal-body:has(.aria-custom-dropdown.open),
 .modal.sv-add-lead-modal:has(.aria-custom-dropdown.open),
 .sv-add-lead-modal:has(.aria-custom-dropdown.open) > div:not(.modal-actions) {
   overflow: visible !important;
@@ -18309,4 +18318,346 @@ body > .sv-quick-call-popover {
 .settings-metric-tile:hover {
   border-color: rgba(13, 93, 65, 0.28) !important;
   box-shadow: 0 4px 12px rgba(13, 93, 65, 0.06) !important;
+}
+
+
+/* ==========================================================================
+   CARDLESS FLAT SCANDINAVIAN SAGE ONBOARDING (ZERO BOXES / NO CARDS)
+   ========================================================================== */
+.onboard-wizard {
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  padding: 16px 0 48px !important;
+  box-sizing: border-box !important;
+}
+
+.onboard-step-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 8px 0 24px !important;
+}
+
+.onboard-progress-track {
+  height: 4px !important;
+  background: rgba(13, 93, 65, 0.12) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  margin-bottom: 28px !important;
+}
+
+.onboard-progress-fill {
+  height: 100% !important;
+  background: #0d5d41 !important;
+  border-radius: 999px !important;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.onboard-step-badge {
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #0d5d41 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin-bottom: 8px !important;
+  display: inline-block !important;
+}
+
+.onboard-q-title {
+  font-size: 1.65rem !important;
+  font-weight: 850 !important;
+  color: #14221c !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  margin-bottom: 8px !important;
+}
+
+.onboard-q-sub {
+  font-size: 0.90rem !important;
+  color: #5d7468 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 28px !important;
+}
+
+.onboard-step-card .input,
+.onboard-step-card .textarea {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.18) !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  font-size: 0.96rem !important;
+  color: #14221c !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: all 0.16s ease !important;
+}
+
+.onboard-step-card .input:focus,
+.onboard-step-card .textarea:focus {
+  border-color: #0d5d41 !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.14) !important;
+  outline: none !important;
+}
+
+.onboard-pill-group {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-bottom: 28px !important;
+}
+
+.onboard-pill-btn {
+  background: transparent !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 999px !important;
+  padding: 10px 22px !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  color: #14221c !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+  box-shadow: none !important;
+}
+
+.onboard-pill-btn:hover {
+  border-color: #0d5d41 !important;
+  background: rgba(13, 93, 65, 0.05) !important;
+  color: #0d5d41 !important;
+}
+
+.onboard-pill-btn.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  border-color: #0d5d41 !important;
+  font-weight: 750 !important;
+  box-shadow: 0 2px 8px rgba(13, 93, 65, 0.25) !important;
+}
+
+.onboard-nav-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 36px !important;
+  padding-top: 20px !important;
+  border-top: 1.5px solid rgba(13, 93, 65, 0.12) !important;
+}
+
+/* Completion Screen (Cardless Flat) */
+.onboard-wizard .card {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(13, 93, 65, 0.12) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 24px 0 !important;
+}
+
+.onboard-wizard .ai-insight-box {
+  background: rgba(13, 93, 65, 0.03) !important;
+  border: 1px solid rgba(13, 93, 65, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+}
+
+/* Support Priority & Custom Form Dropdowns (Scandinavian Sage Theme) */
+.sv-support-priority-dropdown {
+  width: 100% !important;
+  position: relative !important;
+  margin-top: 2px !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-trigger {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.22) !important;
+  border-radius: 12px !important;
+  padding: 11px 16px !important;
+  font-family: inherit !important;
+  font-size: 0.90rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+  box-shadow: 0 1px 3px rgba(13, 93, 65, 0.04) !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-trigger:hover,
+.sv-support-priority-dropdown.open .aria-dropdown-trigger {
+  border-color: #0d5d41 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(13, 93, 65, 0.12) !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-current-label {
+  font-size: 0.90rem !important;
+  font-weight: 600 !important;
+  color: #14221c !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-arrow {
+  color: #0d5d41 !important;
+  transition: transform 0.2s ease !important;
+}
+
+.sv-support-priority-dropdown.open .aria-dropdown-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-menu {
+  width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(13, 93, 65, 0.20) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 36px rgba(13, 93, 65, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+  z-index: 999999 !important;
+  margin-top: 6px !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-opt {
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  font-size: 0.88rem !important;
+  font-weight: 550 !important;
+  color: #2c3e35 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-opt:hover {
+  background: rgba(13, 93, 65, 0.08) !important;
+  color: #0d5d41 !important;
+  font-weight: 650 !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-opt.selected {
+  background: #0d5d41 !important;
+  color: #ffffff !important;
+  font-weight: 650 !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-opt.selected .aria-opt-label {
+  color: #ffffff !important;
+}
+
+.sv-support-priority-dropdown .aria-dropdown-opt.selected .aria-opt-check {
+  color: #ffffff !important;
+}
+
+
+/* ==========================================================================
+   TEAM MEMBER / EMPLOYEE MODAL (Scandinavian 2-Column Responsive Layout)
+   ========================================================================== */
+.modal.team-member-modal {
+  max-width: 680px !important;
+  width: min(680px, 94vw) !important;
+  max-height: min(88vh, 760px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 24px 26px 20px 26px !important;
+  box-sizing: border-box !important;
+}
+
+.modal.team-member-modal:has(.aria-custom-dropdown.open) {
+  overflow: hidden !important;
+}
+
+.modal.team-member-modal > div:not(.modal-actions),
+.modal.team-member-modal .team-member-modal-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 6px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(13, 93, 65, 0.22) transparent !important;
+}
+
+.modal.team-member-modal .team-member-modal-body::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+.modal.team-member-modal .team-member-modal-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.modal.team-member-modal .team-member-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(13, 93, 65, 0.22) !important;
+  border-radius: 999px !important;
+}
+
+.modal.team-member-modal .team-member-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 93, 65, 0.38) !important;
+}
+
+.modal.team-member-modal .team-form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px !important;
+}
+
+.modal.team-member-modal .field {
+  margin-bottom: 0 !important;
+}
+
+.modal.team-member-modal .field label {
+  font-size: 0.74rem !important;
+  font-weight: 750 !important;
+  color: #0d5d41 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 5px !important;
+  display: block !important;
+}
+
+.modal.team-member-modal .input {
+  height: 42px !important;
+  box-sizing: border-box !important;
+  padding: 8px 0 !important;
+  font-size: 0.90rem !important;
+}
+
+.modal.team-member-modal .sv-modal-dropdown .aria-dropdown-trigger {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.modal.team-member-modal .modal-actions {
+  margin-top: 14px !important;
+  padding-top: 14px !important;
+  background: #ffffff !important;
+  position: relative !important;
+  z-index: 30 !important;
+  border-top: 1px solid rgba(13, 93, 65, 0.12) !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .modal.team-member-modal {
+    max-width: 95vw !important;
+    padding: 18px 16px !important;
+  }
+  .modal.team-member-modal .team-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
 }

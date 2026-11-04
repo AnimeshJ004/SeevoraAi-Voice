@@ -554,11 +554,9 @@ async function getSession(req) {
           const shouldUpdateName = isFallbackName && name && !name.startsWith('user_') && !/^User [a-zA-Z0-9]{4}$/.test(name);
           const shouldUpdateEmail = (!user.email || user.email.includes('@clerk.user')) && email && !email.includes('@clerk.user');
           const userEmail = email || user.email;
-          const wasEverOnboarded = !!(userEmail && d.users.some((x) => x.email && x.email.toLowerCase() === userEmail.toLowerCase() && x.onboardingCompleted));
-          const shouldUpdateOnboard = (clientHeaderOnboarded || wasEverOnboarded || (clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted)) && !user.onboardingCompleted;
           const shouldUpdateRole = user.role !== targetRole || !user.clerkRoleCheckedAt || (Date.now() - user.clerkRoleCheckedAt > 300000);
 
-          if (shouldUpdateRole || shouldUpdateName || shouldUpdateEmail || shouldUpdateOnboard) {
+          if (shouldUpdateRole || shouldUpdateName || shouldUpdateEmail) {
             await mutate((mutDb) => {
               const u = mutDb.users.find((x) => x.id === user.id);
               if (u) {
@@ -568,14 +566,12 @@ async function getSession(req) {
                 }
                 if (shouldUpdateName) u.name = name;
                 if (shouldUpdateEmail) u.email = email;
-                if (shouldUpdateOnboard) u.onboardingCompleted = true;
               }
               const t = mutDb.tenants.find((x) => x.id === user.tenantId);
               if (t) {
                 if (shouldUpdateName && (t.name.startsWith('user_') || /Workspace$/.test(t.name))) {
                   t.name = `${name}'s Workspace`;
                 }
-                if (shouldUpdateOnboard) t.onboardingCompleted = true;
               }
             });
             if (shouldUpdateRole) {
@@ -584,10 +580,6 @@ async function getSession(req) {
             }
             if (shouldUpdateName) user.name = name;
             if (shouldUpdateEmail) user.email = email;
-            if (shouldUpdateOnboard) {
-              user.onboardingCompleted = true;
-              if (tenant) tenant.onboardingCompleted = true;
-            }
           }
         }
 
@@ -603,12 +595,7 @@ async function getSession(req) {
 
           const tenantId = genId('t_');
           const userId = genId('u_');
-          const existingUserWithEmail = d.users.find((x) => x.email && email && x.email.toLowerCase() === email.toLowerCase() && x.onboardingCompleted);
-          const clerkOnboarded = !!(
-            (clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted) ||
-            clientHeaderOnboarded ||
-            existingUserWithEmail
-          );
+          const isAdminUser = role === 'admin' || role === 'super_admin';
 
           tenant = {
             id: tenantId,
@@ -616,7 +603,7 @@ async function getSession(req) {
             slug: `tenant-${tenantId.slice(2)}`,
             plan,
             status: 'active',
-            onboardingCompleted: clerkOnboarded,
+            onboardingCompleted: isAdminUser,
             createdAt: new Date().toISOString(),
           };
 
@@ -629,7 +616,7 @@ async function getSession(req) {
             role: role || 'client',
             status: 'active',
             clerkRoleCheckedAt: Date.now(),
-            onboardingCompleted: clerkOnboarded,
+            onboardingCompleted: isAdminUser,
             createdAt: new Date().toISOString(),
           };
 
@@ -716,18 +703,13 @@ async function getSession(req) {
             if (!tenant.name || tenant.name.startsWith('user_')) tenant.name = tenantTitle;
           }
 
-          // Auto-heal onboarding status if admin, tenant has active agent, or Clerk has metadata
+          // Auto-heal onboarding status ONLY if admin or user explicitly completed onboarding
           const isAdmin = ['admin', 'super_admin'].includes(user.role);
-          const hasAgents = d.agents && d.agents.some((a) => a.tenantId === tenant.id);
-          const clerkOnboarded = !!(clerkUser && clerkUser.publicMetadata && clerkUser.publicMetadata.onboardingCompleted);
-          const isFinished = !!(isAdmin || user.onboardingCompleted || tenant.onboardingCompleted || hasAgents || clerkOnboarded);
+          const isFinished = !!(isAdmin || user.onboardingCompleted === true);
 
-          if (isFinished && (!user.onboardingCompleted || !tenant.onboardingCompleted)) {
-            user.onboardingCompleted = true;
+          if (isFinished && !tenant.onboardingCompleted) {
             tenant.onboardingCompleted = true;
             await mutate((mutDb) => {
-              const u = mutDb.users.find((x) => x.id === user.id);
-              if (u) u.onboardingCompleted = true;
               const t = mutDb.tenants.find((x) => x.id === tenant.id);
               if (t) t.onboardingCompleted = true;
             });
@@ -911,7 +893,7 @@ async function syncClerkMetadataForUser(userIdOrClerkId, options = {}) {
     try {
       const tenant = d.tenants.find((t) => t.id === user.tenantId) || { id: user.tenantId, plan: 'starter', status: 'active', billingInterval: 'monthly' };
       const wallet = (d.wallets || []).find((w) => w.tenantId === tenant.id) || { balancePaise: 1000 };
-      const isFinished = Boolean(user.onboardingCompleted || tenant.onboardingCompleted);
+      const isFinished = Boolean(user.onboardingCompleted);
 
       // Check current Clerk metadata so we never clobber an admin assignment made in Clerk Dashboard!
       let effectiveRole = user.role || 'client';
